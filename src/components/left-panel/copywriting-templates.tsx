@@ -135,6 +135,19 @@ export function CopywritingTemplates() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-3"
     >
+      {/* Usage Guide */}
+      <div className="rounded-lg bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 border border-violet-200 dark:border-violet-800 p-3">
+        <p className="text-xs font-medium text-violet-700 dark:text-violet-300 flex items-center gap-1 mb-1">
+          <Sparkles className="h-3.5 w-3.5" />
+          模板使用指南
+        </p>
+        <ul className="text-[11px] text-violet-600 dark:text-violet-400 space-y-0.5 ml-4 list-disc">
+          <li>选择模板 → 点击「AI生成」→ AI 会结合您的人设和知识库生成个性化文案</li>
+          <li>生成的内容可直接复制使用，或点击「重新生成」获取不同版本</li>
+          <li>人设和知识库越完善，生成效果越好</li>
+        </ul>
+      </div>
+
       {/* Category filter */}
       <div className="flex gap-1 flex-wrap">
         {categories.map((cat) => (

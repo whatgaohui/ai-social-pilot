@@ -28,7 +28,7 @@ import {
 import {
   Settings, Sparkles, Plus, CheckCircle2, XCircle,
   Loader2, Zap, ExternalLink, Shield, Cpu, Thermometer,
-  ChevronRight, Eye, EyeOff, Radio, Server, Globe
+  ChevronRight, Eye, EyeOff, Radio, Server, Globe, Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { PRESET_PROVIDERS, type AIModelConfig } from "@/lib/ai-providers";
@@ -191,7 +191,7 @@ export function AISettingsPanel() {
           <span className="hidden sm:inline text-xs">模型配置</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[640px] max-h-[85vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-[920px] w-[95vw] max-h-[90vh] p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -239,7 +239,7 @@ export function AISettingsPanel() {
         <div className="flex-1 overflow-hidden">
           <div className="flex h-full">
             {/* Left: Preset provider list */}
-            <div className="w-[200px] border-r flex-shrink-0">
+            <div className="w-[220px] border-r flex-shrink-0">
               <div className="p-3">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
                   免费模型
@@ -310,7 +310,7 @@ export function AISettingsPanel() {
             {/* Right: Config form */}
             <div className="flex-1 min-w-0">
               {editingConfig ? (
-                <ScrollArea className="h-full max-h-[calc(85vh-12rem)]">
+                <ScrollArea className="h-full max-h-[calc(90vh-12rem)]">
                   <div className="p-4 space-y-4">
                     {/* Provider info */}
                     {presetMode && selectedPreset && (() => {
@@ -582,7 +582,7 @@ export function AISettingsPanel() {
                   </div>
                 </ScrollArea>
               ) : (
-                <ScrollArea className="h-full max-h-[calc(85vh-12rem)]">
+                <ScrollArea className="h-full max-h-[calc(90vh-12rem)]">
                   <div className="p-4">
                     <div className="text-center py-8">
                       <Cpu className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
@@ -648,10 +648,34 @@ export function AISettingsPanel() {
                                         setEditingConfig(config);
                                         setTestResult(null);
                                       }}
+                                      title="编辑配置"
                                     >
                                       <Settings className="h-3 w-3" />
                                     </Button>
-
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-[10px] text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                      onClick={async () => {
+                                        if (config.isActive) {
+                                          toast.error("无法删除当前使用的配置，请先切换到其他配置");
+                                          return;
+                                        }
+                                        if (!confirm(`确定要删除配置「${config.name}」吗？`)) return;
+                                        try {
+                                          const res = await fetch(`/api/ai-config/test?id=${config.id}`, { method: "DELETE" });
+                                          if (res.ok) {
+                                            toast.success("配置已删除");
+                                            fetchConfigs();
+                                          } else {
+                                            toast.error("删除失败");
+                                          }
+                                        } catch { toast.error("删除失败"); }
+                                      }}
+                                      title="删除配置"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
                                   </div>
                                 </div>
                               </CardContent>

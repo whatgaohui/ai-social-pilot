@@ -55,6 +55,10 @@ interface AppState {
   accountPanelOpen: boolean;
   setAccountPanelOpen: (open: boolean) => void;
 
+  // Onboarding
+  onboardingCompleted: boolean;
+  setOnboardingCompleted: (completed: boolean) => void;
+
   // Notifications
   notifications: AppNotification[];
   addNotification: (notification: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
@@ -106,7 +110,7 @@ export const useAppStore = create<AppState>((set) => ({
   setIsGenerating: (generating) => set({ isGenerating: generating }),
 
   // Left panel tab
-  leftPanelTab: 'persona',
+  leftPanelTab: 'knowledge',
   setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
 
   // Right panel tab
@@ -120,6 +124,15 @@ export const useAppStore = create<AppState>((set) => ({
   // Account panel
   accountPanelOpen: false,
   setAccountPanelOpen: (open) => set({ accountPanelOpen: open }),
+
+  // Onboarding
+  onboardingCompleted: typeof window !== 'undefined' ? (localStorage.getItem('onboarding-completed') === 'true') : false,
+  setOnboardingCompleted: (completed) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('onboarding-completed', String(completed));
+    }
+    set({ onboardingCompleted: completed });
+  },
 
   // Notifications
   notifications: [],

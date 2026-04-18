@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
-import { PersonaForm } from "@/components/left-panel/persona-form";
 import { KnowledgeBase } from "@/components/left-panel/knowledge-base";
 import { ContentCalendar } from "@/components/center-panel/content-calendar";
 import { CopywritingOutput } from "@/components/right-panel/copywriting-output";
@@ -14,20 +13,18 @@ import { XiaohongshuPreview } from "@/components/right-panel/xiaohongshu-preview
 import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templates";
 import { ViralInspiration } from "@/components/right-panel/viral-inspiration";
 import { OperationReport } from "@/components/right-panel/operation-report";
-import { type Platform, PLATFORM_LABELS } from "@/types";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WelcomeOnboarding } from "@/components/welcome-onboarding";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { AISettingsPanel } from "@/components/ai-settings-panel";
 import { NotificationBell } from "@/components/notification-center";
 import { PlatformAccountPanel } from "@/components/platform-account-panel";
+import { SettingsCenter } from "@/components/settings-center";
 import {
-  Sparkles, User, BookOpen, CalendarDays, PenTool,
-  BarChart3, Wand2, Zap, Menu, X, FileText, Smartphone, MessageCircle, Lightbulb, FileBarChart, ChevronLeft, Link2, Wifi, WifiOff
+  Sparkles, BookOpen, CalendarDays, PenTool,
+  BarChart3, Wand2, Zap, FileText, Smartphone, MessageCircle, Lightbulb, FileBarChart, ChevronLeft, Settings
 } from "lucide-react";
 
 function DataInitializer() {
@@ -100,14 +97,10 @@ function LeftPanel() {
           <div className={`h-6 w-6 rounded-md bg-gradient-to-br flex items-center justify-center ${platform === 'wechat' ? 'from-violet-500 to-purple-600' : 'from-red-500 to-rose-600'}`}>
             <Sparkles className="h-3.5 w-3.5 text-white" />
           </div>
-          {platform === 'wechat' ? '人设与素材' : '小红书运营'}
+          {platform === 'wechat' ? '知识库与模板' : '小红书运营'}
         </h2>
         <Tabs value={leftPanelTab} onValueChange={setLeftPanelTab}>
           <TabsList className="w-full h-8 bg-muted/50 p-0.5">
-            <TabsTrigger value="persona" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
-              <User className="h-3 w-3" />
-              人设管理
-            </TabsTrigger>
             <TabsTrigger value="knowledge" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
               <BookOpen className="h-3 w-3" />
               知识库
@@ -125,7 +118,7 @@ function LeftPanel() {
 
       {/* Left Panel Content */}
       <ScrollArea className="flex-1 px-4 pb-4">
-        {leftPanelTab === "persona" ? <PersonaForm /> : leftPanelTab === "knowledge" ? <KnowledgeBase /> : platform === 'wechat' ? <CopywritingTemplates /> : <XiaohongshuTemplates />}
+        {leftPanelTab === "knowledge" ? <KnowledgeBase /> : platform === 'wechat' ? <CopywritingTemplates /> : <XiaohongshuTemplates />}
       </ScrollArea>
     </div>
   );
@@ -253,10 +246,10 @@ function RightPanel({ hideHeader }: { hideHeader?: boolean }) {
 }
 
 export default function Home() {
-  const { isGenerating, persona, knowledgeItems, platform, setPlatform, rightPanelTab, setRightPanelTab, accountPanelOpen, setAccountPanelOpen } = useAppStore();
+  const { isGenerating, persona, knowledgeItems, platform, setPlatform, rightPanelTab, setRightPanelTab, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted } = useAppStore();
   const [mobilePanel, setMobilePanel] = useState<"left" | "center" | "right">("center");
   const [connectedPlatforms, setConnectedPlatforms] = useState(0);
-  const showWelcome = !persona || knowledgeItems.length < 2;
+  const showWelcome = !onboardingCompleted;
 
   // Poll platform account status periodically
   useEffect(() => {
@@ -342,25 +335,8 @@ export default function Home() {
                 AI正在生成内容...
               </motion.div>
             )}
-            <AISettingsPanel />
-            <button
-              onClick={() => setAccountPanelOpen(true)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors hover:bg-muted ${connectedPlatforms > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}
-            >
-              {connectedPlatforms > 0 ? (
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-              ) : (
-                <WifiOff className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden lg:inline">
-                {connectedPlatforms === 2 ? '已连接2个平台' : connectedPlatforms === 1 ? '已连接1个平台' : '账号管理'}
-              </span>
-            </button>
+            <SettingsCenter connectedPlatforms={connectedPlatforms} />
             <NotificationBell />
-            <ThemeToggle />
             <Badge variant="outline" className="text-xs gap-1">
               <Zap className="h-3 w-3 text-amber-500" />
               AI驱动
@@ -394,9 +370,9 @@ export default function Home() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
               </span>
             ) : (
-              <Link2 className="h-2.5 w-2.5" />
+              <Settings className="h-2.5 w-2.5" />
             )}
-            账号
+            设置
           </button>
         </div>
 
@@ -408,8 +384,8 @@ export default function Home() {
               className="flex-1 h-9 rounded-none text-xs gap-1 active:scale-[0.98] transition-transform"
               onClick={() => setMobilePanel("left")}
             >
-              <User className="h-3 w-3" />
-              人设素材
+              <BookOpen className="h-3 w-3" />
+              知识模板
             </Button>
             <Button
               variant={mobilePanel === "center" ? "secondary" : "ghost"}
@@ -465,7 +441,7 @@ export default function Home() {
       <main className="flex-1 overflow-hidden">
         {showWelcome ? (
           <div className="h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-3.5rem)]">
-            <WelcomeOnboarding onComplete={() => {}} />
+            <WelcomeOnboarding onComplete={() => setOnboardingCompleted(true)} />
           </div>
         ) : (
           <>

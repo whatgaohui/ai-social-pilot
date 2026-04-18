@@ -184,6 +184,19 @@ export function XiaohongshuTemplates() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-3"
     >
+      {/* Usage Guide */}
+      <div className="rounded-lg bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20 border border-rose-200 dark:border-rose-800 p-3">
+        <p className="text-xs font-medium text-rose-700 dark:text-rose-300 flex items-center gap-1 mb-1">
+          <Sparkles className="h-3.5 w-3.5" />
+          小红书模板使用指南
+        </p>
+        <ul className="text-[11px] text-rose-600 dark:text-rose-400 space-y-0.5 ml-4 list-disc">
+          <li>选择模板 → 点击「AI生成」→ 基于人设和知识库自动生成内容</li>
+          <li>生成的内容可直接复制，或用于日历发布计划</li>
+          <li>AI 会根据您的人设风格自动匹配小红书文案格式（标题+正文+话题标签）</li>
+        </ul>
+      </div>
+
       {/* Category filter */}
       <div className="flex gap-1 flex-wrap">
         {CATEGORIES.map((cat) => (

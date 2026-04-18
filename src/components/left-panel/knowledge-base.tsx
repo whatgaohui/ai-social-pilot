@@ -88,6 +88,19 @@ export function KnowledgeBase() {
       transition={{ duration: 0.3 }}
       className="space-y-3"
     >
+      {/* Usage Guide */}
+      <div className="rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-800 p-3">
+        <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-1 mb-1">
+          <BookOpen className="h-3.5 w-3.5" />
+          知识库使用指南
+        </p>
+        <ul className="text-[11px] text-emerald-600 dark:text-emerald-400 space-y-0.5 ml-4 list-disc">
+          <li>添加专业知识、经验总结 → AI 生成文案时会自动参考</li>
+          <li>建议添加 5-10 条知识，覆盖不同领域（经验、观点、故事等）</li>
+          <li>知识越具体、越详细，AI 生成的内容越贴合您的风格</li>
+        </ul>
+      </div>
+
       {/* Search & Add */}
       <div className="flex gap-2">
         <div className="relative flex-1">

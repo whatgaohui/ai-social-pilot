@@ -20,6 +20,7 @@ const TONE_OPTIONS = [
   { value: "humorous", label: "幽默风趣" },
   { value: "inspirational", label: "励志正能量" },
   { value: "storytelling", label: "故事叙述" },
+  { value: "custom", label: "✨ 自定义风格..." },
 ];
 
 const STYLE_OPTIONS = [
@@ -36,6 +37,7 @@ export function PersonaForm() {
     title: "",
     industry: "",
     tone: "professional",
+    customTone: "",
     style: "balanced",
     keywords: "",
     bio: "",
@@ -50,11 +52,13 @@ export function PersonaForm() {
 
   useEffect(() => {
     if (persona) {
+      const isCustom = !TONE_OPTIONS.some(o => o.value === persona.tone) && persona.tone;
       setForm({
         name: persona.name || "",
         title: persona.title || "",
         industry: persona.industry || "",
-        tone: persona.tone || "professional",
+        tone: isCustom ? "custom" : persona.tone || "professional",
+        customTone: isCustom ? persona.tone : "",
         style: persona.style || "balanced",
         keywords: persona.keywords || "",
         bio: persona.bio || "",
@@ -81,12 +85,19 @@ export function PersonaForm() {
       toast.error("请填写姓名");
       return;
     }
+    if (form.tone === "custom" && !form.customTone?.trim()) {
+      toast.error("请填写自定义语气风格");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/persona", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          tone: form.tone === "custom" ? form.customTone : form.tone,
+        }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -168,6 +179,15 @@ export function PersonaForm() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5 min-w-0">
               <Label className="text-xs text-muted-foreground whitespace-nowrap">语气风格</Label>
+              {form.tone === "custom" && (
+                <Input
+                  placeholder="描述您的语气风格，如：温暖亲切、知性优雅..."
+                  value={form.customTone || ""}
+                  onChange={(e) => setForm({ ...form, customTone: e.target.value })}
+                  className="h-9 text-sm mb-1.5"
+                  autoFocus
+                />
+              )}
               <Select value={form.tone} onValueChange={(v) => setForm({ ...form, tone: v })}>
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue />
