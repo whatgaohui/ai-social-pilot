@@ -76,6 +76,21 @@ export function ABComparison({ post }: ABComparisonProps) {
         toast.success(`已应用${version === "a" ? "A" : "B"}版本`);
         setSelectedVersion(null);
         setOpen(false);
+        // Auto-save version snapshot for AB test selection
+        try {
+          await fetch(`/api/content/${post.id}/versions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: post.content,
+              changeType: "optimize",
+              summary: "A/B测试选择版本",
+              aiScore: post.aiScore,
+            }),
+          });
+        } catch (e) {
+          console.error("Failed to save version snapshot:", e);
+        }
       } else {
         toast.error("应用失败");
       }

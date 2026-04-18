@@ -31,6 +31,7 @@ export function PublishToCalendar({ isXHS, mode, defaultOpen }: PublishToCalenda
   const currentPlan = useAppStore((s) => s.currentPlan);
   const addContentPost = useAppStore((s) => s.addContentPost);
   const platform = useAppStore((s) => s.platform);
+  const addNotification = useAppStore((s) => s.addNotification);
 
   const [pubTopic, setPubTopic] = useState("");
   const [pubContent, setPubContent] = useState("");
@@ -90,6 +91,12 @@ export function PublishToCalendar({ isXHS, mode, defaultOpen }: PublishToCalenda
         const newPost = await res.json();
         addContentPost(newPost);
         toast.success("已发布到日历！");
+        addNotification({
+          type: "publish",
+          title: "内容已添加到日历",
+          description: `"${pubTopic}" 已添加到 ${format(new Date(pubDate), 'MM-dd')} 的发布计划`,
+          postId: newPost.id,
+        });
         setPubTopic("");
         setPubContent("");
         setPubDate("");

@@ -224,6 +224,23 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
         toast.success(`已成功发布到${PLATFORM_LABELS[targetPlatform]}日历！`);
         setAdaptedContent("");
         setAdaptedDate("");
+        // Auto-save version snapshot for cross-platform publish on original post
+        if (selectedPost?.id) {
+          try {
+            await fetch(`/api/content/${selectedPost.id}/versions`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: selectedPost.content,
+                changeType: "ai_generate",
+                summary: "跨平台同步发布",
+                aiScore: selectedPost.aiScore,
+              }),
+            });
+          } catch (e) {
+            console.error("Failed to save version snapshot:", e);
+          }
+        }
       } else {
         toast.error("发布失败，请重试");
       }

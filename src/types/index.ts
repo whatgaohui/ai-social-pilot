@@ -182,6 +182,16 @@ export interface ContentVersion {
   createdAt: string;
 }
 
+export interface AppNotification {
+  id: string;
+  type: 'optimize' | 'polish' | 'generate' | 'publish' | 'reminder' | 'error';
+  title: string;
+  description: string;
+  timestamp: number;
+  read: boolean;
+  postId?: string;
+}
+
 export type ChangeType = 'edit' | 'optimize' | 'polish' | 'ai_generate';
 
 export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {

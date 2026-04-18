@@ -20,6 +20,7 @@ export function PostActions({ post }: PostActionsProps) {
   const persona = useAppStore((s) => s.persona);
   const knowledgeItems = useAppStore((s) => s.knowledgeItems);
   const platform = useAppStore((s) => s.platform);
+  const addNotification = useAppStore((s) => s.addNotification);
 
   const [optimizing, setOptimizing] = useState(false);
 
@@ -52,10 +53,37 @@ export function PostActions({ post }: PostActionsProps) {
           const updated = await updateRes.json();
           updateContentPost(post.id, updated);
           toast.success("AI优化完成");
+          addNotification({
+            type: "optimize",
+            title: "AI优化完成",
+            description: `"${post.topic}" 已通过AI智能优化，评分提升`,
+            postId: post.id,
+          });
+          // Auto-save version snapshot before optimization
+          try {
+            await fetch(`/api/content/${post.id}/versions`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: post.content,
+                changeType: "optimize",
+                summary: "AI智能优化",
+                aiScore: post.aiScore,
+              }),
+            });
+          } catch (e) {
+            console.error("Failed to save version snapshot:", e);
+          }
         }
       }
     } catch {
       toast.error("优化失败");
+      addNotification({
+        type: "error",
+        title: "优化失败",
+        description: `"${post.topic}" AI优化过程中出错，请重试`,
+        postId: post.id,
+      });
     } finally {
       setOptimizing(false);
     }
@@ -72,6 +100,14 @@ export function PostActions({ post }: PostActionsProps) {
         const updated = await res.json();
         updateContentPost(post.id, updated);
         toast.success(`状态已更新为${POST_STATUS_LABELS[status]}`);
+        if (status === "published") {
+          addNotification({
+            type: "publish",
+            title: "内容已发布",
+            description: `"${post.topic}" 已标记为已发布`,
+            postId: post.id,
+          });
+        }
       }
     } catch {
       toast.error("更新失败");

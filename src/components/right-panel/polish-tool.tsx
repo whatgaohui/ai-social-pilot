@@ -20,6 +20,8 @@ export function PolishTool({ isXHS, mode, defaultOpen }: PolishToolProps) {
   const persona = useAppStore((s) => s.persona);
   const knowledgeItems = useAppStore((s) => s.knowledgeItems);
   const platform = useAppStore((s) => s.platform);
+  const addNotification = useAppStore((s) => s.addNotification);
+  const selectedPostId = useAppStore((s) => s.selectedPostId);
 
   const [polishInput, setPolishInput] = useState("");
   const [polishResult, setPolishResult] = useState("");
@@ -49,9 +51,37 @@ export function PolishTool({ isXHS, mode, defaultOpen }: PolishToolProps) {
         const data = await res.json();
         setPolishResult(data.content);
         toast.success(isXHS ? "笔记润色完成" : "润色完成");
+        addNotification({
+          type: "polish",
+          title: "润色完成",
+          description: isXHS ? "小红书笔记已通过AI润色优化" : "朋友圈文案已通过AI润色优化",
+          postId: selectedPostId || undefined,
+        });
+        // Auto-save version snapshot for polish operation
+        if (selectedPostId) {
+          try {
+            await fetch(`/api/content/${selectedPostId}/versions`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: polishInput,
+                changeType: "polish",
+                summary: "口水话润色",
+                aiScore: 0,
+              }),
+            });
+          } catch (e) {
+            console.error("Failed to save version snapshot:", e);
+          }
+        }
       }
     } catch {
       toast.error("润色失败");
+      addNotification({
+        type: "error",
+        title: "润色失败",
+        description: "AI润色过程中出错，请重试",
+      });
     } finally {
       setPolishing(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import type { ContentPost, ContentPlan } from "@/types";
@@ -15,9 +15,19 @@ import {
   CalendarDays, ChevronLeft, ChevronRight, Sparkles,
   CheckCircle2, Clock, FileText, Loader2, Calendar,
   BarChart3, Zap, LayoutGrid, List, Heart, MessageSquare,
-  Share2, Eye, Star
+  Share2, Eye, Star, GripVertical, Save
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, addMonths, subMonths, parseISO } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
@@ -76,6 +86,13 @@ export function ContentCalendar() {
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [platformFilter, setPlatformFilter] = useState<'all' | 'wechat' | 'xiaohongshu'>('all');
+
+  // Drag-and-drop state
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [hasReordered, setHasReordered] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch plans
   useEffect(() => {
@@ -239,6 +256,143 @@ export function ContentCalendar() {
   const handleListItemClick = (post: ContentPost) => {
     setSelectedDate(post.scheduledDate);
     setSelectedPostId(post.id);
+  };
+
+  // Drag-and-drop handlers
+  const handleDragStart = useCallback((e: React.DragEvent, postId: string) => {
+    setDraggedId(postId);
+    e.dataTransfer.effectAllowed = 'move';
+    // Use timeout to allow the browser to capture the drag image before applying opacity
+    const target = e.currentTarget as HTMLElement;
+    requestAnimationFrame(() => {
+      target.style.opacity = '0.5';
+      target.style.transform = 'scale(0.95)';
+    });
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, postId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (postId !== draggedId) {
+      setDragOverId(postId);
+    }
+  }, [draggedId]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only clear if actually leaving the element
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverId(null);
+    }
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent, targetPostId: string) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetPostId) {
+      setDraggedId(null);
+      setDragOverId(null);
+      return;
+    }
+
+    const draggedPost = contentPosts.find(p => p.id === draggedId);
+    const targetPost = contentPosts.find(p => p.id === targetPostId);
+
+    if (!draggedPost || !targetPost) {
+      setDraggedId(null);
+      setDragOverId(null);
+      return;
+    }
+
+    try {
+      // Swap scheduledDates via PUT API
+      const [res1, res2] = await Promise.all([
+        fetch(`/api/content/${draggedId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduledDate: targetPost.scheduledDate }),
+        }),
+        fetch(`/api/content/${targetPostId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduledDate: draggedPost.scheduledDate }),
+        }),
+      ]);
+
+      if (!res1.ok || !res2.ok) {
+        throw new Error('Failed to update posts');
+      }
+
+      await Promise.all([res1.json(), res2.json()]);
+
+      // Update store with both updated posts
+      const newPosts = contentPosts.map(p => {
+        if (p.id === draggedId) return { ...p, scheduledDate: targetPost.scheduledDate };
+        if (p.id === targetPostId) return { ...p, scheduledDate: draggedPost.scheduledDate };
+        return p;
+      });
+      setContentPosts(newPosts);
+      setHasReordered(true);
+      toast.success('已交换排期日期');
+    } catch (error) {
+      console.error('Drag-and-drop swap failed:', error);
+      toast.error('交换排期失败，请重试');
+    } finally {
+      setDraggedId(null);
+      setDragOverId(null);
+    }
+  }, [draggedId, contentPosts, setContentPosts]);
+
+  const handleDragEnd = useCallback((e: React.DragEvent) => {
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = '1';
+    target.style.transform = 'scale(1)';
+    setDraggedId(null);
+    setDragOverId(null);
+  }, []);
+
+  // Save reordering: assign sequential dates to all posts
+  const handleSaveReorder = async () => {
+    if (sortedPosts.length === 0) return;
+    setIsSaving(true);
+    try {
+      const startDate = new Date(sortedPosts[0].scheduledDate);
+      const updatePromises = sortedPosts.map((post, index) => {
+        const newDate = new Date(startDate);
+        newDate.setDate(startDate.getDate() + index);
+        const dateStr = format(newDate, 'yyyy-MM-dd');
+        return fetch(`/api/content/${post.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduledDate: dateStr }),
+        });
+      });
+
+      const results = await Promise.all(updatePromises);
+      if (results.some(r => !r.ok)) {
+        throw new Error('Some updates failed');
+      }
+
+      // Update store with new sequential dates
+      const newPosts = contentPosts.map(p => {
+        const index = sortedPosts.findIndex(sp => sp.id === p.id);
+        if (index === -1) return p;
+        const newDate = new Date(startDate);
+        newDate.setDate(startDate.getDate() + index);
+        return { ...p, scheduledDate: format(newDate, 'yyyy-MM-dd') };
+      });
+      setContentPosts(newPosts);
+      setHasReordered(false);
+      setShowSaveDialog(false);
+      toast.success(`已保存排序，共更新 ${sortedPosts.length} 条内容排期`);
+    } catch (error) {
+      console.error('Save reorder failed:', error);
+      toast.error('保存排序失败，请重试');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (loading) {
@@ -543,6 +697,26 @@ export function ContentCalendar() {
                 transition={{ duration: 0.2 }}
                 className="space-y-2"
               >
+                {/* Save Reorder Button */}
+                {hasReordered && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between p-3 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/40 mb-2"
+                  >
+                    <p className="text-xs text-violet-700 dark:text-violet-300">
+                      检测到排期变更，可一键保存为连续日期
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => setShowSaveDialog(true)}
+                      className="h-7 px-3 text-xs bg-violet-600 hover:bg-violet-700 text-white"
+                    >
+                      <Save className="h-3 w-3 mr-1" />
+                      保存排序
+                    </Button>
+                  </motion.div>
+                )}
                 {sortedPosts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                     <CalendarDays className="h-10 w-10 mb-3 opacity-30" />
@@ -551,6 +725,8 @@ export function ContentCalendar() {
                 ) : (
                   sortedPosts.map((post, index) => {
                     const isSelected = selectedPostId === post.id;
+                    const isDragging = draggedId === post.id;
+                    const isDragOver = dragOverId === post.id;
                     let formattedDate = "";
                     try {
                       formattedDate = format(parseISO(post.scheduledDate), 'M月d日 EEEE', { locale: zhCN });
@@ -561,13 +737,25 @@ export function ContentCalendar() {
                     return (
                       <motion.div
                         key={post.id}
+                        layout
                         initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.15, delay: index * 0.02 }}
+                        animate={{ opacity: 1, y: 0, scale: isDragging ? 0.95 : 1 }}
+                        transition={{ duration: 0.2, delay: index * 0.015 }}
                         onClick={() => handleListItemClick(post)}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, post.id)}
+                        onDragOver={(e) => handleDragOver(e, post.id)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, post.id)}
+                        onDragEnd={handleDragEnd}
                         className={`
-                          rounded-lg border p-3 cursor-pointer transition-all duration-200
+                          group relative rounded-lg border p-3 cursor-pointer transition-all duration-200
                           hover:shadow-md hover:border-primary/30
+                          ${isDragging ? 'opacity-50 scale-95 z-50' : ''}
+                          ${isDragOver 
+                            ? 'border-t-2 border-t-violet-500 bg-violet-50/50 dark:bg-violet-900/10' 
+                            : ''
+                          }
                           ${isSelected 
                             ? "ring-2 ring-primary bg-primary/[0.03] border-primary/40 shadow-md" 
                             : "bg-card border-border"
@@ -575,8 +763,21 @@ export function ContentCalendar() {
                         `}
                       >
                         <div className="flex items-start gap-3">
+                          {/* Drag Handle */}
+                          <div
+                            className={`
+                              flex-shrink-0 flex items-center justify-center w-5 h-8
+                              opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                              ${draggedId ? 'opacity-100' : ''}
+                              text-muted-foreground hover:text-foreground
+                              cursor-grab active:cursor-grabbing
+                            `}
+                          >
+                            <GripVertical className="h-4 w-4" />
+                          </div>
+
                           {/* Date Column */}
-                          <div className="flex-shrink-0 w-[72px]">
+                          <div className="flex-shrink-0 w-[68px]">
                             <div className="text-[10px] text-muted-foreground leading-tight">
                               {formattedDate}
                             </div>
@@ -663,6 +864,35 @@ export function ContentCalendar() {
           </AnimatePresence>
         )}
       </ScrollArea>
+
+      {/* Save Reorder Confirmation Dialog */}
+      <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认保存排序</AlertDialogTitle>
+            <AlertDialogDescription>
+              将按照当前列表顺序，从 <strong>{sortedPosts.length > 0 && (() => { try { return format(parseISO(sortedPosts[0].scheduledDate), 'M月d日', { locale: zhCN }); } catch { return ''; } })()}</strong> 开始，为所有 <strong>{sortedPosts.length}</strong> 条内容分配连续的发布日期。此操作不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleSaveReorder(); }}
+              disabled={isSaving}
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  保存中...
+                </>
+              ) : (
+                '确认保存'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

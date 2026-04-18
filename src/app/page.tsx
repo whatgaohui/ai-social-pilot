@@ -23,6 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { WelcomeOnboarding } from "@/components/welcome-onboarding";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AISettingsPanel } from "@/components/ai-settings-panel";
+import { NotificationBell } from "@/components/notification-center";
 import {
   Sparkles, User, BookOpen, CalendarDays, PenTool,
   BarChart3, Wand2, Zap, Menu, X, FileText, Smartphone, MessageCircle, Lightbulb, FileBarChart, ChevronLeft
@@ -324,6 +325,7 @@ export default function Home() {
               </motion.div>
             )}
             <AISettingsPanel />
+            <NotificationBell />
             <ThemeToggle />
             <Badge variant="outline" className="text-xs gap-1">
               <Zap className="h-3 w-3 text-amber-500" />

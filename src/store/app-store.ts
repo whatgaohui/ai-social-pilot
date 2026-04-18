@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Persona, KnowledgeItem, ContentPlan, ContentPost, Material, AnalyticsSummary, Platform } from '@/types';
+import type { Persona, KnowledgeItem, ContentPlan, ContentPost, Material, AnalyticsSummary, Platform, AppNotification } from '@/types';
 
 interface AppState {
   // Persona
@@ -50,6 +50,13 @@ interface AppState {
   // Platform
   platform: Platform;
   setPlatform: (platform: Platform) => void;
+
+  // Notifications
+  notifications: AppNotification[];
+  addNotification: (notification: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  clearNotifications: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -105,4 +112,41 @@ export const useAppStore = create<AppState>((set) => ({
   // Platform
   platform: 'wechat',
   setPlatform: (platform) => set({ platform }),
+
+  // Notifications
+  notifications: [],
+  addNotification: (notification) => set((state) => {
+    const newNotification: AppNotification = {
+      ...notification,
+      id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: Date.now(),
+      read: false,
+    };
+    const updated = [newNotification, ...state.notifications].slice(0, 20);
+    // Persist to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('app-notifications', JSON.stringify(updated));
+    }
+    return { notifications: updated };
+  }),
+  markNotificationRead: (id) => set((state) => {
+    const updated = state.notifications.map(n => n.id === id ? { ...n, read: true } : n);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('app-notifications', JSON.stringify(updated));
+    }
+    return { notifications: updated };
+  }),
+  markAllNotificationsRead: () => set((state) => {
+    const updated = state.notifications.map(n => ({ ...n, read: true }));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('app-notifications', JSON.stringify(updated));
+    }
+    return { notifications: updated };
+  }),
+  clearNotifications: () => set(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('app-notifications');
+    }
+    return { notifications: [] };
+  }),
 }));
