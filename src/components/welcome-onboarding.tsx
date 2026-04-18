@@ -28,7 +28,7 @@ const STEPS = [
   {
     icon: CalendarDays,
     title: "生成内容计划",
-    description: "一键AI生成30天朋友圈发布计划，包含多种内容类型，持续优化迭代",
+    description: "一键AI生成30天发布计划，支持朋友圈和小红书双平台",
     gradient: "from-emerald-500 to-teal-500",
     shadow: "shadow-emerald-200 dark:shadow-emerald-900/40",
   },
@@ -39,7 +39,7 @@ interface WelcomeOnboardingProps {
 }
 
 export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
-  const { persona, knowledgeItems, setLeftPanelTab } = useAppStore();
+  const { persona, knowledgeItems, setLeftPanelTab, platform, setPlatform } = useAppStore();
   const [currentStep, setCurrentStep] = useState(0);
 
   const stepStatuses = [
@@ -78,7 +78,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
           <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-200 dark:shadow-violet-900/40">
             <Sparkles className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">欢迎使用朋友圈AI运营助手</h2>
+          <h2 className="text-2xl font-bold mb-2">欢迎使用AI运营助手</h2>
           <p className="text-sm text-muted-foreground">
             三步开启您的个人IP运营之旅
           </p>
@@ -144,11 +144,59 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
           })}
         </div>
 
-        {/* Action */}
+        {/* Platform Selection */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
+          className="space-y-2"
+        >
+          <p className="text-xs text-muted-foreground font-medium text-center">选择运营平台</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Card
+              onClick={() => setPlatform('wechat')}
+              className={`h-20 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                platform === 'wechat'
+                  ? 'ring-2 ring-primary border-primary'
+                  : 'hover:border-green-300 dark:hover:border-green-700'
+              }`}
+            >
+              <CardContent className="p-3 h-full flex flex-col items-center justify-center gap-1.5">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                  <span className="text-sm">🟢</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-semibold">朋友圈</p>
+                  <p className="text-[10px] text-muted-foreground">微信朋友圈内容运营</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card
+              onClick={() => setPlatform('xiaohongshu')}
+              className={`h-20 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                platform === 'xiaohongshu'
+                  ? 'ring-2 ring-primary border-primary'
+                  : 'hover:border-red-300 dark:hover:border-red-700'
+              }`}
+            >
+              <CardContent className="p-3 h-full flex flex-col items-center justify-center gap-1.5">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center">
+                  <span className="text-sm">🔴</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-semibold">小红书</p>
+                  <p className="text-[10px] text-muted-foreground">小红书笔记内容运营</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </motion.div>
+
+        {/* Action */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
           className="flex flex-col gap-2"
         >
           <Button

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CONTENT_TYPE_LABELS, CONTENT_TYPE_COLORS, ContentType } from "@/types";
+import { CONTENT_TYPE_LABELS, CONTENT_TYPE_COLORS, ContentType, XHS_CONTENT_TYPE_LABELS, XHS_CONTENT_TYPE_COLORS, XHSContentType } from "@/types";
+import { useAppStore } from "@/store/app-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
   BarChart3, TrendingUp, Heart, MessageSquare, Share2,
-  Eye, Sparkles, Loader2, Trophy, Target, Zap,
+  Eye, Sparkles, Loader2, Trophy, Target, Zap, Star,
   Download, FileJson, FileText
 } from "lucide-react";
 import { toast } from "sonner";
@@ -38,6 +39,8 @@ interface AnalyticsData {
 }
 
 export function AnalyticsPanel() {
+  const { platform } = useAppStore();
+  const isXHS = platform === 'xiaohongshu';
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -103,6 +106,15 @@ export function AnalyticsPanel() {
     }
   };
 
+  const getLabel = (type: string) => {
+    if (isXHS) return XHS_CONTENT_TYPE_LABELS[type as XHSContentType] || type;
+    return CONTENT_TYPE_LABELS[type as ContentType] || type;
+  };
+  const getColor = (type: string) => {
+    if (isXHS) return XHS_CONTENT_TYPE_COLORS[type as XHSContentType] || '';
+    return CONTENT_TYPE_COLORS[type as ContentType] || '';
+  };
+
   if (loading) {
     return (
       <div className="p-4 space-y-4">
@@ -159,6 +171,7 @@ export function AnalyticsPanel() {
               { label: "总内容", value: analytics.totalPosts, icon: BarChart3, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/30" },
               { label: "总点赞", value: analytics.totalLikes, icon: Heart, color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-950/30" },
               { label: "总评论", value: analytics.totalComments, icon: MessageSquare, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/30" },
+              ...(isXHS ? [{ label: "收藏", value: analytics.topPosts.reduce((acc, p) => acc + (p as Record<string, unknown>).favorites as number || 0, 0), icon: Star, color: "text-violet-500", bg: "bg-violet-50 dark:bg-violet-950/30" }] : []),
               { label: "总转发", value: analytics.totalShares, icon: Share2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
             ].map((stat) => (
               <Card key={stat.label} className="border-0 shadow-sm">
@@ -202,8 +215,8 @@ export function AnalyticsPanel() {
                 return (
                   <div key={type}>
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${CONTENT_TYPE_COLORS[type as ContentType] || ""}`}>
-                        {CONTENT_TYPE_LABELS[type as ContentType] || type}
+                      <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${getColor(type)}`}>
+                        {getLabel(type)}
                       </Badge>
                       <span className="text-muted-foreground">{count} 条 ({percentage}%)</span>
                     </div>

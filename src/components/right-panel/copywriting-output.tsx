@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ABComparison } from "@/components/right-panel/ab-comparison";
+import { HashtagRecommender } from "@/components/right-panel/hashtag-recommender";
+import { CoverImageGenerator } from "@/components/right-panel/cover-image-generator";
 import {
   Copy, Wand2, Check, Edit3, Send, Loader2, Sparkles,
   FileText, RefreshCw, MessageSquare, Upload, Lightbulb, Calendar,
@@ -605,6 +607,15 @@ export function CopywritingOutput() {
                   </div>
                 </div>
               )}
+              {/* Character count for Xiaohongshu */}
+              {isXHS && (
+                <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
+                  <span>字数统计</span>
+                  <span className={selectedPost.content.length > 500 ? 'text-amber-500' : selectedPost.content.length < 200 ? 'text-red-400' : 'text-emerald-500'}>
+                    {selectedPost.content.length} 字 {selectedPost.content.length < 200 ? '(偏短)' : selectedPost.content.length > 500 ? '(偏长)' : '(合适)'}
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -725,6 +736,26 @@ export function CopywritingOutput() {
 
           {/* A/B Comparison Test */}
           <ABComparison post={selectedPost} />
+
+          {/* Hashtag Recommender - Xiaohongshu only */}
+          {isXHS && (
+            <HashtagRecommender
+              postTopic={selectedPost.topic}
+              postContent={selectedPost.content}
+              onSelectHashtag={(tag) => {
+                const updated = selectedPost.content + '\n#' + tag;
+                setEditContent(updated);
+              }}
+            />
+          )}
+
+          {/* Cover Image Generator - Xiaohongshu only */}
+          {isXHS && (
+            <CoverImageGenerator
+              postTopic={selectedPost.topic}
+              postContent={selectedPost.content}
+            />
+          )}
 
           {/* Quick Tools - Collapsible */}
           <Collapsible open={showPolish} onOpenChange={setShowPolish}>

@@ -163,32 +163,37 @@ export function ContentCalendar() {
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const startDayOfWeek = (getDay(monthStart) + 6) % 7; // Monday = 0
 
+  // Filter posts by current platform
+  const platformPosts = useMemo(() => {
+    return contentPosts.filter(p => !p.platform || p.platform === platform);
+  }, [contentPosts, platform]);
+
   const postsByDate = useMemo(() => {
     const map: Record<string, ContentPost> = {};
-    contentPosts.forEach((post) => {
+    platformPosts.forEach((post) => {
       map[post.scheduledDate] = post;
     });
     return map;
-  }, [contentPosts]);
+  }, [platformPosts]);
 
   // Posts sorted by date for list view
   const sortedPosts = useMemo(() => {
-    return [...contentPosts]
+    return [...platformPosts]
       .filter(p => p.scheduledDate)
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
-  }, [contentPosts]);
+  }, [platformPosts]);
 
   // Stats
   const stats = useMemo(() => {
-    const total = contentPosts.length;
-    const published = contentPosts.filter(p => p.status === "published").length;
-    const optimized = contentPosts.filter(p => p.status === "optimized").length;
-    const generated = contentPosts.filter(p => p.status === "generated").length;
+    const total = platformPosts.length;
+    const published = platformPosts.filter(p => p.status === "published").length;
+    const optimized = platformPosts.filter(p => p.status === "optimized").length;
+    const generated = platformPosts.filter(p => p.status === "generated").length;
     const avgScore = total > 0
-      ? Math.round(contentPosts.reduce((sum, p) => sum + p.aiScore, 0) / total)
+      ? Math.round(platformPosts.reduce((sum, p) => sum + p.aiScore, 0) / total)
       : 0;
     return { total, published, optimized, generated, avgScore };
-  }, [contentPosts]);
+  }, [platformPosts]);
 
   const handlePrevMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
   const handleNextMonth = () => setCurrentMonth(prev => addMonths(prev, 1));
@@ -238,7 +243,7 @@ export function ContentCalendar() {
           </div>
           <div className="flex items-center gap-2">
             {/* View Toggle */}
-            {contentPosts.length > 0 && (
+            {platformPosts.length > 0 && (
               <div className="flex items-center bg-muted rounded-md p-0.5">
                 <Button
                   variant={viewMode === 'grid' ? "secondary" : "ghost"}
@@ -280,7 +285,7 @@ export function ContentCalendar() {
         </div>
 
         {/* Stats Bar */}
-        {contentPosts.length > 0 && (
+        {platformPosts.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -290,6 +295,11 @@ export function ContentCalendar() {
               <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3" />
                 总计 <strong className="text-foreground">{stats.total}</strong>
+                {stats.total !== contentPosts.length && (
+                  <Badge variant="secondary" className="h-4 px-1 text-[9px] tabular-nums">
+                    {isXHS ? '小红书' : '朋友圈'}
+                  </Badge>
+                )}
               </span>
               <span className="flex items-center gap-1">
                 <Zap className="h-3 w-3 text-emerald-500" />
@@ -311,7 +321,7 @@ export function ContentCalendar() {
 
       {/* Calendar Content */}
       <ScrollArea className="flex-1 px-4 pb-4">
-        {contentPosts.length === 0 && !isGenerating ? (
+        {platformPosts.length === 0 && !isGenerating ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -412,7 +422,7 @@ export function ContentCalendar() {
                 </div>
 
                 {/* Legend */}
-                {contentPosts.length > 0 && (
+                {platformPosts.length > 0 && (
                   <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t">
                     {(["planned", "generated", "optimized", "published"] as PostStatus[]).map((status) => (
                       <div key={status} className="flex items-center gap-1.5">

@@ -423,3 +423,94 @@ Stage Summary:
   3. 话题标签智能推荐
   4. 小红书爆款分析（基于热门话题趋势）
   5. 多平台同时运营（一条内容同时适配朋友圈和小红书格式）
+
+---
+Task ID: 8
+Agent: Cron Review Agent
+Task: 第八轮开发 - 移动端平台切换+小红书工具链完善+视觉增强
+
+Work Log:
+- 读取 worklog.md 了解7轮开发成果
+- 运行 lint（零错误），启动 dev 服务器验证编译（GET / 200）
+- agent-browser 因沙箱网络限制无法连接 localhost，改用日志+API 验证
+
+### 新功能
+
+1. **移动端平台切换器**（page.tsx）：
+   - 在移动端底部导航上方添加平台切换行（sm:hidden）
+   - 两个紧凑按钮：朋友圈(绿色) / 小红书(红色)
+   - 活跃平台有填充背景+白色文字，非活跃为彩色文字
+   - h-7 高度，text-[10px]，底部 border-b 分隔线
+   - 移动端面板高度从 calc(100vh-7rem) 调整为 calc(100vh-8rem)
+
+2. **内容日历平台筛选器**（content-calendar.tsx）：
+   - 新增 platformPosts useMemo 按平台过滤帖子
+   - 向后兼容：platform 为空或 undefined 的帖子在朋友圈模式显示
+   - postsByDate、sortedPosts、stats 均使用筛选后的数据
+   - 统计栏显示平台 badge 指示器
+
+3. **小红书话题标签推荐器**（hashtag-recommender.tsx）：
+   - AI 生成热门话题标签（调用 /api/ai/generate）
+   - 手动输入添加自定义标签
+   - 15个热门小红书快选标签（#好物推荐 #生活日常 #知识分享 #干货 等）
+   - 红色 pill badge 展示，点击复制，x 按钮移除
+   - "复制全部" + "清空" 操作按钮
+   - framer-motion 动画
+
+4. **小红书封面图生成器**（cover-image-generator.tsx）：
+   - 智能默认 prompt（基于帖子主题自动生成描述）
+   - 4种风格预设：清新ins风、日系小清新、简约高级感、复古胶片风
+   - 调用 /api/ai/cover-generate 生成封面
+   - 图片展示（rounded-xl, aspect-[3/4]）+ 下载 + 重新生成按钮
+   - 加载状态 shimmer 动画
+
+5. **封面图生成API**（/api/ai/cover-generate/route.ts）：
+   - 尝试使用 z-ai-web-dev-sdk 生成图片
+   - SVG 精美回退：6种渐变色、装饰元素、主题文字居中、"小红书·精选内容"副标题、水印
+   - 返回 base64 data URL
+
+6. **数据分析面板小红书适配**（analytics-panel.tsx）：
+   - 内容类型标签/颜色按平台切换
+   - 小红书模式下增加"收藏"统计卡片（Star 图标，violet 颜色）
+
+7. **欢迎引导页双平台选择**（welcome-onboarding.tsx）：
+   - 标题改为平台无关的"欢迎使用AI运营助手"
+   - 步骤3描述更新为"支持朋友圈和小红书双平台"
+   - 新增平台选择卡片：朋友圈(绿色) / 小红书(红色) 并排展示
+   - 选中平台有 ring-2 高亮，默认朋友圈
+
+8. **文案输出面板小红书增强**（copywriting-output.tsx）：
+   - 集成 HashtagRecommender 组件（选中帖子时显示）
+   - 集成 CoverImageGenerator 组件（选中帖子时显示）
+   - 新增字数统计指示器：<200字偏短(红色)，200-500字合适(绿色)，>500字偏长(黄色)
+
+### 新增文件
+- `src/components/right-panel/hashtag-recommender.tsx` - 话题标签推荐器
+- `src/components/right-panel/cover-image-generator.tsx` - 封面图生成器
+- `src/app/api/ai/cover-generate/route.ts` - 封面图生成 API
+
+### 修改文件
+- `src/app/page.tsx` - 移动端平台切换器
+- `src/components/center-panel/content-calendar.tsx` - 平台筛选器
+- `src/components/right-panel/copywriting-output.tsx` - 集成标签+封面+字数
+- `src/components/right-panel/analytics-panel.tsx` - XHS适配
+- `src/components/welcome-onboarding.tsx` - 双平台选择
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（GET / 200）
+- ✅ 所有API路由正常返回200
+- ✅ Prisma查询包含新字段
+- ⚠️ agent-browser 沙箱网络限制无法可视化QA
+
+Stage Summary:
+- 项目状态：稳定可运行，双平台功能深度完善
+- 本轮新增 3 个文件，修改 5 个文件
+- 核心能力：移动端平台切换、日历平台筛选、话题标签推荐、封面图生成、字数统计、欢迎页双平台选择
+- 建议下一阶段优先事项：
+  1. 小红书笔记标题 A/B 测试
+  2. 多平台同步发布（一条内容同时适配双平台格式）
+  3. 话题标签趋势分析（基于热门话题数据）
+  4. 文案质量评分系统优化
+  5. 小红书笔记排版优化（间距、emoji密度、换行节奏）
+  6. 运营日历支持多平台颜色区分

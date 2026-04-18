@@ -272,6 +272,24 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Mobile Platform Switcher */}
+        <div className="sm:hidden flex items-center justify-center gap-2 px-4 py-1 border-t border-b">
+          <button
+            onClick={() => setPlatform('wechat')}
+            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-colors ${platform === 'wechat' ? 'bg-green-500 text-white' : 'text-green-600 dark:text-green-400'}`}
+          >
+            <MessageCircle className="h-2.5 w-2.5" />
+            朋友圈
+          </button>
+          <button
+            onClick={() => setPlatform('xiaohongshu')}
+            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-colors ${platform === 'xiaohongshu' ? 'bg-red-500 text-white' : 'text-red-600 dark:text-red-400'}`}
+          >
+            <Zap className="h-2.5 w-2.5" />
+            小红书
+          </button>
+        </div>
+
         {/* Mobile Tab Navigation */}
         <div className="sm:hidden flex border-t">
           <Button
@@ -340,7 +358,7 @@ export default function Home() {
             </div>
 
             {/* Mobile: Single panel view */}
-            <div className="sm:hidden h-[calc(100vh-7rem)] overflow-hidden">
+            <div className="sm:hidden h-[calc(100vh-8rem)] overflow-hidden">
               {mobilePanel === "left" && (
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
