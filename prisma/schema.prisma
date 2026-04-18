@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Persona {
+  id          String   @id @default(cuid())
+  name        String
+  title       String   @default("")
+  industry    String   @default("")
+  tone        String   @default("professional") // professional, casual, humorous, inspirational, storytelling
+  style       String   @default("balanced") // concise, detailed, emotional, balanced
+  keywords    String   @default("") // comma-separated keywords
+  bio         String   @default("")
+  targetAudience String @default("")
+  avatarUrl   String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model KnowledgeItem {
+  id          String   @id @default(cuid())
+  category    String   @default("general") // expertise, experience, opinion, story, resource
+  title       String
+  content     String
+  tags        String   @default("") // comma-separated tags
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ContentPlan {
+  id          String   @id @default(cuid())
+  month       String   // e.g. "2025-01"
+  theme       String   @default("")
+  status      String   @default("draft") // draft, active, completed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  posts       ContentPost[]
+}
+
+model ContentPost {
+  id            String   @id @default(cuid())
+  planId        String
+  scheduledDate String   // e.g. "2025-01-15"
+  contentType   String   @default("text") // text, image, video, mixed, story, insight, interaction
+  topic         String   @default("")
+  content       String   @default("")
+  status        String   @default("planned") // planned, generated, optimized, published
+  generationType String @default("auto") // auto, fragment, polish
+  likes         Int      @default(0)
+  comments      Int      @default(0)
+  shares        Int      @default(0)
+  views         Int      @default(0)
+  aiScore       Float    @default(0) // AI quality score 0-100
+  feedback      String   @default("") // user feedback notes
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  plan          ContentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+}
+
+model Material {
+  id          String   @id @default(cuid())
+  name        String   @default("")
+  type        String   @default("text") // text, image, screenshot, conversation
+  content     String   @default("")
+  imageUrl    String   @default("")
+  contentType String   @default("") // fragment type: complaint, praise, question, experience, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AnalyticsSummary {
+  id          String   @id @default(cuid())
+  period      String   @default("weekly") // daily, weekly, monthly
+  date        String
+  totalPosts  Int      @default(0)
+  totalLikes  Int      @default(0)
+  totalComments Int    @default(0)
+  totalShares Int      @default(0)
+  totalViews  Int      @default(0)
+  avgScore    Float    @default(0)
+  insights    String   @default("") // AI-generated insights
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
