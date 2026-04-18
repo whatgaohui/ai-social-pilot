@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ZAI from 'z-ai-web-dev-sdk';
+import { createAIClient } from '@/lib/ai-client';
 
 export async function POST(request: NextRequest) {
   try {
     const { type, persona, knowledgeItems, material, topic, tone, style, existingContent } = await request.json();
     
-    const zai = await ZAI.create();
+    const ai = await createAIClient();
     
     let systemPrompt = '';
     let userPrompt = '';
@@ -27,7 +27,6 @@ ${knowledgeItems.slice(0, 10).map((item: { title: string; content: string; categ
 ` : '';
 
     if (type === 'auto') {
-      // 全自动生成 - based on knowledge base
       systemPrompt = `你是一位专业的朋友圈内容运营专家，擅长为个人IP打造者创作高质量的朋友圈文案。
 ${personaContext}
 要求：
@@ -44,7 +43,6 @@ ${knowledgeContext}
 请直接输出文案内容，不需要额外解释。`;
 
     } else if (type === 'fragment') {
-      // 碎片转文案 - convert fragment/material to copy
       systemPrompt = `你是一位专业的朋友圈内容运营专家，擅长将日常碎片信息转化为高质量的朋友圈文案。
 ${personaContext}
 要求：
@@ -68,7 +66,6 @@ ${knowledgeContext}
 请直接输出文案内容，不需要额外解释。`;
 
     } else if (type === 'polish') {
-      // 口水话润色 - polish casual text
       systemPrompt = `你是一位专业的文案润色专家，擅长将大白话优化为优美、有吸引力的朋友圈文案。
 ${personaContext}
 要求：
@@ -88,19 +85,17 @@ ${knowledgeContext}
 请直接输出润色后的文案，不需要额外解释。`;
     }
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: 'assistant', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      thinking: { type: 'disabled' },
-    });
-
-    const generatedContent = completion.choices[0]?.message?.content || '';
+    const generatedContent = await ai.chatCompletion([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ]);
     
-    return NextResponse.json({ content: generatedContent });
+    return NextResponse.json({ 
+      content: generatedContent,
+      model: ai.config?.name || ai.config?.provider || 'default',
+    });
   } catch (error) {
     console.error('AI generation error:', error);
-    return NextResponse.json({ error: 'Failed to generate content' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to generate content', details: String(error) }, { status: 500 });
   }
 }

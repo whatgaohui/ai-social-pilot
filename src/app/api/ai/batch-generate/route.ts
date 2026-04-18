@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ZAI from 'z-ai-web-dev-sdk';
+import { createAIClient } from '@/lib/ai-client';
 import { db } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
     const { planId, persona, knowledgeItems, startDate, month } = await request.json();
     
-    const zai = await ZAI.create();
+    const ai = await createAIClient();
     
     const personaContext = persona ? `
 人设信息：
@@ -58,15 +58,10 @@ ${knowledgeContext}
 
 只返回JSON数组，不要包含其他文字。`;
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: 'assistant', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      thinking: { type: 'disabled' },
-    });
-
-    let result = completion.choices[0]?.message?.content || '[]';
+    let result = await ai.chatCompletion([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ]);
     
     // Extract JSON from response
     const jsonMatch = result.match(/\[[\s\S]*\]/);
@@ -88,7 +83,7 @@ ${knowledgeContext}
           content: post.content,
           status: 'generated',
           generationType: 'auto',
-          aiScore: Math.floor(Math.random() * 20) + 75, // Random score 75-95
+          aiScore: Math.floor(Math.random() * 20) + 75,
         },
       });
       savedPosts.push(saved);
@@ -100,7 +95,11 @@ ${knowledgeContext}
       data: { status: 'active' },
     });
 
-    return NextResponse.json({ posts: savedPosts, count: savedPosts.length });
+    return NextResponse.json({ 
+      posts: savedPosts, 
+      count: savedPosts.length,
+      model: ai.config?.name || ai.config?.provider || 'default',
+    });
   } catch (error) {
     console.error('Batch generation error:', error);
     return NextResponse.json({ error: 'Failed to batch generate content', details: String(error) }, { status: 500 });

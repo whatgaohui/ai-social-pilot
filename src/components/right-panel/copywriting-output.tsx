@@ -18,13 +18,11 @@ import {
   FileUp, Type, MessageCircle, Image, ChevronDown, ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
-import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 
 export function CopywritingOutput() {
   const {
     contentPosts, selectedPostId, selectedDate,
     persona, knowledgeItems, updateContentPost, setSelectedPostId,
-    rightPanelTab,
   } = useAppStore();
 
   const selectedPost = contentPosts.find(p => p.id === selectedPostId);
@@ -677,11 +675,7 @@ export function CopywritingOutput() {
             </CollapsibleContent>
           </Collapsible>
 
-          {/* WeChat Preview */}
-          <WeChatPreview
-            post={selectedPost}
-            personaName={useAppStore.getState().persona?.name || "我"}
-          />
+
         </motion.div>
       </ScrollArea>
     </div>

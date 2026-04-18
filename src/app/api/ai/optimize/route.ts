@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ZAI from 'z-ai-web-dev-sdk';
+import { createAIClient } from '@/lib/ai-client';
 
 export async function POST(request: NextRequest) {
   try {
     const { post, persona, feedback, knowledgeItems } = await request.json();
     
-    const zai = await ZAI.create();
+    const ai = await createAIClient();
     
     const personaContext = persona ? `
 人设信息：
@@ -38,17 +38,15 @@ ${knowledgeItems && knowledgeItems.length > 0 ? `可参考的知识库素材：$
 
 请直接输出优化后的文案内容。`;
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: 'assistant', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      thinking: { type: 'disabled' },
-    });
-
-    const optimizedContent = completion.choices[0]?.message?.content || '';
+    const optimizedContent = await ai.chatCompletion([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ]);
     
-    return NextResponse.json({ content: optimizedContent });
+    return NextResponse.json({ 
+      content: optimizedContent,
+      model: ai.config?.name || ai.config?.provider || 'default',
+    });
   } catch (error) {
     console.error('Optimize error:', error);
     return NextResponse.json({ error: 'Failed to optimize content' }, { status: 500 });

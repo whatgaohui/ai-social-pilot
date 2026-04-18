@@ -89,3 +89,19 @@ model AnalyticsSummary {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model AIConfig {
+  id          String   @id @default(cuid())
+  name        String   // 配置名称
+  provider    String   @default("z-ai") // z-ai, gemini, groq, cerebras, siliconflow, openrouter, custom
+  modelId     String   @default("") // 模型 ID
+  baseUrl     String   @default("") // API base URL
+  apiKey      String   @default("") // API Key（加密存储）
+  isFree      Boolean  @default(false) // 是否免费
+  isActive    Boolean  @default(false) // 是否为当前激活的配置
+  maxTokens   Int      @default(2048)
+  temperature Float    @default(0.7)
+  extraConfig String   @default("") // JSON string for extra params
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -8,6 +8,7 @@ import { KnowledgeBase } from "@/components/left-panel/knowledge-base";
 import { ContentCalendar } from "@/components/center-panel/content-calendar";
 import { CopywritingOutput } from "@/components/right-panel/copywriting-output";
 import { AnalyticsPanel } from "@/components/right-panel/analytics-panel";
+import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,9 +17,10 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WelcomeOnboarding } from "@/components/welcome-onboarding";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AISettingsPanel } from "@/components/ai-settings-panel";
 import {
   Sparkles, User, BookOpen, CalendarDays, PenTool,
-  BarChart3, Wand2, Zap, Menu, X, FileText
+  BarChart3, Wand2, Zap, Menu, X, FileText, Smartphone
 } from "lucide-react";
 
 function DataInitializer() {
@@ -120,7 +122,8 @@ function LeftPanel() {
 }
 
 function RightPanel() {
-  const { rightPanelTab, setRightPanelTab, contentPosts } = useAppStore();
+  const { rightPanelTab, setRightPanelTab, contentPosts, selectedPostId } = useAppStore();
+  const selectedPost = contentPosts.find(p => p.id === selectedPostId);
 
   return (
     <div className="flex flex-col h-full">
@@ -147,12 +150,35 @@ function RightPanel() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="preview" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
+              <Smartphone className="h-3 w-3" />
+              朋友圈预览
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {/* Right Panel Content */}
-      {rightPanelTab === "copywriting" ? <CopywritingOutput /> : <AnalyticsPanel />}
+      {rightPanelTab === "copywriting" ? (
+        <CopywritingOutput />
+      ) : rightPanelTab === "analytics" ? (
+        <AnalyticsPanel />
+      ) : (
+        <div className="flex-1 px-4 py-4">
+          {selectedPost ? (
+            <WeChatPreview
+              post={selectedPost}
+              personaName={useAppStore.getState().persona?.name || "我"}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <Smartphone className="h-12 w-12 mb-3 opacity-20" />
+              <p className="text-sm text-center">请先在日历中选择一条内容</p>
+              <p className="text-xs mt-1 text-center">点击日历中的日期即可预览朋友圈效果</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -191,6 +217,7 @@ export default function Home() {
                 AI正在生成内容...
               </motion.div>
             )}
+            <AISettingsPanel />
             <ThemeToggle />
             <Badge variant="outline" className="text-xs gap-1">
               <Zap className="h-3 w-3 text-amber-500" />

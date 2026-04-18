@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ZAI from 'z-ai-web-dev-sdk';
+import { createAIClient } from '@/lib/ai-client';
 
 export async function POST(request: NextRequest) {
   try {
     const { analytics, posts } = await request.json();
     
-    const zai = await ZAI.create();
+    const ai = await createAIClient();
     
     const systemPrompt = `你是一位朋友圈运营数据分析专家。你需要分析运营数据，提供 actionable 的改进建议。
 请用中文回复，使用markdown格式。`;
@@ -33,17 +33,15 @@ ${posts.slice(0, 5).map((p: { topic: string; contentType: string; likes: number;
 3. 具体改进建议（至少5条）
 4. 下一阶段重点方向`;
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: 'assistant', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      thinking: { type: 'disabled' },
-    });
-
-    const analysis = completion.choices[0]?.message?.content || '';
+    const analysis = await ai.chatCompletion([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ]);
     
-    return NextResponse.json({ analysis });
+    return NextResponse.json({ 
+      analysis,
+      model: ai.config?.name || ai.config?.provider || 'default',
+    });
   } catch (error) {
     console.error('Analysis error:', error);
     return NextResponse.json({ error: 'Failed to analyze data' }, { status: 500 });

@@ -206,3 +206,107 @@ Stage Summary:
   4. 添加内容排期拖拽排序功能
   5. 添加文案A/B测试（对同一天生成两个版本对比选择）
   6. 添加发布时间建议（基于历史数据分析最佳发布时段）
+
+---
+Task ID: 5
+Agent: Main Developer
+Task: AI大模型配置功能 - 支持免费模型和自定义API
+
+Work Log:
+- 分析现有AI集成架构（4个API路由均使用 ZAI.create() 无配置）
+- 分析 z-ai-web-dev-sdk 源码，了解其 OpenAI 兼容接口格式（baseUrl + apiKey + /chat/completions）
+
+### 数据库
+- 在 prisma/schema.prisma 中新增 AIConfig 模型
+  - 字段：name, provider, modelId, baseUrl, apiKey, isFree, isActive, maxTokens, temperature, extraConfig
+- 执行 `bun run db:push` 成功同步到 SQLite
+
+### 后端 API
+- 创建 `/api/ai-config` 路由（GET 获取列表 / POST 创建或更新）
+  - isActive 互斥逻辑：激活一个配置时自动停用其他
+- 创建 `/api/ai-config/test` 路由
+  - GET 连接测试（发送简单prompt验证模型可用性+延迟）
+  - DELETE 删除配置
+- 创建 `src/lib/ai-client.ts`（服务端AI客户端管理器）
+  - `createAIClient()` - 根据DB中的活跃配置创建对应客户端
+  - `getActiveConfig()` - 获取当前激活配置（带1分钟缓存）
+  - `testConnection()` - 测试模型连接
+  - 支持 z-ai 内置 SDK + 所有 OpenAI 兼容格式 API
+  - 自动回退：无配置时使用内置 Z.ai SDK
+- 创建 `src/lib/ai-providers.ts`（客户端安全的预设数据）
+  - 7个预置提供商定义（纯数据，无运行时依赖）
+
+### 前端组件
+- 创建 `src/components/ai-settings-panel.tsx`（AI模型配置面板）
+  - Dialog 弹窗式配置界面，从 header 顶部"模型配置"按钮打开
+  - 左侧分栏：6个免费模型预设 + 自定义API选项
+    - ✨ Z.ai 内置（无需配置）
+    - 💎 Google Gemini (通过 OpenRouter 免费)
+    - ⚡ Groq (Llama/Mixtral 免费模型)
+    - 🧠 Cerebras (极速推理芯片)
+    - 🌐 SiliconFlow (国内 Qwen/DeepSeek/GLM)
+    - 🔀 OpenRouter (免费模型聚合)
+    - 🔧 自定义 API（任意 OpenAI 兼容格式）
+  - 右侧配置表单：
+    - 配置名称输入
+    - 模型下拉选择（多模型提供商支持切换）
+    - API Key 输入（带显示/隐藏切换）
+    - Temperature 滑块（0-2，标注精准/平衡/创意）
+    - 最大输出长度选择（1024/2048/4096/8192）
+    - 保存/取消/测试连接按钮
+  - 已保存配置列表管理（编辑/删除/切换激活）
+  - 当前激活模型实时指示器
+  - 预设提供商信息卡片（描述 + 获取API Key外链）
+  - API Key 本地存储安全提示
+
+### 架构优化
+- 分离客户端安全数据（ai-providers.ts）和服务端逻辑（ai-client.ts）
+  - 解决 z-ai-web-dev-sdk 使用 Node.js fs/path 模块导致的客户端构建错误
+- 更新全部4个 AI API 路由使用 createAIClient() 替代直接 ZAI.create()
+  - /api/ai/generate - 支持 model 字段回传
+  - /api/ai/batch-generate - 支持 model 字段回传
+  - /api/ai/optimize - 支持 model 字段回传
+  - /api/ai/analyze - 支持 model 字段回传
+- 配置缓存机制（1分钟 TTL），避免频繁 DB 查询
+
+### 新增文件
+- `src/lib/ai-client.ts` - 服务端 AI 客户端管理
+- `src/lib/ai-providers.ts` - 预设提供商数据
+- `src/components/ai-settings-panel.tsx` - 配置面板 UI
+- `src/app/api/ai-config/route.ts` - 配置 CRUD API
+- `src/app/api/ai-config/test/route.ts` - 连接测试 + 删除 API
+
+### 修改文件
+- `prisma/schema.prisma` - 新增 AIConfig 模型
+- `src/app/page.tsx` - header 添加 AISettingsPanel 按钮
+- `src/app/api/ai/generate/route.ts` - 使用 createAIClient
+- `src/app/api/ai/batch-generate/route.ts` - 使用 createAIClient
+- `src/app/api/ai/optimize/route.ts` - 使用 createAIClient
+- `src/app/api/ai/analyze/route.ts` - 使用 createAIClient
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（200状态码，无 module-not-found 错误）
+- ✅ header 正确显示"模型配置"按钮
+- ✅ 对话框正常打开，6个免费模型预设正确显示
+- ✅ 点击预设后右侧表单正确渲染（名称/模型/Key/温度/长度）
+- ✅ Groq 预设表单验证通过：名称预填充、模型下拉3选项、API Key密码框
+- ✅ 自定义 API 表单验证通过：Base URL/Model ID/Key 输入框
+- ✅ 无 JS 运行时错误
+- ✅ 暗黑模式兼容
+
+Stage Summary:
+- 项目状态：稳定可运行，AI模型配置功能完整
+- 本轮新增 5 个文件，修改 7 个文件
+- 核心能力：支持 6 个免费模型提供商 + 任意 OpenAI 兼容自定义 API
+- 未解决问题或风险：
+  1. API Key 以明文存储在本地 SQLite，生产环境建议加密
+  2. 模型响应质量取决于所选模型能力，免费模型可能有输出限制
+  3. 配置切换后需要等待缓存过期（1分钟）或重启服务才能生效
+- 建议下一阶段优先事项：
+  1. 内容日历增加列表视图切换
+  2. 添加"一键发布到日历"功能
+  3. 添加文案 A/B 对比测试
+  4. 添加发布时间建议（基于历史数据分析最佳发布时段）
+  5. API Key 加密存储方案
+  6. 模型响应质量评分反馈机制
