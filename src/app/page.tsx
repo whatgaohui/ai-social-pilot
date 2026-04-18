@@ -12,6 +12,7 @@ import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
 import { XiaohongshuPreview } from "@/components/right-panel/xiaohongshu-preview";
 import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templates";
+import { ViralInspiration } from "@/components/right-panel/viral-inspiration";
 import { type Platform, PLATFORM_LABELS } from "@/types";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,7 +24,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { AISettingsPanel } from "@/components/ai-settings-panel";
 import {
   Sparkles, User, BookOpen, CalendarDays, PenTool,
-  BarChart3, Wand2, Zap, Menu, X, FileText, Smartphone, MessageCircle
+  BarChart3, Wand2, Zap, Menu, X, FileText, Smartphone, MessageCircle, Lightbulb
 } from "lucide-react";
 
 function DataInitializer() {
@@ -155,7 +156,11 @@ function RightPanel() {
             </TabsTrigger>
             <TabsTrigger value="preview" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
               <Smartphone className="h-3 w-3" />
-              {platform === 'wechat' ? '朋友圈预览' : '小红书预览'}
+              预览
+            </TabsTrigger>
+            <TabsTrigger value="inspiration" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
+              <Lightbulb className="h-3 w-3" />
+              灵感库
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -166,6 +171,8 @@ function RightPanel() {
         <CopywritingOutput />
       ) : rightPanelTab === "analytics" ? (
         <AnalyticsPanel />
+      ) : rightPanelTab === "inspiration" ? (
+        <ViralInspiration />
       ) : (
         <div className="flex-1 px-4 py-4">
           {platform === 'wechat' ? (

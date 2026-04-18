@@ -171,6 +171,33 @@ export const CONTENT_TYPE_COLORS: Record<ContentType, string> = {
   interaction: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
 };
 
+export interface ContentVersion {
+  id: string;
+  postId: string;
+  version: number;
+  content: string;
+  changeType: string; // edit, optimize, polish, ai_generate
+  summary: string;
+  aiScore: number;
+  createdAt: string;
+}
+
+export type ChangeType = 'edit' | 'optimize' | 'polish' | 'ai_generate';
+
+export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
+  edit: '编辑',
+  optimize: '优化',
+  polish: '润色',
+  ai_generate: 'AI生成',
+};
+
+export const CHANGE_TYPE_COLORS: Record<ChangeType, string> = {
+  edit: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  optimize: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  polish: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  ai_generate: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+};
+
 // Xiaohongshu note structure
 export interface XHSNote {
   title: string;

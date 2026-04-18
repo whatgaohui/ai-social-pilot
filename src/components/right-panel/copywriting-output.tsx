@@ -19,6 +19,7 @@ import { CoverImageGenerator } from "@/components/right-panel/cover-image-genera
 import { TitleABTest } from "@/components/right-panel/title-ab-test";
 import { CrossPlatformPublish } from "@/components/right-panel/cross-platform-publish";
 import { QualityScorer } from "@/components/right-panel/quality-scorer";
+import { ContentHistory } from "@/components/right-panel/content-history";
 import {
   Copy, Wand2, Check, Edit3, Send, Loader2, Sparkles,
   FileText, RefreshCw, MessageSquare, Upload, Lightbulb, Calendar,
@@ -745,6 +746,9 @@ export function CopywritingOutput() {
 
           {/* Quality Scorer */}
           <QualityScorer post={selectedPost} />
+
+          {/* Content Version History */}
+          <ContentHistory post={selectedPost} />
 
           {/* Cross-Platform Publish */}
           <CrossPlatformPublish />
