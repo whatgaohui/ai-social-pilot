@@ -47,7 +47,8 @@ model ContentPost {
   id            String   @id @default(cuid())
   planId        String
   scheduledDate String   // e.g. "2025-01-15"
-  contentType   String   @default("text") // text, image, video, mixed, story, insight, interaction
+  platform      String   @default("wechat") // wechat, xiaohongshu
+  contentType   String   @default("text") // text, image, video, mixed, story, insight, interaction; xiaohongshu: seeding, review, tutorial, drygoods, vlog, daily, recommend, collection
   topic         String   @default("")
   content       String   @default("")
   status        String   @default("planned") // planned, generated, optimized, published
@@ -56,6 +57,7 @@ model ContentPost {
   comments      Int      @default(0)
   shares        Int      @default(0)
   views         Int      @default(0)
+  favorites     Int      @default(0) // Xiaohongshu favorites/收藏
   aiScore       Float    @default(0) // AI quality score 0-100
   feedback      String   @default("") // user feedback notes
   createdAt     DateTime @default(now())

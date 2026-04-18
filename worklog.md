@@ -361,3 +361,65 @@ Stage Summary:
 - 修改 4 个文件：app-store.ts、content-calendar.tsx、copywriting-output.tsx、analytics-panel.tsx
 - 4 个功能全部实现并集成
 - 代码风格与现有项目一致
+
+---
+Task ID: 7
+Agent: Main Developer
+Task: 对接小红书平台 - 匹配小红书风格
+
+Work Log:
+- 分析现有项目架构，确定需要修改的文件范围
+- 更新 `src/types/index.ts`：新增 Platform、XHSContentType 类型，XHS内容类型标签/颜色映射，XHSNote 接口，parseXHSNote 解析函数
+- 更新 `prisma/schema.prisma`：ContentPost 新增 platform(wechat/xiaohongshu)、favorites(收藏数) 字段
+- 执行 `bun run db:push` 同步数据库
+- 更新 `src/store/app-store.ts`：新增 platform 状态和 setPlatform 方法
+- 创建 `src/components/right-panel/xiaohongshu-preview.tsx`：高仿真小红书笔记预览（手机外框、红标APP头、搜索栏、关注/发现/附近标签、双栏笔记卡片、封面图/视频、标题+作者+互动数据、底部导航栏、话题标签）
+- 创建 `src/components/right-panel/xiaohongshu-templates.tsx`：8个小红书专属模板（种草安利、好物测评、教程攻略、干货知识、生活Vlog、日常分享、好物推荐、合集清单），含分类筛选和AI生成功能
+- 更新 `src/app/page.tsx`：添加平台切换器（绿色朋友圈/红色小红书，motion动画滑动指示器），标题/副标题/Footer 动态切换，左侧面板标题/Tab 标签切换，右侧面板标题/Tab 标签切换，预览Tab内容按平台切换
+- 更新 `src/components/right-panel/copywriting-output.tsx`：支持小红书内容类型选项，描述文案按平台切换，API调用传递 platform 参数，互动数据增加收藏字段
+- 更新 `src/components/center-panel/content-calendar.tsx`：内容类型标签/颜色按平台切换，生成按钮颜色按平台切换，批量生成传递 platform 参数
+- 更新 `src/app/api/ai/generate/route.ts`：三种模式(auto/fragment/polish)均支持 xiaohongshu 平台专用 prompt
+- 更新 `src/app/api/ai/batch-generate/route.ts`：支持小红书30天计划生成（XHS内容类型分布、笔记格式输出），数据库保存 platform 字段
+- 更新 `src/app/api/ai/optimize/route.ts`：支持小红书笔记优化 prompt（标题CTR、emoji、hashtag、收藏价值）
+- 更新 `src/app/api/ai/analyze/route.ts`：支持小红书数据分析 prompt（收藏率、标签效果、标题CTR）
+
+### 新增文件
+- `src/components/right-panel/xiaohongshu-preview.tsx` - 小红书笔记预览组件
+- `src/components/right-panel/xiaohongshu-templates.tsx` - 小红书专属模板组件
+
+### 修改文件
+- `src/types/index.ts` - 新增平台类型、XHS内容类型、解析函数
+- `prisma/schema.prisma` - ContentPost 新增 platform、favorites 字段
+- `src/store/app-store.ts` - 新增 platform 状态
+- `src/app/page.tsx` - 平台切换器+UI动态切换
+- `src/components/right-panel/copywriting-output.tsx` - 平台适配
+- `src/components/center-panel/content-calendar.tsx` - 平台适配
+- `src/app/api/ai/generate/route.ts` - XHS prompt
+- `src/app/api/ai/batch-generate/route.ts` - XHS batch prompt
+- `src/app/api/ai/optimize/route.ts` - XHS optimize prompt
+- `src/app/api/ai/analyze/route.ts` - XHS analyze prompt
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（GET / 200）
+- ✅ 所有API路由正常返回200（/api/plan、/api/persona、/api/knowledge）
+- ✅ Prisma查询包含新的 platform 和 favorites 字段
+- ✅ 数据库Schema同步成功
+
+### 小红书风格特点
+1. 内容格式：标题(15-25字) + 正文(300-500字) + 话题标签(3-5个)
+2. 内容类型：种草安利、好物测评、教程攻略、干货知识、生活Vlog、日常分享、好物推荐、合集清单
+3. 互动指标：浏览、点赞、评论、收藏、转发（朋友圈4项，小红书5项增加收藏）
+4. 品牌色：红色(red-500/rose-500/rose-600)
+5. 预览组件：仿真小红书APP界面（红标搜索栏、双栏笔记卡片、底部+号发布按钮）
+
+Stage Summary:
+- 项目状态：稳定可运行，双平台(朋友圈+小红书)功能完整
+- 本轮新增 2 个文件，修改 10 个文件
+- 核心能力：一键切换朋友圈/小红书平台，所有AI生成、优化、分析均适配对应平台风格
+- 建议下一阶段优先事项：
+  1. 小红书封面图AI生成（使用 image-generation skill）
+  2. 笔记标题 A/B 测试对比
+  3. 话题标签智能推荐
+  4. 小红书爆款分析（基于热门话题趋势）
+  5. 多平台同时运营（一条内容同时适配朋友圈和小红书格式）

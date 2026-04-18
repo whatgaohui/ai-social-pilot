@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import type { ContentPost, ContentPlan } from "@/types";
-import { CONTENT_TYPE_LABELS, CONTENT_TYPE_COLORS, POST_STATUS_LABELS, ContentType, PostStatus } from "@/types";
+import { CONTENT_TYPE_LABELS, CONTENT_TYPE_COLORS, POST_STATUS_LABELS, XHS_CONTENT_TYPE_LABELS, XHS_CONTENT_TYPE_COLORS, ContentType, PostStatus, XHSContentType } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,8 +48,9 @@ export function ContentCalendar() {
   const {
     currentPlan, setCurrentPlan, contentPosts, setContentPosts,
     selectedDate, setSelectedDate, persona, knowledgeItems,
-    isGenerating, setIsGenerating, setSelectedPostId,
+    isGenerating, setIsGenerating, setSelectedPostId, platform,
   } = useAppStore();
+  const isXHS = platform === 'xiaohongshu';
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
@@ -114,7 +115,7 @@ export function ContentCalendar() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           month: monthStr,
-          theme: `${persona.name}的${format(currentMonth, "yyyy年M月")}朋友圈计划`,
+          theme: `${persona.name}的${format(currentMonth, "yyyy年M月")}${isXHS ? '小红书' : '朋友圈'}计划`,
           status: "draft",
         }),
       });
@@ -135,6 +136,7 @@ export function ContentCalendar() {
           knowledgeItems,
           startDate: format(startOfMonth(currentMonth), "yyyy-MM-dd"),
           month: format(currentMonth, "yyyy年M月"),
+          platform,
         }),
       });
 
@@ -260,7 +262,7 @@ export function ContentCalendar() {
               onClick={createPlanAndGenerate}
               disabled={isGenerating}
               size="sm"
-              className="h-8 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-purple-200 dark:shadow-purple-900/30"
+              className={`h-8 ${isXHS ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-md shadow-red-200 dark:shadow-red-900/30' : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md shadow-purple-200 dark:shadow-purple-900/30'} text-white`}
             >
               {isGenerating ? (
                 <>
@@ -320,7 +322,7 @@ export function ContentCalendar() {
             </div>
             <h3 className="text-base font-semibold mb-1">开始规划本月内容</h3>
             <p className="text-sm text-muted-foreground text-center max-w-[240px] mb-4">
-              AI将基于您的人设和知识库，自动生成30天朋友圈发布计划
+              AI将基于您的人设和知识库，自动生成30天${isXHS ? '小红书笔记' : '朋友圈'}发布计划
             </p>
             <Button
               onClick={createPlanAndGenerate}
@@ -388,10 +390,10 @@ export function ContentCalendar() {
                         {post && (
                           <div className="space-y-0.5">
                             <Badge
-                              className={`text-[9px] px-1 py-0 h-4 leading-4 ${CONTENT_TYPE_COLORS[post.contentType as ContentType] || ""}`}
+                              className={`text-[9px] px-1 py-0 h-4 leading-4 ${isXHS ? XHS_CONTENT_TYPE_COLORS[post.contentType as XHSContentType] || '' : CONTENT_TYPE_COLORS[post.contentType as ContentType] || ''}`}
                               variant="secondary"
                             >
-                              {CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType}
+                              {isXHS ? XHS_CONTENT_TYPE_LABELS[post.contentType as XHSContentType] || post.contentType : CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType}
                             </Badge>
                             <p className="text-[10px] leading-tight line-clamp-2 font-medium">
                               {post.topic}
@@ -473,10 +475,10 @@ export function ContentCalendar() {
                           <div className="flex-1 min-w-0 space-y-1.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <Badge
-                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${CONTENT_TYPE_COLORS[post.contentType as ContentType] || ""}`}
+                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${isXHS ? XHS_CONTENT_TYPE_COLORS[post.contentType as XHSContentType] || '' : CONTENT_TYPE_COLORS[post.contentType as ContentType] || ''}`}
                                 variant="secondary"
                               >
-                                {CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType}
+                                {isXHS ? XHS_CONTENT_TYPE_LABELS[post.contentType as XHSContentType] || post.contentType : CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType}
                               </Badge>
                               <Badge
                                 className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${STATUS_BADGE_COLORS[post.status as PostStatus] || ""}`}

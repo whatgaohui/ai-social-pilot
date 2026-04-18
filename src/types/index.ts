@@ -78,12 +78,24 @@ export interface AnalyticsSummary {
   updatedAt: string;
 }
 
+export type Platform = 'wechat' | 'xiaohongshu';
 export type ContentType = 'text' | 'image' | 'video' | 'mixed' | 'story' | 'insight' | 'interaction';
+export type XHSContentType = 'seeding' | 'review' | 'tutorial' | 'drygoods' | 'vlog' | 'daily' | 'recommend' | 'collection';
 export type PostStatus = 'planned' | 'generated' | 'optimized' | 'published';
 export type GenerationType = 'auto' | 'fragment' | 'polish';
 export type ToneType = 'professional' | 'casual' | 'humorous' | 'inspirational' | 'storytelling';
 export type StyleType = 'concise' | 'detailed' | 'emotional' | 'balanced';
 export type KnowledgeCategory = 'expertise' | 'experience' | 'opinion' | 'story' | 'resource';
+
+export const PLATFORM_LABELS: Record<Platform, string> = {
+  wechat: '朋友圈',
+  xiaohongshu: '小红书',
+};
+
+export const PLATFORM_COLORS: Record<Platform, string> = {
+  wechat: 'from-green-500 to-emerald-600',
+  xiaohongshu: 'from-red-500 to-rose-600',
+};
 
 export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   text: '纯文字',
@@ -93,6 +105,28 @@ export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   story: '故事分享',
   insight: '观点洞察',
   interaction: '互动话题',
+};
+
+export const XHS_CONTENT_TYPE_LABELS: Record<XHSContentType, string> = {
+  seeding: '种草安利',
+  review: '好物测评',
+  tutorial: '教程攻略',
+  drygoods: '干货知识',
+  vlog: '生活Vlog',
+  daily: '日常分享',
+  recommend: '好物推荐',
+  collection: '合集清单',
+};
+
+export const XHS_CONTENT_TYPE_COLORS: Record<XHSContentType, string> = {
+  seeding: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+  review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  tutorial: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+  drygoods: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  vlog: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  daily: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  recommend: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+  collection: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
 };
 
 export const POST_STATUS_LABELS: Record<PostStatus, string> = {
@@ -134,3 +168,40 @@ export const CONTENT_TYPE_COLORS: Record<ContentType, string> = {
   insight: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
   interaction: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
 };
+
+// Xiaohongshu note structure
+export interface XHSNote {
+  title: string;
+  body: string;
+  hashtags: string[];
+  coverType: 'photo' | 'video';
+}
+
+// Parse Xiaohongshu note from raw content
+export function parseXHSNote(content: string): XHSNote {
+  const lines = content.split('\n');
+  const hashtags: string[] = [];
+  const bodyLines: string[] = [];
+  let title = '';
+  
+  let isTitle = true;
+  for (const line of lines) {
+    if (isTitle && line.trim() && !line.startsWith('#') && !title) {
+      title = line.trim();
+      isTitle = false;
+    } else if (line.trim().startsWith('#')) {
+      const tag = line.trim().replace(/^#+\s*/, '');
+      if (tag) hashtags.push(tag);
+    } else if (line.trim()) {
+      bodyLines.push(line);
+      isTitle = false;
+    }
+  }
+  
+  return {
+    title: title || '未命名笔记',
+    body: bodyLines.join('\n'),
+    hashtags,
+    coverType: 'photo',
+  };
+}

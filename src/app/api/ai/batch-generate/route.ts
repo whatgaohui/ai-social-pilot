@@ -4,7 +4,8 @@ import { db } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
-    const { planId, persona, knowledgeItems, startDate, month } = await request.json();
+    const { planId, persona, knowledgeItems, startDate, month, platform = 'wechat' } = await request.json();
+    const isXHS = platform === 'xiaohongshu';
     
     const ai = await createAIClient();
     
@@ -24,7 +25,47 @@ export async function POST(request: NextRequest) {
 ${knowledgeItems.slice(0, 15).map((item: { title: string; content: string; category: string }, i: number) => `${i + 1}. [${item.category}] ${item.title}: ${item.content.slice(0, 150)}`).join('\n')}
 ` : '';
 
-    const systemPrompt = `你是一位资深的朋友圈内容运营专家，专精于为个人IP打造者制定30天内容计划。
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    if (isXHS) {
+      systemPrompt = `你是一位资深的小红书内容运营专家，专精于为个人IP打造者制定30天小红书笔记计划。
+${personaContext}
+
+你需要为用户规划30天的小红书笔记发布计划，每天一篇。
+
+内容类型分配原则（30天周期）：
+- 种草安利（seeding）：约7天（高互动内容）
+- 好物测评（review）：约4天（信任建立）
+- 教程攻略（tutorial）：约5天（收藏向内容）
+- 干货知识（drygoods）：约5天（价值输出）
+- 生活Vlog（vlog）：约3天（真实生活）
+- 日常分享（daily）：约4天（日常更新）
+- 好物推荐（recommend）：约2天（推荐好物）
+
+要求：
+1. 基于知识库进行原创创作，绝不抄袭
+2. 每篇笔记格式：标题（15-25字，有噱头）+ 正文 + 话题标签（3-5个）
+3. 正文大量使用emoji表情，段落简短便于手机阅读
+4. 内容要有价值感，让用户产生"收藏"欲望
+5. 每天内容主题不重复
+6. 正文控制在300-500字
+7. 语气真实自然，像朋友在分享
+8. 回复必须是严格的JSON数组格式`;
+
+      userPrompt = `请为${month}规划完整的30天小红书笔记内容，起始日期为${startDate}。
+
+${knowledgeContext}
+
+请以严格的JSON数组格式返回，每个元素包含：
+- scheduledDate: 日期（YYYY-MM-DD格式）
+- contentType: 内容类型（seeding/review/tutorial/drygoods/vlog/daily/recommend）
+- topic: 主题标题（10字以内）
+- content: 完整笔记内容（标题+正文+话题标签）
+
+只返回JSON数组，不要包含其他文字。`;
+    } else {
+      systemPrompt = `你是一位资深的朋友圈内容运营专家，专精于为个人IP打造者制定30天内容计划。
 ${personaContext}
 
 你需要为用户规划30天的朋友圈发布计划，每天一条。
@@ -46,7 +87,7 @@ ${personaContext}
 6. 适当使用emoji
 7. 回复必须是严格的JSON数组格式`;
 
-    const userPrompt = `请为${month}规划完整的30天朋友圈内容，起始日期为${startDate}。
+      userPrompt = `请为${month}规划完整的30天朋友圈内容，起始日期为${startDate}。
 
 ${knowledgeContext}
 
@@ -57,6 +98,7 @@ ${knowledgeContext}
 - content: 完整文案内容
 
 只返回JSON数组，不要包含其他文字。`;
+    }
 
     let result = await ai.chatCompletion([
       { role: 'system', content: systemPrompt },
@@ -78,6 +120,7 @@ ${knowledgeContext}
         data: {
           planId,
           scheduledDate: post.scheduledDate,
+          platform,
           contentType: post.contentType,
           topic: post.topic,
           content: post.content,

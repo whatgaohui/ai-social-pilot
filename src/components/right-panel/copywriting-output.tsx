@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import type { ContentPost } from "@/types";
-import { CONTENT_TYPE_LABELS, CONTENT_TYPE_COLORS, POST_STATUS_LABELS, ContentType, PostStatus, GenerationType } from "@/types";
+import { CONTENT_TYPE_LABELS, CONTENT_TYPE_COLORS, POST_STATUS_LABELS, XHS_CONTENT_TYPE_LABELS, XHS_CONTENT_TYPE_COLORS, ContentType, PostStatus, GenerationType, XHSContentType } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,9 @@ export function CopywritingOutput() {
   const {
     contentPosts, selectedPostId, selectedDate,
     persona, knowledgeItems, updateContentPost, setSelectedPostId,
-    currentPlan, addContentPost,
+    currentPlan, addContentPost, platform,
   } = useAppStore();
+  const isXHS = platform === 'xiaohongshu';
 
   const selectedPost = contentPosts.find(p => p.id === selectedPostId);
   const [editing, setEditing] = useState(false);
@@ -96,6 +97,7 @@ export function CopywritingOutput() {
           persona,
           feedback: "",
           knowledgeItems,
+          platform,
         }),
       });
       if (res.ok) {
@@ -164,12 +166,13 @@ export function CopywritingOutput() {
           persona,
           knowledgeItems,
           existingContent: polishInput,
+          platform,
         }),
       });
       if (res.ok) {
         const data = await res.json();
         setPolishResult(data.content);
-        toast.success("润色完成");
+        toast.success(isXHS ? "笔记润色完成" : "润色完成");
       }
     } catch {
       toast.error("润色失败");
@@ -198,12 +201,13 @@ export function CopywritingOutput() {
             content: fragmentInput,
             contentType: fragmentType,
           },
+          platform,
         }),
       });
       if (res.ok) {
         const data = await res.json();
         setFragmentResult(data.content);
-        toast.success("碎片转化完成");
+        toast.success(isXHS ? "碎片转化为笔记完成" : "碎片转化完成");
       }
     } catch {
       toast.error("转化失败");
@@ -242,12 +246,14 @@ export function CopywritingOutput() {
           contentType: pubContentType,
           topic: pubTopic,
           content: pubContent,
+          platform,
           status: "generated",
           generationType: "polish",
           likes: 0,
           comments: 0,
           shares: 0,
           views: 0,
+          favorites: 0,
           aiScore: 0,
           feedback: "",
         }),
@@ -272,15 +278,19 @@ export function CopywritingOutput() {
     }
   };
 
-  const contentTypeOptions: { value: ContentType; label: string }[] = [
-    { value: "text", label: "纯文字" },
-    { value: "image", label: "图文搭配" },
-    { value: "video", label: "视频动态" },
-    { value: "mixed", label: "混合内容" },
-    { value: "story", label: "故事分享" },
-    { value: "insight", label: "观点洞察" },
-    { value: "interaction", label: "互动话题" },
-  ];
+  const contentTypeOptions = isXHS
+    ? (Object.entries(XHS_CONTENT_TYPE_LABELS) as [XHSContentType, string][]).map(([value, label]) => ({ value, label }))
+    : (Object.entries(CONTENT_TYPE_LABELS) as [ContentType, string][]).map(([value, label]) => ({ value, label }));
+
+  const getContentTypeColor = (ct: string) => {
+    if (isXHS) return XHS_CONTENT_TYPE_COLORS[ct as XHSContentType] || '';
+    return CONTENT_TYPE_COLORS[ct as ContentType] || '';
+  };
+
+  const getContentTypeLabel = (ct: string) => {
+    if (isXHS) return XHS_CONTENT_TYPE_LABELS[ct as XHSContentType] || ct;
+    return CONTENT_TYPE_LABELS[ct as ContentType] || ct;
+  };
 
   const renderPublishForm = (compact?: boolean) => (
     <div className="space-y-2">
@@ -304,7 +314,7 @@ export function CopywritingOutput() {
                 key={ct.value}
                 variant={pubContentType === ct.value ? "secondary" : "ghost"}
                 size="sm"
-                className={`h-6 px-2 text-[10px] ${pubContentType === ct.value ? CONTENT_TYPE_COLORS[ct.value] : ""}`}
+                className={`h-6 px-2 text-[10px] ${pubContentType === ct.value ? getContentTypeColor(ct.value) : ""}`}
                 onClick={() => setPubContentType(ct.value)}
               >
                 {ct.label}
@@ -356,7 +366,7 @@ export function CopywritingOutput() {
               </CardHeader>
               <CardContent className="px-4 pb-4 space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  把大白话粘贴进来，AI帮您优化成优美的朋友圈文案
+                  {isXHS ? '把大白话粘贴进来，AI帮您优化成吸引人的小红书笔记' : '把大白话粘贴进来，AI帮您优化成优美的朋友圈文案'}
                 </p>
                 <Textarea
                   placeholder="粘贴您的日常文字..."
@@ -415,7 +425,7 @@ export function CopywritingOutput() {
               </CardHeader>
               <CardContent className="px-4 pb-4 space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  粘贴日常对话、截图文字等碎片内容，AI转化为优质朋友圈文案
+                  {isXHS ? '粘贴日常对话、截图文字等碎片内容，AI转化为小红书笔记' : '粘贴日常对话、截图文字等碎片内容，AI转化为优质朋友圈文案'}
                 </p>
                 <Textarea
                   placeholder="粘贴对话记录、想法片段、聊天截图文字..."
@@ -531,8 +541,8 @@ export function CopywritingOutput() {
               <span>{selectedPost.scheduledDate}</span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge className={CONTENT_TYPE_COLORS[selectedPost.contentType as ContentType] || ""} variant="secondary">
-                {CONTENT_TYPE_LABELS[selectedPost.contentType as ContentType] || selectedPost.contentType}
+              <Badge className={getContentTypeColor(selectedPost.contentType)} variant="secondary">
+                {getContentTypeLabel(selectedPost.contentType)}
               </Badge>
               <Badge variant="outline">{POST_STATUS_LABELS[selectedPost.status as PostStatus]}</Badge>
               {selectedPost.generationType === "auto" && (
@@ -673,6 +683,7 @@ export function CopywritingOutput() {
                         likes: Math.floor(Math.random() * 50) + 5,
                         comments: Math.floor(Math.random() * 20),
                         shares: Math.floor(Math.random() * 10),
+                        ...(isXHS ? { favorites: Math.floor(Math.random() * 30) + 2 } : {}),
                       };
                       const res = await fetch(`/api/content/${selectedPost.id}`, {
                         method: "PUT",
@@ -693,11 +704,12 @@ export function CopywritingOutput() {
               </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="grid grid-cols-4 gap-2">
+              <div className={`grid gap-2 ${isXHS ? 'grid-cols-5' : 'grid-cols-4'}`}>
                 {[
                   { label: "浏览", value: selectedPost.views || "—" },
                   { label: "点赞", value: selectedPost.likes || "—" },
                   { label: "评论", value: selectedPost.comments || "—" },
+                  ...(isXHS ? [{ label: "收藏", value: (selectedPost as Record<string, unknown>).favorites || "—" }] : []),
                   { label: "转发", value: selectedPost.shares || "—" },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">

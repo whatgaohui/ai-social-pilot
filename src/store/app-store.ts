@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Persona, KnowledgeItem, ContentPlan, ContentPost, Material, AnalyticsSummary } from '@/types';
+import type { Persona, KnowledgeItem, ContentPlan, ContentPost, Material, AnalyticsSummary, Platform } from '@/types';
 
 interface AppState {
   // Persona
@@ -46,6 +46,10 @@ interface AppState {
   // Right panel active tab
   rightPanelTab: string;
   setRightPanelTab: (tab: string) => void;
+
+  // Platform
+  platform: Platform;
+  setPlatform: (platform: Platform) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -97,4 +101,8 @@ export const useAppStore = create<AppState>((set) => ({
   // Right panel tab
   rightPanelTab: 'copywriting',
   setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
+
+  // Platform
+  platform: 'wechat',
+  setPlatform: (platform) => set({ platform }),
 }));

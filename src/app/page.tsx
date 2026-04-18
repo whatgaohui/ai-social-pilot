@@ -10,6 +10,9 @@ import { CopywritingOutput } from "@/components/right-panel/copywriting-output";
 import { AnalyticsPanel } from "@/components/right-panel/analytics-panel";
 import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
+import { XiaohongshuPreview } from "@/components/right-panel/xiaohongshu-preview";
+import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templates";
+import { type Platform, PLATFORM_LABELS } from "@/types";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -20,7 +23,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { AISettingsPanel } from "@/components/ai-settings-panel";
 import {
   Sparkles, User, BookOpen, CalendarDays, PenTool,
-  BarChart3, Wand2, Zap, Menu, X, FileText, Smartphone
+  BarChart3, Wand2, Zap, Menu, X, FileText, Smartphone, MessageCircle
 } from "lucide-react";
 
 function DataInitializer() {
@@ -80,17 +83,17 @@ function DataInitializer() {
 }
 
 function LeftPanel() {
-  const { leftPanelTab, setLeftPanelTab } = useAppStore();
+  const { leftPanelTab, setLeftPanelTab, platform } = useAppStore();
 
   return (
     <div className="flex flex-col h-full">
       {/* Left Panel Header */}
       <div className="px-4 pt-4 pb-2">
         <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
-          <div className="h-6 w-6 rounded-md bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+          <div className={`h-6 w-6 rounded-md bg-gradient-to-br flex items-center justify-center ${platform === 'wechat' ? 'from-violet-500 to-purple-600' : 'from-red-500 to-rose-600'}`}>
             <Sparkles className="h-3.5 w-3.5 text-white" />
           </div>
-          人设与素材
+          {platform === 'wechat' ? '人设与素材' : '小红书运营'}
         </h2>
         <Tabs value={leftPanelTab} onValueChange={setLeftPanelTab}>
           <TabsList className="w-full h-8 bg-muted/50 p-0.5">
@@ -107,7 +110,7 @@ function LeftPanel() {
             </TabsTrigger>
             <TabsTrigger value="templates" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
               <FileText className="h-3 w-3" />
-              模板
+              {platform === 'wechat' ? '模板' : '小红书模板'}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -115,14 +118,14 @@ function LeftPanel() {
 
       {/* Left Panel Content */}
       <ScrollArea className="flex-1 px-4 pb-4">
-        {leftPanelTab === "persona" ? <PersonaForm /> : leftPanelTab === "knowledge" ? <KnowledgeBase /> : <CopywritingTemplates />}
+        {leftPanelTab === "persona" ? <PersonaForm /> : leftPanelTab === "knowledge" ? <KnowledgeBase /> : platform === 'wechat' ? <CopywritingTemplates /> : <XiaohongshuTemplates />}
       </ScrollArea>
     </div>
   );
 }
 
 function RightPanel() {
-  const { rightPanelTab, setRightPanelTab, contentPosts, selectedPostId } = useAppStore();
+  const { rightPanelTab, setRightPanelTab, contentPosts, selectedPostId, platform } = useAppStore();
   const selectedPost = contentPosts.find(p => p.id === selectedPostId);
 
   return (
@@ -130,16 +133,16 @@ function RightPanel() {
       {/* Right Panel Header */}
       <div className="px-4 pt-4 pb-2">
         <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
-          <div className="h-6 w-6 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+          <div className={`h-6 w-6 rounded-md bg-gradient-to-br flex items-center justify-center ${platform === 'wechat' ? 'from-emerald-500 to-teal-600' : 'from-red-500 to-rose-600'}`}>
             <PenTool className="h-3.5 w-3.5 text-white" />
           </div>
-          文案与分析
+          {platform === 'wechat' ? '文案与分析' : '笔记与数据'}
         </h2>
         <Tabs value={rightPanelTab} onValueChange={setRightPanelTab}>
           <TabsList className="w-full h-8 bg-muted/50 p-0.5">
             <TabsTrigger value="copywriting" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
               <Wand2 className="h-3 w-3" />
-              文案输出
+              {platform === 'wechat' ? '文案输出' : '笔记输出'}
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
               <BarChart3 className="h-3 w-3" />
@@ -152,7 +155,7 @@ function RightPanel() {
             </TabsTrigger>
             <TabsTrigger value="preview" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
               <Smartphone className="h-3 w-3" />
-              朋友圈预览
+              {platform === 'wechat' ? '朋友圈预览' : '小红书预览'}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -165,17 +168,29 @@ function RightPanel() {
         <AnalyticsPanel />
       ) : (
         <div className="flex-1 px-4 py-4">
-          {selectedPost ? (
-            <WeChatPreview
-              post={selectedPost}
-              personaName={useAppStore.getState().persona?.name || "我"}
-            />
+          {platform === 'wechat' ? (
+            selectedPost ? (
+              <WeChatPreview
+                post={selectedPost}
+                personaName={useAppStore.getState().persona?.name || "我"}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <Smartphone className="h-12 w-12 mb-3 opacity-20" />
+                <p className="text-sm text-center">请先在日历中选择一条内容</p>
+                <p className="text-xs mt-1 text-center">点击日历中的日期即可预览朋友圈效果</p>
+              </div>
+            )
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <Smartphone className="h-12 w-12 mb-3 opacity-20" />
-              <p className="text-sm text-center">请先在日历中选择一条内容</p>
-              <p className="text-xs mt-1 text-center">点击日历中的日期即可预览朋友圈效果</p>
-            </div>
+            selectedPost ? (
+              <XiaohongshuPreview post={selectedPost} personaName={useAppStore.getState().persona?.name || "我"} />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <Smartphone className="h-12 w-12 mb-3 opacity-20" />
+                <p className="text-sm text-center">请先在日历中选择一条内容</p>
+                <p className="text-xs mt-1 text-center">点击日历中的日期即可预览小红书笔记效果</p>
+              </div>
+            )
           )}
         </div>
       )}
@@ -184,7 +199,7 @@ function RightPanel() {
 }
 
 export default function Home() {
-  const { isGenerating, persona, knowledgeItems } = useAppStore();
+  const { isGenerating, persona, knowledgeItems, platform, setPlatform } = useAppStore();
   const [mobilePanel, setMobilePanel] = useState<"left" | "center" | "right">("center");
   const showWelcome = !persona || knowledgeItems.length < 2;
 
@@ -195,14 +210,45 @@ export default function Home() {
       <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center shadow-md shadow-violet-200 dark:shadow-violet-900/40">
+            <div className={`h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-200 dark:shadow-violet-900/40' : 'from-red-500 to-rose-600 shadow-red-200 dark:shadow-red-900/40'}`}>
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <div>
-              <h1 className="text-base font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                朋友圈AI运营助手
+              <h1 className={`text-base font-bold bg-clip-text text-transparent ${platform === 'wechat' ? 'bg-gradient-to-r from-violet-600 to-purple-600' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}>
+                {platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}
               </h1>
-              <p className="text-[10px] text-muted-foreground -mt-0.5">个人IP打造 · 全自动内容规划</p>
+              <p className="text-[10px] text-muted-foreground -mt-0.5">{platform === 'wechat' ? '个人IP打造 · 全自动内容规划' : '爆款内容打造 · 全自动笔记生成'}</p>
+            </div>
+          </div>
+
+          {/* Platform Switcher - Desktop */}
+          <div className="hidden sm:flex items-center">
+            <div className="relative flex items-center h-8 rounded-full bg-muted/80 p-0.5">
+              <motion.div
+                className="absolute h-7 rounded-full"
+                layoutId="platform-indicator"
+                style={{
+                  width: 'calc(50% - 2px)',
+                  left: platform === 'wechat' ? '2px' : 'calc(50%)',
+                }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              >
+                <div className={`h-full w-full rounded-full ${platform === 'wechat' ? 'bg-green-500' : 'bg-red-500'}`} />
+              </motion.div>
+              <button
+                onClick={() => setPlatform('wechat')}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-colors ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
+              >
+                <span className="h-2 w-2 rounded-full bg-green-400" />
+                朋友圈
+              </button>
+              <button
+                onClick={() => setPlatform('xiaohongshu')}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-colors ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
+              >
+                <span className="h-2 w-2 rounded-full bg-red-400" />
+                小红书
+              </button>
             </div>
           </div>
 
@@ -330,7 +376,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t bg-background/80 backdrop-blur-md py-2 px-4 mt-auto">
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>朋友圈AI运营助手 · 让每条朋友圈都有价值</span>
+          <span>{platform === 'wechat' ? '朋友圈AI运营助手 · 让每条朋友圈都有价值' : '小红书AI运营助手 · 让每篇笔记都成爆款'}</span>
           <span className="flex items-center gap-1">
             Powered by <Sparkles className="h-3 w-3 text-violet-500" /> AI
           </span>
