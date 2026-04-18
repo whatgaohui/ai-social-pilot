@@ -42,7 +42,27 @@ const STATUS_BADGE_COLORS: Record<PostStatus, string> = {
   published: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300",
 };
 
+const PLATFORM_DOT_COLORS: Record<string, string> = {
+  wechat: "bg-green-500",
+  xiaohongshu: "bg-red-500",
+};
+
+const PLATFORM_RING_COLORS: Record<string, string> = {
+  wechat: "ring-green-400",
+  xiaohongshu: "ring-red-400",
+};
+
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
+
+// Platform-aware content type helpers
+function getContentTypeLabelForPost(post: ContentPost) {
+  if (post.platform === 'xiaohongshu') return XHS_CONTENT_TYPE_LABELS[post.contentType as XHSContentType] || post.contentType;
+  return CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType;
+}
+function getContentTypeColorForPost(post: ContentPost) {
+  if (post.platform === 'xiaohongshu') return XHS_CONTENT_TYPE_COLORS[post.contentType as XHSContentType] || '';
+  return CONTENT_TYPE_COLORS[post.contentType as ContentType] || '';
+}
 
 export function ContentCalendar() {
   const {
@@ -55,6 +75,7 @@ export function ContentCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [platformFilter, setPlatformFilter] = useState<'all' | 'wechat' | 'xiaohongshu'>('all');
 
   // Fetch plans
   useEffect(() => {
@@ -163,15 +184,22 @@ export function ContentCalendar() {
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const startDayOfWeek = (getDay(monthStart) + 6) % 7; // Monday = 0
 
-  // Filter posts by current platform
+  // Filter posts by platform filter (all / current / specific)
   const platformPosts = useMemo(() => {
-    return contentPosts.filter(p => !p.platform || p.platform === platform);
-  }, [contentPosts, platform]);
+    return contentPosts.filter(p => {
+      if (platformFilter === 'all') return true;
+      if (!p.platform && platformFilter === 'wechat') return true;
+      return p.platform === platformFilter;
+    });
+  }, [contentPosts, platformFilter]);
 
   const postsByDate = useMemo(() => {
-    const map: Record<string, ContentPost> = {};
+    const map: Record<string, ContentPost[]> = {};
     platformPosts.forEach((post) => {
-      map[post.scheduledDate] = post;
+      if (!map[post.scheduledDate]) {
+        map[post.scheduledDate] = [];
+      }
+      map[post.scheduledDate].push(post);
     });
     return map;
   }, [platformPosts]);
@@ -200,9 +228,11 @@ export function ContentCalendar() {
 
   const handleDayClick = (dateStr: string) => {
     setSelectedDate(dateStr);
-    const post = postsByDate[dateStr];
-    if (post) {
-      setSelectedPostId(post.id);
+    const posts = postsByDate[dateStr];
+    if (posts && posts.length > 0) {
+      // Prefer the post matching current platform
+      const match = posts.find(p => !p.platform || p.platform === platform);
+      setSelectedPostId((match || posts[0]).id);
     }
   };
 
@@ -242,6 +272,32 @@ export function ContentCalendar() {
             </Button>
           </div>
           <div className="flex items-center gap-2">
+            {/* Platform Filter */}
+            {contentPosts.length > 0 && (
+              <div className="flex items-center bg-muted rounded-md p-0.5">
+                {([
+                  { value: 'all' as const, label: '全部', dot: false },
+                  { value: 'wechat' as const, label: '朋友圈', dot: true, dotColor: 'bg-green-500' },
+                  { value: 'xiaohongshu' as const, label: '小红书', dot: true, dotColor: 'bg-red-500' },
+                ]).map((pf) => (
+                  <Button
+                    key={pf.value}
+                    variant={platformFilter === pf.value ? "secondary" : "ghost"}
+                    size="sm"
+                    className={`h-7 px-2 text-[10px] gap-1 ${platformFilter === pf.value && pf.dot ? (pf.value === 'wechat' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300') : ''}`}
+                    onClick={() => setPlatformFilter(pf.value)}
+                  >
+                    {pf.dot && <div className={`h-1.5 w-1.5 rounded-full ${pf.dotColor}`} />}
+                    {pf.label}
+                    {pf.value !== 'all' && (
+                      <span className="text-[9px] text-muted-foreground">
+                        ({contentPosts.filter(p => pf.value === 'wechat' ? (!p.platform || p.platform === 'wechat') : p.platform === 'xiaohongshu').length})
+                      </span>
+                    )}
+                  </Button>
+                ))}
+              </div>
+            )}
             {/* View Toggle */}
             {platformPosts.length > 0 && (
               <div className="flex items-center bg-muted rounded-md p-0.5">
@@ -295,9 +351,14 @@ export function ContentCalendar() {
               <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3" />
                 总计 <strong className="text-foreground">{stats.total}</strong>
-                {stats.total !== contentPosts.length && (
+                {platformFilter !== 'all' && (
                   <Badge variant="secondary" className="h-4 px-1 text-[9px] tabular-nums">
-                    {isXHS ? '小红书' : '朋友圈'}
+                    {platformFilter === 'xiaohongshu' ? '小红书' : '朋友圈'}
+                  </Badge>
+                )}
+                {platformFilter === 'all' && (
+                  <Badge variant="secondary" className="h-4 px-1 text-[9px] tabular-nums">
+                    全平台
                   </Badge>
                 )}
               </span>
@@ -371,9 +432,15 @@ export function ContentCalendar() {
                   {/* Day cells */}
                   {daysInMonth.map((day) => {
                     const dateStr = format(day, "yyyy-MM-dd");
-                    const post = postsByDate[dateStr];
+                    const posts = postsByDate[dateStr];
                     const today = isToday(day);
                     const isSelected = selectedDate === dateStr;
+                    const primaryPost = posts?.[0];
+
+                    // Determine platform ring color when showing all
+                    const platformRing = platformFilter === 'all' && posts?.length === 1 && primaryPost?.platform
+                      ? PLATFORM_RING_COLORS[primaryPost.platform] || ''
+                      : '';
 
                     return (
                       <motion.div
@@ -383,9 +450,10 @@ export function ContentCalendar() {
                         onClick={() => handleDayClick(dateStr)}
                         className={`
                           aspect-[4/3] rounded-lg p-1.5 cursor-pointer transition-all duration-200 relative overflow-hidden
-                          ${post ? STATUS_COLORS[post.status as PostStatus] || "bg-muted/50" : "bg-muted/30"}
+                          ${primaryPost ? STATUS_COLORS[primaryPost.status as PostStatus] || "bg-muted/50" : "bg-muted/30"}
                           ${isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : ""}
-                          ${today && !post ? "ring-1 ring-primary/40 bg-primary/[0.03]" : ""}
+                          ${platformRing && !isSelected ? `ring-1 ${platformRing}` : ""}
+                          ${today && !primaryPost ? "ring-1 ring-primary/40 bg-primary/[0.03]" : ""}
                           hover:shadow-md hover:scale-[1.01] active:scale-[0.99]
                         `}
                       >
@@ -393,25 +461,45 @@ export function ContentCalendar() {
                           <span className={`text-xs font-medium ${today ? "text-primary font-bold" : ""}`}>
                             {format(day, "d")}
                           </span>
-                          {post && (
-                            <div className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
-                          )}
+                          <div className="flex items-center gap-0.5">
+                            {/* Platform dots when multi-platform or all view */}
+                            {platformFilter === 'all' && posts && posts.length > 1 && (
+                              <div className="flex items-center gap-0.5">
+                                {posts.map((p, i) => (
+                                  <div key={i} className={`h-1.5 w-1.5 rounded-full ${PLATFORM_DOT_COLORS[p.platform || 'wechat']}`} />
+                                ))}
+                              </div>
+                            )}
+                            {/* Status dot */}
+                            {primaryPost && posts?.length <= 1 && (
+                              <div className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT_COLORS[primaryPost.status as PostStatus]}`} />
+                            )}
+                          </div>
                         </div>
-                        {post && (
+                        {primaryPost && (
                           <div className="space-y-0.5">
+                            {/* Platform indicator badge in all-view */}
+                            {platformFilter === 'all' && primaryPost.platform && (
+                              <Badge
+                                className={`text-[8px] px-1 py-0 h-3 leading-3 ${primaryPost.platform === 'xiaohongshu' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300'}`}
+                                variant="secondary"
+                              >
+                                {primaryPost.platform === 'xiaohongshu' ? '红' : '绿'}
+                              </Badge>
+                            )}
                             <Badge
-                              className={`text-[9px] px-1 py-0 h-4 leading-4 ${isXHS ? XHS_CONTENT_TYPE_COLORS[post.contentType as XHSContentType] || '' : CONTENT_TYPE_COLORS[post.contentType as ContentType] || ''}`}
+                              className={`text-[9px] px-1 py-0 h-4 leading-4 ${getContentTypeColorForPost(primaryPost)}`}
                               variant="secondary"
                             >
-                              {isXHS ? XHS_CONTENT_TYPE_LABELS[post.contentType as XHSContentType] || post.contentType : CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType}
+                              {getContentTypeLabelForPost(primaryPost)}
                             </Badge>
                             <p className="text-[10px] leading-tight line-clamp-2 font-medium">
-                              {post.topic}
+                              {primaryPost.topic}
                             </p>
-                            {post.aiScore > 0 && (
+                            {primaryPost.aiScore > 0 && (
                               <div className="flex items-center gap-0.5">
                                 <span className="text-[9px] text-amber-600 dark:text-amber-400">★</span>
-                                <span className="text-[9px] text-muted-foreground">{post.aiScore}</span>
+                                <span className="text-[9px] text-muted-foreground">{primaryPost.aiScore}</span>
                               </div>
                             )}
                           </div>
@@ -424,6 +512,19 @@ export function ContentCalendar() {
                 {/* Legend */}
                 {platformPosts.length > 0 && (
                   <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t">
+                    {platformFilter === 'all' && (
+                      <>
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                          <span className="text-[10px] text-muted-foreground">朋友圈</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                          <span className="text-[10px] text-muted-foreground">小红书</span>
+                        </div>
+                        <div className="w-px h-3 bg-border" />
+                      </>
+                    )}
                     {(["planned", "generated", "optimized", "published"] as PostStatus[]).map((status) => (
                       <div key={status} className="flex items-center gap-1.5">
                         <div className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_COLORS[status]}`} />
@@ -484,11 +585,20 @@ export function ContentCalendar() {
                           {/* Content Column */}
                           <div className="flex-1 min-w-0 space-y-1.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
+                              {/* Platform indicator */}
+                              {post.platform && (
+                                <Badge
+                                  className={`text-[8px] px-1 py-0 h-3.5 leading-3 ${post.platform === 'xiaohongshu' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300'}`}
+                                  variant="secondary"
+                                >
+                                  {post.platform === 'xiaohongshu' ? '小红书' : '朋友圈'}
+                                </Badge>
+                              )}
                               <Badge
-                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${isXHS ? XHS_CONTENT_TYPE_COLORS[post.contentType as XHSContentType] || '' : CONTENT_TYPE_COLORS[post.contentType as ContentType] || ''}`}
+                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${getContentTypeColorForPost(post)}`}
                                 variant="secondary"
                               >
-                                {isXHS ? XHS_CONTENT_TYPE_LABELS[post.contentType as XHSContentType] || post.contentType : CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType}
+                                {getContentTypeLabelForPost(post)}
                               </Badge>
                               <Badge
                                 className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${STATUS_BADGE_COLORS[post.status as PostStatus] || ""}`}

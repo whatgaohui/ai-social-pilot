@@ -16,6 +16,9 @@ import { Separator } from "@/components/ui/separator";
 import { ABComparison } from "@/components/right-panel/ab-comparison";
 import { HashtagRecommender } from "@/components/right-panel/hashtag-recommender";
 import { CoverImageGenerator } from "@/components/right-panel/cover-image-generator";
+import { TitleABTest } from "@/components/right-panel/title-ab-test";
+import { CrossPlatformPublish } from "@/components/right-panel/cross-platform-publish";
+import { QualityScorer } from "@/components/right-panel/quality-scorer";
 import {
   Copy, Wand2, Check, Edit3, Send, Loader2, Sparkles,
   FileText, RefreshCw, MessageSquare, Upload, Lightbulb, Calendar,
@@ -720,7 +723,7 @@ export function CopywritingOutput() {
                   { label: "浏览", value: selectedPost.views || "—" },
                   { label: "点赞", value: selectedPost.likes || "—" },
                   { label: "评论", value: selectedPost.comments || "—" },
-                  ...(isXHS ? [{ label: "收藏", value: (selectedPost as Record<string, unknown>).favorites || "—" }] : []),
+                  ...(isXHS ? [{ label: "收藏", value: selectedPost.favorites || "—" }] : []),
                   { label: "转发", value: selectedPost.shares || "—" },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
@@ -736,6 +739,15 @@ export function CopywritingOutput() {
 
           {/* A/B Comparison Test */}
           <ABComparison post={selectedPost} />
+
+          {/* Title A/B Test - Xiaohongshu only */}
+          <TitleABTest post={selectedPost} />
+
+          {/* Quality Scorer */}
+          <QualityScorer post={selectedPost} />
+
+          {/* Cross-Platform Publish */}
+          <CrossPlatformPublish />
 
           {/* Hashtag Recommender - Xiaohongshu only */}
           {isXHS && (

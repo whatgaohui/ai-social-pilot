@@ -37,6 +37,7 @@ export interface ContentPost {
   id: string;
   planId: string;
   scheduledDate: string;
+  platform?: string;
   contentType: string;
   topic: string;
   content: string;
@@ -46,6 +47,7 @@ export interface ContentPost {
   comments: number;
   shares: number;
   views: number;
+  favorites?: number;
   aiScore: number;
   feedback: string;
   createdAt: string;

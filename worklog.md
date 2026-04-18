@@ -514,3 +514,110 @@ Stage Summary:
   4. 文案质量评分系统优化
   5. 小红书笔记排版优化（间距、emoji密度、换行节奏）
   6. 运营日历支持多平台颜色区分
+
+---
+Task ID: 9
+Agent: Main Developer
+Task: 第九轮开发 - 标题AB测试+多平台同步发布+质量评分+日历增强
+
+Work Log:
+- 读取 worklog.md 了解前8轮开发成果
+- 运行 lint 检查代码质量（零错误通过）
+- 使用 Explore agent 全面分析项目架构，发现并修复关键bug
+
+### Bug修复
+1. **TypeScript类型不匹配**（高优先级）：
+   - 问题：ContentPost 接口缺少 platform 和 favorites 字段，但 Prisma schema 和组件中已使用
+   - 修复：在 types/index.ts 中添加 platform?: string 和 favorites?: number 字段
+   - 修复：copywriting-output.tsx 中移除不安全的 Record 类型转换
+
+### 新功能
+
+1. **小红书笔记标题 A/B 测试**（title-ab-test.tsx）：
+   - 仅在小红书平台显示
+   - AI 生成 3 个替代标题（种草风、悬念风、数字风）
+   - 4 个标题卡片（A=当前+B/C/D=AI生成），各有独特配色（violet/emerald/sky/amber）
+   - 每个标题卡片显示：字数统计、emoji密度指示器、启发式质量评分（0-100）
+   - 选中标题显示 Crown 皇冠动画图标
+   - "应用选中标题"按钮 → PUT /api/content/:id 更新 topic 字段
+   - "复制全部标题"按钮
+   - 重新生成按钮
+   - framer-motion 交错入场动画
+
+2. **多平台同步发布**（cross-platform-publish.tsx）：
+   - 自动检测目标平台（当前平台的对面）
+   - 检查是否已有跨平台版本（同日期不同平台）
+   - AI 改编内容为另一平台风格（朋友圈↔小红书风格转换）
+   - 改编后预览：平台 Badge、内容预览（可复制）、字数统计
+   - 内容类型选择器（适配目标平台的类型选项）
+   - 日期选择器（默认为原始帖子日期）
+   - "发布到日历"按钮 → POST /api/content 保存到数据库
+   - 已有同步版本时显示"已同步" Badge + "查看该版本"按钮
+   - cyan→violet 渐变配色主题
+
+3. **AI 质量评分系统**（quality-scorer.tsx + /api/ai/quality-score）：
+   - 后端 API：POST /api/ai/quality-score
+     - 接收 content + topic + platform
+     - 使用 createAIClient() 调用 AI
+     - 平台适配：小红书第6维度"话题标签"，朋友圈第6维度"传播潜力"
+     - JSON 解析 + markdown 代码块处理 + 结构验证
+   - 前端组件：
+     - 点击自动触发评分 + 展开
+     - SVG 圆形进度指示器（渐变描边 + 动画）
+     - 分数标签（优秀/良好/中等/及格/待改进）
+     - 6 个维度进度条（交错入场动画 + 渐变配色）
+     - 每个维度显示具体建议文字
+     - 优点列表（绿色 ✅）+ 改进建议列表（琥珀色 ⚠️）
+     - "应用评分"按钮保存分数到帖子
+     - 加载状态动画
+
+4. **运营日历多平台颜色区分**（content-calendar.tsx）：
+   - 新增 platformFilter 状态（'all' | 'wechat' | 'xiaohongshu'）
+   - 三按钮平台筛选器：全部(无色) / 朋友圈(绿色) / 小红书(红色)
+   - 每个平台按钮显示对应帖子数量
+   - 筛选器影响统计栏、日历网格、列表视图
+   - 网格视图平台指示：
+     - 同日多平台帖子显示多色圆点（绿+红）
+     - 单平台帖子显示平台色 ring 边框
+     - "全部"模式下显示平台 Badge（红/绿小标签）
+   - 列表视图平台指示：
+     - 每个列表项显示平台 Badge（小红书/朋友圈）
+   - 图例增加平台颜色说明（绿色=朋友圈，红色=小红书）
+   - 统计栏显示"全平台"Badge
+   - postsByDate 改为数组结构支持同日多帖
+   - 平台感知的内容类型标签/颜色辅助函数
+   - 点击日历日期优先选择匹配当前平台的帖子
+
+### 新增文件
+- `src/components/right-panel/title-ab-test.tsx` - 标题A/B测试组件（500行）
+- `src/components/right-panel/cross-platform-publish.tsx` - 多平台同步发布（504行）
+- `src/components/right-panel/quality-scorer.tsx` - AI质量评分组件（404行）
+- `src/app/api/ai/quality-score/route.ts` - 质量评分API（92行）
+
+### 修改文件
+- `src/types/index.ts` - ContentPost 添加 platform、favorites 字段
+- `src/components/right-panel/copywriting-output.tsx` - 集成3个新组件 + 修复类型
+- `src/components/center-panel/content-calendar.tsx` - 多平台颜色区分+平台筛选器+辅助函数
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ⚠️ agent-browser 因沙箱网络限制无法可视化QA，改用 lint + API 检查
+- ✅ 所有新增文件导入路径正确
+- ✅ TypeScript 类型全部匹配
+
+Stage Summary:
+- 项目状态：稳定可运行，功能持续丰富
+- 本轮新增 4 个文件，修改 3 个文件，修复 1 个类型bug
+- 核心能力：标题A/B测试、多平台同步发布、AI质量评分、日历多平台颜色区分
+- 未解决问题或风险：
+  1. agent-browser 沙箱网络限制，无法进行可视化QA
+  2. copywriting-output.tsx 已接近 940 行，建议后续拆分为子组件
+  3. AI质量评分依赖 AI 服务可用性和响应质量
+- 建议下一阶段优先事项：
+  1. 拆分 copywriting-output.tsx 为多个子组件
+  2. 话题标签趋势分析（基于热门话题数据）
+  3. 小红书爆款分析（基于历史互动数据）
+  4. 内容排期拖拽排序
+  5. 定时发布提醒功能
+  6. API Key 加密存储
+  7. 运营报告自动生成（PDF/图片格式）
