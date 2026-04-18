@@ -310,3 +310,54 @@ Stage Summary:
   4. 添加发布时间建议（基于历史数据分析最佳发布时段）
   5. API Key 加密存储方案
   6. 模型响应质量评分反馈机制
+
+---
+Task ID: 6-a
+Agent: Feature Developer
+Task: 新增日历列表视图+一键发布到日历+AB对比+最佳发布时间建议
+
+Work Log:
+- 阅读项目上下文、类型定义、状态管理、API路由和现有组件
+- 在 Zustand store 新增 addContentPost 方法
+
+### Feature 1: 日历列表视图切换
+- 修改 content-calendar.tsx，添加 viewMode state ('grid' | 'list')
+- 在日历头部添加 LayoutGrid/List 图标切换按钮组
+- 列表视图按日期排序展示所有有内容的帖子
+- 每个列表项显示：日期（M月d日 EEEE）、ContentType Badge、Topic、内容前80字、Status Badge、AI Score、互动数据
+- 点击列表项选中帖子（与网格视图一致），选中项有 ring 高亮
+- 使用 framer-motion AnimatePresence 实现视图切换滑动动画
+
+### Feature 2: 发布到日历
+- 修改 copywriting-output.tsx，添加发布表单状态管理
+- 在"无帖子选中"视图添加"发布到日历"卡片
+- 在"已选中帖子"视图添加折叠式"发布新内容到日历"区域
+- 表单包含：主题输入、文案输入、7种内容类型选择、日期选择器
+- 提交调用 POST /api/content，成功后更新 store
+- 无计划时显示警告提示
+
+### Feature 3: A/B 对比测试
+- 新建 ab-comparison.tsx 折叠式组件
+- 调用 /api/ai/generate 生成替代B版本
+- A/B版本并排显示，用户点击选择偏好版本（有视觉反馈）
+- 应用选中版本通过 PUT /api/content/:id 更新
+- 支持重新生成、复制内容
+- 集成到 copywriting-output.tsx 选中帖子视图中
+
+### Feature 4: 最佳发布时间建议
+- 新建 time-suggestions.tsx 分析组件
+- 基于历史互动数据计算：按星期/内容类型/时段分组分析
+- 显示3个推荐时间段，含评分和原因说明
+- 无互动数据时显示通用建议（早间/午间/晚间）
+- 包含运营小贴士
+- 集成到 analytics-panel.tsx 中
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（GET / 200）
+
+Stage Summary:
+- 新增 2 个文件：ab-comparison.tsx、time-suggestions.tsx
+- 修改 4 个文件：app-store.ts、content-calendar.tsx、copywriting-output.tsx、analytics-panel.tsx
+- 4 个功能全部实现并集成
+- 代码风格与现有项目一致

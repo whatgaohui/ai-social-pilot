@@ -18,6 +18,7 @@ interface AppState {
   contentPosts: ContentPost[];
   setCurrentPlan: (plan: ContentPlan | null) => void;
   setContentPosts: (posts: ContentPost[]) => void;
+  addContentPost: (post: ContentPost) => void;
   updateContentPost: (id: string, data: Partial<ContentPost>) => void;
 
   // Materials
@@ -66,6 +67,7 @@ export const useAppStore = create<AppState>((set) => ({
   contentPosts: [],
   setCurrentPlan: (plan) => set({ currentPlan: plan }),
   setContentPosts: (posts) => set({ contentPosts: posts }),
+  addContentPost: (post) => set((state) => ({ contentPosts: [...state.contentPosts, post] })),
   updateContentPost: (id, data) => set((state) => ({
     contentPosts: state.contentPosts.map(p => p.id === id ? { ...p, ...data } : p)
   })),

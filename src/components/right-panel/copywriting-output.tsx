@@ -4,25 +4,30 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import type { ContentPost } from "@/types";
-import { CONTENT_TYPE_LABELS, CONTENT_TYPE_COLORS, POST_STATUS_LABELS, GenerationType, ContentType, PostStatus } from "@/types";
+import { CONTENT_TYPE_LABELS, CONTENT_TYPE_COLORS, POST_STATUS_LABELS, ContentType, PostStatus, GenerationType } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { ABComparison } from "@/components/right-panel/ab-comparison";
 import {
   Copy, Wand2, Check, Edit3, Send, Loader2, Sparkles,
   FileText, RefreshCw, MessageSquare, Upload, Lightbulb, Calendar,
-  FileUp, Type, MessageCircle, Image, ChevronDown, ChevronUp
+  FileUp, Type, MessageCircle, Image, ChevronDown, ChevronUp,
+  CalendarPlus
 } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 export function CopywritingOutput() {
   const {
     contentPosts, selectedPostId, selectedDate,
     persona, knowledgeItems, updateContentPost, setSelectedPostId,
+    currentPlan, addContentPost,
   } = useAppStore();
 
   const selectedPost = contentPosts.find(p => p.id === selectedPostId);
@@ -44,6 +49,14 @@ export function CopywritingOutput() {
   // Collapsible sections
   const [showPolish, setShowPolish] = useState(false);
   const [showFragment, setShowFragment] = useState(false);
+  const [showPublish, setShowPublish] = useState(false);
+
+  // Publish to calendar form
+  const [pubTopic, setPubTopic] = useState("");
+  const [pubContent, setPubContent] = useState("");
+  const [pubContentType, setPubContentType] = useState<ContentType>("text");
+  const [pubDate, setPubDate] = useState("");
+  const [publishing, setPublishing] = useState(false);
 
   const startEdit = () => {
     if (selectedPost) {
@@ -199,6 +212,128 @@ export function CopywritingOutput() {
     }
   };
 
+  const handlePublishToCalendar = async () => {
+    if (!pubContent.trim()) {
+      toast.error("请输入文案内容");
+      return;
+    }
+    if (!pubTopic.trim()) {
+      toast.error("请输入主题");
+      return;
+    }
+    if (!pubDate) {
+      toast.error("请选择发布日期");
+      return;
+    }
+    if (!currentPlan?.id) {
+      toast.error("请先生成内容计划");
+      return;
+    }
+
+    setPublishing(true);
+    try {
+      const dateStr = format(new Date(pubDate), 'yyyy-MM-dd');
+      const res = await fetch("/api/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planId: currentPlan.id,
+          scheduledDate: dateStr,
+          contentType: pubContentType,
+          topic: pubTopic,
+          content: pubContent,
+          status: "generated",
+          generationType: "polish",
+          likes: 0,
+          comments: 0,
+          shares: 0,
+          views: 0,
+          aiScore: 0,
+          feedback: "",
+        }),
+      });
+
+      if (res.ok) {
+        const newPost = await res.json();
+        addContentPost(newPost);
+        toast.success("已发布到日历！");
+        setPubTopic("");
+        setPubContent("");
+        setPubDate("");
+        setPubContentType("text");
+        setShowPublish(false);
+      } else {
+        toast.error("发布失败，请重试");
+      }
+    } catch {
+      toast.error("发布失败");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const contentTypeOptions: { value: ContentType; label: string }[] = [
+    { value: "text", label: "纯文字" },
+    { value: "image", label: "图文搭配" },
+    { value: "video", label: "视频动态" },
+    { value: "mixed", label: "混合内容" },
+    { value: "story", label: "故事分享" },
+    { value: "insight", label: "观点洞察" },
+    { value: "interaction", label: "互动话题" },
+  ];
+
+  const renderPublishForm = (compact?: boolean) => (
+    <div className="space-y-2">
+      <Input
+        placeholder="输入主题"
+        value={pubTopic}
+        onChange={(e) => setPubTopic(e.target.value)}
+        className="text-sm h-8"
+      />
+      <Textarea
+        placeholder="输入文案内容..."
+        value={pubContent}
+        onChange={(e) => setPubContent(e.target.value)}
+        className={`resize-none text-sm ${compact ? "min-h-[60px]" : "min-h-[80px]"}`}
+      />
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <div className="flex flex-wrap gap-1">
+            {contentTypeOptions.map((ct) => (
+              <Button
+                key={ct.value}
+                variant={pubContentType === ct.value ? "secondary" : "ghost"}
+                size="sm"
+                className={`h-6 px-2 text-[10px] ${pubContentType === ct.value ? CONTENT_TYPE_COLORS[ct.value] : ""}`}
+                onClick={() => setPubContentType(ct.value)}
+              >
+                {ct.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <Input
+        type="date"
+        value={pubDate}
+        onChange={(e) => setPubDate(e.target.value)}
+        className="text-sm h-8"
+      />
+      <Button
+        onClick={handlePublishToCalendar}
+        disabled={publishing || !pubContent.trim() || !pubTopic.trim() || !pubDate}
+        size="sm"
+        className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
+      >
+        {publishing ? (
+          <><Loader2 className="h-3 w-3 mr-1.5 animate-spin" />发布中...</>
+        ) : (
+          <><CalendarPlus className="h-3 w-3 mr-1.5" />发布到日历</>
+        )}
+      </Button>
+    </div>
+  );
+
   // No post selected - show quick polish tool
   if (!selectedPost) {
     return (
@@ -339,6 +474,31 @@ export function CopywritingOutput() {
                     </div>
                   </motion.div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Publish to Calendar */}
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
+              <CardHeader className="pb-2 px-4 pt-4">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                    <CalendarPlus className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  发布到日历
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  将文案直接创建为日历内容，快速排期发布
+                </p>
+                {!currentPlan?.id && (
+                  <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-2.5">
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                      ⚠️ 请先生成内容计划后再发布
+                    </p>
+                  </div>
+                )}
+                {renderPublishForm(false)}
               </CardContent>
             </Card>
 
@@ -551,6 +711,9 @@ export function CopywritingOutput() {
 
           <Separator />
 
+          {/* A/B Comparison Test */}
+          <ABComparison post={selectedPost} />
+
           {/* Quick Tools - Collapsible */}
           <Collapsible open={showPolish} onOpenChange={setShowPolish}>
             <CollapsibleTrigger className="w-full">
@@ -675,6 +838,38 @@ export function CopywritingOutput() {
             </CollapsibleContent>
           </Collapsible>
 
+          {/* Publish to Calendar - Collapsible in selected post view */}
+          <Collapsible open={showPublish} onOpenChange={setShowPublish}>
+            <CollapsibleTrigger className="w-full">
+              <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer">
+                <CardContent className="p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <CalendarPlus className="h-4 w-4 text-emerald-500" />
+                    </div>
+                    <span className="text-sm font-medium">发布新内容到日历</span>
+                  </div>
+                  {showPublish ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </CardContent>
+              </Card>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-1 pb-3">
+                {!currentPlan?.id && (
+                  <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-2.5 mb-2">
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                      ⚠️ 请先生成内容计划后再发布
+                    </p>
+                  </div>
+                )}
+                {renderPublishForm(true)}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
         </motion.div>
       </ScrollArea>

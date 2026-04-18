@@ -15,6 +15,7 @@ import {
   Download, FileJson, FileText
 } from "lucide-react";
 import { toast } from "sonner";
+import { TimeSuggestions } from "@/components/right-panel/time-suggestions";
 
 interface AnalyticsData {
   totalPosts: number;
@@ -260,6 +261,9 @@ export function AnalyticsPanel() {
               </CardContent>
             </Card>
           )}
+
+          {/* Best Publishing Time Suggestions */}
+          <TimeSuggestions />
 
           {/* AI Analysis */}
           <Card className="border-0 shadow-sm bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20">

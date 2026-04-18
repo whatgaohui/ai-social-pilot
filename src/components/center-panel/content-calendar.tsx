@@ -14,10 +14,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   CalendarDays, ChevronLeft, ChevronRight, Sparkles,
   CheckCircle2, Clock, FileText, Loader2, Calendar,
-  BarChart3, Zap
+  BarChart3, Zap, LayoutGrid, List, Heart, MessageSquare,
+  Share2, Eye, Star
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, addMonths, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, addMonths, subMonths, parseISO } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
 const STATUS_COLORS: Record<PostStatus, string> = {
@@ -34,6 +35,13 @@ const STATUS_DOT_COLORS: Record<PostStatus, string> = {
   published: "bg-purple-500",
 };
 
+const STATUS_BADGE_COLORS: Record<PostStatus, string> = {
+  planned: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
+  generated: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300",
+  optimized: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300",
+  published: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300",
+};
+
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 
 export function ContentCalendar() {
@@ -45,6 +53,7 @@ export function ContentCalendar() {
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Fetch plans
   useEffect(() => {
@@ -160,6 +169,13 @@ export function ContentCalendar() {
     return map;
   }, [contentPosts]);
 
+  // Posts sorted by date for list view
+  const sortedPosts = useMemo(() => {
+    return [...contentPosts]
+      .filter(p => p.scheduledDate)
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+  }, [contentPosts]);
+
   // Stats
   const stats = useMemo(() => {
     const total = contentPosts.length;
@@ -181,6 +197,11 @@ export function ContentCalendar() {
     if (post) {
       setSelectedPostId(post.id);
     }
+  };
+
+  const handleListItemClick = (post: ContentPost) => {
+    setSelectedDate(post.scheduledDate);
+    setSelectedPostId(post.id);
   };
 
   if (loading) {
@@ -213,24 +234,47 @@ export function ContentCalendar() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <Button
-            onClick={createPlanAndGenerate}
-            disabled={isGenerating}
-            size="sm"
-            className="h-8 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-purple-200 dark:shadow-purple-900/30"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                AI生成中...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                一键生成30天
-              </>
+          <div className="flex items-center gap-2">
+            {/* View Toggle */}
+            {contentPosts.length > 0 && (
+              <div className="flex items-center bg-muted rounded-md p-0.5">
+                <Button
+                  variant={viewMode === 'grid' ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             )}
-          </Button>
+            <Button
+              onClick={createPlanAndGenerate}
+              disabled={isGenerating}
+              size="sm"
+              className="h-8 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-purple-200 dark:shadow-purple-900/30"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  AI生成中...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  一键生成30天
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Stats Bar */}
@@ -263,7 +307,7 @@ export function ContentCalendar() {
         )}
       </div>
 
-      {/* Calendar Grid */}
+      {/* Calendar Content */}
       <ScrollArea className="flex-1 px-4 pb-4">
         {contentPosts.length === 0 && !isGenerating ? (
           <motion.div
@@ -287,88 +331,214 @@ export function ContentCalendar() {
             </Button>
           </motion.div>
         ) : (
-          <>
-            {/* Weekday Headers */}
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {WEEKDAYS.map((day) => (
-                <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1.5">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Days Grid */}
-            <div className="grid grid-cols-7 gap-1">
-              {/* Empty cells for offset */}
-              {Array.from({ length: startDayOfWeek }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-[4/3]" />
-              ))}
-
-              {/* Day cells */}
-              {daysInMonth.map((day) => {
-                const dateStr = format(day, "yyyy-MM-dd");
-                const post = postsByDate[dateStr];
-                const today = isToday(day);
-                const isSelected = selectedDate === dateStr;
-
-                return (
-                  <motion.div
-                    key={dateStr}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleDayClick(dateStr)}
-                    className={`
-                      aspect-[4/3] rounded-lg p-1.5 cursor-pointer transition-all duration-200 relative overflow-hidden
-                      ${post ? STATUS_COLORS[post.status as PostStatus] || "bg-muted/50" : "bg-muted/30"}
-                      ${isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : ""}
-                      ${today && !post ? "ring-1 ring-primary/40 bg-primary/[0.03]" : ""}
-                      hover:shadow-md hover:scale-[1.01] active:scale-[0.99]
-                    `}
-                  >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className={`text-xs font-medium ${today ? "text-primary font-bold" : ""}`}>
-                        {format(day, "d")}
-                      </span>
-                      {post && (
-                        <div className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
-                      )}
+          <AnimatePresence mode="wait">
+            {viewMode === 'grid' ? (
+              <motion.div
+                key="grid"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+              >
+                {/* Weekday Headers */}
+                <div className="grid grid-cols-7 gap-1 mb-1">
+                  {WEEKDAYS.map((day) => (
+                    <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1.5">
+                      {day}
                     </div>
-                    {post && (
-                      <div className="space-y-0.5">
-                        <Badge
-                          className={`text-[9px] px-1 py-0 h-4 leading-4 ${CONTENT_TYPE_COLORS[post.contentType as ContentType] || ""}`}
-                          variant="secondary"
-                        >
-                          {CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType}
-                        </Badge>
-                        <p className="text-[10px] leading-tight line-clamp-2 font-medium">
-                          {post.topic}
-                        </p>
-                        {post.aiScore > 0 && (
-                          <div className="flex items-center gap-0.5">
-                            <span className="text-[9px] text-amber-600 dark:text-amber-400">★</span>
-                            <span className="text-[9px] text-muted-foreground">{post.aiScore}</span>
+                  ))}
+                </div>
+
+                {/* Days Grid */}
+                <div className="grid grid-cols-7 gap-1">
+                  {/* Empty cells for offset */}
+                  {Array.from({ length: startDayOfWeek }).map((_, i) => (
+                    <div key={`empty-${i}`} className="aspect-[4/3]" />
+                  ))}
+
+                  {/* Day cells */}
+                  {daysInMonth.map((day) => {
+                    const dateStr = format(day, "yyyy-MM-dd");
+                    const post = postsByDate[dateStr];
+                    const today = isToday(day);
+                    const isSelected = selectedDate === dateStr;
+
+                    return (
+                      <motion.div
+                        key={dateStr}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleDayClick(dateStr)}
+                        className={`
+                          aspect-[4/3] rounded-lg p-1.5 cursor-pointer transition-all duration-200 relative overflow-hidden
+                          ${post ? STATUS_COLORS[post.status as PostStatus] || "bg-muted/50" : "bg-muted/30"}
+                          ${isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : ""}
+                          ${today && !post ? "ring-1 ring-primary/40 bg-primary/[0.03]" : ""}
+                          hover:shadow-md hover:scale-[1.01] active:scale-[0.99]
+                        `}
+                      >
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className={`text-xs font-medium ${today ? "text-primary font-bold" : ""}`}>
+                            {format(day, "d")}
+                          </span>
+                          {post && (
+                            <div className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
+                          )}
+                        </div>
+                        {post && (
+                          <div className="space-y-0.5">
+                            <Badge
+                              className={`text-[9px] px-1 py-0 h-4 leading-4 ${CONTENT_TYPE_COLORS[post.contentType as ContentType] || ""}`}
+                              variant="secondary"
+                            >
+                              {CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType}
+                            </Badge>
+                            <p className="text-[10px] leading-tight line-clamp-2 font-medium">
+                              {post.topic}
+                            </p>
+                            {post.aiScore > 0 && (
+                              <div className="flex items-center gap-0.5">
+                                <span className="text-[9px] text-amber-600 dark:text-amber-400">★</span>
+                                <span className="text-[9px] text-muted-foreground">{post.aiScore}</span>
+                              </div>
+                            )}
                           </div>
                         )}
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
 
-            {/* Legend */}
-            {contentPosts.length > 0 && (
-              <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t">
-                {(["planned", "generated", "optimized", "published"] as PostStatus[]).map((status) => (
-                  <div key={status} className="flex items-center gap-1.5">
-                    <div className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_COLORS[status]}`} />
-                    <span className="text-[10px] text-muted-foreground">{POST_STATUS_LABELS[status]}</span>
+                {/* Legend */}
+                {contentPosts.length > 0 && (
+                  <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t">
+                    {(["planned", "generated", "optimized", "published"] as PostStatus[]).map((status) => (
+                      <div key={status} className="flex items-center gap-1.5">
+                        <div className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_COLORS[status]}`} />
+                        <span className="text-[10px] text-muted-foreground">{POST_STATUS_LABELS[status]}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="list"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-2"
+              >
+                {sortedPosts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <CalendarDays className="h-10 w-10 mb-3 opacity-30" />
+                    <p className="text-sm">本月暂无内容</p>
+                  </div>
+                ) : (
+                  sortedPosts.map((post, index) => {
+                    const isSelected = selectedPostId === post.id;
+                    let formattedDate = "";
+                    try {
+                      formattedDate = format(parseISO(post.scheduledDate), 'M月d日 EEEE', { locale: zhCN });
+                    } catch {
+                      formattedDate = post.scheduledDate;
+                    }
+
+                    return (
+                      <motion.div
+                        key={post.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.15, delay: index * 0.02 }}
+                        onClick={() => handleListItemClick(post)}
+                        className={`
+                          rounded-lg border p-3 cursor-pointer transition-all duration-200
+                          hover:shadow-md hover:border-primary/30
+                          ${isSelected 
+                            ? "ring-2 ring-primary bg-primary/[0.03] border-primary/40 shadow-md" 
+                            : "bg-card border-border"
+                          }
+                        `}
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Date Column */}
+                          <div className="flex-shrink-0 w-[72px]">
+                            <div className="text-[10px] text-muted-foreground leading-tight">
+                              {formattedDate}
+                            </div>
+                          </div>
+
+                          {/* Content Column */}
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge
+                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${CONTENT_TYPE_COLORS[post.contentType as ContentType] || ""}`}
+                                variant="secondary"
+                              >
+                                {CONTENT_TYPE_LABELS[post.contentType as ContentType] || post.contentType}
+                              </Badge>
+                              <Badge
+                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${STATUS_BADGE_COLORS[post.status as PostStatus] || ""}`}
+                                variant="secondary"
+                              >
+                                {POST_STATUS_LABELS[post.status as PostStatus]}
+                              </Badge>
+                              {post.aiScore > 0 && (
+                                <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                                  <Star className="h-2.5 w-2.5" />
+                                  {post.aiScore}
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-xs font-medium truncate">
+                              {post.topic}
+                            </p>
+
+                            <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+                              {post.content.length > 80 ? post.content.slice(0, 80) + '...' : post.content}
+                            </p>
+
+                            {/* Engagement stats */}
+                            {(post.likes > 0 || post.comments > 0 || post.views > 0 || post.shares > 0) && (
+                              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                                {post.views > 0 && (
+                                  <span className="flex items-center gap-0.5">
+                                    <Eye className="h-2.5 w-2.5" />{post.views}
+                                  </span>
+                                )}
+                                {post.likes > 0 && (
+                                  <span className="flex items-center gap-0.5 text-rose-500">
+                                    <Heart className="h-2.5 w-2.5" />{post.likes}
+                                  </span>
+                                )}
+                                {post.comments > 0 && (
+                                  <span className="flex items-center gap-0.5">
+                                    <MessageSquare className="h-2.5 w-2.5" />{post.comments}
+                                  </span>
+                                )}
+                                {post.shares > 0 && (
+                                  <span className="flex items-center gap-0.5">
+                                    <Share2 className="h-2.5 w-2.5" />{post.shares}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Status dot */}
+                          <div className="flex-shrink-0 pt-1">
+                            <div className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </motion.div>
             )}
-          </>
+          </AnimatePresence>
         )}
       </ScrollArea>
     </div>
