@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Settings, Sparkles, Plus, Trash2, CheckCircle2, XCircle,
+  Settings, Sparkles, Plus, CheckCircle2, XCircle,
   Loader2, Zap, ExternalLink, Shield, Cpu, Thermometer,
   ChevronRight, Eye, EyeOff, Radio, Server, Globe
 } from "lucide-react";
@@ -125,14 +125,28 @@ export function AISettingsPanel() {
   };
 
   const handleTest = async () => {
-    if (!editingConfig?.id) {
-      toast.error("请先保存配置再测试");
+    if (!editingConfig?.name || !editingConfig?.modelId) {
+      toast.error("请填写配置名称和模型");
       return;
     }
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch(`/api/ai-config/test?id=${editingConfig.id}`);
+      let res;
+      if (editingConfig.id) {
+        res = await fetch(`/api/ai-config/test?id=${editingConfig.id}`);
+      } else {
+        res = await fetch("/api/ai-config/test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            provider: editingConfig.provider || "custom",
+            baseUrl: editingConfig.baseUrl || "",
+            apiKey: editingConfig.apiKey || "",
+            modelId: editingConfig.modelId || "",
+          }),
+        });
+      }
       const data = await res.json();
       setTestResult(data);
       if (data.success) {
@@ -144,18 +158,6 @@ export function AISettingsPanel() {
       toast.error("测试请求失败");
     } finally {
       setTesting(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const res = await fetch(`/api/ai-config/test?id=${id}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("配置已删除");
-        fetchConfigs();
-      }
-    } catch {
-      toast.error("删除失败");
     }
   };
 
@@ -556,21 +558,19 @@ export function AISettingsPanel() {
                           <><CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />保存配置</>
                         )}
                       </Button>
-                      {editingConfig.id && (
-                        <Button
-                          onClick={handleTest}
-                          disabled={testing}
-                          variant="outline"
-                          size="sm"
-                          className="border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400"
-                        >
-                          {testing ? (
-                            <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />测试中</>
-                          ) : (
-                            <><Sparkles className="h-3.5 w-3.5 mr-1" />测试连接</>
-                          )}
-                        </Button>
-                      )}
+                      <Button
+                        onClick={handleTest}
+                        disabled={testing}
+                        variant="outline"
+                        size="sm"
+                        className="border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400"
+                      >
+                        {testing ? (
+                          <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />测试中</>
+                        ) : (
+                          <><Sparkles className="h-3.5 w-3.5 mr-1" />测试连接</>
+                        )}
+                      </Button>
                       <Button
                         onClick={() => { setEditingConfig(null); setSelectedPreset(""); setTestResult(null); }}
                         variant="ghost"
@@ -651,14 +651,7 @@ export function AISettingsPanel() {
                                     >
                                       <Settings className="h-3 w-3" />
                                     </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2 text-[10px] text-muted-foreground hover:text-red-600"
-                                      onClick={() => handleDelete(config.id)}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
+
                                   </div>
                                 </div>
                               </CardContent>
