@@ -19,11 +19,13 @@ import { EngagementCard } from "@/components/right-panel/engagement-card";
 import { PolishTool } from "@/components/right-panel/polish-tool";
 import { FragmentTool } from "@/components/right-panel/fragment-tool";
 import { PublishToCalendar } from "@/components/right-panel/publish-to-calendar";
+import { PublishingAssistant } from "@/components/right-panel/publishing-assistant";
 
 export function CopywritingOutput() {
   const {
     contentPosts, selectedPostId,
     setSelectedPostId, platform,
+    setAccountPanelOpen,
   } = useAppStore();
   const isXHS = platform === 'xiaohongshu';
 
@@ -100,6 +102,12 @@ export function CopywritingOutput() {
 
           {/* Cross-Platform Publish */}
           <CrossPlatformPublish />
+
+          {/* AI Publishing Assistant */}
+          <PublishingAssistant
+            post={selectedPost}
+            onPlatformConnect={() => setAccountPanelOpen(true)}
+          />
 
           {/* Hashtag Recommender - Xiaohongshu only */}
           {isXHS && (

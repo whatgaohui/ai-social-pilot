@@ -51,6 +51,10 @@ interface AppState {
   platform: Platform;
   setPlatform: (platform: Platform) => void;
 
+  // Account panel
+  accountPanelOpen: boolean;
+  setAccountPanelOpen: (open: boolean) => void;
+
   // Notifications
   notifications: AppNotification[];
   addNotification: (notification: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
@@ -112,6 +116,10 @@ export const useAppStore = create<AppState>((set) => ({
   // Platform
   platform: 'wechat',
   setPlatform: (platform) => set({ platform }),
+
+  // Account panel
+  accountPanelOpen: false,
+  setAccountPanelOpen: (open) => set({ accountPanelOpen: open }),
 
   // Notifications
   notifications: [],

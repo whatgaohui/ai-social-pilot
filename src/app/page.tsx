@@ -253,9 +253,8 @@ function RightPanel({ hideHeader }: { hideHeader?: boolean }) {
 }
 
 export default function Home() {
-  const { isGenerating, persona, knowledgeItems, platform, setPlatform, rightPanelTab, setRightPanelTab } = useAppStore();
+  const { isGenerating, persona, knowledgeItems, platform, setPlatform, rightPanelTab, setRightPanelTab, accountPanelOpen, setAccountPanelOpen } = useAppStore();
   const [mobilePanel, setMobilePanel] = useState<"left" | "center" | "right">("center");
-  const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const [connectedPlatforms, setConnectedPlatforms] = useState(0);
   const showWelcome = !persona || knowledgeItems.length < 2;
 
@@ -287,10 +286,10 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-gradient-animated">
       <DataInitializer />
       {/* Top Header */}
-      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50 shadow-sm hover:shadow-md transition-shadow duration-200">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
-            <div className={`h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-200 dark:shadow-violet-900/40' : 'from-red-500 to-rose-600 shadow-red-200 dark:shadow-red-900/40'}`}>
+            <div className={`h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md logo-hover-spin ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-200 dark:shadow-violet-900/40' : 'from-red-500 to-rose-600 shadow-red-200 dark:shadow-red-900/40'}`}>
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <div>
@@ -384,6 +383,20 @@ export default function Home() {
           >
             <Zap className="h-2.5 w-2.5" />
             小红书
+          </button>
+          <button
+            onClick={() => setAccountPanelOpen(true)}
+            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-colors ${connectedPlatforms > 0 ? 'bg-emerald-500 text-white' : 'text-muted-foreground bg-muted/60'}`}
+          >
+            {connectedPlatforms > 0 ? (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+              </span>
+            ) : (
+              <Link2 className="h-2.5 w-2.5" />
+            )}
+            账号
           </button>
         </div>
 
@@ -531,11 +544,14 @@ export default function Home() {
       />
 
       {/* Footer */}
-      <footer className="border-t bg-background/80 backdrop-blur-md py-2 px-4 mt-auto pb-safe">
+      <footer className="footer-gradient-border bg-background/80 backdrop-blur-md py-2 px-4 mt-auto pb-safe">
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
           <span>{platform === 'wechat' ? '朋友圈AI运营助手 · 让每条朋友圈都有价值' : '小红书AI运营助手 · 让每篇笔记都成爆款'}</span>
-          <span className="flex items-center gap-1">
-            Powered by <Sparkles className="h-3 w-3 text-violet-500" /> AI
+          <span className="flex items-center gap-2">
+            <span className="version-badge">v2.0</span>
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full ai-badge-pulse">
+              Powered by <Sparkles className="h-3 w-3 text-violet-500" /> AI
+            </span>
           </span>
         </div>
       </footer>

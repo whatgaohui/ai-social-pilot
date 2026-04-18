@@ -15,7 +15,7 @@ import {
   CalendarDays, ChevronLeft, ChevronRight, Sparkles,
   CheckCircle2, Clock, FileText, Loader2, Calendar,
   BarChart3, Zap, LayoutGrid, List, Heart, MessageSquare,
-  Share2, Eye, Star, GripVertical, Save
+  Share2, Eye, Star, GripVertical, Save, Wifi
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -93,6 +93,33 @@ export function ContentCalendar() {
   const [hasReordered, setHasReordered] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Connected platforms state
+  const [connectedPlatformsList, setConnectedPlatformsList] = useState<{ platform: string; status: string }[]>([]);
+
+  // Fetch connected platform accounts
+  useEffect(() => {
+    async function fetchConnectedPlatforms() {
+      try {
+        const res = await fetch("/api/platform-accounts");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setConnectedPlatformsList(
+              data
+                .filter((a: { platform: string; status: string }) => a.status === "connected")
+                .map((a: { platform: string; status: string }) => ({ platform: a.platform, status: a.status }))
+            );
+          }
+        }
+      } catch {
+        // silently fail
+      }
+    }
+    fetchConnectedPlatforms();
+    const interval = setInterval(fetchConnectedPlatforms, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch plans
   useEffect(() => {
@@ -415,15 +442,35 @@ export function ContentCalendar() {
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handlePrevMonth}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <h2 className="text-lg font-semibold min-w-[120px] text-center">
-              {format(currentMonth, "yyyy年M月", { locale: zhCN })}
-            </h2>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleNextMonth}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handlePrevMonth}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <h2 className="text-lg font-semibold min-w-[120px] text-center">
+                {format(currentMonth, "yyyy年M月", { locale: zhCN })}
+              </h2>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleNextMonth}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            {/* Connected platform badges */}
+            {connectedPlatformsList.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1"
+              >
+                {connectedPlatformsList.map((cp) => (
+                  <span
+                    key={cp.platform}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40"
+                  >
+                    <Wifi className="h-2.5 w-2.5" />
+                    {cp.platform === 'wechat' ? '朋友圈已连' : '小红书已连'}
+                  </span>
+                ))}
+              </motion.div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {/* Platform Filter */}

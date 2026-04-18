@@ -1,0 +1,39 @@
+
+---
+Task ID: 14
+Agent: Feature Developer
+Task: 批量操作工具组件 (Batch Operations Tool Component)
+
+Work Log:
+- 读取 worklog.md 了解前13轮开发成果
+- 分析 ContentPost 接口、PostStatus 类型、Zustand store 结构
+- 阅读 content-calendar.tsx 了解日历渲染逻辑（网格+列表视图）
+- 运行 lint 检查代码质量（零错误通过）
+- 验证 dev server 编译成功
+
+### 新增文件
+- src/components/center-panel/batch-operations.tsx - 批量操作工具组件（~490行）
+
+### 组件架构
+导出 5 个接口供外部集成使用：
+1. BatchOperationsProvider - React Context Provider
+2. useBatchOperations - 自定义 Hook
+3. BatchToolbar - 浮动工具栏 UI
+4. BatchCheckbox - 日历单元格内嵌复选框
+5. BatchToggleButton - 进入/退出批量模式的切换按钮
+
+### BatchToolbar 浮动工具栏功能
+1. 批量修改状态 - DropdownMenu，4种目标状态+智能推进选项
+2. 批量AI优化 - 逐条调用POST /api/ai/optimize，带实时进度条
+3. 批量复制 - 剪贴板复制，含序号+主题标题格式化输出
+4. 批量删除 - AlertDialog确认，逐条调用DELETE /api/content/:id
+
+### QA验证结果
+- lint通过（零错误）
+- dev server 编译成功
+- TypeScript 类型全部匹配
+- 未修改任何现有文件
+
+Stage Summary:
+- 本轮新增 1 个文件：batch-operations.tsx
+- 核心能力：批量选择、状态修改、AI优化（带进度条）、批量删除（带确认）、批量复制
