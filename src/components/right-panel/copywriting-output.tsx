@@ -6,6 +6,7 @@ import { useAppStore } from "@/store/app-store";
 import type { ContentPost } from "@/types";
 import { CONTENT_TYPE_LABELS, CONTENT_TYPE_COLORS, POST_STATUS_LABELS, GenerationType, ContentType, PostStatus } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,9 +15,10 @@ import { Separator } from "@/components/ui/separator";
 import {
   Copy, Wand2, Check, Edit3, Send, Loader2, Sparkles,
   FileText, RefreshCw, MessageSquare, Upload, Lightbulb, Calendar,
-  FileUp, Type, MessageCircle, Image
+  FileUp, Type, MessageCircle, Image, ChevronDown, ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
+import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 
 export function CopywritingOutput() {
   const {
@@ -40,6 +42,10 @@ export function CopywritingOutput() {
   const [fragmentType, setFragmentType] = useState("conversation");
   const [fragmentResult, setFragmentResult] = useState("");
   const [fragmenting, setFragmenting] = useState(false);
+
+  // Collapsible sections
+  const [showPolish, setShowPolish] = useState(false);
+  const [showFragment, setShowFragment] = useState(false);
 
   const startEdit = () => {
     if (selectedPost) {
@@ -492,10 +498,41 @@ export function CopywritingOutput() {
           {/* Engagement Data (simulated) */}
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-2 px-4 pt-4">
-              <CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5" />
-                互动数据
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  互动数据
+                </CardTitle>
+                {(selectedPost.views === 0 || !selectedPost.views) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-[10px] text-muted-foreground"
+                    onClick={async () => {
+                      if (!selectedPost) return;
+                      const data = {
+                        views: Math.floor(Math.random() * 500) + 100,
+                        likes: Math.floor(Math.random() * 50) + 5,
+                        comments: Math.floor(Math.random() * 20),
+                        shares: Math.floor(Math.random() * 10),
+                      };
+                      const res = await fetch(`/api/content/${selectedPost.id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data),
+                      });
+                      if (res.ok) {
+                        const updated = await res.json();
+                        updateContentPost(selectedPost.id, updated);
+                        toast.success("已生成模拟互动数据");
+                      }
+                    }}
+                  >
+                    <Sparkles className="h-3 w-3 mr-0.5" />
+                    模拟数据
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <div className="grid grid-cols-4 gap-2">
@@ -513,6 +550,138 @@ export function CopywritingOutput() {
               </div>
             </CardContent>
           </Card>
+
+          <Separator />
+
+          {/* Quick Tools - Collapsible */}
+          <Collapsible open={showPolish} onOpenChange={setShowPolish}>
+            <CollapsibleTrigger className="w-full">
+              <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group/trig">
+                <CardContent className="p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <Wand2 className="h-4 w-4 text-amber-500" />
+                    </div>
+                    <span className="text-sm font-medium">口水话润色</span>
+                  </div>
+                  {showPolish ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </CardContent>
+              </Card>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-1 pb-3 space-y-2">
+                <Textarea
+                  placeholder="粘贴大白话..."
+                  value={polishInput}
+                  onChange={(e) => setPolishInput(e.target.value)}
+                  className="min-h-[60px] resize-none text-sm"
+                />
+                <Button
+                  onClick={handlePolish}
+                  disabled={polishing || !polishInput.trim()}
+                  size="sm"
+                  className="w-full h-8"
+                >
+                  {polishing ? (
+                    <><Loader2 className="h-3 w-3 mr-1 animate-spin" />AI润色中...</>
+                  ) : (
+                    <><Wand2 className="h-3 w-3 mr-1" />一键润色</>
+                  )}
+                </Button>
+                {polishResult && (
+                  <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
+                    <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 p-2.5 border border-amber-100 dark:border-amber-900/30 relative">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">润色结果</span>
+                        <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px]" onClick={() => { navigator.clipboard.writeText(polishResult); toast.success("已复制"); }}>
+                          <Copy className="h-2.5 w-2.5 mr-0.5" />复制
+                        </Button>
+                      </div>
+                      <p className="text-xs leading-relaxed whitespace-pre-wrap">{polishResult}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible open={showFragment} onOpenChange={setShowFragment}>
+            <CollapsibleTrigger className="w-full">
+              <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer">
+                <CardContent className="p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <FileUp className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <span className="text-sm font-medium">碎片转文案</span>
+                  </div>
+                  {showFragment ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </CardContent>
+              </Card>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-1 pb-3 space-y-2">
+                <Textarea
+                  placeholder="粘贴对话/想法..."
+                  value={fragmentInput}
+                  onChange={(e) => setFragmentInput(e.target.value)}
+                  className="min-h-[60px] resize-none text-sm"
+                />
+                <div className="flex gap-1.5">
+                  {(["conversation", "experience", "question"] as const).map((type) => (
+                    <Button
+                      key={type}
+                      variant={fragmentType === type ? "secondary" : "ghost"}
+                      size="sm"
+                      className="flex-1 h-7 text-[10px]"
+                      onClick={() => setFragmentType(type)}
+                    >
+                      {type === "conversation" ? "💬 对话" : type === "experience" ? "📖 经历" : "❓ 疑问"}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  onClick={handleFragmentGenerate}
+                  disabled={fragmenting || !fragmentInput.trim()}
+                  size="sm"
+                  className="w-full h-8"
+                >
+                  {fragmenting ? (
+                    <><Loader2 className="h-3 w-3 mr-1 animate-spin" />AI转化中...</>
+                  ) : (
+                    <><Sparkles className="h-3 w-3 mr-1" />转化为文案</>
+                  )}
+                </Button>
+                {fragmentResult && (
+                  <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
+                    <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 p-2.5 border border-blue-100 dark:border-blue-900/30 relative">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400">转化结果</span>
+                        <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px]" onClick={() => { navigator.clipboard.writeText(fragmentResult); toast.success("已复制"); }}>
+                          <Copy className="h-2.5 w-2.5 mr-0.5" />复制
+                        </Button>
+                      </div>
+                      <p className="text-xs leading-relaxed whitespace-pre-wrap">{fragmentResult}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* WeChat Preview */}
+          <WeChatPreview
+            post={selectedPost}
+            personaName={useAppStore.getState().persona?.name || "我"}
+          />
         </motion.div>
       </ScrollArea>
     </div>

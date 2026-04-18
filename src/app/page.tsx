@@ -8,6 +8,7 @@ import { KnowledgeBase } from "@/components/left-panel/knowledge-base";
 import { ContentCalendar } from "@/components/center-panel/content-calendar";
 import { CopywritingOutput } from "@/components/right-panel/copywriting-output";
 import { AnalyticsPanel } from "@/components/right-panel/analytics-panel";
+import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { WelcomeOnboarding } from "@/components/welcome-onboarding";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Sparkles, User, BookOpen, CalendarDays, PenTool,
-  BarChart3, Wand2, Zap, Menu, X
+  BarChart3, Wand2, Zap, Menu, X, FileText
 } from "lucide-react";
 
 function DataInitializer() {
@@ -102,13 +103,17 @@ function LeftPanel() {
                 {useAppStore.getState().knowledgeItems.length || ""}
               </Badge>
             </TabsTrigger>
+            <TabsTrigger value="templates" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
+              <FileText className="h-3 w-3" />
+              模板
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {/* Left Panel Content */}
       <ScrollArea className="flex-1 px-4 pb-4">
-        {leftPanelTab === "persona" ? <PersonaForm /> : <KnowledgeBase />}
+        {leftPanelTab === "persona" ? <PersonaForm /> : leftPanelTab === "knowledge" ? <KnowledgeBase /> : <CopywritingTemplates />}
       </ScrollArea>
     </div>
   );
