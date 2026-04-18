@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { PersonaForm } from "@/components/left-panel/persona-form";
@@ -13,10 +13,68 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { WelcomeOnboarding } from "@/components/welcome-onboarding";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Sparkles, User, BookOpen, CalendarDays, PenTool,
   BarChart3, Wand2, Zap, Menu, X
 } from "lucide-react";
+
+function DataInitializer() {
+  const { setPersona, setKnowledgeItems, setCurrentPlan, setContentPosts } = useAppStore();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    async function init() {
+      try {
+        const [personaRes, knowledgeRes, plansRes] = await Promise.all([
+          fetch("/api/persona"),
+          fetch("/api/knowledge"),
+          fetch("/api/plan"),
+        ]);
+
+        if (personaRes.ok) {
+          const persona = await personaRes.json();
+          if (persona) setPersona(persona);
+        }
+        if (knowledgeRes.ok) {
+          const items = await knowledgeRes.json();
+          setKnowledgeItems(items);
+        }
+        if (plansRes.ok) {
+          const plans = await plansRes.json();
+          if (plans.length > 0) {
+            const activePlan = plans.find((p: { status: string }) => p.status === "active") || plans[0];
+            setCurrentPlan(activePlan);
+            if (activePlan.posts) {
+              setContentPosts(activePlan.posts);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to initialize data:", e);
+      } finally {
+        setReady(true);
+      }
+    }
+    init();
+  }, [setPersona, setKnowledgeItems, setCurrentPlan, setContentPosts]);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center animate-pulse">
+            <Sparkles className="h-5 w-5 text-white" />
+          </div>
+          <p className="text-sm text-muted-foreground">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
 
 function LeftPanel() {
   const { leftPanelTab, setLeftPanelTab } = useAppStore();
@@ -95,11 +153,13 @@ function RightPanel() {
 }
 
 export default function Home() {
-  const { isGenerating } = useAppStore();
+  const { isGenerating, persona, knowledgeItems } = useAppStore();
   const [mobilePanel, setMobilePanel] = useState<"left" | "center" | "right">("center");
+  const showWelcome = !persona || knowledgeItems.length < 2;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen flex flex-col bg-gradient-animated">
+      <DataInitializer />
       {/* Top Header */}
       <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 h-14">
@@ -126,6 +186,7 @@ export default function Home() {
                 AI正在生成内容...
               </motion.div>
             )}
+            <ThemeToggle />
             <Badge variant="outline" className="text-xs gap-1">
               <Zap className="h-3 w-3 text-amber-500" />
               AI驱动
@@ -164,66 +225,74 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden">
-        {/* Desktop: Three-panel resizable layout */}
-        <div className="hidden sm:block h-[calc(100vh-3.5rem)]">
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            {/* Left Panel */}
-            <ResizablePanel defaultSize={22} minSize={18} maxSize={30}>
-              <div className="h-full border-r bg-background/50">
-                <LeftPanel />
-              </div>
-            </ResizablePanel>
+        {showWelcome ? (
+          <div className="h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-3.5rem)]">
+            <WelcomeOnboarding onComplete={() => {}} />
+          </div>
+        ) : (
+          <>
+            {/* Desktop: Three-panel resizable layout */}
+            <div className="hidden sm:block h-[calc(100vh-3.5rem)]">
+              <ResizablePanelGroup direction="horizontal" className="h-full">
+                {/* Left Panel */}
+                <ResizablePanel defaultSize={22} minSize={18} maxSize={30}>
+                  <div className="h-full border-r bg-background/50">
+                    <LeftPanel />
+                  </div>
+                </ResizablePanel>
 
-            <ResizableHandle withHandle className="bg-border/50 hover:bg-primary/20 transition-colors" />
+                <ResizableHandle withHandle className="bg-border/50 hover:bg-primary/20 transition-colors" />
 
-            {/* Center Panel */}
-            <ResizablePanel defaultSize={48} minSize={35}>
-              <div className="h-full bg-background">
-                <ContentCalendar />
-              </div>
-            </ResizablePanel>
+                {/* Center Panel */}
+                <ResizablePanel defaultSize={48} minSize={35}>
+                  <div className="h-full bg-background">
+                    <ContentCalendar />
+                  </div>
+                </ResizablePanel>
 
-            <ResizableHandle withHandle className="bg-border/50 hover:bg-primary/20 transition-colors" />
+                <ResizableHandle withHandle className="bg-border/50 hover:bg-primary/20 transition-colors" />
 
-            {/* Right Panel */}
-            <ResizablePanel defaultSize={30} minSize={22} maxSize={40}>
-              <div className="h-full border-l bg-background/50">
-                <RightPanel />
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </div>
+                {/* Right Panel */}
+                <ResizablePanel defaultSize={30} minSize={22} maxSize={40}>
+                  <div className="h-full border-l bg-background/50">
+                    <RightPanel />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </div>
 
-        {/* Mobile: Single panel view */}
-        <div className="sm:hidden h-[calc(100vh-7rem)] overflow-hidden">
-          {mobilePanel === "left" && (
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="h-full"
-            >
-              <LeftPanel />
-            </motion.div>
-          )}
-          {mobilePanel === "center" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="h-full"
-            >
-              <ContentCalendar />
-            </motion.div>
-          )}
-          {mobilePanel === "right" && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="h-full"
-            >
-              <RightPanel />
-            </motion.div>
-          )}
-        </div>
+            {/* Mobile: Single panel view */}
+            <div className="sm:hidden h-[calc(100vh-7rem)] overflow-hidden">
+              {mobilePanel === "left" && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="h-full"
+                >
+                  <LeftPanel />
+                </motion.div>
+              )}
+              {mobilePanel === "center" && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="h-full"
+                >
+                  <ContentCalendar />
+                </motion.div>
+              )}
+              {mobilePanel === "right" && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="h-full"
+                >
+                  <RightPanel />
+                </motion.div>
+              )}
+            </div>
+          </>
+        )}
       </main>
 
       {/* Footer */}

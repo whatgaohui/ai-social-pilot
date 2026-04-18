@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookOpen, Plus, Search, Trash2, Tag, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -108,6 +108,9 @@ export function KnowledgeBase() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>添加知识条目</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                添加专业知识、经验总结等内容到您的个人知识库
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="space-y-1.5">
@@ -203,7 +206,7 @@ export function KnowledgeBase() {
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Card className="border-0 shadow-sm hover:shadow-md transition-shadow group">
+                  <Card className="border-0 shadow-sm hover:shadow-md hover:border-primary/10 transition-all duration-200 group">
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">

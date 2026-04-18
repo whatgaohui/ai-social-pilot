@@ -318,11 +318,11 @@ export function ContentCalendar() {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleDayClick(dateStr)}
                     className={`
-                      aspect-[4/3] rounded-lg p-1.5 cursor-pointer transition-all relative overflow-hidden
+                      aspect-[4/3] rounded-lg p-1.5 cursor-pointer transition-all duration-200 relative overflow-hidden
                       ${post ? STATUS_COLORS[post.status as PostStatus] || "bg-muted/50" : "bg-muted/30"}
-                      ${isSelected ? "ring-2 ring-primary shadow-md" : ""}
-                      ${today && !post ? "ring-1 ring-primary/40" : ""}
-                      hover:shadow-sm
+                      ${isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : ""}
+                      ${today && !post ? "ring-1 ring-primary/40 bg-primary/[0.03]" : ""}
+                      hover:shadow-md hover:scale-[1.01] active:scale-[0.99]
                     `}
                   >
                     <div className="flex items-center justify-between mb-0.5">

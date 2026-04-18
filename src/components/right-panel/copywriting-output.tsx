@@ -13,7 +13,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Copy, Wand2, Check, Edit3, Send, Loader2, Sparkles,
-  FileText, RefreshCw, MessageSquare, Upload, Lightbulb, Calendar
+  FileText, RefreshCw, MessageSquare, Upload, Lightbulb, Calendar,
+  FileUp, Type, MessageCircle, Image
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,6 +34,12 @@ export function CopywritingOutput() {
   const [polishInput, setPolishInput] = useState("");
   const [polishResult, setPolishResult] = useState("");
   const [polishing, setPolishing] = useState(false);
+
+  // Fragment mode
+  const [fragmentInput, setFragmentInput] = useState("");
+  const [fragmentType, setFragmentType] = useState("conversation");
+  const [fragmentResult, setFragmentResult] = useState("");
+  const [fragmenting, setFragmenting] = useState(false);
 
   const startEdit = () => {
     if (selectedPost) {
@@ -154,6 +161,40 @@ export function CopywritingOutput() {
     }
   };
 
+  const handleFragmentGenerate = async () => {
+    if (!fragmentInput.trim()) {
+      toast.error("请输入碎片内容");
+      return;
+    }
+    setFragmenting(true);
+    setFragmentResult("");
+    try {
+      const res = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "fragment",
+          persona,
+          knowledgeItems,
+          material: {
+            type: "text",
+            content: fragmentInput,
+            contentType: fragmentType,
+          },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFragmentResult(data.content);
+        toast.success("碎片转化完成");
+      }
+    } catch {
+      toast.error("转化失败");
+    } finally {
+      setFragmenting(false);
+    }
+  };
+
   // No post selected - show quick polish tool
   if (!selectedPost) {
     return (
@@ -217,6 +258,80 @@ export function CopywritingOutput() {
                         </Button>
                       </div>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{polishResult}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Fragment to Copy */}
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20">
+              <CardHeader className="pb-2 px-4 pt-4">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <FileUp className="h-4 w-4 text-blue-500" />
+                  </div>
+                  碎片转文案
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  粘贴日常对话、截图文字等碎片内容，AI转化为优质朋友圈文案
+                </p>
+                <Textarea
+                  placeholder="粘贴对话记录、想法片段、聊天截图文字..."
+                  value={fragmentInput}
+                  onChange={(e) => setFragmentInput(e.target.value)}
+                  className="min-h-[80px] resize-none text-sm"
+                />
+                <div className="flex gap-2">
+                  {(["conversation", "experience", "question"] as const).map((type) => (
+                    <Button
+                      key={type}
+                      variant={fragmentType === type ? "secondary" : "ghost"}
+                      size="sm"
+                      className="flex-1 h-7 text-[10px]"
+                      onClick={() => setFragmentType(type)}
+                    >
+                      {type === "conversation" ? "💬 对话" : type === "experience" ? "📖 经历" : "❓ 疑问"}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  onClick={handleFragmentGenerate}
+                  disabled={fragmenting || !fragmentInput.trim()}
+                  size="sm"
+                  className="w-full"
+                >
+                  {fragmenting ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      AI转化中...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                      转化为文案
+                    </>
+                  )}
+                </Button>
+                {fragmentResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <div className="rounded-lg bg-background p-3 border relative">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">转化结果</span>
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => {
+                          navigator.clipboard.writeText(fragmentResult);
+                          toast.success("已复制到剪贴板");
+                        }}>
+                          <Copy className="h-3 w-3 mr-1" />
+                          复制
+                        </Button>
+                      </div>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{fragmentResult}</p>
                     </div>
                   </motion.div>
                 )}

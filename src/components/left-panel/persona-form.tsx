@@ -250,7 +250,7 @@ export function PersonaForm() {
         </CardContent>
       </Card>
 
-      <Button onClick={handleSave} disabled={saving} className="w-full h-10" size="sm">
+      <Button onClick={handleSave} disabled={saving} className="w-full h-10 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/40" size="sm">
         {saving ? (
           <span className="flex items-center gap-2">
             <span className="h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />

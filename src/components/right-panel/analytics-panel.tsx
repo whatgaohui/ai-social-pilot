@@ -11,7 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
   BarChart3, TrendingUp, Heart, MessageSquare, Share2,
-  Eye, Sparkles, Loader2, Trophy, Target, Zap
+  Eye, Sparkles, Loader2, Trophy, Target, Zap,
+  Download, FileJson, FileText
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -56,6 +57,26 @@ export function AnalyticsPanel() {
       console.error("Failed to fetch analytics:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async (format: "json" | "text") => {
+    try {
+      const res = await fetch(`/api/export?format=${format}`);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `moments-plan-${new Date().toISOString().slice(0, 10)}.${format === "json" ? "json" : "txt"}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success(`已导出${format === "json" ? "JSON" : "文本"}文件`);
+      }
+    } catch {
+      toast.error("导出失败");
     }
   };
 
@@ -109,6 +130,28 @@ export function AnalyticsPanel() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
+          {/* Export Buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-8 text-xs gap-1.5"
+              onClick={() => handleExport("json")}
+            >
+              <FileJson className="h-3.5 w-3.5" />
+              导出JSON
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-8 text-xs gap-1.5"
+              onClick={() => handleExport("text")}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              导出文本
+            </Button>
+          </div>
+
           {/* Overview Stats */}
           <div className="grid grid-cols-2 gap-3">
             {[
