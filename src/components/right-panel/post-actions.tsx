@@ -120,7 +120,8 @@ export function PostActions({ post }: PostActionsProps) {
         onClick={handleOptimize}
         disabled={optimizing}
         variant="outline"
-        className="w-full h-9 border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30"
+        data-tooltip="使用AI智能优化文案内容"
+        className="btn-tooltip btn-press w-full h-9 border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30"
       >
         {optimizing ? (
           <>
@@ -139,7 +140,8 @@ export function PostActions({ post }: PostActionsProps) {
         <Button
           size="sm"
           variant="outline"
-          className="h-8 text-xs"
+          data-tooltip="标记为已生成状态"
+          className="btn-tooltip btn-press h-8 text-xs"
           onClick={() => handleStatusChange("generated")}
           disabled={post.status === "published"}
         >
@@ -149,7 +151,8 @@ export function PostActions({ post }: PostActionsProps) {
         <Button
           size="sm"
           variant="outline"
-          className="h-8 text-xs border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400"
+          data-tooltip="标记为已优化状态"
+          className="btn-tooltip btn-press h-8 text-xs border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400"
           onClick={() => handleStatusChange("optimized")}
           disabled={post.status === "published"}
         >
@@ -158,7 +161,8 @@ export function PostActions({ post }: PostActionsProps) {
         </Button>
         <Button
           size="sm"
-          className="h-8 text-xs bg-purple-600 hover:bg-purple-700 text-white"
+          data-tooltip="标记为已发布状态"
+          className="btn-tooltip btn-press h-8 text-xs bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white"
           onClick={() => handleStatusChange("published")}
         >
           <Send className="h-3 w-3 mr-1" />

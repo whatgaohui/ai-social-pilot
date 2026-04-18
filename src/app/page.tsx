@@ -286,7 +286,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-gradient-animated">
       <DataInitializer />
       {/* Top Header */}
-      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50 shadow-sm hover:shadow-md transition-shadow duration-200">
+      <header className="border-b bg-background/80 backdrop-blur-xl sticky top-0 z-50 shadow-[0_1px_0_0] shadow-black/5 hover:shadow-md transition-shadow duration-200">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <div className={`h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md logo-hover-spin ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-200 dark:shadow-violet-900/40' : 'from-red-500 to-rose-600 shadow-red-200 dark:shadow-red-900/40'}`}>
@@ -316,14 +316,14 @@ export default function Home() {
               </motion.div>
               <button
                 onClick={() => setPlatform('wechat')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-colors ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
               >
                 <span className="h-2 w-2 rounded-full bg-green-400" />
                 朋友圈
               </button>
               <button
                 onClick={() => setPlatform('xiaohongshu')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-colors ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
               >
                 <span className="h-2 w-2 rounded-full bg-red-400" />
                 小红书
@@ -372,14 +372,14 @@ export default function Home() {
         <div className="sm:hidden flex items-center justify-center gap-2 px-4 py-1 border-t border-b">
           <button
             onClick={() => setPlatform('wechat')}
-            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-colors ${platform === 'wechat' ? 'bg-green-500 text-white' : 'text-green-600 dark:text-green-400'}`}
+            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'wechat' ? 'bg-green-500 text-white' : 'text-green-600 dark:text-green-400'}`}
           >
             <MessageCircle className="h-2.5 w-2.5" />
             朋友圈
           </button>
           <button
             onClick={() => setPlatform('xiaohongshu')}
-            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-colors ${platform === 'xiaohongshu' ? 'bg-red-500 text-white' : 'text-red-600 dark:text-red-400'}`}
+            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'xiaohongshu' ? 'bg-red-500 text-white' : 'text-red-600 dark:text-red-400'}`}
           >
             <Zap className="h-2.5 w-2.5" />
             小红书

@@ -37,3 +37,155 @@ Work Log:
 Stage Summary:
 - 本轮新增 1 个文件：batch-operations.tsx
 - 核心能力：批量选择、状态修改、AI优化（带进度条）、批量删除（带确认）、批量复制
+
+---
+Task ID: 15
+Agent: Feature Developer
+Task: Drag-and-Drop Reordering for Content Calendar List View
+
+Work Log:
+- 读取 worklog.md 了解前14轮开发成果
+- 阅读 content-calendar.tsx 了解现有拖拽实现（基于 post ID，交换 scheduledDate）
+- 阅读 types/index.ts 获取 ContentPost 类型定义
+- 分析现有列表视图结构（sortedPosts.map + motion.div + drag handlers）
+- 运行 lint 检查代码质量（零错误通过）
+- 验证 dev server 编译成功
+
+### 新增文件
+- src/components/center-panel/drag-sort-calendar.tsx - 拖拽排序组件（~260行）
+
+### 导出接口
+
+1. **useDragSort<T> Hook**
+   - 通用泛型拖拽排序 hook，支持任意类型数组
+   - 参数：`items: T[]` + `onReorder: (newItems: T[]) => void`
+   - 返回值：
+     - `dragHandlers`: { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd }
+     - `dragState`: { draggedIndex, overIndex, isDragging, dropPosition }
+     - `reorder(fromIndex, toIndex)`: 编程式重排辅助方法
+     - `items`: 当前 items 引用
+   - 实现：
+     - 使用 HTML5 原生 Drag and Drop API
+     - useRef + useEffect 保持 items 快照最新（避免渲染期 ref 更新）
+     - 拖拽位置检测：根据鼠标在目标元素的上半/下半部分判断 "before"/"after"
+     - 智能插入：先移除再插入，正确处理跨位拖拽的索引偏移
+
+2. **SortableItem 组件**
+   - 包装任意列表项为可拖拽元素
+   - Props：`index, children, dragHandlers, dragState, className?, onClick?, isSelected?`
+   - 功能：
+     - GripVertical 拖拽手柄（hover 时显示，拖拽时常驻）
+     - 拖拽项：opacity-50 + scale-95 + z-50
+     - 放置指示线：violet→purple→fuchsia 渐变色，3px 高度
+     - 根据 dropPosition 在上方或下方显示指示线
+     - 悬停目标：violet 边框 + violet-50/10 背景
+     - 选中状态：ring-2 ring-primary 高亮
+     - framer-motion layout 动画（spring 刚度350，阻尼28）
+     - 点击抑制：拖拽结束后不触发 onClick
+     - AnimatePresence 入场动画（opacity + y 偏移）
+
+3. **类型导出**
+   - DropPosition: "before" | "after" | null
+   - DragState: { draggedIndex, overIndex, isDragging, dropPosition }
+   - DragHandlers: { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd }
+   - UseDragSortReturn<T>: hook 完整返回类型
+   - SortableItemProps: 组件 Props 类型
+
+### 设计特性
+- **原生 HTML5 DnD**：无外部库依赖，跨浏览器兼容
+- **精确放置指示**：上半/下半检测确保插入位置准确
+- **framer-motion 动画**：spring 物理弹性 + layout 自动布局动画
+- **平台筛选兼容**：hook 接受已过滤的 items，自然兼容 platformFilter
+- **独立封装**：不修改 content-calendar.tsx，集成时只需包裹列表项
+
+### 集成示例
+```tsx
+const { dragHandlers, dragState, reorder } = useDragSort(filteredPosts, setPosts);
+{filteredPosts.map((post, i) => (
+  <SortableItem key={post.id} index={i} dragHandlers={dragHandlers} dragState={dragState}>
+    <PostCard post={post} />
+  </SortableItem>
+))}
+```
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ dev server 编译成功
+- ✅ TypeScript 类型全部正确
+- ✅ 未修改任何现有文件
+
+Stage Summary:
+- 本轮新增 1 个文件：drag-sort-calendar.tsx
+- 核心能力：通用拖拽排序 hook + 可排序项组件 + 精确放置指示 + 平滑动画
+- 与现有 content-calendar.tsx 的拖拽实现互补：现有实现基于 ID 交换日期，新 hook 基于索引插入重排
+
+---
+Task ID: 15
+Agent: Feature Developer
+Task: 排版优化器组件 (Formatting Optimizer for WeChat & Xiaohongshu)
+
+Work Log:
+- 分析项目结构、ContentPost 类型、Zustand store、现有组件代码风格
+- 阅读 polish-tool.tsx 和 quality-scorer.tsx 了解 Collapsible + Card 模式
+- 阅读 copywriting-output.tsx 了解右侧面板集成方式
+- 阅读 /api/ai/optimize 路由了解现有优化 API 结构
+- 创建 formatting-optimizer.tsx 组件
+- 扩展 /api/ai/optimize 路由支持 mode: "format" 参数
+- 集成组件到 CopywritingOutput 面板
+- 运行 lint（零错误通过）
+- 验证 dev server 编译成功
+
+### 新增文件
+- src/components/right-panel/formatting-optimizer.tsx - 排版优化器组件（~280行）
+
+### 修改文件
+- src/app/api/ai/optimize/route.ts - 新增 format 模式处理逻辑（handleFormatMode 函数）
+- src/components/right-panel/copywriting-output.tsx - 导入并集成 FormattingOptimizer
+
+### 组件架构 (FormattingOptimizer)
+**Props:**
+- post?: ContentPost | null - 当前选中的帖子
+- onApply: (formattedContent: string) => void - 应用优化回调
+
+**平台特性：**
+
+朋友圈模式 (wechat, 绿色主题):
+1. 段落优化 - 拆分为2-3段落，合理间距
+2. Emoji优化 - 策略性添加/删除，总量3-6个
+3. 话题标签 - 添加1-2个相关标签
+4. 排版美化 - 优化换行，去除多余空行
+5. @提及优化 - 建议相关人@提及
+
+小红书模式 (xiaohongshu, 红色主题):
+1. 标题优化 - 标题15-25字，添加强力词
+2. 正文排版 - 段落间距优化
+3. Emoji密度 - 每50-80字1个emoji
+4. 话题标签 - 确保3-5个话题标签
+5. 首行吸引 - 优化首行提升CTR
+6. 空行节奏 - 适当章节间距
+
+**UI 设计：**
+- Collapsible 折叠面板，渐变图标（绿/红）
+- 功能特性列表，每项带图标和描述
+- 一键优化按钮（渐变背景）
+- 加载骨架动画
+- Before/After 对比视图（原始内容 vs 优化后）
+- 应用优化按钮 + 已应用状态
+- 复制按钮
+- framer-motion 入场/退场动画
+- shadcn/ui 组件（Card, Collapsible, Button, Badge, ScrollArea, Separator）
+
+**API 扩展 (mode: "format"):**
+- 平台特定的排版优化提示词
+- 保留原文核心信息，仅调整格式
+- 返回优化后完整内容
+
+### QA验证结果
+- lint通过（零错误）
+- dev server 编译成功
+- TypeScript 类型全部匹配
+- 集成到 CopywritingOutput 面板，位于 Quick Tools 区域之前
+
+Stage Summary:
+- 本轮新增 1 个文件，修改 2 个文件
+- 核心能力：平台感知排版优化、Before/After 对比、一键应用、平台特定 AI 提示词

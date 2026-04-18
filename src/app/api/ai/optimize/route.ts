@@ -3,11 +3,16 @@ import { createAIClient } from '@/lib/ai-client';
 
 export async function POST(request: NextRequest) {
   try {
-    const { post, persona, feedback, knowledgeItems, platform = 'wechat' } = await request.json();
+    const { post, persona, feedback, knowledgeItems, platform = 'wechat', mode } = await request.json();
     const isXHS = platform === 'xiaohongshu';
-    
+
+    // Handle format mode specifically
+    if (mode === 'format') {
+      return handleFormatMode(post, platform);
+    }
+
     const ai = await createAIClient();
-    
+
     const personaContext = persona ? `
 人设信息：
 - 姓名：${persona.name}
@@ -75,8 +80,8 @@ ${knowledgeItems && knowledgeItems.length > 0 ? `可参考的知识库素材：$
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ]);
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       content: optimizedContent,
       model: ai.config?.name || ai.config?.provider || 'default',
     });
@@ -84,4 +89,73 @@ ${knowledgeItems && knowledgeItems.length > 0 ? `可参考的知识库素材：$
     console.error('Optimize error:', error);
     return NextResponse.json({ error: 'Failed to optimize content' }, { status: 500 });
   }
+}
+
+async function handleFormatMode(post: { content: string; contentType: string; topic: string }, platform: string) {
+  const isXHS = platform === 'xiaohongshu';
+  const ai = await createAIClient();
+
+  let systemPrompt = '';
+  let userPrompt = '';
+
+  if (isXHS) {
+    systemPrompt = `你是一位小红书排版格式优化专家。你的任务是对已有笔记的排版格式进行专业优化，不改变核心内容含义。
+
+排版优化规则：
+1. 标题优化：标题控制在15-25个字之间，添加强力词（如"绝了"、"终于"、"必看"、"救命"等）提升点击率
+2. 正文排版：每段2-4句话，段落间空一行，保持阅读节奏
+3. Emoji密度：每50-80个字添加1个emoji，不要过多也不要过少，emoji要与内容相关
+4. 话题标签：确保文末有3-5个话题标签，格式为 #标签名，包含热门标签和精准标签
+5. 首行吸引：第一行要有冲击力，可以用感叹、提问、数字等方式吸引用户继续阅读
+6. 空行节奏：在重要信息前后适当空行，制造视觉节奏感
+
+注意：
+- 保留原文的核心信息和观点
+- 只做排版格式调整，不改变语义
+- 输出完整的优化后内容（含标题和标签）`;
+
+    userPrompt = `请对以下小红书笔记进行排版格式优化：
+
+原文：
+${post.content}
+
+主题：${post.topic}
+
+请严格按照排版优化规则输出完整的优化后内容。`;
+  } else {
+    systemPrompt = `你是一位朋友圈排版格式优化专家。你的任务是对已有朋友圈文案的排版格式进行专业优化，不改变核心内容含义。
+
+排版优化规则：
+1. 段落优化：将长内容拆分为2-3个段落，每段2-3句话，段落间留一个空行
+2. Emoji优化：策略性添加emoji，每段开头或关键句后可加1-2个，总量控制在3-6个，不要堆砌
+3. 话题标签：在文末添加1-2个相关话题标签，格式为 #标签名
+4. 排版美化：去除多余的连续空行，保持一个空行的间距；优化换行位置
+5. @提及建议：在合适位置添加@提及（如果内容涉及特定场景，如 @某个朋友、@某个品牌）
+
+注意：
+- 保留原文的核心信息和观点
+- 只做排版格式调整，不改变语义
+- 文案控制在100-200字以内
+- 输出完整的优化后内容`;
+
+    userPrompt = `请对以下朋友圈文案进行排版格式优化：
+
+原文：
+${post.content}
+
+主题：${post.topic}
+
+请严格按照排版优化规则输出完整的优化后内容。`;
+  }
+
+  const formattedContent = await ai.chatCompletion([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ]);
+
+  return NextResponse.json({
+    content: formattedContent,
+    mode: 'format',
+    model: ai.config?.name || ai.config?.provider || 'default',
+  });
 }

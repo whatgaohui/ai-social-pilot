@@ -18,6 +18,7 @@ import { PostActions } from "@/components/right-panel/post-actions";
 import { EngagementCard } from "@/components/right-panel/engagement-card";
 import { PolishTool } from "@/components/right-panel/polish-tool";
 import { FragmentTool } from "@/components/right-panel/fragment-tool";
+import { FormattingOptimizer } from "@/components/right-panel/formatting-optimizer";
 import { PublishToCalendar } from "@/components/right-panel/publish-to-calendar";
 import { PublishingAssistant } from "@/components/right-panel/publishing-assistant";
 
@@ -26,6 +27,8 @@ export function CopywritingOutput() {
     contentPosts, selectedPostId,
     setSelectedPostId, platform,
     setAccountPanelOpen,
+    updateContentPost,
+    addNotification,
   } = useAppStore();
   const isXHS = platform === 'xiaohongshu';
 
@@ -70,7 +73,13 @@ export function CopywritingOutput() {
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.2 }}
-          className="space-y-4"
+          className={`space-y-4 card-accent-left card-shine rounded-r-lg p-1 pl-4 ${
+            selectedPost.status === 'planned' ? 'border-l-gray-300 dark:border-l-gray-600' :
+            selectedPost.status === 'generated' ? 'border-l-violet-500' :
+            selectedPost.status === 'optimized' ? 'border-l-emerald-500' :
+            selectedPost.status === 'published' ? 'border-l-emerald-500' :
+            ''
+          }`}
         >
           {/* Post Header */}
           <PostDetailHeader post={selectedPost} isXHS={isXHS} />
@@ -124,6 +133,20 @@ export function CopywritingOutput() {
               postContent={selectedPost.content}
             />
           )}
+
+          {/* Formatting Optimizer */}
+          <FormattingOptimizer
+            post={selectedPost}
+            onApply={(formattedContent: string) => {
+              updateContentPost(selectedPost.id, { content: formattedContent });
+              addNotification({
+                type: 'optimize',
+                title: '排版优化已应用',
+                description: isXHS ? '小红书笔记排版已优化' : '朋友圈文案排版已优化',
+                postId: selectedPost.id,
+              });
+            }}
+          />
 
           {/* Quick Tools - Collapsible */}
           <PolishTool isXHS={isXHS} mode="collapsible" />

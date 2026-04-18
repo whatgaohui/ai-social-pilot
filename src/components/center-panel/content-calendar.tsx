@@ -498,7 +498,7 @@ export function ContentCalendar() {
                       }`}
                       onClick={() => setPlatformFilter(pf.value)}
                     >
-                      {pf.dot && <div className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-white' : pf.dotColor} transition-colors duration-200`} />}
+                      {pf.dot && <div className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-white filter-dot-active' : pf.dotColor} transition-colors duration-200`} />}
                       {pf.label}
                       {pf.value !== 'all' && (
                         <span className={`text-[9px] ${isSelected ? 'text-white/80' : 'text-muted-foreground'}`}>
@@ -661,9 +661,9 @@ export function ContentCalendar() {
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleDayClick(dateStr)}
                         className={`
-                          calendar-cell aspect-[4/3] rounded-md p-1.5 cursor-pointer relative overflow-hidden
+                          calendar-cell aspect-[4/3] rounded-md p-1.5 cursor-pointer relative overflow-hidden focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:outline-none
                           ${primaryPost ? STATUS_COLORS[primaryPost.status as PostStatus] || "bg-muted/50" : "bg-muted/30"}
-                          ${isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : ""}
+                          ${isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02] calendar-glow" : ""}
                           ${platformRing && !isSelected ? `ring-1 ${platformRing}` : ""}
                           ${today && !primaryPost ? "ring-1 ring-primary/40 bg-primary/[0.03]" : ""}
                         `}
@@ -806,7 +806,7 @@ export function ContentCalendar() {
                         onDrop={(e) => handleDrop(e, post.id)}
                         onDragEnd={handleDragEnd}
                         className={`
-                          group relative rounded-lg border p-3 cursor-pointer transition-all duration-200
+                          group relative rounded-lg border p-3 cursor-pointer transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:outline-none
                           hover:shadow-md hover:border-primary/30
                           ${isDragging ? 'opacity-50 scale-95 z-50' : ''}
                           ${isDragOver 
@@ -814,8 +814,10 @@ export function ContentCalendar() {
                             : ''
                           }
                           ${isSelected 
-                            ? "ring-2 ring-primary bg-primary/[0.03] border-primary/40 shadow-md" 
-                            : "bg-card border-border"
+                            ? "ring-2 ring-primary bg-primary/[0.03] border-primary/40 shadow-md calendar-glow" 
+                            : index % 2 === 1
+                              ? "bg-muted/40 border-border"
+                              : "bg-card border-border"
                           }
                         `}
                       >
@@ -859,7 +861,7 @@ export function ContentCalendar() {
                                 {getContentTypeLabelForPost(post)}
                               </Badge>
                               <Badge
-                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${STATUS_BADGE_COLORS[post.status as PostStatus] || ""}`}
+                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 animate-bounce-in ${STATUS_BADGE_COLORS[post.status as PostStatus] || ""}`}
                                 variant="secondary"
                               >
                                 {POST_STATUS_LABELS[post.status as PostStatus]}
