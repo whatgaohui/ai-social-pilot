@@ -862,6 +862,75 @@ Work Log:
 - ✅ lint通过（零错误）
 - ✅ 页面编译成功（GET / 200，✓ Compiled）
 
+---
+Task ID: 13
+Agent: Main Developer
+Task: Visual QA fixes - calendar spacing, label truncation, button alignment, platform status colors
+
+Work Log:
+- 读取 worklog.md 了解前12轮开发成果
+- 分析 VLM 视觉QA发现的4个问题并逐一修复
+- 运行 lint（零错误），验证 dev server 编译（GET / 200）
+
+### Bug修复
+
+1. **日历网格间距不一致**（content-calendar.tsx）：
+   - 问题：日历网格单元格间距不一致（`gap-1` 太大）
+   - 修复：将所有日历网格（weekday headers + days grid + skeleton）统一使用 `gap-0.5`
+   - 将日历格子 `rounded-lg` 改为 `rounded-md`，与 `gap-0.5` 配合更紧凑
+   - 添加 `.calendar-cell` CSS 类实现一致的 hover/active 过渡效果
+
+2. **左侧面板标签文字截断**（persona-form.tsx）：
+   - 问题："姓名 *" 等标签可能溢出容器
+   - 修复：所有 form field 容器添加 `min-w-0`，所有 Label 添加 `whitespace-nowrap`
+   - 涉及6个表单字段：姓名、职业/头衔、行业、语气风格、文案风格、关键词、个人简介、目标受众
+
+3. **右侧面板按钮对齐问题**（polish-tool.tsx / fragment-tool.tsx / publish-to-calendar.tsx）：
+   - 问题：Collapsible 模式下，折叠内容的 `px-1` 与触发器 Card 的 `p-3` 导致内容偏左
+   - 修复：统一所有 CollapsibleContent 内部 padding 为 `px-3 pb-3`，与 Card 的 `p-3` 对齐
+   - 给按钮添加 `transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20` 增强交互反馈
+   - 给 CollapsibleTrigger Card 添加 `duration-200` 使过渡动画更平滑
+
+4. **平台状态指示器颜色难以区分**（content-calendar.tsx）：
+   - 问题：原 optimized 状态使用 `emerald-500`（绿色）与 朋友圈平台色 `green-500` 过于接近
+   - 修复：重新设计状态颜色体系，避免与平台色冲突：
+     - planned: gray（保持不变）
+     - generated: blue → **sky**（天蓝色）
+     - optimized: emerald → **amber**（琥珀色）
+     - published: purple → **violet**（紫罗兰色）
+   - 更新 STATUS_COLORS、STATUS_DOT_COLORS、STATUS_BADGE_COLORS 三个映射表
+   - 更新统计栏图标颜色匹配新状态色（Zap → amber-500, CheckCircle2 → violet-500）
+   - 平台筛选按钮改为**实心填充**（bg-green-500/bg-red-500 + 白色文字），选中状态更醒目
+
+### CSS 增强（globals.css）
+- 新增 `.calendar-cell` 类：一致的 hover 缩放(1.02) + 阴影 + active 缩小(0.98) 效果
+- 新增全局过渡：button/input/select/textarea/a 统一 `transition: all 0.2s ease`
+- 新增 `.card-clickable`：点击卡片 hover 上浮 + 阴影效果
+- 新增 `.focus-visible-ring`：键盘焦点环（violet-20% 透明度）
+- 新增 Badge 一致尺寸：h-5 px-1.5 text-[10px]
+
+### 附带修复
+- 修复 `src/app/api/platform-accounts/sync/route.ts` 中 ESLint 解析错误（template literal → string concatenation）
+
+### 修改文件
+- `src/components/center-panel/content-calendar.tsx` - 网格间距、状态颜色、平台筛选器、日历格子样式
+- `src/components/left-panel/persona-form.tsx` - 标签防止截断
+- `src/components/right-panel/polish-tool.tsx` - 按钮对齐、过渡动画
+- `src/components/right-panel/fragment-tool.tsx` - 按钮对齐、过渡动画
+- `src/components/right-panel/publish-to-calendar.tsx` - 按钮对齐、过渡动画
+- `src/app/globals.css` - 新增5个CSS工具类
+- `src/app/api/platform-accounts/sync/route.ts` - ESLint解析错误修复
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（GET / 200）
+
+Stage Summary:
+- 项目状态：稳定可运行，视觉QA问题全部修复
+- 本轮修改 6 个文件，修复 4 个视觉问题 + 1 个附带 lint 错误
+- 状态颜色体系重新设计：sky/amber/violet 与平台色(green/red)完全区分
+- 平台筛选按钮视觉增强：选中时实心填充背景+白色文字+投影
+
 Stage Summary:
 - 项目状态：稳定可运行，数据分析面板可视化大幅增强
 - 本轮修改 1 个文件：analytics-panel.tsx

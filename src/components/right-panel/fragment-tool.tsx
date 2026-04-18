@@ -96,7 +96,7 @@ export function FragmentTool({ isXHS, mode, defaultOpen }: FragmentToolProps) {
     return (
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger className="w-full">
-          <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer">
+          <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
             <CardContent className="p-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -113,7 +113,7 @@ export function FragmentTool({ isXHS, mode, defaultOpen }: FragmentToolProps) {
           </Card>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="px-1 pb-3 space-y-2">
+          <div className="px-3 pb-3 space-y-2">
             <Textarea
               placeholder="粘贴对话/想法..."
               value={fragmentInput}
@@ -125,7 +125,7 @@ export function FragmentTool({ isXHS, mode, defaultOpen }: FragmentToolProps) {
               onClick={handleFragmentGenerate}
               disabled={fragmenting || !fragmentInput.trim()}
               size="sm"
-              className="w-full h-8"
+              className="w-full h-8 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               {fragmenting ? (
                 <><Loader2 className="h-3 w-3 mr-1 animate-spin" />AI转化中...</>

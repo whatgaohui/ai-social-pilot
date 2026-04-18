@@ -24,9 +24,10 @@ import { WelcomeOnboarding } from "@/components/welcome-onboarding";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AISettingsPanel } from "@/components/ai-settings-panel";
 import { NotificationBell } from "@/components/notification-center";
+import { PlatformAccountPanel } from "@/components/platform-account-panel";
 import {
   Sparkles, User, BookOpen, CalendarDays, PenTool,
-  BarChart3, Wand2, Zap, Menu, X, FileText, Smartphone, MessageCircle, Lightbulb, FileBarChart, ChevronLeft
+  BarChart3, Wand2, Zap, Menu, X, FileText, Smartphone, MessageCircle, Lightbulb, FileBarChart, ChevronLeft, Link2, Wifi, WifiOff
 } from "lucide-react";
 
 function DataInitializer() {
@@ -254,7 +255,25 @@ function RightPanel({ hideHeader }: { hideHeader?: boolean }) {
 export default function Home() {
   const { isGenerating, persona, knowledgeItems, platform, setPlatform, rightPanelTab, setRightPanelTab } = useAppStore();
   const [mobilePanel, setMobilePanel] = useState<"left" | "center" | "right">("center");
+  const [accountPanelOpen, setAccountPanelOpen] = useState(false);
+  const [connectedPlatforms, setConnectedPlatforms] = useState(0);
   const showWelcome = !persona || knowledgeItems.length < 2;
+
+  // Poll platform account status periodically
+  useEffect(() => {
+    function checkStatus() {
+      fetch("/api/platform-accounts")
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          const count = Array.isArray(data) ? data.filter((a: { status: string }) => a.status === "connected").length : 0;
+          setConnectedPlatforms(count);
+        })
+        .catch(() => {});
+    }
+    checkStatus();
+    const interval = setInterval(checkStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const mobileRightSubTabs = [
     { value: 'copywriting', icon: Wand2, label: platform === 'wechat' ? '文案' : '笔记' },
@@ -325,6 +344,22 @@ export default function Home() {
               </motion.div>
             )}
             <AISettingsPanel />
+            <button
+              onClick={() => setAccountPanelOpen(true)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors hover:bg-muted ${connectedPlatforms > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}
+            >
+              {connectedPlatforms > 0 ? (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+              ) : (
+                <WifiOff className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden lg:inline">
+                {connectedPlatforms === 2 ? '已连接2个平台' : connectedPlatforms === 1 ? '已连接1个平台' : '账号管理'}
+              </span>
+            </button>
             <NotificationBell />
             <ThemeToggle />
             <Badge variant="outline" className="text-xs gap-1">
@@ -486,6 +521,14 @@ export default function Home() {
           </>
         )}
       </main>
+
+      {/* Platform Account Panel Dialog */}
+      <PlatformAccountPanel
+        open={accountPanelOpen}
+        onOpenChange={setAccountPanelOpen}
+        connectedCount={connectedPlatforms}
+        totalCount={2}
+      />
 
       {/* Footer */}
       <footer className="border-t bg-background/80 backdrop-blur-md py-2 px-4 mt-auto pb-safe">

@@ -122,8 +122,8 @@ export function PersonaForm() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 px-4 pb-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">姓名 *</Label>
+          <div className="space-y-1.5 min-w-0">
+            <Label className="text-xs text-muted-foreground whitespace-nowrap">姓名 *</Label>
             <Input
               placeholder="输入您的姓名"
               value={form.name}
@@ -132,8 +132,8 @@ export function PersonaForm() {
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">职业/头衔</Label>
+            <div className="space-y-1.5 min-w-0">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">职业/头衔</Label>
               <Input
                 placeholder="如：产品经理"
                 value={form.title}
@@ -141,8 +141,8 @@ export function PersonaForm() {
                 className="h-9 text-sm"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">行业</Label>
+            <div className="space-y-1.5 min-w-0">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">行业</Label>
               <Input
                 placeholder="如：互联网"
                 value={form.industry}
@@ -166,8 +166,8 @@ export function PersonaForm() {
         </CardHeader>
         <CardContent className="space-y-3 px-4 pb-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">语气风格</Label>
+            <div className="space-y-1.5 min-w-0">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">语气风格</Label>
               <Select value={form.tone} onValueChange={(v) => setForm({ ...form, tone: v })}>
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue />
@@ -181,8 +181,8 @@ export function PersonaForm() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">文案风格</Label>
+            <div className="space-y-1.5 min-w-0">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">文案风格</Label>
               <Select value={form.style} onValueChange={(v) => setForm({ ...form, style: v })}>
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue />
@@ -197,8 +197,8 @@ export function PersonaForm() {
               </Select>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">关键词（用逗号分隔）</Label>
+          <div className="space-y-1.5 min-w-0">
+            <Label className="text-xs text-muted-foreground whitespace-nowrap">关键词（用逗号分隔）</Label>
             <Input
               placeholder="如：AI,产品,创业,成长"
               value={form.keywords}
@@ -229,8 +229,8 @@ export function PersonaForm() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 px-4 pb-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">个人简介</Label>
+          <div className="space-y-1.5 min-w-0">
+            <Label className="text-xs text-muted-foreground whitespace-nowrap">个人简介</Label>
             <Textarea
               placeholder="简单介绍自己..."
               value={form.bio}
@@ -238,8 +238,8 @@ export function PersonaForm() {
               className="text-sm min-h-[60px] resize-none"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">目标受众</Label>
+          <div className="space-y-1.5 min-w-0">
+            <Label className="text-xs text-muted-foreground whitespace-nowrap">目标受众</Label>
             <Textarea
               placeholder="描述您的目标读者..."
               value={form.targetAudience}

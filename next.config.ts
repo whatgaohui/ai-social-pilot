@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  // Force server restart to pick up Prisma schema changes
+  serverExternalPackages: ["@prisma/client", "@prisma/engines"],
 };
 
 export default nextConfig;

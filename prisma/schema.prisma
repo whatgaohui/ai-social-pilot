@@ -123,3 +123,39 @@ model AIConfig {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model PlatformAccount {
+  id            String   @id @default(cuid())
+  platform      String   // wechat, xiaohongshu
+  displayName   String   @default("") // 账号昵称
+  accountType   String   @default("personal") // personal, business, creator
+  status        String   @default("disconnected") // disconnected, connecting, connected, expired, error
+  avatarUrl     String   @default("") // 头像URL
+
+  // OAuth / API 连接信息
+  accessToken   String   @default("") // 加密存储的 access token
+  refreshToken  String   @default("") // refresh token
+  tokenType     String   @default("oauth") // oauth, api_key, cookie
+  scope         String   @default("") // 授权范围
+
+  // API 配置
+  apiEndpoint   String   @default("") // API 端点
+  apiKey        String   @default("") // API Key（如果使用 API Key 模式）
+  apiSecret     String   @default("") // API Secret
+
+  // 连接状态
+  connectedAt   DateTime? // 连接时间
+  expiresAt     DateTime? // Token 过期时间
+  lastSyncAt    DateTime? // 最后同步时间
+  lastError     String   @default("") // 最后错误信息
+
+  // 统计信息
+  followers     Int      @default(0) // 粉丝数
+  following     Int      @default(0) // 关注数
+  postsCount    Int      @default(0) // 已发布笔记/动态数
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([platform, accountType])
+}

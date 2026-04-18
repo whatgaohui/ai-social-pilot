@@ -33,23 +33,23 @@ import { zhCN } from "date-fns/locale";
 
 const STATUS_COLORS: Record<PostStatus, string> = {
   planned: "bg-gray-200 dark:bg-gray-700",
-  generated: "bg-blue-200 dark:bg-blue-900/40",
-  optimized: "bg-emerald-200 dark:bg-emerald-900/40",
-  published: "bg-purple-200 dark:bg-purple-900/40",
+  generated: "bg-sky-200 dark:bg-sky-900/40",
+  optimized: "bg-amber-200 dark:bg-amber-900/40",
+  published: "bg-violet-200 dark:bg-violet-900/40",
 };
 
 const STATUS_DOT_COLORS: Record<PostStatus, string> = {
   planned: "bg-gray-400",
-  generated: "bg-blue-500",
-  optimized: "bg-emerald-500",
-  published: "bg-purple-500",
+  generated: "bg-sky-500",
+  optimized: "bg-amber-500",
+  published: "bg-violet-500",
 };
 
 const STATUS_BADGE_COLORS: Record<PostStatus, string> = {
   planned: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
-  generated: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300",
-  optimized: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300",
-  published: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300",
+  generated: "bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300",
+  optimized: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300",
+  published: "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300",
 };
 
 const PLATFORM_DOT_COLORS: Record<string, string> = {
@@ -400,9 +400,9 @@ export function ContentCalendar() {
       <div className="p-4 space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-full" />
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5">
           {Array.from({ length: 35 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-lg" />
+            <Skeleton key={i} className="h-20 rounded-md" />
           ))}
         </div>
       </div>
@@ -433,23 +433,34 @@ export function ContentCalendar() {
                   { value: 'all' as const, label: '全部', dot: false },
                   { value: 'wechat' as const, label: '朋友圈', dot: true, dotColor: 'bg-green-500' },
                   { value: 'xiaohongshu' as const, label: '小红书', dot: true, dotColor: 'bg-red-500' },
-                ]).map((pf) => (
-                  <Button
-                    key={pf.value}
-                    variant={platformFilter === pf.value ? "secondary" : "ghost"}
-                    size="sm"
-                    className={`h-7 px-2 text-[10px] gap-1 ${platformFilter === pf.value && pf.dot ? (pf.value === 'wechat' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300') : ''}`}
-                    onClick={() => setPlatformFilter(pf.value)}
-                  >
-                    {pf.dot && <div className={`h-1.5 w-1.5 rounded-full ${pf.dotColor}`} />}
-                    {pf.label}
-                    {pf.value !== 'all' && (
-                      <span className="text-[9px] text-muted-foreground">
-                        ({contentPosts.filter(p => pf.value === 'wechat' ? (!p.platform || p.platform === 'wechat') : p.platform === 'xiaohongshu').length})
-                      </span>
-                    )}
-                  </Button>
-                ))}
+                ]).map((pf) => {
+                  const isSelected = platformFilter === pf.value;
+                  const isWechat = pf.value === 'wechat';
+                  const isXH = pf.value === 'xiaohongshu';
+                  return (
+                    <Button
+                      key={pf.value}
+                      variant={isSelected ? "secondary" : "ghost"}
+                      size="sm"
+                      className={`h-7 px-2 text-[10px] gap-1 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20 ${
+                        isSelected && isWechat
+                          ? 'bg-green-500 text-white hover:bg-green-600 shadow-sm shadow-green-200 dark:shadow-green-900/30'
+                          : isSelected && isXH
+                            ? 'bg-red-500 text-white hover:bg-red-600 shadow-sm shadow-red-200 dark:shadow-red-900/30'
+                            : ''
+                      }`}
+                      onClick={() => setPlatformFilter(pf.value)}
+                    >
+                      {pf.dot && <div className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-white' : pf.dotColor} transition-colors duration-200`} />}
+                      {pf.label}
+                      {pf.value !== 'all' && (
+                        <span className={`text-[9px] ${isSelected ? 'text-white/80' : 'text-muted-foreground'}`}>
+                          ({contentPosts.filter(p => pf.value === 'wechat' ? (!p.platform || p.platform === 'wechat') : p.platform === 'xiaohongshu').length})
+                        </span>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
             )}
             {/* View Toggle */}
@@ -517,11 +528,11 @@ export function ContentCalendar() {
                 )}
               </span>
               <span className="flex items-center gap-1">
-                <Zap className="h-3 w-3 text-emerald-500" />
+                <Zap className="h-3 w-3 text-amber-500" />
                 已优化 <strong className="text-foreground">{stats.optimized}</strong>
               </span>
               <span className="flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-purple-500" />
+                <CheckCircle2 className="h-3 w-3 text-violet-500" />
                 已发布 <strong className="text-foreground">{stats.published}</strong>
               </span>
               <span className="flex items-center gap-1">
@@ -568,7 +579,7 @@ export function ContentCalendar() {
                 transition={{ duration: 0.2 }}
               >
                 {/* Weekday Headers */}
-                <div className="grid grid-cols-7 gap-1 mb-1">
+                <div className="grid grid-cols-7 gap-0.5 mb-0.5">
                   {WEEKDAYS.map((day) => (
                     <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1.5">
                       {day}
@@ -577,7 +588,7 @@ export function ContentCalendar() {
                 </div>
 
                 {/* Days Grid */}
-                <div className="grid grid-cols-7 gap-1">
+                <div className="grid grid-cols-7 gap-0.5">
                   {/* Empty cells for offset */}
                   {Array.from({ length: startDayOfWeek }).map((_, i) => (
                     <div key={`empty-${i}`} className="aspect-[4/3]" />
@@ -603,12 +614,11 @@ export function ContentCalendar() {
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleDayClick(dateStr)}
                         className={`
-                          aspect-[4/3] rounded-lg p-1.5 cursor-pointer transition-all duration-200 relative overflow-hidden
+                          calendar-cell aspect-[4/3] rounded-md p-1.5 cursor-pointer relative overflow-hidden
                           ${primaryPost ? STATUS_COLORS[primaryPost.status as PostStatus] || "bg-muted/50" : "bg-muted/30"}
                           ${isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : ""}
                           ${platformRing && !isSelected ? `ring-1 ${platformRing}` : ""}
                           ${today && !primaryPost ? "ring-1 ring-primary/40 bg-primary/[0.03]" : ""}
-                          hover:shadow-md hover:scale-[1.01] active:scale-[0.99]
                         `}
                       >
                         <div className="flex items-center justify-between mb-0.5">

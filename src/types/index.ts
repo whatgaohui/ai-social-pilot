@@ -208,6 +208,57 @@ export const CHANGE_TYPE_COLORS: Record<ChangeType, string> = {
   ai_generate: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
 };
 
+// Platform Account types
+export interface PlatformAccount {
+  id: string;
+  platform: string;
+  displayName: string;
+  accountType: string;
+  status: string;
+  avatarUrl: string;
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  scope: string;
+  apiEndpoint: string;
+  apiKey: string;
+  apiSecret: string;
+  connectedAt: string | null;
+  expiresAt: string | null;
+  lastSyncAt: string | null;
+  lastError: string;
+  followers: number;
+  following: number;
+  postsCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AccountStatus = 'disconnected' | 'connecting' | 'connected' | 'expired' | 'error';
+export type TokenType = 'oauth' | 'api_key' | 'cookie';
+
+export const ACCOUNT_STATUS_LABELS: Record<AccountStatus, string> = {
+  disconnected: '未连接',
+  connecting: '连接中',
+  connected: '已连接',
+  expired: '已过期',
+  error: '连接异常',
+};
+
+export const ACCOUNT_STATUS_COLORS: Record<AccountStatus, string> = {
+  disconnected: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  connecting: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  connected: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  expired: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  error: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+};
+
+export const TOKEN_TYPE_LABELS: Record<TokenType, string> = {
+  oauth: 'OAuth 授权',
+  api_key: 'API Key',
+  cookie: 'Cookie 登录',
+};
+
 // Xiaohongshu note structure
 export interface XHSNote {
   title: string;

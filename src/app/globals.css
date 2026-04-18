@@ -660,3 +660,64 @@
 .dark .drag-handle:hover {
   background-color: rgba(139, 92, 246, 0.2);
 }
+
+/* ====== Visual QA Fixes ====== */
+
+/* Calendar cell: consistent sizing with smooth hover effects */
+.calendar-cell {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, outline-color 0.15s ease;
+}
+.calendar-cell:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.calendar-cell:active {
+  transform: scale(0.98);
+}
+.dark .calendar-cell:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Consistent interactive element transitions */
+button,
+[role="button"],
+a,
+input,
+select,
+textarea {
+  transition: all 0.2s ease;
+}
+
+/* Consistent card border radius */
+.card,
+[role="group"] > .border,
+.rounded-lg {
+  border-radius: var(--radius-lg);
+}
+
+/* Consistent Badge sizing */
+.badge {
+  height: 20px;
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 20px;
+}
+
+/* Focus visible ring for keyboard accessibility */
+.focus-visible-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* Smooth hover shadow for clickable cards */
+.card-clickable {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+.card-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.dark .card-clickable:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
