@@ -114,7 +114,7 @@ export const useAppStore = create<AppState>((set) => ({
   setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
 
   // Right panel tab
-  rightPanelTab: 'copywriting',
+  rightPanelTab: 'content',
   setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
 
   // Platform

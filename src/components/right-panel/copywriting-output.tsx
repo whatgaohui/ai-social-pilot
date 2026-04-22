@@ -1,38 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { FileText } from "lucide-react";
-import { ABComparison } from "@/components/right-panel/ab-comparison";
-import { HashtagRecommender } from "@/components/right-panel/hashtag-recommender";
-import { CoverImageGenerator } from "@/components/right-panel/cover-image-generator";
-import { TitleABTest } from "@/components/right-panel/title-ab-test";
-import { CrossPlatformPublish } from "@/components/right-panel/cross-platform-publish";
-import { QualityScorer } from "@/components/right-panel/quality-scorer";
-import { ContentHistory } from "@/components/right-panel/content-history";
+import { FileText, Eye, Pencil } from "lucide-react";
 import { PostDetailHeader } from "@/components/right-panel/post-detail-header";
 import { ContentEditor } from "@/components/right-panel/content-editor";
 import { PostActions } from "@/components/right-panel/post-actions";
 import { EngagementCard } from "@/components/right-panel/engagement-card";
 import { PolishTool } from "@/components/right-panel/polish-tool";
 import { FragmentTool } from "@/components/right-panel/fragment-tool";
-import { FormattingOptimizer } from "@/components/right-panel/formatting-optimizer";
 import { PublishToCalendar } from "@/components/right-panel/publish-to-calendar";
-import { PublishingAssistant } from "@/components/right-panel/publishing-assistant";
+import { WeChatPreview } from "@/components/right-panel/wechat-preview";
+import { XiaohongshuPreview } from "@/components/right-panel/xiaohongshu-preview";
 
 export function CopywritingOutput() {
   const {
-    contentPosts, selectedPostId,
-    setSelectedPostId, platform,
-    setAccountPanelOpen,
-    updateContentPost,
-    addNotification,
+    contentPosts, selectedPostId, platform, persona,
   } = useAppStore();
   const isXHS = platform === 'xiaohongshu';
-
   const selectedPost = contentPosts.find(p => p.id === selectedPostId);
+  const personaName = persona?.name || "我";
+
+  const [showPreview, setShowPreview] = useState(false);
 
   // No post selected - show quick tools
   if (!selectedPost) {
@@ -81,80 +73,51 @@ export function CopywritingOutput() {
             ''
           }`}
         >
-          {/* Post Header */}
-          <PostDetailHeader post={selectedPost} isXHS={isXHS} />
+          {/* Post Header with Preview Toggle */}
+          <div className="flex items-center justify-between">
+            <PostDetailHeader post={selectedPost} isXHS={isXHS} />
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-2"
+            >
+              {showPreview ? (
+                <>
+                  <Pencil className="h-3.5 w-3.5" />
+                  编辑
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3.5 w-3.5" />
+                  预览
+                </>
+              )}
+            </button>
+          </div>
 
-          {/* Content Area */}
-          <ContentEditor post={selectedPost} isXHS={isXHS} />
+          {showPreview ? (
+            /* Preview Mode */
+            <>
+              {isXHS ? (
+                <XiaohongshuPreview post={selectedPost} personaName={personaName} />
+              ) : (
+                <WeChatPreview post={selectedPost} personaName={personaName} />
+              )}
+            </>
+          ) : (
+            /* Edit Mode */
+            <>
+              {/* Content Area */}
+              <ContentEditor post={selectedPost} isXHS={isXHS} />
 
-          {/* Action Buttons */}
-          <PostActions post={selectedPost} isXHS={isXHS} />
+              {/* Action Buttons */}
+              <PostActions post={selectedPost} isXHS={isXHS} />
 
-          <Separator />
+              <Separator />
 
-          {/* Engagement Data (simulated) */}
-          <EngagementCard post={selectedPost} isXHS={isXHS} />
-
-          <Separator />
-
-          {/* A/B Comparison Test */}
-          <ABComparison post={selectedPost} />
-
-          {/* Title A/B Test - Xiaohongshu only */}
-          <TitleABTest post={selectedPost} />
-
-          {/* Quality Scorer */}
-          <QualityScorer post={selectedPost} />
-
-          {/* Content Version History */}
-          <ContentHistory post={selectedPost} />
-
-          {/* Cross-Platform Publish */}
-          <CrossPlatformPublish />
-
-          {/* AI Publishing Assistant */}
-          <PublishingAssistant
-            post={selectedPost}
-            onPlatformConnect={() => setAccountPanelOpen(true)}
-          />
-
-          {/* Hashtag Recommender - Xiaohongshu only */}
-          {isXHS && (
-            <HashtagRecommender
-              postTopic={selectedPost.topic}
-              postContent={selectedPost.content}
-            />
+              {/* Engagement Data (simulated) */}
+              <EngagementCard post={selectedPost} isXHS={isXHS} />
+            </>
           )}
-
-          {/* Cover Image Generator - Xiaohongshu only */}
-          {isXHS && (
-            <CoverImageGenerator
-              postTopic={selectedPost.topic}
-              postContent={selectedPost.content}
-            />
-          )}
-
-          {/* Formatting Optimizer */}
-          <FormattingOptimizer
-            post={selectedPost}
-            onApply={(formattedContent: string) => {
-              updateContentPost(selectedPost.id, { content: formattedContent });
-              addNotification({
-                type: 'optimize',
-                title: '排版优化已应用',
-                description: isXHS ? '小红书笔记排版已优化' : '朋友圈文案排版已优化',
-                postId: selectedPost.id,
-              });
-            }}
-          />
-
-          {/* Quick Tools - Collapsible */}
-          <PolishTool isXHS={isXHS} mode="collapsible" />
-          <FragmentTool isXHS={isXHS} mode="collapsible" />
-
-          {/* Publish to Calendar - Collapsible in selected post view */}
-          <PublishToCalendar isXHS={isXHS} mode="collapsible" />
-
         </motion.div>
       </ScrollArea>
     </div>

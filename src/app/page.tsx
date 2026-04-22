@@ -6,10 +6,10 @@ import { useAppStore } from "@/store/app-store";
 import { KnowledgeBase } from "@/components/left-panel/knowledge-base";
 import { ContentCalendar } from "@/components/center-panel/content-calendar";
 import { CopywritingOutput } from "@/components/right-panel/copywriting-output";
+import { AIOptimizePanel } from "@/components/right-panel/ai-optimize-panel";
+import { PublishPanel } from "@/components/right-panel/publish-panel";
 import { AnalyticsPanel } from "@/components/right-panel/analytics-panel";
-import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
-import { XiaohongshuPreview } from "@/components/right-panel/xiaohongshu-preview";
 import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templates";
 import { ViralInspiration } from "@/components/right-panel/viral-inspiration";
 import { OperationReport } from "@/components/right-panel/operation-report";
@@ -24,7 +24,7 @@ import { PlatformAccountPanel } from "@/components/platform-account-panel";
 import { SettingsCenter } from "@/components/settings-center";
 import {
   Sparkles, BookOpen, CalendarDays, PenTool,
-  BarChart3, Wand2, Zap, FileText, Smartphone, MessageCircle, Lightbulb, FileBarChart, ChevronLeft, Settings
+  BarChart3, Zap, FileText, MessageCircle, Lightbulb, FileBarChart, ChevronLeft, Settings, Send
 } from "lucide-react";
 
 function DataInitializer() {
@@ -125,14 +125,14 @@ function LeftPanel() {
 }
 
 function RightPanel({ hideHeader }: { hideHeader?: boolean }) {
-  const { rightPanelTab, setRightPanelTab, contentPosts, selectedPostId, platform } = useAppStore();
-  const selectedPost = contentPosts.find(p => p.id === selectedPostId);
+  const { rightPanelTab, setRightPanelTab, contentPosts, platform } = useAppStore();
 
   const rightTabs = [
-    { value: 'copywriting', icon: Wand2, label: platform === 'wechat' ? '文案输出' : '笔记输出' },
+    { value: 'content', icon: FileText, label: '内容' },
+    { value: 'optimize', icon: Sparkles, label: 'AI优化' },
+    { value: 'publish', icon: Send, label: '发布' },
     { value: 'analytics', icon: BarChart3, label: '数据分析', badge: contentPosts.length > 0 ? contentPosts.length : undefined },
-    { value: 'preview', icon: Smartphone, label: '预览' },
-    { value: 'inspiration', icon: Lightbulb, label: '灵感库' },
+    { value: 'inspiration', icon: Lightbulb, label: '灵感' },
     { value: 'report', icon: FileBarChart, label: '报告' },
   ];
 
@@ -140,39 +140,19 @@ function RightPanel({ hideHeader }: { hideHeader?: boolean }) {
     // Mobile mode: no header, content fills the panel
     return (
       <div className="flex flex-col h-full">
-        {rightPanelTab === "copywriting" ? (
+        {rightPanelTab === "content" ? (
           <CopywritingOutput />
+        ) : rightPanelTab === "optimize" ? (
+          <AIOptimizePanel />
+        ) : rightPanelTab === "publish" ? (
+          <PublishPanel />
         ) : rightPanelTab === "analytics" ? (
           <AnalyticsPanel />
         ) : rightPanelTab === "inspiration" ? (
           <ViralInspiration />
         ) : rightPanelTab === "report" ? (
           <OperationReport />
-        ) : (
-          <ScrollArea className="flex-1 px-4 py-4">
-            {platform === 'wechat' ? (
-              selectedPost ? (
-                <WeChatPreview post={selectedPost} personaName={useAppStore.getState().persona?.name || "我"} />
-              ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                  <Smartphone className="h-12 w-12 mb-3 opacity-20" />
-                  <p className="text-sm text-center">请先在日历中选择一条内容</p>
-                  <p className="text-xs mt-1 text-center">点击日历中的日期即可预览朋友圈效果</p>
-                </div>
-              )
-            ) : (
-              selectedPost ? (
-                <XiaohongshuPreview post={selectedPost} personaName={useAppStore.getState().persona?.name || "我"} />
-              ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                  <Smartphone className="h-12 w-12 mb-3 opacity-20" />
-                  <p className="text-sm text-center">请先在日历中选择一条内容</p>
-                  <p className="text-xs mt-1 text-center">点击日历中的日期即可预览小红书笔记效果</p>
-                </div>
-              )
-            )}
-          </ScrollArea>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -205,42 +185,19 @@ function RightPanel({ hideHeader }: { hideHeader?: boolean }) {
       </div>
 
       {/* Right Panel Content */}
-      {rightPanelTab === "copywriting" ? (
+      {rightPanelTab === "content" ? (
         <CopywritingOutput />
+      ) : rightPanelTab === "optimize" ? (
+        <AIOptimizePanel />
+      ) : rightPanelTab === "publish" ? (
+        <PublishPanel />
       ) : rightPanelTab === "analytics" ? (
         <AnalyticsPanel />
       ) : rightPanelTab === "inspiration" ? (
         <ViralInspiration />
       ) : rightPanelTab === "report" ? (
         <OperationReport />
-      ) : (
-        <div className="flex-1 px-4 py-4">
-          {platform === 'wechat' ? (
-            selectedPost ? (
-              <WeChatPreview
-                post={selectedPost}
-                personaName={useAppStore.getState().persona?.name || "我"}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <Smartphone className="h-12 w-12 mb-3 opacity-20" />
-                <p className="text-sm text-center">请先在日历中选择一条内容</p>
-                <p className="text-xs mt-1 text-center">点击日历中的日期即可预览朋友圈效果</p>
-              </div>
-            )
-          ) : (
-            selectedPost ? (
-              <XiaohongshuPreview post={selectedPost} personaName={useAppStore.getState().persona?.name || "我"} />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <Smartphone className="h-12 w-12 mb-3 opacity-20" />
-                <p className="text-sm text-center">请先在日历中选择一条内容</p>
-                <p className="text-xs mt-1 text-center">点击日历中的日期即可预览小红书笔记效果</p>
-              </div>
-            )
-          )}
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -268,9 +225,10 @@ export default function Home() {
   }, []);
 
   const mobileRightSubTabs = [
-    { value: 'copywriting', icon: Wand2, label: platform === 'wechat' ? '文案' : '笔记' },
+    { value: 'content', icon: FileText, label: '内容' },
+    { value: 'optimize', icon: Sparkles, label: 'AI优化' },
+    { value: 'publish', icon: Send, label: '发布' },
     { value: 'analytics', icon: BarChart3, label: '数据' },
-    { value: 'preview', icon: Smartphone, label: '预览' },
     { value: 'inspiration', icon: Lightbulb, label: '灵感' },
     { value: 'report', icon: FileBarChart, label: '报告' },
   ];

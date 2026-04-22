@@ -1599,3 +1599,45 @@ Stage Summary:
 - 项目状态：稳定可运行，小红书个人号AI辅助模式完整
 - 本轮修改 1 个文件，新增 1 个组件
 - 核心能力：小红书个人号/创作者模式切换，4步操作引导，爆款技巧提示，快速复制文案
+---
+Task ID: 15
+Agent: Main Developer
+Task: 右侧面板布局重构 - Tab分区优化
+
+Work Log:
+- 分析右侧面板现状：文案输出Tab塞了16个子组件（9个折叠面板+5个常驻），用户体验差
+- 设计新的6-Tab分区方案
+- 重构 copywriting-output.tsx：精简为核心编辑+预览切换
+- 新建 ai-optimize-panel.tsx：整合所有AI优化工具
+- 新建 publish-panel.tsx：整合所有发布相关功能
+- 更新 page.tsx：6个Tab（内容/AI优化/发布/数据分析/灵感/报告）
+- 更新 app-store.ts：默认Tab从copywriting改为content
+
+### 新Tab结构
+| Tab | 内容 | 组件数 |
+|-----|------|--------|
+| 内容 | 编辑器+互动数据+预览切换 | 4个 |
+| AI优化 | AB测试+质量评分+标题AB+排版+版本历史+润色+碎片 | 7个 |
+| 发布 | 发布助手+跨平台+话题标签+封面图+发布到日历 | 5个 |
+| 数据分析 | 图表+AI分析（不变） | 1个 |
+| 灵感 | 标题公式+话题灵感+热门趋势（不变） | 1个 |
+| 报告 | 运营报告（不变） | 1个 |
+
+### 改进
+- 原"文案输出"Tab从16个组件减少到4个（减少75%）
+- 预览功能集成到内容Tab内的编辑/预览切换按钮
+- 每个Tab功能聚焦，无需长滚动
+- 移动端Tab同步更新
+
+### 新增文件
+- `src/components/right-panel/ai-optimize-panel.tsx`
+- `src/components/right-panel/publish-panel.tsx`
+
+### 修改文件
+- `src/components/right-panel/copywriting-output.tsx`
+- `src/app/page.tsx`
+- `src/store/app-store.ts`
+
+### QA验证
+- ✅ lint通过（零错误）
+- ✅ dev server编译成功
