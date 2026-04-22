@@ -1,25 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-// GET /api/notifications?unread=true
+// GET /api/notifications?unread=true&type=schedule&category=system&limit=20
 // Return notifications ordered by createdAt desc
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const unreadOnly = searchParams.get('unread') === 'true';
     const type = searchParams.get('type');
+    const category = searchParams.get('category');
+    const limit = parseInt(searchParams.get('limit') || '50', 10);
 
-    const where: Record<string, unknown> = {};
+    const where: { read?: boolean; type?: string; category?: string } = {};
     if (unreadOnly) where.read = false;
     if (type) where.type = type;
+    if (category) where.category = category;
 
     const notifications = await db.notification.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: Math.min(Math.max(limit, 1), 200),
     });
 
-    return NextResponse.json(notifications);
+    return NextResponse.json({ notifications });
   } catch (error) {
     console.error('Failed to fetch notifications:', error);
     return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
@@ -27,32 +30,30 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/notifications
-// Create a new notification
+// Create a new notification with optional category
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type, title, message, actionUrl, metadata, data } = body;
+    const { type, title, message, actionUrl, metadata, data, category } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'title is required' }, { status: 400 });
     }
 
-    const createData: Record<string, unknown> = {
-      type: type || 'system',
-      title,
-      message: message || '',
-      actionUrl: actionUrl || '',
-      metadata: metadata ? JSON.stringify(metadata) : '',
-    };
+    const validCategories = ['schedule', 'ai_task', 'system', 'achievement', 'reminder'];
+    const resolvedCategory = category && validCategories.includes(category) ? category : 'system';
 
-    // Only include 'data' field if the Prisma client supports it
-    // (the field was added later and the cached client may not have it)
-    if (data !== undefined) {
-      createData.data = typeof data === 'string' ? data : JSON.stringify(data);
-    }
-
+    // Build data object with known fields
     const notification = await db.notification.create({
-      data: createData as Parameters<typeof db.notification.create>[0]['data'],
+      data: {
+        type: type || 'system',
+        category: resolvedCategory,
+        title,
+        message: message || '',
+        actionUrl: actionUrl || '',
+        metadata: metadata ? JSON.stringify(metadata) : '',
+        data: data !== undefined ? (typeof data === 'string' ? data : JSON.stringify(data)) : '',
+      },
     });
 
     return NextResponse.json(notification, { status: 201 });

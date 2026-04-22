@@ -225,7 +225,7 @@ export function KnowledgeBase() {
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Card className="border-0 shadow-sm hover:shadow-md hover:border-primary/10 transition-all duration-200 group card-enter">
+                  <Card className="border-0 shadow-sm hover:shadow-md hover:border-primary/10 transition-all duration-200 group card-enter list-item-enter">
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">

@@ -39,6 +39,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { ContentPost } from "@/types";
+import { CompetitorRadar } from "@/components/right-panel/competitor-radar";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1148,6 +1149,11 @@ export default function ContentCompetitionPanel({
                   </div>
                 </motion.div>
               )}
+
+              {/* ── 6. Competitor Strategy Radar ── */}
+              <motion.div variants={itemVariants}>
+                <CompetitorRadar />
+              </motion.div>
             </motion.div>
           </div>
         </CollapsibleContent>

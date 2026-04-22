@@ -245,7 +245,7 @@ const DonutChart = React.memo(function DonutChart({
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <motion.span
-            className="text-2xl font-bold"
+            className="text-2xl font-bold text-count-up"
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.6 }}
@@ -500,7 +500,7 @@ const EngagementRateCard = React.memo(function EngagementRateCard({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <motion.span
-                className="text-lg font-bold tabular-nums"
+                className="text-lg font-bold tabular-nums text-count-up"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}
@@ -531,7 +531,7 @@ const EngagementRateCard = React.memo(function EngagementRateCard({
               </span>
               <div className="h-1 flex-1 bg-muted rounded-full overflow-hidden max-w-[80px]">
                 <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500"
+                  className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500 progress-bar-animated"
                   initial={{ width: 0 }}
                   animate={{
                     width: `${Math.min(engagementRate * 5, 100)}%`,

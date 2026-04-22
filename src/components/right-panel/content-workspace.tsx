@@ -57,6 +57,8 @@ import { WorkspaceQuickBar } from "@/components/right-panel/workspace-quick-bar"
 import { WorkspaceEmptyState } from "@/components/right-panel/workspace-empty-state";
 import { WordCountIndicator } from "@/components/right-panel/word-count-indicator";
 import { AISchedulingAssistant } from "@/components/right-panel/ai-scheduling-assistant";
+import { AIScheduleOptimizer } from "@/components/right-panel/ai-schedule-optimizer";
+import { ContentScheduler } from "@/components/right-panel/content-scheduler";
 import { AIContentRewriter } from "@/components/right-panel/ai-content-rewriter";
 import { EmojiPicker } from "@/components/right-panel/emoji-picker";
 import { PublishChecklist } from "@/components/right-panel/publish-checklist";
@@ -640,7 +642,7 @@ export function ContentWorkspace() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.1 }}
-                      className="absolute inset-0 z-10 bg-muted/30 backdrop-blur-[1px] rounded-lg"
+                      className="absolute inset-0 z-10 bg-muted/30 backdrop-blur-[1px] rounded-lg loading-skeleton-shimmer"
                     />
                   )}
                 </AnimatePresence>
@@ -671,7 +673,10 @@ export function ContentWorkspace() {
                     initial="hidden"
                     animate="visible"
                     exit="exit"
+                    className="space-y-3"
                   >
+                    <ContentScheduler />
+                    <AIScheduleOptimizer />
                     <AISchedulingAssistant />
                   </motion.div>
                 )}

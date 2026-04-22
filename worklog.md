@@ -5431,3 +5431,407 @@ Work Log:
 6. 运营报告定时自动生成 + 邮件/消息推送
 7. 移动端真机测试和适配优化
 8. API Key 加密存储方案
+
+---
+Task ID: 31-a
+Agent: Full-Stack Developer
+Task: 内容排期拖拽排序 + AI智能排期建议
+
+Work Log:
+- 分析项目架构：Prisma schema、类型定义、状态管理、现有组件模式（quality-scorer、title-ab-test、ai-scheduling-assistant）
+- 创建 /api/content/reorder API 端点（POST，批量更新排期）
+- 创建 content-scheduler.tsx 拖拽排期组件
+- 创建 ai-schedule-optimizer.tsx AI排期优化建议组件
+- 集成两个组件到 content-workspace.tsx 的"智能排期"tab
+- 修复预存在的 use-smart-reminders.ts JSX语法错误（.ts文件中使用了JSX）
+- 修复预存在的 achievement-toast.tsx 未使用的eslint-disable指令
+
+### New Files
+- src/app/api/content/reorder/route.ts - 批量排期更新API
+- src/components/right-panel/content-scheduler.tsx - 内容排期拖拽排序组件
+- src/components/right-panel/ai-schedule-optimizer.tsx - AI排期优化建议组件
+
+### Modified Files
+- src/components/right-panel/content-workspace.tsx - 集成ContentScheduler和AIScheduleOptimizer到schedule tab
+- src/hooks/use-smart-reminders.ts - 修复JSX语法错误（icon属性从JSX改为字符串）
+- src/components/achievement-toast.tsx - 移除未使用的eslint-disable指令
+
+### QA Results
+- ✅ ESLint通过（零错误零警告）
+- ✅ 页面编译成功（GET / 200）
+- ✅ reorder API POST验证通过（空数组返回400，正常请求返回成功）
+- ✅ reorder API GET返回405（预期行为）
+
+Stage Summary:
+- 完成了内容排期拖拽排序功能和AI智能排期建议功能
+- ContentScheduler：按日期分组展示、原生HTML5拖拽、跨日期移排、撤销操作（5秒超时）、平台感知样式
+- AIScheduleOptimizer：本地快速分析（内容缺口/类型均衡/过期内容）+ AI增强建议、颜色编码建议卡片、应用建议功能
+- Risks/Next Steps:
+  1. 拖拽功能在移动端触摸设备上可能需要额外适配
+  2. AI排期优化建议依赖AI服务可用性，有本地分析作为fallback
+  3. 可考虑增加拖拽排序的动画过渡效果优化
+---
+Task ID: 31-c
+Agent: Feature Developer
+Task: 竞品分析看板 + 内容趋势对比可视化
+
+Work Log:
+- 读取 worklog.md 了解前30+轮开发成果
+- 分析现有项目架构：Prisma schema、API路由、组件风格、类型定义
+- 运行 lint 检查代码质量（通过，修复2个预存bug）
+
+### 新增文件
+
+1. **竞品分析聚合API**（`/api/competitor-analysis/route.ts`）：
+   - GET 端点，支持 `?period=week|month|quarter` 参数
+   - 聚合竞品账号数据：平均互动率、内容频率、最佳发布时间、内容类型分布
+   - 返回自己的趋势数据用于对比
+   - 每个竞品包含：stats汇总、topContent（Top5）、trendData（按日）、hourlyPattern（按小时）
+   - 计算聚合统计：平均粉丝数、平均互动率、平均发布频率
+
+2. **内容趋势对比图表**（`trend-comparison-chart.tsx`）：
+   - 纯 SVG 多线图，无外部图表库
+   - 支持互动率/发布数/平均点赞三种指标切换
+   - 7天/30天视图切换（Tabs组件）
+   - 自己数据线紫色(violet)，竞品线分别为翠绿/琥珀/玫瑰/青色
+   - 交互式悬停：十字准线 + 浮动提示显示精确数值
+   - 图例可点击切换线条可见性
+   - 渐变填充区域（linearGradient）
+   - framer-motion path drawing 动画（pathLength: 0→1）
+   - 响应式 SVG（viewBox），暗黑模式兼容
+   - 空状态和加载骨架屏
+
+3. **竞品发布日历热力图**（`competitor-calendar-view.tsx`）：
+   - 4周（28天）网格热力图，行=星期（周一至周日），列=周数
+   - 颜色强度映射：gray(0) → light(1-2) → medium(3-4) → intense(5+)
+   - 紫色圆环标记自己的发布日
+   - 悬停 Tooltip 显示竞品/自己发布数量和话题
+   - 点击日期展开详情面板（竞品+自己发布内容列表）
+   - 最佳发布时间分析：24小时柱状图 + 峰值高亮 + 推荐 Badge
+   - 色彩图例（少→多）
+   - framer-motion 交错入场动画（staggered delay）
+
+4. **竞品策略雷达对比**（`competitor-radar.tsx`）：
+   - 纯 SVG 六维雷达图，无外部图表库
+   - 6个维度：发布频率、互动率、内容多样性、标题质量、视觉吸引力、发布时间优化
+   - 自己数据紫色(violet)实线多边形，竞品虚线多边形（strokeDasharray）
+   - framer-motion 多边形缩放动画（scale: 0.4→1）
+   - 竞品选择器（Select下拉，支持多竞品切换，自动换色）
+   - 每维度星级评分（Star组件，1-5星）
+   - 对比分析面板：优势项（绿色）、待提升项（红色）、势均力敌（琥珀色）
+   - 双进度条对比（紫色=自己，绿色=竞品）
+   - 分差数字标注
+
+### 修改文件
+
+- `src/components/right-panel/data-and-reports.tsx`
+  - 导入 TrendComparisonChart 和 CompetitorCalendarView
+  - 竞品分析 Tab 中添加趋势对比图表和发布日历热力图（放在原有 CompetitorAnalysis 之上）
+
+- `src/components/right-panel/content-competition-panel.tsx`
+  - 导入 CompetitorRadar 组件
+  - 在运营建议下方添加竞品策略雷达对比模块
+
+### 预存Bug修复
+
+- `src/hooks/use-smart-reminders.ts`：.ts 文件中使用 JSX 导致编译错误，修复为字符串
+- `src/app/page.tsx`：移除重复的 EnhancedNotificationBell 导入
+
+### QA验证结果
+- ✅ ESLint 通过（新增/修改文件零错误零警告）
+- ✅ API 端点返回 200（`curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/competitor-analysis`）
+- ✅ API 返回完整 JSON 结构（period, competitors, own, aggregated）
+- ✅ 修复预存编译错误后 dev server 正常运行
+
+Stage Summary:
+- 项目状态：稳定可运行，竞品分析可视化功能完整
+- 本轮新增 4 个文件，修改 2 个文件，修复 2 个预存 bug
+- 核心能力：多线趋势对比图表、发布日历热力图、六维策略雷达对比、聚合分析API
+- 所有图表均为纯 SVG 内联实现，零外部图表库依赖
+- 建议下一阶段优先事项：
+  1. 竞品数据接入实时热搜 API
+  2. 趋势对比图表添加数据导出功能
+  3. 雷达对比增加历史时间维度对比
+  4. 发布日历热力图支持更长时间范围（12周/24周）
+  5. 策略雷达分数计算接入 AI 评估模型
+
+---
+Task ID: 31-b
+Agent: Main Developer
+Task: 通知中心增强 + 智能提醒系统
+
+Work Log:
+- 阅读并分析现有通知系统代码（API route、组件、类型定义、数据库 schema）
+- 更新 Prisma schema：添加 category 字段（schedule, ai_task, system, achievement, reminder），添加索引
+- 更新 types/index.ts：添加 NotificationCategory 类型、achievement/schedule 到 NotificationType、AppNotification 新增 category 字段
+- 重写 /api/notifications/route.ts：
+  - GET 支持 ?unread=true&type=xxx&category=xxx&limit=20 查询参数
+  - POST 支持创建通知时指定 category 字段
+  - 类型安全的 where 条件（替代 Record<string, unknown>）
+- 创建 src/hooks/use-smart-reminders.ts：
+  - 每5分钟自动检查：今日待发布、发布后无互动、内容空白（3+天）、低质量内容（AI评分<60）
+  - 使用 sonner toast 展示非侵入式提醒
+  - 30分钟冷却机制防止刷屏
+  - 页面加载10秒后首次检查
+- 创建 src/components/achievement-toast.tsx：
+  - 5个内置成就：内容达人(10+发布)、AI创作者(20+生成)、互动之星(100+互动)、连续运营(7+天)、跨平台运营
+  - 成就解锁时创建数据库通知记录
+  - 庆祝 Toast：渐变背景、奖杯图标旋转动画、彩色纸屑粒子效果
+  - localStorage 持久化解锁状态
+  - 订阅 store 变化实时检测新成就
+- 创建 src/components/notification-center-enhanced.tsx：
+  - 完全重新设计通知面板
+  - 分类标签过滤：全部/排期/AI任务/系统/成就（含计数徽标）
+  - 分类特定图标和颜色（violet=AI, emerald=achievement, amber=reminder, rose=alert, slate=system）
+  - 通知卡片：未读指示（左边框+圆点）、分类图标、标题+消息+相对时间、操作按钮、hover 显示关闭按钮
+  - 成就通知特殊卡片设计：渐变背景、奖杯图标脉冲动画
+  - 空状态：BellOff 图标 + 动画 + "暂无新通知"
+  - 加载更多按钮（分页）
+  - DropdownMenu 操作菜单（清除已读、全部标记已读）
+  - framer-motion：stagger 入场、exit 动画、layout 动画
+  - 响应式设计：桌面 Popover + 移动端 Sheet
+- 修改 src/app/page.tsx：
+  - 导入 useSmartReminders 和 useAchievements
+  - 创建 NotificationHooks 组件在顶层调用两个 hook
+  - 替换 NotificationBell 为 EnhancedNotificationBell
+- 修复 ESLint 错误：移除 setState-in-effect、清理重复导入
+- 推送数据库 schema 并重新生成 Prisma Client
+
+Stage Summary:
+- 本轮新增 3 个文件，修改 3 个文件
+- 核心能力：分类通知系统、智能提醒引擎、成就解锁系统、增强通知中心 UI
+- 所有通知支持 category 分类过滤
+- 智能提醒系统自动检测内容运营问题
+- 成就系统包含5个里程碑，解锁时触发庆祝动画
+- ESLint 0 warnings 0 errors 通过
+- API 端点验证：GET /api/notifications 返回 200
+- 注意：category 查询需要 Prisma Client 重新编译后生效（.next 缓存需要刷新）
+---
+Task ID: 31-d
+Agent: Full-Stack Developer
+Task: CSS 微交互增强 + 骨架屏系统
+
+Work Log:
+- Read all existing files to understand the current codebase state (globals.css, persona-form.tsx, knowledge-base.tsx, analytics-panel.tsx, page.tsx, notification-ping.tsx, skeleton.tsx)
+- Appended 22+ new CSS animation classes to globals.css covering: Loading & Progress (6), Card & Container (5), Text Effects (4), Button & Interactive (4), List & Grid (3), Scroll & Reveal (3)
+- Applied `.card-glass-enhanced` to persona-form.tsx (3 Card components)
+- Confirmed `.list-item-enter` already applied in knowledge-base.tsx
+- Applied `.progress-bar-animated` to analytics-panel.tsx engagement rate bar
+- Confirmed `.card-gradient-border` already applied in page.tsx ResizablePanelGroup
+- Created `src/components/skeleton-system.tsx` with 4 reusable skeleton components: ContentCardSkeleton, CalendarSkeleton, ListSkeleton, ProfileCardSkeleton
+- Updated `src/components/notification-ping.tsx` to add emerald color option
+- Added `@media (prefers-reduced-motion: reduce)` block for all new animation classes
+
+### New Files
+- `src/components/skeleton-system.tsx` — 骨架屏系统组件（ContentCardSkeleton, CalendarSkeleton, ListSkeleton, ProfileCardSkeleton）
+
+### Modified Files
+- `src/app/globals.css` — 追加 22+ CSS 微交互动画类 + reduced-motion 媒体查询
+- `src/components/left-panel/persona-form.tsx` — 为 Style Settings 和 Bio & Audience Card 添加 card-glass-enhanced
+- `src/components/right-panel/analytics-panel.tsx` — 为互动率进度条添加 progress-bar-animated
+- `src/components/notification-ping.tsx` — 新增 emerald 颜色选项
+
+### QA Results
+- ✅ ESLint: 0 warnings, 0 errors
+- ✅ Next.js Build: Compiled successfully in 8.9s, 36/36 static pages generated
+- ✅ 所有新动画类均支持 prefers-reduced-motion
+- ✅ 骨架屏组件使用 shadcn/ui Skeleton + loading-skeleton-shimmer
+- ✅ 通知 Ping 支持 4 种颜色（violet, amber, rose, emerald）
+
+Stage Summary:
+- 完成全部 22+ CSS 微交互动画类的编写，涵盖加载/进度、卡片/容器、文本效果、按钮交互、列表/网格、滚动/显示六大类
+- 骨架屏系统组件使用 shadcn/ui Skeleton 基础组件，配合 loading-skeleton-shimmer CSS 类，支持暗黑模式
+- 所有动画类遵循 prefers-reduced-motion 无障碍标准
+- notification-ping 组件新增 emerald 配色支持
+
+---
+Task ID: 31
+Agent: Main Orchestrator + 4 Parallel full-stack-developer Sub-agents (31-a/b/c/d)
+Task: 第31轮开发 - 内容排期拖拽+通知增强+竞品分析+CSS微交互
+
+Work Log:
+- 读取 worklog.md（5433行，30轮迭代记录）了解完整项目历史
+- 硬约束：全程未使用 agent-browser（已知会导致OOM kill），使用 curl API 级别测试
+- 验证项目状态：15个核心API全部200，ESLint零错误，Next.js production build编译成功
+- 使用 standalone production server 进行稳定测试（避免 turbopack dev OOM）
+- 4个并行 full-stack-developer 子代理同时工作
+
+### 项目当前状态
+- 项目极其成熟：105+自定义组件（~40K行）、57+个shadcn/ui组件、40+个API路由
+- 双平台运营：朋友圈 + 小红书
+- 布局：2栏（左侧边栏24% + 主内容区76%），移动端浮动底部导航
+- 零 lint 错误、零 TypeScript 错误、生产构建稳定
+
+### Track A: 内容排期拖拽排序 + AI智能排期建议
+
+1. **内容排期拖拽 API**（`/api/content/reorder`）：
+   - POST 端点，接受 `{ items: [{id, scheduledDate, sortOrder}] }`
+   - Prisma $transaction 批量原子更新
+   - 输入验证 + 错误处理
+
+2. **ContentScheduler 组件**（content-scheduler.tsx, 558行）：
+   - 原生 HTML5 拖放（无外部 dnd 库）
+   - 按日期分组展示内容（今天/明天/M月d日）
+   - 每项显示：主题、类型Badge、状态、AI评分
+   - 拖拽视觉反馈：透明度变化、放置区高亮
+   - 跨日期拖放：拖到不同日期组即重新排期
+   - 撤销 toast（5秒超时）
+   - 平台感知样式
+   - framer-motion 布局动画
+
+3. **AI排期优化器**（ai-schedule-optimizer.tsx, 565行）：
+   - 本地即时分析：内容空白检测、类型平衡检查、逾期预警
+   - AI驱动的排期建议（调用 /api/ai/schedule-suggest）
+   - 颜色编码：amber=警告，emerald=正面，violet=建议
+   - 可操作卡片，每条带"应用"按钮
+   - 平衡状态空状态（绿色勾选）
+   - 重新分析按钮
+
+### Track B: 通知中心增强 + 智能提醒系统
+
+1. **通知 API 增强**（/api/notifications）：
+   - GET 支持 query params：?unread=true&type=schedule&category=system&limit=20
+   - POST 支持创建带 category 的通知
+   - 5种分类：schedule, ai_task, system, achievement, reminder
+
+2. **智能提醒 Hook**（use-smart-reminders.ts, 124行）：
+   - 每5分钟自动检查：
+     - 今日待发布内容提醒
+     - 发布24h后无互动预警
+     - 3+天内容空白警告
+     - AI评分低于60的质量提醒
+   - sonner toast 非侵入式通知
+   - 30分钟冷却防止刷屏
+
+3. **成就系统**（achievement-toast.tsx, 311行）：
+   - 5个内置成就：内容达人(10+发布)、AI创作者(20+AI生成)、互动之星(100+互动)、连续运营(7+天)、跨平台运营
+   - 庆祝 toast：渐变背景 + 纸屑粒子 + spring 动画
+   - localStorage 持久化解锁记录
+
+4. **增强通知中心**（notification-center-enhanced.tsx, 878行）：
+   - 分类特定图标和颜色（violet=AI, emerald=成就, amber=提醒, rose=警报, slate=系统）
+   - 5个筛选 Tab：全部/排期/AI任务/系统/成就
+   - 成就卡片特殊渐变设计
+   - 未读指示器 + 相对时间 + 操作按钮
+   - 加载更多分页
+   - framer-motion 入场/退出动画
+
+### Track C: 竞品分析看板 + 趋势对比可视化
+
+1. **竞品性能 API**（/api/competitor-analysis, 263行）：
+   - GET 聚合竞品和自有内容数据
+   - 支持 ?period=week|month|quarter
+   - 返回：竞品列表+统计、热门内容、日趋势、发布时段
+
+2. **趋势对比折线图**（trend-comparison-chart.tsx, 580行）：
+   - 纯 SVG 多线图（零外部图表库）
+   - 3种指标切换：互动率/发帖数/平均点赞
+   - 7天/30天视图切换
+   - 5色编码线条（自有violet + 4个竞品）
+   - 悬停交叉线 + 工具提示
+   - 图例点击切换线条可见性
+   - 渐变填充 + framer-motion 路径绘制动画
+
+3. **竞品发布日历热力图**（competitor-calendar-view.tsx, 522行）：
+   - 28天热力图网格（GitHub贡献图风格）
+   - 颜色强度：gray→light→medium→intense
+   - 紫色环叠加自有发布
+   - 点击单元格展开详情面板
+   - 24小时发布时段柱状图 + 峰值时段标记
+
+4. **竞品雷达图**（competitor-radar.tsx, 641行）：
+   - 纯 SVG 6维雷达/蜘蛛图
+   - 维度：发布频率/互动率/内容多样性/标题质量/视觉吸引力/发布时间优化
+   - 自有(紫色实心) vs 竞品(彩色虚线)
+   - 每维度1-5星评级
+   - 竞品选择器下拉菜单
+   - 对比分析面板：优势(绿)/劣势(红)/持平(琥珀)
+
+### Track D: CSS 微交互增强 + 骨架屏系统
+
+1. **新增 22 个 CSS 动画/工具类**（globals.css）：
+   - Loading (6): loading-dots, loading-bar-indeterminate, loading-pulse-ring, loading-spinner, loading-skeleton-shimmer, progress-bar-animated
+   - Card (5): card-hover-3d, card-glass-enhanced, card-gradient-border(@property旋转渐变), card-stack, card-expand
+   - Text (4): text-reveal, text-highlight-draw, text-gradient-flow, text-typewriter
+   - Button (4): btn-loading, btn-success, btn-error, btn-group-connected
+   - List/Grid (3): list-item-enter, grid-masonry, grid-auto-fill
+   - Scroll (3): reveal-on-scroll, parallax-slow, sticky-header-blur(增强)
+   - 所有动画尊重 prefers-reduced-motion: reduce
+
+2. **骨架屏组件系统**（skeleton-system.tsx, 155行）：
+   - ContentCardSkeleton — 标题栏+3行文字+操作栏
+   - CalendarSkeleton — 月份头+7列星期网格+35个日期格
+   - ListSkeleton — 可配置行数(默认5)，头像+文字+Badge布局
+   - ProfileCardSkeleton — 头像+名称+标签+统计+简介
+   - 使用 shadcn/ui Skeleton + loading-skeleton-shimmer
+
+3. **通知 Ping 效果**（notification-ping.tsx, 62行）：
+   - CSS-only 扩展环脉冲动画
+   - 4种颜色：violet/amber/rose/emerald
+
+4. **页面过渡组件**（page-transition.tsx, 33行）：
+   - framer-motion AnimatePresence 包装器
+   - 淡入+微上滑动画
+
+5. **已有组件动画增强**：
+   - persona-form.tsx → card-glass-enhanced
+   - knowledge-base.tsx → list-item-enter (确认已有)
+   - analytics-panel.tsx → progress-bar-animated
+   - page.tsx → card-gradient-border (确认已有)
+
+### 新增文件 (13个)
+- `src/app/api/content/reorder/route.ts` — 内容排期拖拽API
+- `src/app/api/competitor-analysis/route.ts` — 竞品分析聚合API
+- `src/components/right-panel/content-scheduler.tsx` — 拖拽排期组件
+- `src/components/right-panel/ai-schedule-optimizer.tsx` — AI排期优化器
+- `src/components/notification-center-enhanced.tsx` — 增强通知中心
+- `src/components/achievement-toast.tsx` — 成就系统+toast
+- `src/hooks/use-smart-reminders.ts` — 智能提醒Hook
+- `src/components/right-panel/trend-comparison-chart.tsx` — 趋势对比SVG折线图
+- `src/components/right-panel/competitor-calendar-view.tsx` — 竞品发布热力图
+- `src/components/right-panel/competitor-radar.tsx` — 竞品雷达图
+- `src/components/skeleton-system.tsx` — 骨架屏组件系统
+- `src/components/notification-ping.tsx` — 通知Ping效果
+- `src/components/page-transition.tsx` — 页面过渡组件
+
+### 修改文件
+- `src/app/globals.css` — 新增22个CSS动画类+reduced-motion媒体查询
+- `src/app/page.tsx` — 集成NotificationHooks+EnhancedNotificationBell
+- `src/components/right-panel/content-workspace.tsx` — 集成ContentScheduler+AIScheduleOptimizer
+- `src/components/right-panel/data-and-reports.tsx` — 集成TrendComparisonChart+CompetitorCalendarView
+- `src/components/right-panel/content-competition-panel.tsx` — 集成CompetitorRadar
+- `src/components/left-panel/persona-form.tsx` — card-glass-enhanced
+- `src/components/right-panel/analytics-panel.tsx` — progress-bar-animated
+
+### QA验证结果
+- ✅ ESLint 零错误（所有修改/新增文件通过）
+- ✅ Next.js production build 编译成功
+- ✅ 15个核心API端点全部正常（/ /api/persona /api/content /api/analytics /api/knowledge /api/plan /api/notifications /api/content/reorder(405) /api/competitor-analysis /api/search /api/ai-config /api/export?format=csv /api/weekly-report /api/settings/stats /api/tracked-accounts）
+- ✅ 无 agent-browser 使用（遵循OOM约束）
+- ✅ 使用 standalone production server 进行稳定测试
+
+### 项目当前状态判断
+- 项目极其成熟稳定，31轮迭代完成
+- 本轮新增13个文件，修改7个文件，新增22个CSS动画类
+- 新增~4777行代码
+- 累计组件数：105+自定义组件
+- 累计API路由：40+个
+
+### 未解决问题或风险
+1. Dev server (turbopack) 在并行请求时可能因内存不足而崩溃，生产模式 standalone server 稳定运行
+2. agent-browser 在本环境无法使用（OOM限制），使用 curl + standalone server 进行QA
+3. AI排期优化依赖外部AI服务可用性
+4. 成就数据存储在 localStorage，清除浏览器数据会丢失
+5. 竞品分析数据依赖 tracked-accounts 中的采集数据
+
+### 建议下一阶段优先事项
+1. 多人协作/团队账号管理功能
+2. 数据导入增强（CSV/Excel文件上传解析）
+3. 性能优化：React.memo、useMemo、虚拟列表、代码分割
+4. PWA离线支持 + Service Worker
+5. 内容发布到真实社交平台API对接
+6. 运营报告定时自动生成 + 邮件/消息推送
+7. 移动端真机测试和适配优化
+8. API Key 加密存储方案
+9. 国际化(i18n)支持
+10. 单元测试 + E2E测试覆盖

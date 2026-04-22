@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WelcomeOnboarding } from "@/components/welcome-onboarding";
-import { NotificationBell } from "@/components/notification-center";
 import { PlatformAccountPanel } from "@/components/platform-account-panel";
 import { AIWritingAssistant } from "@/components/ai-writing-assistant";
 import { SettingsCenter } from "@/components/settings-center";
@@ -34,6 +33,18 @@ import { DashboardOverview } from "@/components/dashboard-overview";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useRipple } from "@/hooks/use-ripple";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { PageTransition } from "@/components/page-transition";
+import { NotificationPing } from "@/components/notification-ping";
+import { EnhancedNotificationBell } from "@/components/notification-center-enhanced";
+import { useSmartReminders } from "@/hooks/use-smart-reminders";
+import { useAchievements } from "@/components/achievement-toast";
+
+// ─── Notification Enhancement Hooks ──────────────────────────────────────
+function NotificationHooks() {
+  useSmartReminders();
+  useAchievements();
+  return null;
+}
 
 // ─── Main tabs for the right content area ──────────────────────────────────────
 
@@ -145,7 +156,9 @@ function DataInitializer() {
 
   if (!isReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center relative">
+        {/* 顶部加载进度条 */}
+        <div className="loading-bar-top" />
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -496,6 +509,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-animated">
+      {/* Notification enhancement hooks */}
+      <NotificationHooks />
+      {/* 顶部加载进度条 */}
       <DataInitializer />
       {/* Top Header */}
       <header className="header-gradient-border border-b border-border/50 bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300">
@@ -628,9 +644,14 @@ export default function Home() {
           {/* Visual divider between settings area and notifications */}
           <div className="hidden sm:block w-px h-5 bg-border/50" />
 
-          {/* Notification Bell - pulse ring when unread */}
-          <div className={notifications.filter(n => !n.read).length > 0 ? 'animate-pulse-glow rounded-lg' : ''}>
-            <NotificationBell />
+          {/* Notification Bell - Enhanced with category system */}
+          <div className="relative">
+            <EnhancedNotificationBell />
+            {notifications.filter(n => !n.read).length > 0 && (
+              <div className="absolute -top-1 -right-1 z-10">
+                <NotificationPing />
+              </div>
+            )}
           </div>
         </div>
 
@@ -639,6 +660,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden">
+        <PageTransition>
         {showWelcome ? (
           <div className="h-full">
             <WelcomeOnboarding onComplete={() => setOnboardingCompleted(true)} />
@@ -647,7 +669,7 @@ export default function Home() {
           <>
             {/* Desktop: Two-panel resizable layout */}
             <div className="hidden sm:block h-full">
-              <ResizablePanelGroup direction="horizontal" className="h-full">
+              <ResizablePanelGroup direction="horizontal" className="h-full card-gradient-border">
                 {/* Left Sidebar */}
                 <ResizablePanel defaultSize={24} minSize={20} maxSize={32}>
                   <div className="h-full border-r bg-background/60 backdrop-blur-sm">
@@ -694,6 +716,7 @@ export default function Home() {
             </div>
           </>
         )}
+        </PageTransition>
       </main>
 
       {/* ─── Floating Bottom Navigation (Mobile Only) ────────────────────── */}

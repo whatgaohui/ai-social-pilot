@@ -195,11 +195,16 @@ export type NotificationType =
   | 'polish'
   | 'generate'
   | 'reminder'
-  | 'error';
+  | 'error'
+  | 'achievement'
+  | 'schedule';
+
+export type NotificationCategory = 'schedule' | 'ai_task' | 'system' | 'achievement' | 'reminder';
 
 export interface AppNotification {
   id: string;
   type: NotificationType;
+  category?: NotificationCategory;
   title: string;
   description: string;
   timestamp: number;

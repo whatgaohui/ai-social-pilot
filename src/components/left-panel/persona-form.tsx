@@ -144,7 +144,7 @@ export function PersonaForm() {
       )}
 
       {/* Basic Info */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-card to-card/80">
+      <Card className="border-0 shadow-sm bg-gradient-to-br from-card to-card/80 card-glass-enhanced">
         <CardHeader className="pb-3 px-4 pt-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -187,7 +187,7 @@ export function PersonaForm() {
       </Card>
 
       {/* Style Settings */}
-      <Card className="border-0 shadow-sm">
+      <Card className="border-0 shadow-sm card-glass-enhanced">
         <CardHeader className="pb-3 px-4 pt-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
@@ -260,7 +260,7 @@ export function PersonaForm() {
       </Card>
 
       {/* Bio & Audience */}
-      <Card className="border-0 shadow-sm">
+      <Card className="border-0 shadow-sm card-glass-enhanced">
         <CardHeader className="pb-3 px-4 pt-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
@@ -291,12 +291,9 @@ export function PersonaForm() {
         </CardContent>
       </Card>
 
-      <Button onClick={handleSave} disabled={saving} className="w-full h-10 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/40" size="sm">
+      <Button onClick={handleSave} disabled={saving} className={`w-full h-10 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/40 ${saving ? 'btn-loading' : ''}`} size="sm">
         {saving ? (
-          <span className="flex items-center gap-2">
-            <span className="h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-            保存中...
-          </span>
+          <span>保存中...</span>
         ) : (
           <span className="flex items-center gap-2">
             <Save className="h-4 w-4" />
