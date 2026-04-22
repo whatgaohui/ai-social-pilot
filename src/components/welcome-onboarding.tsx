@@ -18,7 +18,7 @@ import {
   Sparkles, User, BookOpen, CalendarDays, ArrowRight, ArrowLeft,
   CheckCircle2, ChevronRight, Cpu, Zap, Link2, MessageCircle,
   BookMarked, ExternalLink, Shield, Loader2, Rocket, Star,
-  Palette, Brain, Target, Eye, EyeOff, Wand2, Settings2, BarChart3
+  Palette, Brain, Target, Eye, EyeOff, Wand2, Settings2, BarChart3, Download
 } from "lucide-react";
 
 // --- Animation Variants ---
@@ -74,6 +74,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
   const {
     persona, setPersona, knowledgeItems, setKnowledgeItems, addKnowledgeItem,
     setPlatform, platform, setOnboardingCompleted, setAccountPanelOpen,
+    setSettingsCenterOpen,
   } = useAppStore();
 
   const [step, setStep] = useState(0);
@@ -119,6 +120,8 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
   const [personaSaved, setPersonaSaved] = useState(!!persona?.name);
   const [knowledgeAdded, setKnowledgeAdded] = useState(knowledgeItems.length >= 1);
   const [aiConfigured, setAiConfigured] = useState(false);
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [importingDemo, setImportingDemo] = useState(false);
 
   const completedSteps = [
     true, // Step 0: Welcome - always done
@@ -1010,6 +1013,133 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
                 {tip}
               </div>
             ))}
+          </div>
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div variants={staggerItem} className="max-w-xs mx-auto">
+          <p className="text-xs font-semibold mb-3 flex items-center gap-1 justify-center">
+            <Zap className="h-3 w-3 text-amber-500" />
+            快速开始
+          </p>
+          <div className="space-y-2.5">
+            <motion.div
+              whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(139, 92, 246, 0.15)" }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring" as const, stiffness: 300, damping: 20 }}
+            >
+              <Card
+                className="cursor-pointer border border-violet-200 dark:border-violet-800 hover:border-violet-300 dark:hover:border-violet-700 transition-colors overflow-hidden"
+                onClick={async () => {
+                  setGeneratingPlan(true);
+                  try {
+                    const res = await fetch("/api/ai/batch-generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({}),
+                    });
+                    if (res.ok) {
+                      toast.success("30天计划生成中，请在日历页查看");
+                    } else {
+                      toast.error("生成失败，请稍后重试");
+                    }
+                  } catch {
+                    toast.error("网络错误，请重试");
+                  } finally {
+                    setGeneratingPlan(false);
+                  }
+                }}
+              >
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm shrink-0">
+                    <Sparkles className={`h-5 w-5 text-white ${generatingPlan ? "animate-pulse" : ""}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold">生成30天计划</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">AI 自动生成完整内容日历</p>
+                  </div>
+                  {generatingPlan && <Loader2 className="h-4 w-4 animate-spin text-violet-500 shrink-0" />}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(16, 185, 129, 0.15)" }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring" as const, stiffness: 300, damping: 20 }}
+            >
+              <Card
+                className="cursor-pointer border border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors overflow-hidden"
+                onClick={async () => {
+                  setImportingDemo(true);
+                  try {
+                    const isXHS = selectedPlatforms.includes("xiaohongshu");
+                    const demoTopics = isXHS
+                      ? ["我的护肤心得分享", "办公室好物推荐", "周末探店打卡", "高效学习方法分享", "减脂餐食谱合集"]
+                      : ["今日工作感悟", "行业观察笔记", "读书心得分享", "生活小确幸", "个人成长复盘"];
+                    const contentType = isXHS ? "drygoods" : "insight";
+                    const p = isXHS ? "xiaohongshu" : "wechat";
+
+                    for (let i = 0; i < 5; i++) {
+                      const date = new Date();
+                      date.setDate(date.getDate() + i);
+                      const dateStr = date.toISOString().split("T")[0];
+
+                      await fetch("/api/content", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          scheduledDate: dateStr,
+                          contentType,
+                          topic: demoTopics[i],
+                          content: `这是一篇关于「${demoTopics[i]}」的示例内容，用于演示系统功能。你可以编辑或替换为实际内容。`,
+                          platform: p,
+                          status: "generated",
+                        }),
+                      });
+                    }
+                    toast.success("已导入5条示例数据");
+                  } catch {
+                    toast.error("导入失败，请重试");
+                  } finally {
+                    setImportingDemo(false);
+                  }
+                }}
+              >
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-sm shrink-0">
+                    <Download className={`h-5 w-5 text-white ${importingDemo ? "animate-bounce" : ""}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold">导入示例数据</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">快速填充示例内容体验功能</p>
+                  </div>
+                  {importingDemo && <Loader2 className="h-4 w-4 animate-spin text-emerald-500 shrink-0" />}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(245, 158, 11, 0.15)" }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring" as const, stiffness: 300, damping: 20 }}
+            >
+              <Card
+                className="cursor-pointer border border-amber-200 dark:border-amber-800 hover:border-amber-300 dark:hover:border-amber-700 transition-colors overflow-hidden"
+                onClick={() => { setSettingsCenterOpen(true); }}
+              >
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-sm shrink-0">
+                    <Cpu className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold">配置AI模型</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">切换或添加自定义 AI 模型</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
         </motion.div>
 

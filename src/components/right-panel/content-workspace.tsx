@@ -36,6 +36,7 @@ import { HashtagRecommender } from "@/components/right-panel/hashtag-recommender
 import { CoverImageGenerator } from "@/components/right-panel/cover-image-generator";
 import { TitleABTest } from "@/components/right-panel/title-ab-test";
 import { QualityScorer } from "@/components/right-panel/quality-scorer";
+import { ContentSpellcheck } from "@/components/right-panel/content-spellcheck";
 import { ContentHistory } from "@/components/right-panel/content-history";
 import { ViralInspiration } from "@/components/right-panel/viral-inspiration";
 import { PublishWorkflow } from "@/components/right-panel/publish-workflow";
@@ -457,6 +458,7 @@ export function ContentWorkspace() {
                     <div ref={qualityScorerRef}>
                       <QualityScorer post={selectedPost} />
                     </div>
+                    <ContentSpellcheck post={selectedPost} />
                   </motion.div>
                 )}
 

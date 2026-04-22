@@ -44,6 +44,22 @@ function FloatingOrbs() {
         }}
         transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 2 }}
       />
+      {/* Small floating geometric shapes */}
+      <motion.div
+        className="absolute top-16 right-12 h-3 w-3 rounded-sm bg-violet-400/15 dark:bg-violet-500/20 rotate-45 animate-float"
+        animate={{ y: [0, -10, 0], rotate: [45, 90, 45] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+      />
+      <motion.div
+        className="absolute bottom-24 right-16 h-2.5 w-2.5 rounded-full bg-rose-400/15 dark:bg-rose-500/20 animate-float"
+        animate={{ y: [0, -8, 0], scale: [1, 1.3, 1] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+      />
+      <motion.div
+        className="absolute top-1/3 left-8 h-2 w-2 rounded-full bg-emerald-400/15 dark:bg-emerald-500/20 animate-float"
+        animate={{ y: [0, -6, 0], opacity: [0.4, 0.8, 0.4] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+      />
     </div>
   );
 }
@@ -53,6 +69,14 @@ function FloatingOrbs() {
 function AnimatedIllustration() {
   return (
     <div className="relative flex items-center justify-center w-full mb-6">
+      {/* Shimmer overlay behind the illustration */}
+      <motion.div
+        className="absolute inset-0 rounded-3xl animate-shimmer opacity-50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+      />
+
       {/* Main document icon */}
       <motion.div
         className="relative"
@@ -221,13 +245,13 @@ export function WorkspaceEmptyState() {
   ];
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-full px-6 py-12 overflow-hidden">
-      {/* Floating background orbs */}
+    <div className="relative flex flex-col items-center justify-center min-h-full px-6 py-12 overflow-hidden bg-gradient-animated">
+      {/* Floating background orbs & shapes */}
       <FloatingOrbs />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center w-full max-w-[320px]">
-        {/* Animated illustration */}
+        {/* Animated illustration with shimmer */}
         <AnimatedIllustration />
 
         {/* Title */}
@@ -237,7 +261,7 @@ export function WorkspaceEmptyState() {
           transition={{ delay: 0.15, duration: 0.4, ease: "easeOut" }}
           className="text-center mb-1.5"
         >
-          <h3 className="text-base font-bold text-foreground">
+          <h3 className="text-base font-bold animate-gradient-text">
             选择内容开始创作
           </h3>
         </motion.div>

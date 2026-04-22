@@ -1933,3 +1933,66 @@ textarea {
     transition: none !important;
   }
 }
+
+/* ====== Style Polish: Additional Animation Utilities ====== */
+
+/* Animated gradient border (standalone element, not ::before mask) */
+@keyframes gradient-border {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animated-border {
+  background: linear-gradient(270deg, #8b5cf6, #ec4899, #f59e0b, #8b5cf6);
+  background-size: 400% 400%;
+  animation: gradient-border 8s ease infinite;
+}
+.dark .animated-border {
+  background: linear-gradient(270deg, #7c3aed, #db2777, #d97706, #7c3aed);
+  background-size: 400% 400%;
+  animation: gradient-border 8s ease infinite;
+}
+
+/* Typing cursor blink */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink::after {
+  content: '|';
+  animation: cursor-blink 1s step-end infinite;
+  color: #8b5cf6;
+}
+.dark .cursor-blink::after {
+  color: #a78bfa;
+}
+
+/* Content fade-in up animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Subtle pulse for status dots */
+@keyframes status-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+.animate-status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-status-pulse {
+    animation: none;
+  }
+}
