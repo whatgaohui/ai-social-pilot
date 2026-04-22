@@ -2191,3 +2191,57 @@ Stage Summary:
   2. 报告可见性提升
   3. 灵感与内容管理合并
   4. 设置页面结构重构
+
+---
+Task ID: 13
+Agent: Main Developer
+Task: 修复智能分析"生成优化方案"bug + 回答版本记录机制
+
+Work Log:
+- 分析项目代码：quality-scorer.tsx、optimize API、content-history.tsx、versions API
+- 检查 dev server 日志确认 API 调用正常（200状态码）
+- 定位3个bug并进行修复
+
+### Bug修复
+1. **AI返回内容包含markdown代码块包裹**（optimize API）：
+   - 问题：AI有时会将输出内容用 ``` ``` 包裹，导致保存的内容包含垃圾标记
+   - 修复：在 /api/ai/optimize/route.ts 的标准优化和格式优化两个分支中，均添加 markdown 代码块清理逻辑（正则匹配 ``` 提取内部内容）
+
+2. **优化方案直接替换内容，用户看不到变化**（quality-scorer.tsx）：
+   - 问题：点击"根据改进建议生成优化方案"后，内容被静默替换，评分结果被清除，用户看不到优化前后的对比
+   - 修复：重构为三步流程：
+     1. 点击按钮 → AI生成优化内容
+     2. 展示**原文/优化后对比预览**（OptimizationPreview组件）：原文卡片 + 箭头 + 优化后卡片，各显示字数统计和复制按钮
+     3. 用户选择"应用优化方案"或"放弃"
+     4. 应用时：先保存版本快照 → 更新内容 → 清除评分结果
+
+3. **优化prompt中内容重复传递**（quality-scorer.tsx）：
+   - 问题：feedback prompt中包含了原文内容，但optimize API的主prompt也会包含原文，导致内容传了两次
+   - 修复：feedback prompt改为只传改进建议和评分信息，不再重复传原文；post对象只传 content/contentType/topic 三个必要字段
+
+### 修改文件
+- `src/app/api/ai/optimize/route.ts` - 添加markdown清理（2处）
+- `src/components/right-panel/quality-scorer.tsx` - 完全重构优化方案流程
+
+### 新增组件
+- OptimizationPreview：优化方案对比预览组件（原文/优化后并排展示 + 应用/放弃按钮）
+
+### 版本记录机制说明（回答用户问题）
+版本记录的工作机制：
+- **版本编号规则**：每个帖子独立维护版本序列。第一次创建版本 = V1，第二次 = V2，依此类推。版本号通过API自动递增（查找当前最大版本号 +1）
+- **触发方式**：
+  1. **手动触发**：在"版本记录"tab中点击"保存当前版本"按钮（changeType: edit）
+  2. **AI优化触发**：点击"AI智能优化"按钮成功后自动保存原内容快照（changeType: optimize）
+  3. **评分优化触发**：在智能分析tab中，评分后点击"根据改进建议生成优化方案"并应用后，自动保存原内容快照（changeType: optimize, 附带原评分）
+  4. **其他AI操作**：A/B对比测试选择版本时、口水话润色成功时
+- **版本内容**：每次保存的是当时的完整文案快照，以及变更类型、摘要、AI评分
+- **恢复版本**：点击任意历史版本的"恢复"按钮，可将帖子内容恢复到该版本
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（✓ Compiled in 337ms）
+
+Stage Summary:
+- 项目状态：稳定可运行，优化方案功能已修复
+- 本轮修改 2 个文件，修复 3 个 bug
+- 核心改进：优化方案改为对比预览模式、markdown清理、prompt精简

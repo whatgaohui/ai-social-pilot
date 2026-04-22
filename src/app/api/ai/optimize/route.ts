@@ -81,8 +81,15 @@ ${knowledgeItems && knowledgeItems.length > 0 ? `可参考的知识库素材：$
       { role: 'user', content: userPrompt },
     ]);
 
+    // Strip markdown code blocks if present (AI sometimes wraps output in ```)
+    let cleaned = optimizedContent.trim();
+    const codeBlockMatch = cleaned.match(/```(?:[a-zA-Z]*)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      cleaned = codeBlockMatch[1].trim();
+    }
+
     return NextResponse.json({
-      content: optimizedContent,
+      content: cleaned,
       model: ai.config?.name || ai.config?.provider || 'default',
     });
   } catch (error) {
@@ -153,8 +160,15 @@ ${post.content}
     { role: 'user', content: userPrompt },
   ]);
 
+  // Strip markdown code blocks if present
+  let cleaned = formattedContent.trim();
+  const codeBlockMatch = cleaned.match(/```(?:[a-zA-Z]*)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    cleaned = codeBlockMatch[1].trim();
+  }
+
   return NextResponse.json({
-    content: formattedContent,
+    content: cleaned,
     mode: 'format',
     model: ai.config?.name || ai.config?.provider || 'default',
   });

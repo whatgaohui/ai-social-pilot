@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useAppStore } from "@/store/app-store";
 import type { ContentPost } from "@/types";
 import {
@@ -23,8 +25,14 @@ import {
   Star,
   Wand2,
   RefreshCw,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  Copy,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 interface DimensionScore {
   name: string;
@@ -65,7 +73,7 @@ function CircularProgress({ score, size = 120, strokeWidth = 8 }: { score: numbe
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
-  const gradientId = `score-gradient-${score}`;
+  const gradientId = `score-gradient-${score}-${Math.random().toString(36).slice(2, 6)}`;
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -173,12 +181,145 @@ function DimensionBar({
   );
 }
 
+// Optimization plan preview with before/after comparison
+function OptimizationPreview({
+  originalContent,
+  optimizedContent,
+  scoreBefore,
+  onApply,
+  onDiscard,
+  applying,
+}: {
+  originalContent: string;
+  optimizedContent: string;
+  scoreBefore: number;
+  onApply: () => void;
+  onDiscard: () => void;
+  applying: boolean;
+}) {
+  const [, copy] = useCopyToClipboard();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.35 }}
+      className="space-y-3"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <div className="h-5 w-5 rounded bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+          <Wand2 className="h-3 w-3 text-white" />
+        </div>
+        <span className="text-xs font-semibold">优化方案预览</span>
+        <Badge variant="outline" className="text-[10px] h-5 border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400">
+          原评分 {scoreBefore}分
+        </Badge>
+      </div>
+
+      {/* Comparison Cards */}
+      <div className="grid grid-cols-1 gap-2">
+        {/* Before */}
+        <div className="rounded-lg border border-border p-3 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-[10px] h-5 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400">
+                原文
+              </Badge>
+              <span className="text-[10px] text-muted-foreground">{originalContent.length}字</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+              onClick={() => copy(originalContent)}
+            >
+              <Copy className="h-2.5 w-2.5" />
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-4 whitespace-pre-wrap">
+            {originalContent}
+          </p>
+        </div>
+
+        {/* Arrow */}
+        <div className="flex justify-center">
+          <div className="h-5 w-5 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+            <ArrowRight className="h-3 w-3 text-violet-500" />
+          </div>
+        </div>
+
+        {/* After */}
+        <div className="rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50/30 dark:bg-violet-950/10 p-3 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Badge className="text-[10px] h-5 bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border-0">
+                优化后
+              </Badge>
+              <span className="text-[10px] text-muted-foreground">{optimizedContent.length}字</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+              onClick={() => copy(optimizedContent)}
+            >
+              <Copy className="h-2.5 w-2.5" />
+            </Button>
+          </div>
+          <p className="text-xs text-foreground/90 leading-relaxed line-clamp-6 whitespace-pre-wrap">
+            {optimizedContent}
+          </p>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Action Buttons */}
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={onApply}
+          disabled={applying}
+          size="sm"
+          className="flex-1 h-9 text-xs gap-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-sm btn-press"
+        >
+          {applying ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              应用中...
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              应用优化方案
+            </>
+          )}
+        </Button>
+        <Button
+          onClick={onDiscard}
+          disabled={applying}
+          variant="outline"
+          size="sm"
+          className="h-9 text-xs gap-1.5 text-muted-foreground hover:text-foreground btn-press"
+        >
+          <XCircle className="h-3.5 w-3.5" />
+          放弃
+        </Button>
+      </div>
+    </motion.div>
+  );
+}
+
 export function QualityScorer({ post }: { post: ContentPost }) {
   const { platform, updateContentPost } = useAppStore();
+  const [, copy] = useCopyToClipboard();
   const [isOpen, setIsOpen] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<QualityScoreResult | null>(null);
   const [optimizing, setOptimizing] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [optimizedContent, setOptimizedContent] = useState<string | null>(null);
 
   // Track the content that was last scored, so we can detect changes
   const lastScoredContentRef = useRef<string | null>(null);
@@ -194,6 +335,7 @@ export function QualityScorer({ post }: { post: ContentPost }) {
 
     setScoring(true);
     setResult(null);
+    setOptimizedContent(null);
     setIsOpen(true);
 
     try {
@@ -230,40 +372,34 @@ export function QualityScorer({ post }: { post: ContentPost }) {
     if (!result || !post.content) return;
 
     setOptimizing(true);
+    setOptimizedContent(null);
 
-    // Build the optimization prompt from the score results
+    // Build a focused optimization prompt from score results
     const improvementsText = result.improvements.join("\n- ");
-    const dimensionsText = result.dimensions
+    const weakDimensions = result.dimensions
       .filter((d) => d.score < 70)
       .map((d) => `${d.name}（${d.score}分）：${d.suggestion}`)
       .join("\n");
-
-    const prompt = `请根据以下AI评分的改进建议，对原文进行针对性优化改写。
-
-原文：
-${post.content}
-
-评分结果：${result.overallScore}分
-改进建议：
-- ${improvementsText}
-
-需要重点改进的维度：
-${dimensionsText}
-
-要求：
-1. 针对每条改进建议进行实质性修改
-2. 保留原文的核心信息和风格
-3. 优化后的文案要自然流畅，不要生硬
-4. 直接输出优化后的完整文案，不要解释修改了什么`;
 
     try {
       const res = await fetch("/api/ai/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          post: { ...post, content: post.content },
+          post: { content: post.content, contentType: post.contentType, topic: post.topic },
           persona: useAppStore.getState().persona,
-          feedback: prompt,
+          feedback: `请根据以下AI评分的改进建议，进行针对性优化改写（不要重复输出原文）：
+
+评分结果：${result.overallScore}分
+改进建议：
+- ${improvementsText}
+
+${weakDimensions ? `需重点改进的维度：\n${weakDimensions}` : ""}
+
+要求：
+1. 针对每条改进建议进行实质性修改
+2. 保留原文核心信息和风格
+3. 直接输出优化后的完整文案，不要解释修改了什么`,
           knowledgeItems: useAppStore.getState().knowledgeItems,
           platform,
         }),
@@ -271,48 +407,78 @@ ${dimensionsText}
 
       if (res.ok) {
         const data = await res.json();
-        // Save version snapshot before optimization
-        try {
-          await fetch(`/api/content/${post.id}/versions`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: post.content,
-              changeType: "optimize",
-              summary: `评分优化（原${result.overallScore}分）`,
-              aiScore: result.overallScore,
-            }),
-          });
-        } catch (e) {
-          console.error("Failed to save version snapshot:", e);
-        }
-
-        // Apply optimized content
-        const updateRes = await fetch(`/api/content/${post.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: data.content,
-            status: "optimized",
-          }),
-        });
-
-        if (updateRes.ok) {
-          const updated = await updateRes.json();
-          updateContentPost(post.id, updated);
-          // Clear result since content changed
-          setResult(null);
-          lastScoredContentRef.current = null;
-          toast.success("已根据评分建议生成优化方案");
+        if (data.content) {
+          setOptimizedContent(data.content);
+          toast.success("优化方案已生成，请预览后决定是否应用");
+        } else {
+          toast.error("AI返回内容为空，请重试");
         }
       } else {
-        toast.error("生成优化方案失败，请重试");
+        const errData = await res.json();
+        toast.error(errData.error || "生成优化方案失败，请重试");
       }
     } catch {
       toast.error("网络错误，请重试");
     } finally {
       setOptimizing(false);
     }
+  };
+
+  // Apply the optimized content
+  const handleApplyOptimization = async () => {
+    if (!optimizedContent || !result) return;
+
+    setApplying(true);
+
+    try {
+      // 1. Save version snapshot (before applying)
+      try {
+        await fetch(`/api/content/${post.id}/versions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: post.content,
+            changeType: "optimize",
+            summary: `评分优化（原${result.overallScore}分）`,
+            aiScore: result.overallScore,
+          }),
+        });
+      } catch (e) {
+        console.error("Failed to save version snapshot:", e);
+      }
+
+      // 2. Update content in database
+      const updateRes = await fetch(`/api/content/${post.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: optimizedContent,
+          status: "optimized",
+        }),
+      });
+
+      if (updateRes.ok) {
+        const updated = await updateRes.json();
+        updateContentPost(post.id, updated);
+        // Clear optimization preview
+        setOptimizedContent(null);
+        // Clear scoring result since content changed
+        setResult(null);
+        lastScoredContentRef.current = null;
+        toast.success("优化方案已应用");
+      } else {
+        toast.error("应用优化方案失败，请重试");
+      }
+    } catch {
+      toast.error("网络错误，请重试");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  // Discard the optimization preview
+  const handleDiscardOptimization = () => {
+    setOptimizedContent(null);
   };
 
   return (
@@ -324,7 +490,7 @@ ${dimensionsText}
             className="w-full h-auto p-4 hover:bg-muted/50 rounded-lg"
             onClick={(e) => {
               // First click: auto-trigger scoring (when no result yet and not already scoring)
-              if (!isOpen && !result && !scoring) {
+              if (!isOpen && !result && !scoring && !optimizedContent) {
                 e.preventDefault();
                 handleScore();
               }
@@ -336,7 +502,7 @@ ${dimensionsText}
                   <Star className="h-3.5 w-3.5 text-white" />
                 </div>
                 <span className="text-sm font-semibold">AI质量评分</span>
-                {result && (
+                {result && !optimizedContent && (
                   <span className={`text-xs font-bold ${getScoreColor(result.overallScore)}`}>
                     {result.overallScore}分
                     {contentChanged && (
@@ -344,11 +510,17 @@ ${dimensionsText}
                     )}
                   </span>
                 )}
+                {optimizedContent && (
+                  <Badge variant="outline" className="text-[10px] h-5 border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20">
+                    <Wand2 className="h-2.5 w-2.5 mr-0.5" />
+                    待确认
+                  </Badge>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {scoring && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                {/* Show re-score icon when content changed */}
-                {contentChanged && !scoring && (
+                {optimizing && <Loader2 className="h-4 w-4 animate-spin text-violet-500" />}
+                {contentChanged && !scoring && !optimizedContent && (
                   <RefreshCw className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
                 )}
                 {isOpen ? (
@@ -363,7 +535,7 @@ ${dimensionsText}
 
         <CollapsibleContent>
           <CardContent className="px-4 pb-4 space-y-4">
-            {/* Loading State */}
+            {/* Loading State - Scoring */}
             {scoring && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -383,10 +555,31 @@ ${dimensionsText}
               </motion.div>
             )}
 
+            {/* Loading State - Generating Optimization */}
+            {!scoring && optimizing && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center py-8 space-y-3"
+              >
+                <div className="relative">
+                  <Loader2 className="h-10 w-10 animate-spin text-violet-500/60" />
+                  <Wand2 className="h-5 w-5 text-violet-500 absolute -top-1 -right-1" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">AI正在生成优化方案...</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    根据改进建议针对性改写中
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Score Result */}
             <AnimatePresence>
-              {!scoring && result && (
+              {!scoring && !optimizing && result && !optimizedContent && (
                 <motion.div
+                  key="score-result"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
@@ -471,32 +664,22 @@ ${dimensionsText}
                     {/* Generate Optimization Plan - main action */}
                     <Button
                       onClick={handleGenerateOptimization}
-                      disabled={optimizing || result.improvements.length === 0}
+                      disabled={result.improvements.length === 0}
                       size="sm"
                       className="w-full h-9 text-xs gap-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-sm btn-press"
                     >
-                      {optimizing ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          正在生成优化方案...
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="h-3.5 w-3.5" />
-                          根据改进建议生成优化方案
-                        </>
-                      )}
+                      <Wand2 className="h-3.5 w-3.5" />
+                      根据改进建议生成优化方案
                     </Button>
 
                     {/* Re-score button */}
                     <Button
                       onClick={handleScore}
-                      disabled={scoring}
                       variant="ghost"
                       size="sm"
                       className="w-full h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
                     >
-                      <RefreshCw className={`h-3 w-3 ${scoring ? "animate-spin" : ""}`} />
+                      <RefreshCw className="h-3 w-3" />
                       重新评分
                     </Button>
                   </div>
@@ -504,8 +687,22 @@ ${dimensionsText}
               )}
             </AnimatePresence>
 
+            {/* Optimization Preview */}
+            <AnimatePresence>
+              {!scoring && !optimizing && optimizedContent && result && (
+                <OptimizationPreview
+                  originalContent={post.content}
+                  optimizedContent={optimizedContent}
+                  scoreBefore={result.overallScore}
+                  onApply={handleApplyOptimization}
+                  onDiscard={handleDiscardOptimization}
+                  applying={applying}
+                />
+              )}
+            </AnimatePresence>
+
             {/* Empty State - Re-score */}
-            {!scoring && !result && isOpen && (
+            {!scoring && !optimizing && !result && !optimizedContent && isOpen && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
