@@ -54,6 +54,20 @@ const STATUS_DOT_COLORS: Record<PostStatus, string> = {
   published: "bg-violet-500",
 };
 
+// Day cell background tints per status
+const STATUS_CELL_BG: Record<PostStatus, { bg: string; border: string; dot: string }> = {
+  published: { bg: "bg-violet-100 dark:bg-violet-950/50", border: "border-l-2 border-l-violet-500", dot: "bg-violet-500" },
+  optimized: { bg: "bg-amber-100 dark:bg-amber-950/40", border: "border-l-2 border-l-amber-500", dot: "bg-amber-500" },
+  generated: { bg: "bg-sky-100 dark:bg-sky-950/40", border: "border-l-2 border-l-sky-500", dot: "bg-sky-500" },
+  planned:   { bg: "bg-gray-100 dark:bg-gray-800/60", border: "border-l-2 border-l-gray-400", dot: "bg-gray-400" },
+};
+
+// Platform left-bar accent color
+const PLATFORM_CELL_ACCENT: Record<string, string> = {
+  wechat: "border-l-green-500",
+  xiaohongshu: "border-l-red-500",
+};
+
 const STATUS_BADGE_COLORS: Record<PostStatus, string> = {
   planned: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
   generated: "bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300",
@@ -368,16 +382,24 @@ export function CompactCalendar() {
                 <div className="grid grid-cols-7 gap-px">
                   {/* Empty offset cells */}
                   {Array.from({ length: startDayOfWeek }).map((_, i) => (
-                    <div key={`empty-${i}`} className="h-7" />
+                    <div key={`empty-${i}`} className="h-8" />
                   ))}
 
-                  {/* Day cells - compact 28px height */}
+                  {/* Day cells - colored blocks by status */}
                   {daysInMonth.map((day) => {
                     const dateStr = format(day, "yyyy-MM-dd");
                     const posts = postsByDate[dateStr];
                     const today = isToday(day);
                     const isSelected = selectedDate === dateStr;
                     const primaryPost = posts?.[0];
+                    const postStatus = (primaryPost?.status || "planned") as PostStatus;
+                    const statusStyle = STATUS_CELL_BG[postStatus];
+
+                    // Multi-platform: show platform accent bar instead of status color
+                    const isMultiPlatform = platformFilter === "all" && posts && posts.length > 1;
+                    const platformAccent = primaryPost?.platform
+                      ? PLATFORM_CELL_ACCENT[primaryPost.platform] || ""
+                      : "";
 
                     return (
                       <motion.button
@@ -385,50 +407,62 @@ export function CompactCalendar() {
                         whileTap={{ scale: 0.92 }}
                         onClick={() => handleDayClick(dateStr)}
                         className={`
-                          relative h-7 w-full rounded-sm flex flex-col items-center justify-center cursor-pointer
-                          transition-colors duration-150
-                          ${isSelected ? "bg-primary/15 ring-1.5 ring-primary" : ""}
-                          ${today && !isSelected ? "ring-1 ring-primary/40" : ""}
-                          ${primaryPost ? (isSelected ? "bg-primary/15" : "bg-muted/60 hover:bg-muted") : "hover:bg-muted/40"}
+                          relative h-8 w-full rounded flex flex-col items-center justify-center cursor-pointer
+                          transition-all duration-150 overflow-hidden
+                          ${isSelected ? "ring-2 ring-primary ring-offset-1" : ""}
+                          ${today && !isSelected ? "ring-1 ring-primary/50" : ""}
+                          ${primaryPost
+                            ? `${statusStyle.bg} ${isMultiPlatform ? platformAccent : statusStyle.border} hover:brightness-95 dark:hover:brightness-110`
+                            : "hover:bg-muted/40"
+                          }
                         `}
                       >
+                        {/* Date number */}
                         <span
-                          className={`text-[10px] leading-none ${
+                          className={`text-[11px] leading-none font-medium ${
                             today
                               ? "font-bold text-primary"
-                              : isSelected
-                                ? "font-semibold text-primary"
-                                : "text-foreground/80"
+                              : primaryPost
+                                ? isSelected
+                                  ? "text-primary"
+                                  : "text-foreground/90"
+                                : "text-muted-foreground"
                           }`}
                         >
                           {format(day, "d")}
                         </span>
-                        {/* Dots row */}
+
+                        {/* Bottom indicator: platform dots for multi-platform, or status label for single */}
                         {posts && posts.length > 0 && (
                           <div className="flex items-center gap-[2px] mt-[1px]">
-                            {/* Platform dots (when all view and multiple posts) */}
-                            {platformFilter === "all" && posts.length > 1 && (
-                              <>
-                                {posts
-                                  .reduce((acc, p) => {
-                                    const plat = p.platform || "wechat";
-                                    if (!acc.includes(plat)) acc.push(plat);
-                                    return acc;
-                                  }, [] as string[])
-                                  .map((plat) => (
-                                    <span
-                                      key={plat}
-                                      className={`h-[3px] w-[3px] rounded-full ${PLATFORM_DOT_COLORS[plat]}`}
-                                    />
-                                  ))}
-                              </>
+                            {isMultiPlatform ? (
+                              // Multi-platform: show colored platform dots
+                              posts
+                                .reduce((acc, p) => {
+                                  const plat = p.platform || "wechat";
+                                  if (!acc.includes(plat)) acc.push(plat);
+                                  return acc;
+                                }, [] as string[])
+                                .map((plat) => (
+                                  <span
+                                    key={plat}
+                                    className={`h-[5px] w-[5px] rounded-full ${PLATFORM_DOT_COLORS[plat]} ring-1 ring-white/50 dark:ring-black/20`}
+                                  />
+                                ))
+                            ) : (
+                              // Single platform: show a short status text label
+                              <span className={`text-[7px] font-semibold leading-none px-1 rounded-sm ${
+                                postStatus === 'published'
+                                  ? 'bg-violet-200/80 dark:bg-violet-800/60 text-violet-700 dark:text-violet-200'
+                                  : postStatus === 'optimized'
+                                    ? 'bg-amber-200/80 dark:bg-amber-800/60 text-amber-700 dark:text-amber-200'
+                                    : postStatus === 'generated'
+                                      ? 'bg-sky-200/80 dark:bg-sky-800/60 text-sky-700 dark:text-sky-200'
+                                      : 'bg-gray-200/80 dark:bg-gray-700/60 text-gray-500 dark:text-gray-300'
+                              }`}>
+                                {postStatus === 'published' ? '已发' : postStatus === 'optimized' ? '已优' : postStatus === 'generated' ? '已生' : '待发'}
+                              </span>
                             )}
-                            {/* Status dot (when single post or filtered) */}
-                            {platformFilter !== "all" || posts.length <= 1 ? (
-                              <span
-                                className={`h-[3px] w-[3px] rounded-full ${STATUS_DOT_COLORS[(primaryPost?.status || "planned") as PostStatus]}`}
-                              />
-                            ) : null}
                           </div>
                         )}
                       </motion.button>
