@@ -1793,17 +1793,17 @@ export function PlatformAccountPanel({
                     platform="wechat"
                     account={wechatAccount}
                     onConnect={handleConnect}
-                    onDisconnect={() => wechatAccount && handleDisconnect(wechatAccount.id)}
+                    onDisconnect={() => wechatAccount ? handleDisconnect(wechatAccount.id) : Promise.resolve()}
                     onTest={() => wechatAccount ? handleTest(wechatAccount.id) : Promise.reject("No account")}
-                    onSync={() => wechatAccount && handleSync(wechatAccount.id)}
+                    onSync={() => wechatAccount ? handleSync(wechatAccount.id) : Promise.resolve()}
                   />
                   <PlatformSection
                     platform="xiaohongshu"
                     account={xhsAccount}
                     onConnect={handleConnect}
-                    onDisconnect={() => xhsAccount && handleDisconnect(xhsAccount.id)}
+                    onDisconnect={() => xhsAccount ? handleDisconnect(xhsAccount.id) : Promise.resolve()}
                     onTest={() => xhsAccount ? handleTest(xhsAccount.id) : Promise.reject("No account")}
-                    onSync={() => xhsAccount && handleSync(xhsAccount.id)}
+                    onSync={() => xhsAccount ? handleSync(xhsAccount.id) : Promise.resolve()}
                   />
                 </div>
 
@@ -1813,17 +1813,17 @@ export function PlatformAccountPanel({
                     platform="wechat"
                     account={wechatAccount}
                     onConnect={handleConnect}
-                    onDisconnect={() => wechatAccount && handleDisconnect(wechatAccount.id)}
+                    onDisconnect={() => wechatAccount ? handleDisconnect(wechatAccount.id) : Promise.resolve()}
                     onTest={() => wechatAccount ? handleTest(wechatAccount.id) : Promise.reject("No account")}
-                    onSync={() => wechatAccount && handleSync(wechatAccount.id)}
+                    onSync={() => wechatAccount ? handleSync(wechatAccount.id) : Promise.resolve()}
                   />
                   <PlatformSection
                     platform="xiaohongshu"
                     account={xhsAccount}
                     onConnect={handleConnect}
-                    onDisconnect={() => xhsAccount && handleDisconnect(xhsAccount.id)}
+                    onDisconnect={() => xhsAccount ? handleDisconnect(xhsAccount.id) : Promise.resolve()}
                     onTest={() => xhsAccount ? handleTest(xhsAccount.id) : Promise.reject("No account")}
-                    onSync={() => xhsAccount && handleSync(xhsAccount.id)}
+                    onSync={() => xhsAccount ? handleSync(xhsAccount.id) : Promise.resolve()}
                   />
                 </div>
 

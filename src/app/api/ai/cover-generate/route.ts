@@ -131,21 +131,13 @@ export async function POST(request: NextRequest) {
       const zai = await ZAI.default.create();
 
       // Attempt image generation
-      const result = await zai.images.generate({
+      const result = await zai.images.generations.create({
         prompt: prompt,
-        size: '1024x1536',
+        size: '768x1344',
       });
 
-      if (result?.data?.[0]?.url) {
-        // If the SDK returns a URL, fetch it and convert to base64
-        const imageResponse = await fetch(result.data[0].url);
-        if (imageResponse.ok) {
-          const arrayBuffer = await imageResponse.arrayBuffer();
-          const base64 = Buffer.from(arrayBuffer).toString('base64');
-          imageUrl = `data:image/png;base64,${base64}`;
-        }
-      } else if (result?.data?.[0]?.b64_json) {
-        imageUrl = `data:image/png;base64,${result.data[0].b64_json}`;
+      if (result?.data?.[0]?.base64) {
+        imageUrl = `data:image/png;base64,${result.data[0].base64}`;
       }
     } catch (aiError) {
       console.warn('AI image generation failed, using SVG fallback:', aiError);

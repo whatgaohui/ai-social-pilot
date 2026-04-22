@@ -5,7 +5,8 @@ import { useAppStore } from "@/store/app-store";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AnalyticsPanel } from "@/components/right-panel/analytics-panel";
 import { OperationReport } from "@/components/right-panel/operation-report";
-import { FileBarChart, BarChart3 } from "lucide-react";
+import { FileBarChart, BarChart3, LayoutDashboard } from "lucide-react";
+import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
 
 /**
  * DataAndReports — unified "数据与报告" view that merges
@@ -53,6 +54,17 @@ export function DataAndReports() {
                 <BarChart3 className="h-3.5 w-3.5" />
                 数据分析
               </TabsTrigger>
+              <TabsTrigger
+                value="dashboard"
+                className={`flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm ${
+                  !isWeChat
+                    ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
+                    : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
+                }`}
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                运营看板
+              </TabsTrigger>
             </TabsList>
 
             {/* ── Report Tab (DEFAULT — prominent) ────────────────── */}
@@ -72,6 +84,16 @@ export function DataAndReports() {
             >
               <div className="flex flex-col flex-1 min-h-0">
                 <AnalyticsPanel />
+              </div>
+            </TabsContent>
+
+            {/* ── Dashboard Tab ──────────────────────────────────────── */}
+            <TabsContent
+              value="dashboard"
+              className="flex flex-col min-h-0 mt-1"
+            >
+              <div className="flex flex-col flex-1 min-h-0">
+                <OperationsDashboard />
               </div>
             </TabsContent>
           </Tabs>

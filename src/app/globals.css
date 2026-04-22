@@ -1123,3 +1123,102 @@ textarea {
   border-color: rgba(139, 92, 246, 0.2);
   color: #a78bfa;
 }
+
+/* ====== Micro-Interaction Animation Utilities ====== */
+
+/* Shimmer loading effect for cards */
+@keyframes shimmer-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer-slide {
+  animation: shimmer-slide 2s ease-in-out infinite;
+}
+
+/* Pulse glow for active elements */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Gradient text animation (reuses gradient-shift keyframe) */
+.animate-gradient-text {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7, #d946ef, #ec4899, #8b5cf6);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.dark .animate-gradient-text {
+  background: linear-gradient(135deg, #a78bfa, #c084fc, #f0abfc, #fb7185, #a78bfa);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Number counter flash */
+@keyframes counter-flash {
+  0% { color: inherit; }
+  50% { color: rgb(139 92 246); }
+  100% { color: inherit; }
+}
+.animate-counter-flash {
+  animation: counter-flash 0.6s ease;
+}
+
+/* Skeleton shimmer overlay */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  animation: shimmer-slide 2s ease-in-out infinite;
+}
+.dark .skeleton-shimmer::after {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+}
+
+/* Animated gradient border for header */
+.header-gradient-border {
+  position: relative;
+}
+.header-gradient-border::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #8b5cf6, #ec4899, #f59e0b, #8b5cf6, transparent);
+  background-size: 200% 100%;
+  animation: gradient-shift 4s ease infinite;
+  opacity: 0.6;
+}
+.dark .header-gradient-border::after {
+  opacity: 0.4;
+}
+
+/* Stat card hover glow ring */
+.stat-card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  border: 1px solid transparent;
+}
+.stat-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: rgba(139, 92, 246, 0.15);
+}
+.dark .stat-card-hover:hover {
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15), 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: rgba(139, 92, 246, 0.25);
+}

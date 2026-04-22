@@ -940,24 +940,32 @@ export function AnalyticsPanel() {
                 color: "text-cyan-500",
                 bg: "bg-cyan-50 dark:bg-cyan-950/30",
               },
-            ].map((stat) => (
-              <Card key={stat.label} className="border-0 shadow-sm">
-                <CardContent className="p-3 flex items-center gap-3">
-                  <div
-                    className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center flex-shrink-0`}
-                  >
-                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-lg font-semibold truncate">
-                      {formatNum(stat.value)}
+            ].map((stat, idx) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                transition={{ duration: 0.3, delay: idx * 0.06 }}
+              >
+                <Card className="border-0 shadow-sm stat-card-hover">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div
+                      className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center flex-shrink-0`}
+                    >
+                      <stat.icon className={`h-4 w-4 ${stat.color}`} />
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {stat.label}
+                    <div className="min-w-0">
+                      <div className="text-lg font-semibold truncate">
+                        {formatNum(stat.value)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {stat.label}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
 

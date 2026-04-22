@@ -2334,3 +2334,130 @@ Stage Summary:
   2. 修复 platform-account-panel.tsx 类型错误
   3. 修复 framer-motion Variants ease 类型兼容性问题
   4. 继续推进新功能开发
+
+---
+Task ID: 16
+Agent: Main Developer (Cron Review 20:15)
+Task: TypeScript类型修复 + 采集中心集成 + 运营看板 + 视觉增强
+
+Work Log:
+- 读取 worklog.md 了解前15轮开发成果
+- 运行 lint（零错误通过）、TypeScript类型检查（发现17个src/目录类型错误）
+- 修复全部17个TypeScript类型错误
+- 集成采集中心组件到右侧面板Tab
+- 创建运营看板组件并集成到数据与报告
+- 增强全局视觉样式（CSS动画、Header效果、通知徽章、Tab下划线、卡片悬浮）
+
+### Bug修复 — 17个TypeScript类型错误
+
+1. **cover-generate/route.ts**：`zai.images.generate()` → `zai.images.generations.create()`，更新 size 和 response 字段
+2. **platform-account-panel.tsx**（8处）：`&&` 短路改为三元表达式 + `Promise.resolve()`
+3. **account-collector.tsx**（3处）：平台类型断言 `as readonly string[]`，`Number()` 包装
+4. **content-collector.tsx**（1处）：`Number()` 包装 formatNum 参数
+5. **hashtag-recommender.tsx**（1处）：`as string[]` 类型断言
+6. **publishing-assistant.tsx**（1处）：`as Platform[]` 类型断言
+7. **xiaohongshu-preview.tsx**（1处）：双重类型断言 `as unknown as Record<string, unknown>`
+8. **welcome-onboarding.tsx**（1处）：双重类型断言 `as unknown as Record<string, string>`
+
+### 新功能 1: 采集中心Tab集成
+
+- 在 `src/app/page.tsx` 的 MAIN_TABS 数组中新增第三个Tab：
+  - value: 'collect', icon: Globe, label: '采集中心'
+- 更新 effectiveTab 有效值列表
+- 从 Zustand store 派生 selectedPost 并传递给 AccountCollector
+- 渲染 `<AccountCollector selectedPost={selectedPost} />` 在 collect Tab 激活时
+
+### 新功能 2: 评论/互动数据集成到采集中心
+
+- 在 `account-collector.tsx` 中添加 `selectedPost` prop
+- 新增 `AccountCollectorProps` 接口
+- 添加评论和互动数据状态管理
+- 添加 useEffect 在 selectedPost 变化时获取评论和互动数据
+- 添加 Collapsible UI 展示：
+  - 互动汇总卡片（分享/转发/收藏三列统计）
+  - 评论列表（头像、回复链、时间戳、点赞数）
+  - 互动列表（类型特定图标和颜色）
+
+### 新功能 3: 运营看板（OperationsDashboard）
+
+创建 `src/components/right-panel/operations-dashboard.tsx`，包含6大模块：
+
+1. **快速统计（QuickStats）**：4个统计卡片（本周发布+趋势、互动总量、最佳时段、发布率），带动画计数器
+2. **互动热力图（EngagementHeatmap）**：7×6网格（周一-周日 × 6个时段），颜色渐变显示互动强度，hover tooltip
+3. **内容漏斗（ContentFunnel）**：梯形漏斗可视化（计划中→已生成→已优化→已发布），带百分比和动画填充
+4. **平台对比（PlatformComparison）**：朋友圈vs小红书双平台6维度对比（水平条形图），优势平台标识
+5. **周活跃趋势（WeeklySparkline）**：SVG sparkline图表展示近4周内容创建活动，带区域填充和数据点标记
+6. **AI速览（QuickInsights）**：预计算洞察（最佳内容类型、待优化数量、发布建议），渐变背景
+
+集成到 `data-and-reports.tsx` 作为第三个Tab（value: 'dashboard', icon: LayoutDashboard, label: '运营看板'）
+
+### 视觉增强
+
+1. **CSS动画工具类**（globals.css）：
+   - `animate-shimmer-slide` — 水平微光滑动效果
+   - `animate-pulse-glow` — 紫色脉冲发光
+   - `animate-gradient-text` — 渐变文字动画（浅色/深色模式分别适配）
+   - `animate-counter-flash` — 数字计数器闪烁
+   - `.skeleton-shimmer` — 伪元素微光叠加层
+   - `.header-gradient-border` — Header底部彩虹渐变边框
+   - `.stat-card-hover` — 统计卡片悬浮效果（上移+发光阴影+边框变色）
+
+2. **Header增强**（page.tsx）：
+   - 添加 `header-gradient-border` 动态渐变底部边框
+   - 标题使用 `animate-gradient-text` 渐变文字动画
+   - 标题旁添加绿色脉冲点指示器（animate-ping）
+
+3. **右侧面板Tab通知徽章**（page.tsx）：
+   - "数据与报告"Tab：显示未发布帖子数量徽章（violet色，上限9+）
+   - "采集中心"Tab：显示已追踪账号数量徽章（rose色，上限9+）
+   - 徽章绝对定位在Tab图标右上角
+
+4. **左侧面板Tab动画下划线**（page.tsx）：
+   - 替换 shadcn Tabs 为自定义 button 元素
+   - 添加 framer-motion `layoutId="left-tab-underline"` 滑动指示器
+   - 紫色渐变下划线，spring 物理动画（stiffness: 500, damping: 35）
+
+5. **统计卡片悬浮效果**：
+   - operations-dashboard.tsx：QuickStats 添加 `whileHover={{ y: -2 }}` + `stat-card-hover`
+   - analytics-panel.tsx：概览统计添加 `whileHover` + stagger 入场动画 + `stat-card-hover`
+
+### 修改文件
+- `src/app/api/ai/cover-generate/route.ts` — SDK API修复
+- `src/components/platform-account-panel.tsx` — Promise类型修复
+- `src/components/right-panel/account-collector.tsx` — 类型修复 + selectedPost prop + 评论/互动UI
+- `src/components/right-panel/content-collector.tsx` — 类型修复
+- `src/components/right-panel/hashtag-recommender.tsx` — 类型修复
+- `src/components/right-panel/publishing-assistant.tsx` — 类型修复
+- `src/components/right-panel/xiaohongshu-preview.tsx` — 类型修复
+- `src/components/welcome-onboarding.tsx` — 类型修复
+- `src/app/page.tsx` — 采集中心Tab + 通知徽章 + Tab下划线 + Header增强
+- `src/components/right-panel/data-and-reports.tsx` — 运营看板Tab
+- `src/components/right-panel/analytics-panel.tsx` — 卡片悬浮效果
+- `src/app/globals.css` — 7个新CSS动画/工具类
+
+### 新增文件
+- `src/components/right-panel/operations-dashboard.tsx` — 运营看板组件
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ TypeScript编译通过（src/目录零错误）
+- ✅ 开发服务器编译成功
+
+Stage Summary:
+- 项目状态：稳定可运行，功能大幅扩展
+- 本轮新增1个文件，修改12个文件
+- 修复17个TS类型错误，0个src/目录类型错误
+- 核心新增：采集中心Tab集成、评论/互动数据展示、运营看板（6大模块）、7个CSS动画工具类、Header视觉增强、通知徽章、Tab动画下划线
+- 未解决问题或风险：
+  1. agent-browser沙箱网络限制，无法进行端到端可视化QA
+  2. content-collector.tsx与account-collector.tsx存在功能重叠，建议后续清理
+  3. 运营看板热力图数据基于contentPosts，需有足够互动数据才有意义
+  4. 采集中心API依赖scraper-service（端口3003），需确保服务可用
+- 建议下一阶段优先事项：
+  1. 清理content-collector.tsx冗余组件
+  2. 运营看板接入更多实时数据源
+  3. 采集中心增加账号对比分析功能
+  4. 添加内容日历中的采集内容标记
+  5. 设置页面结构重构（统一管理AI配置、平台账号、通知偏好）
+  6. 移动端适配测试和优化
+  7. 性能优化：大列表虚拟滚动、图片懒加载

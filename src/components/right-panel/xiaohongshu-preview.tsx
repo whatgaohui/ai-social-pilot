@@ -22,7 +22,7 @@ interface XiaohongshuPreviewProps {
 
 export function XiaohongshuPreview({ post, personaName }: XiaohongshuPreviewProps) {
   const note = parseXHSNote(post.content);
-  const favorites = (post as Record<string, unknown>).favorites as number || 0;
+  const favorites = (post as unknown as Record<string, unknown>).favorites as number || 0;
 
   const formatCount = (count: number): string => {
     if (count >= 10000) return `${(count / 10000).toFixed(1)}w`;

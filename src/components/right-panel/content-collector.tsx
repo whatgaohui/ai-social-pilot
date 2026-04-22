@@ -546,7 +546,7 @@ export function ContentCollector({ selectedPost }: ContentCollectorProps) {
                                 {stat.isText ? (
                                   <span className="text-[10px]">{stat.value}</span>
                                 ) : (
-                                  formatNum(stat.value)
+                                  formatNum(Number(stat.value))
                                 )}
                               </div>
                               <p className="text-[9px] text-muted-foreground">{stat.label}</p>

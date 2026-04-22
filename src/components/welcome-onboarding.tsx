@@ -90,7 +90,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
     title: persona?.title || "",
     industry: persona?.industry || "",
     tone: persona?.tone || "professional",
-    customTone: persona?.tone === "custom" ? (persona as Record<string, string>)?.customTone || "" : "",
+    customTone: persona?.tone === "custom" ? (persona as unknown as Record<string, string>)?.customTone || "" : "",
     bio: persona?.bio || "",
     targetAudience: persona?.targetAudience || "",
     keywords: persona?.keywords || "",

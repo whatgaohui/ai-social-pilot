@@ -144,7 +144,7 @@ export function PublishingAssistant({ post, onPlatformConnect }: PublishingAssis
       const res = await fetch("/api/platform-accounts");
       if (res.ok) {
         const accounts: PlatformAccount[] = await res.json();
-        const statuses: PlatformStatus[] = ["wechat", "xiaohongshu"].map((p) => ({
+        const statuses: PlatformStatus[] = (["wechat", "xiaohongshu"] as Platform[]).map((p) => ({
           platform: p,
           connected: accounts.some((a) => a.platform === p && a.status === "connected"),
           account: accounts.find((a) => a.platform === p && a.status === "connected") || null,

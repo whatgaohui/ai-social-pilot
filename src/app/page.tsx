@@ -10,6 +10,7 @@ import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templ
 import { ContentWorkspace } from "@/components/right-panel/content-workspace";
 // AIOptimizePanel removed - AI tools have been integrated into ContentWorkspace
 import { DataAndReports } from "@/components/right-panel/data-and-reports";
+import { AccountCollector } from "@/components/right-panel/account-collector";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   Sparkles, BookOpen, PenTool, CalendarDays,
   BarChart3, Zap, FileText, MessageCircle,
   Settings, Send, ChevronLeft, ChevronRight,
+  Globe,
 } from "lucide-react";
 
 // ─── Main tabs for the right content area ──────────────────────────────────────
@@ -30,6 +32,7 @@ import {
 const MAIN_TABS = [
   { value: 'workspace', icon: PenTool, label: '内容工作台' },
   { value: 'data', icon: BarChart3, label: '数据与报告' },
+  { value: 'collect', icon: Globe, label: '采集中心' },
 ] as const;
 
 // ─── Left sidebar tabs ────────────────────────────────────────────────────────
@@ -107,30 +110,40 @@ function LeftSidebar() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Left Panel Tab Bar */}
+      {/* Left Panel Tab Bar with animated underline */}
       <div className="px-3 pt-3 pb-2 border-b">
-        <Tabs value={leftPanelTab} onValueChange={setLeftPanelTab}>
-          <TabsList className="w-full h-8 bg-muted/50 p-0.5">
-            {LEFT_TABS.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="flex-1 h-7 text-[11px] gap-1 data-[state=active]:bg-background shadow-sm"
-                >
-                  <Icon className="h-3 w-3" />
-                  {tab.label}
-                  {tab.value === 'knowledge' && knowledgeItems.length > 0 && (
-                    <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] tabular-nums">
-                      {knowledgeItems.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-        </Tabs>
+        <div className="flex gap-1">
+          {LEFT_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = leftPanelTab === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setLeftPanelTab(tab.value)}
+                className={`relative flex-1 h-7 text-[11px] gap-1 rounded-md flex items-center justify-center transition-colors ${
+                  isActive
+                    ? 'text-foreground font-medium'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="h-3 w-3" />
+                {tab.label}
+                {tab.value === 'knowledge' && knowledgeItems.length > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] tabular-nums">
+                    {knowledgeItems.length}
+                  </Badge>
+                )}
+                {isActive && (
+                  <motion.div
+                    className="absolute bottom-0 left-1 right-1 h-0.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 dark:from-violet-400 dark:to-purple-400"
+                    layoutId="left-tab-underline"
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Left Panel Content */}
@@ -152,10 +165,29 @@ function LeftSidebar() {
 // ─── Main Content Panel ───────────────────────────────────────────────────────
 
 function MainContentPanel() {
-  const { rightPanelTab, setRightPanelTab, platform, contentPosts } = useAppStore();
+  const { rightPanelTab, setRightPanelTab, platform, contentPosts, selectedPostId } = useAppStore();
+  const [trackedAccountsCount, setTrackedAccountsCount] = useState(0);
+
+  // Derive selected post from store
+  const selectedPost = selectedPostId
+    ? contentPosts.find((p) => p.id === selectedPostId)
+    : null;
+
+  // Notification badge counts
+  const unpublishedCount = contentPosts.filter((p) => p.status !== 'published').length;
+
+  // Fetch tracked accounts count
+  useEffect(() => {
+    fetch("/api/tracked-accounts")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        setTrackedAccountsCount(Array.isArray(data) ? data.length : 0);
+      })
+      .catch(() => {});
+  }, []);
 
   // Map old tab values to new ones for backward compatibility
-  const effectiveTab = ['workspace', 'data'].includes(rightPanelTab)
+  const effectiveTab = ['workspace', 'data', 'collect'].includes(rightPanelTab)
     ? rightPanelTab
     : rightPanelTab === 'optimize'
       ? 'workspace' // redirect old AI tab to workspace
@@ -175,13 +207,20 @@ function MainContentPanel() {
                   value={tab.value}
                   className="flex-1 h-8 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm"
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <span className="relative inline-flex">
+                    <Icon className="h-3.5 w-3.5" />
+                    {tab.value === 'data' && unpublishedCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-violet-500 text-[8px] font-bold text-white ring-1 ring-background">
+                        {unpublishedCount > 9 ? '9+' : unpublishedCount}
+                      </span>
+                    )}
+                    {tab.value === 'collect' && trackedAccountsCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white ring-1 ring-background">
+                        {trackedAccountsCount > 9 ? '9+' : trackedAccountsCount}
+                      </span>
+                    )}
+                  </span>
                   {tab.label}
-                  {tab.value === 'data' && contentPosts.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px] tabular-nums">
-                      {contentPosts.length}
-                    </Badge>
-                  )}
                 </TabsTrigger>
               );
             })}
@@ -196,6 +235,9 @@ function MainContentPanel() {
         )}
         {effectiveTab === 'data' && (
           <DataAndReports />
+        )}
+        {effectiveTab === 'collect' && (
+          <AccountCollector selectedPost={selectedPost ? { id: selectedPost.id, topic: selectedPost.topic, platform: selectedPost.platform || '' } : null} />
         )}
       </div>
     </div>
@@ -235,15 +277,21 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-gradient-animated">
       <DataInitializer />
       {/* Top Header */}
-      <header className="border-b bg-background/80 backdrop-blur-xl sticky top-0 z-50 shadow-[0_1px_0_0] shadow-black/5 hover:shadow-md transition-shadow duration-200">
+      <header className="header-gradient-border border-b bg-background/80 backdrop-blur-xl sticky top-0 z-50 shadow-[0_1px_0_0] shadow-black/5 hover:shadow-md transition-shadow duration-200">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <div className={`h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md logo-hover-spin ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-200 dark:shadow-violet-900/40' : 'from-red-500 to-rose-600 shadow-red-200 dark:shadow-red-900/40'}`}>
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <div>
-              <h1 className={`text-base font-bold bg-clip-text text-transparent ${platform === 'wechat' ? 'bg-gradient-to-r from-violet-600 to-purple-600' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}>
-                {platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}
+              <h1 className="text-base font-bold flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span className="animate-gradient-text">
+                  {platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}
+                </span>
               </h1>
               <p className="text-[10px] text-muted-foreground -mt-0.5">{platform === 'wechat' ? '个人IP打造 · 全自动内容规划' : '爆款内容打造 · 全自动笔记生成'}</p>
             </div>

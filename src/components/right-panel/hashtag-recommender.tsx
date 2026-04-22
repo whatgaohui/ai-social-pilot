@@ -104,7 +104,7 @@ export function HashtagRecommender({
           const matches = generated.match(/#[\u4e00-\u9fff\w]+/g);
           if (matches) {
             const fallback = [...new Set(matches.map(formatTag).filter(Boolean))];
-            setHashtags(fallback);
+            setHashtags(fallback as string[]);
             toast.success(`已生成 ${fallback.length} 个推荐标签`);
           } else {
             toast.error("未能解析到有效标签，请重试");

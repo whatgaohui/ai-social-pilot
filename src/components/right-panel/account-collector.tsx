@@ -66,9 +66,11 @@ import {
   Tag,
   X,
   ChevronRight,
+  Bookmark,
+  Repeat2,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { TrackedAccount, Platform, ContentPost } from "@/types";
+import type { TrackedAccount, Platform, ContentPost, ContentComment, ContentInteraction } from "@/types";
 import { PLATFORM_LABELS } from "@/types";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -181,9 +183,15 @@ function timeAgo(dateStr: string | null): string {
   return date.toLocaleDateString("zh-CN");
 }
 
+// ─── Props ──────────────────────────────────────────────────────────────────
+
+interface AccountCollectorProps {
+  selectedPost?: { id: string; topic: string; platform: string } | null;
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export function AccountCollector() {
+export function AccountCollector({ selectedPost }: AccountCollectorProps) {
   // ── Account list state ─────────────────────────────────────────────────
   const [accounts, setAccounts] = useState<TrackedAccount[]>([]);
   const [loading, setLoading] = useState(false);
@@ -234,6 +242,13 @@ export function AccountCollector() {
     message: string;
   } | null>(null);
 
+  // ── Comments & interactions for selected post ──────────────────────────
+  const [comments, setComments] = useState<ContentComment[]>([]);
+  const [interactions, setInteractions] = useState<ContentInteraction[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isLoadingInteractions, setIsLoadingInteractions] = useState(false);
+  const [showPostDetail, setShowPostDetail] = useState(false);
+
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // ── Fetch accounts ────────────────────────────────────────────────────
@@ -254,6 +269,51 @@ export function AccountCollector() {
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
+
+  // ── Fetch comments / interactions when selectedPost changes ─────────────
+  useEffect(() => {
+    if (!selectedPost?.id) {
+      setComments([]);
+      setInteractions([]);
+      setShowPostDetail(false);
+      return;
+    }
+
+    // Auto-expand when a new post is selected
+    setShowPostDetail(true);
+
+    const fetchComments = async () => {
+      setIsLoadingComments(true);
+      try {
+        const res = await fetch(`/api/content/${selectedPost.id}/comments`);
+        if (res.ok) setComments(await res.json());
+      } catch {
+        /* ignore */
+      } finally {
+        setIsLoadingComments(false);
+      }
+    };
+
+    const fetchInteractions = async () => {
+      setIsLoadingInteractions(true);
+      try {
+        const res = await fetch(`/api/content/${selectedPost.id}/interactions`);
+        if (res.ok) setInteractions(await res.json());
+      } catch {
+        /* ignore */
+      } finally {
+        setIsLoadingInteractions(false);
+      }
+    };
+
+    fetchComments();
+    fetchInteractions();
+  }, [selectedPost]);
+
+  // ── Interactions summary ────────────────────────────────────────────────
+  const shareCount = interactions.filter((i) => i.interactionType === "share").length;
+  const forwardCount = interactions.filter((i) => i.interactionType === "forward").length;
+  const collectCount = interactions.filter((i) => i.interactionType === "collect").length;
 
   // ── Poll syncing accounts ─────────────────────────────────────────────
   useEffect(() => {
@@ -680,7 +740,7 @@ export function AccountCollector() {
 
   // ── Available methods for selected platform ───────────────────────────
   const availableMethods = COLLECT_METHODS.filter((m) =>
-    m.platforms.includes(formPlatform)
+    (m.platforms as readonly string[]).includes(formPlatform)
   );
 
   // ── Render: Notes View ────────────────────────────────────────────────
@@ -1125,7 +1185,7 @@ export function AccountCollector() {
                                       {stat.value}
                                     </span>
                                   ) : (
-                                    formatNum(stat.value)
+                                    formatNum(Number(stat.value))
                                   )}
                                 </div>
                                 <p className="text-[9px] text-muted-foreground">
@@ -1252,6 +1312,230 @@ export function AccountCollector() {
               </Card>
             </motion.div>
           </motion.div>
+        )}
+
+        {/* ── Selected Post: Comments & Interactions ──────────────────────── */}
+        {selectedPost?.id && (
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="space-y-4"
+            >
+              {/* Collapsible header */}
+              <motion.div variants={itemVariants}>
+                <Card className="border-0 shadow-sm overflow-hidden">
+                  <div className="h-0.5 bg-gradient-to-r from-amber-400 to-orange-500" />
+                  <CardContent className="p-3.5">
+                    <button
+                      onClick={() => setShowPostDetail(!showPostDetail)}
+                      className="w-full flex items-center gap-2 text-left"
+                    >
+                      <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shrink-0">
+                        <MessageSquare className="h-3.5 w-3.5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate">{selectedPost.topic}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {PLATFORM_LABELS[selectedPost.platform as Platform] || selectedPost.platform} · 互动详情
+                        </p>
+                      </div>
+                      <motion.div
+                        animate={{ rotate: showPostDetail ? 90 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </motion.div>
+                    </button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Expanded detail */}
+              <AnimatePresence>
+                {showPostDetail && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-3 overflow-hidden"
+                  >
+                    {/* Interactions Summary */}
+                    <motion.div variants={itemVariants}>
+                      <Card className="border-0 shadow-sm">
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-1.5 mb-2.5">
+                            <Share2 className="h-3.5 w-3.5 text-teal-500" />
+                            <span className="text-xs font-semibold">互动概览</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { label: "分享", count: shareCount, icon: Share2, gradient: "from-teal-500 to-emerald-600", bg: "bg-teal-50 dark:bg-teal-900/20" },
+                              { label: "转发", count: forwardCount, icon: Repeat2, gradient: "from-violet-500 to-purple-600", bg: "bg-violet-50 dark:bg-violet-900/20" },
+                              { label: "收藏", count: collectCount, icon: Bookmark, gradient: "from-amber-500 to-orange-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
+                            ].map((item) => {
+                              const Icon = item.icon;
+                              return (
+                                <div key={item.label} className={`rounded-lg ${item.bg} p-2.5 text-center`}>
+                                  <div className={`h-5 w-5 rounded-md bg-gradient-to-br ${item.gradient} flex items-center justify-center mx-auto mb-1`}>
+                                    <Icon className="h-2.5 w-2.5 text-white" />
+                                  </div>
+                                  <div className="text-sm font-bold">{item.count}</div>
+                                  <p className="text-[9px] text-muted-foreground">{item.label}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+
+                    {/* Comments section */}
+                    <motion.div variants={itemVariants}>
+                      <Card className="border-0 shadow-sm">
+                        <CardHeader className="pb-2 px-3.5 pt-3.5">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
+                              <Heart className="h-3.5 w-3.5 text-rose-500" />
+                              评论 ({comments.length})
+                            </CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="px-3.5 pb-3.5">
+                          {isLoadingComments ? (
+                            <div className="space-y-2.5">
+                              {Array.from({ length: 3 }).map((_, i) => (
+                                <div key={i} className="flex items-start gap-2">
+                                  <Skeleton className="h-6 w-6 rounded-full shrink-0" />
+                                  <div className="flex-1 space-y-1">
+                                    <Skeleton className="h-3 w-16" />
+                                    <Skeleton className="h-3 w-full" />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : comments.length === 0 ? (
+                            <div className="flex flex-col items-center py-6 text-center">
+                              <Inbox className="h-6 w-6 text-muted-foreground/40 mb-2" />
+                              <p className="text-[10px] text-muted-foreground">暂无评论数据</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                              {comments.map((comment) => (
+                                <motion.div
+                                  key={comment.id}
+                                  initial={{ opacity: 0, x: -8 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  className="flex items-start gap-2 group"
+                                >
+                                  {/* Author avatar */}
+                                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shrink-0 text-white text-[8px] font-bold">
+                                    {(comment.authorName || "U").charAt(0)}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                      <span className="text-[10px] font-semibold">{comment.authorName || "匿名"}</span>
+                                      {comment.replyToName && (
+                                        <span className="text-[9px] text-muted-foreground">
+                                          回复 <span className="text-violet-500">@{comment.replyToName}</span>
+                                        </span>
+                                      )}
+                                      <span className="text-[9px] text-muted-foreground ml-auto shrink-0">
+                                        {comment.publishedAt ? timeAgo(comment.publishedAt) : ""}
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-foreground/80 leading-relaxed">{comment.content}</p>
+                                    {comment.likes > 0 && (
+                                      <span className="text-[9px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
+                                        <Heart className="h-2.5 w-2.5" />
+                                        {comment.likes}
+                                      </span>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+
+                    {/* Interactions list */}
+                    <motion.div variants={itemVariants}>
+                      <Card className="border-0 shadow-sm">
+                        <CardHeader className="pb-2 px-3.5 pt-3.5">
+                          <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
+                            <Repeat2 className="h-3.5 w-3.5 text-violet-500" />
+                            互动记录 ({interactions.length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-3.5 pb-3.5">
+                          {isLoadingInteractions ? (
+                            <div className="space-y-2">
+                              {Array.from({ length: 3 }).map((_, i) => (
+                                <Skeleton key={i} className="h-8 rounded-lg" />
+                              ))}
+                            </div>
+                          ) : interactions.length === 0 ? (
+                            <div className="flex flex-col items-center py-6 text-center">
+                              <Inbox className="h-6 w-6 text-muted-foreground/40 mb-2" />
+                              <p className="text-[10px] text-muted-foreground">暂无互动数据</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                              {interactions.map((interaction) => {
+                                const typeIcon =
+                                  interaction.interactionType === "share"
+                                    ? Share2
+                                    : interaction.interactionType === "forward"
+                                      ? Repeat2
+                                      : Bookmark;
+                                const typeColor =
+                                  interaction.interactionType === "share"
+                                    ? "text-teal-500"
+                                    : interaction.interactionType === "forward"
+                                      ? "text-violet-500"
+                                      : "text-amber-500";
+                                const typeLabel =
+                                  interaction.interactionType === "share"
+                                    ? "分享"
+                                    : interaction.interactionType === "forward"
+                                      ? "转发"
+                                      : "收藏";
+                                const Icon = typeIcon;
+
+                                return (
+                                  <motion.div
+                                    key={interaction.id}
+                                    initial={{ opacity: 0, x: -6 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="flex items-center gap-2 p-1.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                                  >
+                                    <Icon className={`h-3.5 w-3.5 ${typeColor} shrink-0`} />
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-[10px] font-medium">{interaction.authorName || "匿名"}</span>
+                                      <span className="text-[10px] text-muted-foreground ml-1">
+                                        {interaction.content || typeLabel}
+                                      </span>
+                                    </div>
+                                    <span className="text-[9px] text-muted-foreground shrink-0">
+                                      {interaction.publishedAt ? timeAgo(interaction.publishedAt) : ""}
+                                    </span>
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
         )}
 
         {/* ── Sync Progress Overlay ─────────────────────────────────────── */}
@@ -1446,7 +1730,7 @@ export function AccountCollector() {
                     setFormPlatform(v as Platform);
                     // Reset method if not available for new platform
                     const methods = COLLECT_METHODS.filter((m) =>
-                      m.platforms.includes(v)
+                      (m.platforms as readonly string[]).includes(v)
                     );
                     if (!methods.find((m) => m.value === formMethod)) {
                       setFormMethod(methods[0].value);
