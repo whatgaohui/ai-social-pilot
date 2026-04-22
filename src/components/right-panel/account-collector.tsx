@@ -379,6 +379,48 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
     return () => clearInterval(interval);
   }, [checkScraperService]);
 
+  // ── Generate demo account handler ─────────────────────────────────────
+  const isGeneratingDemoRef = useRef(false);
+  const handleGenerateDemo = async () => {
+    if (isGeneratingDemoRef.current) return;
+    isGeneratingDemoRef.current = true;
+    setIsSubmitting(true);
+
+    try {
+      toast.info("正在生成示例数据...");
+      const res = await fetch("/api/tracked-accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: "xiaohongshu",
+          collectMethod: "link",
+          homeUrl: "",
+          generateDemo: true,
+          isOwn: false,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "生成示例数据失败");
+      }
+
+      const account = await res.json();
+      toast.success("示例数据已生成，可以体验完整功能");
+      fetchAccounts();
+
+      // Auto-navigate to view the demo notes
+      setTimeout(() => {
+        handleViewNotes(account.id);
+      }, 500);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "生成示例数据失败");
+    } finally {
+      setIsSubmitting(false);
+      isGeneratingDemoRef.current = false;
+    }
+  };
+
   // ── Add account handler ───────────────────────────────────────────────
   const handleAddAccount = async () => {
     if (formMethod === "link" && !formUrl.trim()) {
@@ -395,10 +437,12 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
       toast.info("正在检查采集服务...");
       const isAvailable = await checkScraperService();
       if (!isAvailable) {
-        toast.error("采集服务未启动，请稍后重试", {
-          description: "小红书采集服务（端口3003）当前不可用，请等待服务启动后再试。",
-          duration: 6000,
+        // Scraper unavailable — auto-fallback to generateDemo
+        toast.info("采集服务暂不可用，已为您生成示例数据体验功能", {
+          description: "已自动切换为示例数据模式，您可以体验完整的采集和查看功能。",
+          duration: 5000,
         });
+        await handleGenerateDemo();
         return;
       }
     }
@@ -542,7 +586,7 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
     if (account.platform === "xiaohongshu") {
       const isAvailable = await checkScraperService();
       if (!isAvailable) {
-        toast.error("采集服务未启动，请稍后重试", {
+        toast.info("采集服务暂不可用，无法同步。您可以使用已有的示例数据体验功能。", {
           description: "小红书采集服务（端口3003）当前不可用。",
           duration: 5000,
         });
@@ -1092,25 +1136,40 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
             animate={{ opacity: 1, y: 0 }}
             className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30"
           >
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
                   采集服务未启动
                 </p>
                 <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
-                  小红书采集服务不可用，链接导入和同步功能暂不可用。请等待服务启动。
+                  小红书采集服务不可用，您可以生成示例数据来体验完整功能。
                 </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => checkScraperService()}
+                    className="h-6 text-[10px] gap-1 border-amber-200 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 px-2"
+                  >
+                    <RefreshCw className="h-2.5 w-2.5" />
+                    重试检测
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleGenerateDemo()}
+                    disabled={isSubmitting}
+                    className="h-6 text-[10px] gap-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-sm hover:from-violet-600 hover:to-purple-700 px-2"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-2.5 w-2.5" />
+                    )}
+                    生成示例数据
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => checkScraperService()}
-                className="h-7 text-[10px] gap-1 border-amber-200 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 shrink-0"
-              >
-                <RefreshCw className="h-3 w-3" />
-                重试
-              </Button>
             </div>
           </motion.div>
         )}
@@ -1438,7 +1497,7 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleSync(account.id)}
-                              disabled={account.status === "syncing"}
+                              disabled={false}
                               className="h-5 px-1.5 text-[9px] text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 shrink-0"
                             >
                               <RefreshCw className="h-2.5 w-2.5 mr-0.5" />

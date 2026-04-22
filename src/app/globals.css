@@ -1507,6 +1507,34 @@ textarea {
   background: oklch(0.5 0 0);
 }
 
+/* Refined scrollbar for workspace panels */
+.workspace-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.workspace-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.workspace-scroll::-webkit-scrollbar-thumb {
+  background: oklch(0.82 0.01 280);
+  border-radius: 3px;
+}
+.workspace-scroll::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.68 0.02 280);
+}
+.dark .workspace-scroll::-webkit-scrollbar-thumb {
+  background: oklch(0.3 0.02 280);
+}
+.dark .workspace-scroll::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.45 0.02 280);
+}
+.workspace-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.82 0.01 280) transparent;
+}
+.dark .workspace-scroll {
+  scrollbar-color: oklch(0.3 0.02 280) transparent;
+}
+
 /* Micro-interaction: focus ring glow */
 .focus-ring-glow:focus-visible {
   outline: none;
@@ -1524,4 +1552,384 @@ textarea {
   0% { transform: scale(0.8); }
   50% { transform: scale(1.1); }
   100% { transform: scale(1); }
+}
+
+/* ====== Enhanced Animations & Utility Classes ====== */
+
+/* --- 1. animate-slide-up-fade: Smooth slide up with fade in --- */
+@keyframes slide-up-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  60% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slide-up-fade {
+  animation: slide-up-fade 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up-fade {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- 2. animate-scale-in-enhanced: Scale from 0.95 to 1 with smooth fade --- */
+@keyframes scale-in-fade {
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.animate-scale-in-enhanced {
+  animation: scale-in-fade 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-scale-in-enhanced {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* --- 3. animate-shimmer-text: Shimmer effect for loading text --- */
+@keyframes shimmer-text-sweep {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+.animate-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--shimmer-text-from, oklch(0.6 0 0)) 0%,
+    var(--shimmer-text-via, oklch(0.8 0.08 300)) 25%,
+    var(--shimmer-text-to, oklch(0.95 0.02 300)) 50%,
+    var(--shimmer-text-via, oklch(0.8 0.08 300)) 75%,
+    var(--shimmer-text-from, oklch(0.6 0 0)) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-text-sweep 2.5s ease-in-out infinite;
+}
+.dark .animate-shimmer-text {
+  --shimmer-text-from: oklch(0.35 0 0);
+  --shimmer-text-via: oklch(0.55 0.06 300);
+  --shimmer-text-to: oklch(0.7 0.04 300);
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer-text {
+    animation: none;
+    background: none;
+    -webkit-text-fill-color: inherit;
+  }
+}
+
+/* --- 4. glass-card-pro: Enhanced glassmorphism card with rounded-xl --- */
+.glass-card-pro {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.25s ease, background 0.25s ease;
+}
+.dark .glass-card-pro {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.glass-card-pro:hover {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+}
+.dark .glass-card-pro:hover {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* --- 5. gradient-border-animated: Animated gradient border effect --- */
+@keyframes grad-border-spin {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 100% 0%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+  100% { background-position: 0% 50%; }
+}
+.gradient-border-animated {
+  position: relative;
+  border-radius: var(--radius-xl, 1rem);
+  overflow: hidden;
+}
+.gradient-border-animated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    #8b5cf6,
+    #ec4899,
+    #f59e0b,
+    #10b981,
+    #8b5cf6,
+    #ec4899
+  );
+  background-size: 300% 300%;
+  animation: grad-border-spin 6s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+.dark .gradient-border-animated::before {
+  background: linear-gradient(
+    135deg,
+    #7c3aed,
+    #db2777,
+    #d97706,
+    #059669,
+    #7c3aed,
+    #db2777
+  );
+  background-size: 300% 300%;
+  animation: grad-border-spin 6s ease infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gradient-border-animated::before {
+    animation: none;
+    background-size: 100% 100%;
+  }
+}
+
+/* --- 6. text-shimmer: Shimmer text effect using background-clip --- */
+@keyframes text-shimmer-sweep {
+  0% { background-position: -300% center; }
+  100% { background-position: 300% center; }
+}
+.text-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--text-shimmer-base, oklch(0.45 0 0)) 0%,
+    var(--text-shimmer-highlight, #8b5cf6) 30%,
+    var(--text-shimmer-highlight, #ec4899) 50%,
+    var(--text-shimmer-highlight, #8b5cf6) 70%,
+    var(--text-shimmer-base, oklch(0.45 0 0)) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-shimmer-sweep 3s ease-in-out infinite;
+}
+.dark .text-shimmer {
+  --text-shimmer-base: oklch(0.65 0 0);
+  --text-shimmer-highlight: #a78bfa;
+}
+@media (prefers-reduced-motion: reduce) {
+  .text-shimmer {
+    animation: none;
+    background: none;
+    -webkit-text-fill-color: inherit;
+    color: var(--text-shimmer-base, oklch(0.45 0 0));
+  }
+}
+
+/* --- 7. Improved scrollbar styles (thinner, more elegant) --- */
+/* Override the base scrollbar to be thinner with rounder ends */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.82 0 0);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.65 0 0);
+  background-clip: content-box;
+}
+
+/* --- 8. pulse-glow: Pulsing glow effect for active/online indicators --- */
+@keyframes pulse-glow-indicator {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--pulse-glow-color, rgba(16, 185, 129, 0.5)),
+                0 0 4px 0 var(--pulse-glow-color, rgba(16, 185, 129, 0.3));
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent,
+                0 0 8px 2px var(--pulse-glow-color-dim, rgba(16, 185, 129, 0.15));
+  }
+}
+.pulse-glow {
+  animation: pulse-glow-indicator 2s ease-in-out infinite;
+}
+.pulse-glow-online {
+  --pulse-glow-color: rgba(16, 185, 129, 0.5);
+  --pulse-glow-color-dim: rgba(16, 185, 129, 0.15);
+  animation: pulse-glow-indicator 2s ease-in-out infinite;
+}
+.pulse-glow-active {
+  --pulse-glow-color: rgba(139, 92, 246, 0.5);
+  --pulse-glow-color-dim: rgba(139, 92, 246, 0.15);
+  animation: pulse-glow-indicator 2s ease-in-out infinite;
+}
+.pulse-glow-busy {
+  --pulse-glow-color: rgba(245, 158, 11, 0.5);
+  --pulse-glow-color-dim: rgba(245, 158, 11, 0.15);
+  animation: pulse-glow-indicator 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse-glow,
+  .pulse-glow-online,
+  .pulse-glow-active,
+  .pulse-glow-busy {
+    animation: none;
+    box-shadow: 0 0 4px 0 var(--pulse-glow-color, rgba(16, 185, 129, 0.3));
+  }
+}
+
+/* --- 9. card-gradient-hover: Gradient background that appears on hover --- */
+.card-gradient-hover {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-gradient-hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.06) 0%,
+    rgba(236, 72, 153, 0.04) 50%,
+    rgba(245, 158, 11, 0.03) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.card-gradient-hover:hover::before {
+  opacity: 1;
+}
+.card-gradient-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.dark .card-gradient-hover::before {
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.1) 0%,
+    rgba(236, 72, 153, 0.06) 50%,
+    rgba(245, 158, 11, 0.04) 100%
+  );
+}
+.dark .card-gradient-hover:hover {
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+/* Ensure child content sits above the gradient overlay */
+.card-gradient-hover > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- 10. Dark mode improvements --- */
+
+/* 10a. Smooth color transitions for theme switching */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.2s ease !important;
+}
+
+/* 10b. Dark mode-specific box shadows */
+.dark .shadow-dark-adaptive {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.dark .shadow-dark-adaptive-lg {
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.25);
+}
+.dark .shadow-dark-adaptive-xl {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.3);
+}
+/* Subtle inset glow for dark mode cards */
+.dark .dark-inset-glow {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.dark .dark-inset-glow:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* 10c. Dark mode scrollbar colors */
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.25 0 0);
+  background-clip: content-box;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.4 0 0);
+  background-clip: content-box;
+}
+/* Firefox dark scrollbar */
+.dark {
+  scrollbar-color: oklch(0.25 0 0) transparent;
+  scrollbar-width: thin;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition: none !important;
+  }
 }

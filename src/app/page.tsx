@@ -579,17 +579,8 @@ export default function Home() {
             </Badge>
           </div>
 
-          {/* Notification Bell - always visible */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <NotificationBell />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              通知中心
-            </TooltipContent>
-          </Tooltip>
+          {/* Notification Bell - always visible (has its own internal tooltips) */}
+          <NotificationBell />
         </div>
 
         {/* Mobile: compact header - platform switcher moved to floating nav */}

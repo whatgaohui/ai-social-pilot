@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -25,15 +24,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/app-store";
+import type { PostStatus } from "@/types";
 
-import { EmptyState } from "@/components/ui/empty-state";
 import { PostDetailHeader } from "@/components/right-panel/post-detail-header";
 import { ContentEditor } from "@/components/right-panel/content-editor";
 import { PostActions } from "@/components/right-panel/post-actions";
 import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 import { XiaohongshuPreview } from "@/components/right-panel/xiaohongshu-preview";
 import { PublishingAssistant } from "@/components/right-panel/publishing-assistant";
-// CrossPlatformPublish removed - feature simplified
 import { HashtagRecommender } from "@/components/right-panel/hashtag-recommender";
 import { CoverImageGenerator } from "@/components/right-panel/cover-image-generator";
 import { TitleABTest } from "@/components/right-panel/title-ab-test";
@@ -43,6 +41,9 @@ import { ViralInspiration } from "@/components/right-panel/viral-inspiration";
 import { PublishWorkflow } from "@/components/right-panel/publish-workflow";
 import { ContentQuickActions } from "@/components/right-panel/content-quick-actions";
 import { AIQuickActionsBar } from "@/components/right-panel/ai-quick-actions-bar";
+import { WorkspaceQuickBar } from "@/components/right-panel/workspace-quick-bar";
+import { WorkspaceEmptyState } from "@/components/right-panel/workspace-empty-state";
+import { WordCountIndicator } from "@/components/right-panel/word-count-indicator";
 
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
@@ -132,20 +133,14 @@ function InlineEngagementBar({ post, isXHS }: { post: ReturnType<typeof useAppSt
   );
 }
 
-// ─── Empty State (uses reusable component) ──────────────────────────────────
+// ─── Status Border Color Map ─────────────────────────────────────────────────
 
-function WorkspaceEmptyState({ isXHS }: { isXHS: boolean }) {
-  return (
-    <EmptyState
-      icon={FileText}
-      title="选择一条内容开始"
-      description="在左侧日历中选择日期，或创建新内容"
-      variant="gradient"
-      size="lg"
-      gradientClass={isXHS ? "from-rose-500 to-red-600" : "from-violet-500 to-purple-600"}
-    />
-  );
-}
+const STATUS_BORDER_COLORS: Record<PostStatus, string> = {
+  planned: "border-l-slate-400",
+  generated: "border-l-violet-500",
+  optimized: "border-l-emerald-500",
+  published: "border-l-purple-500",
+};
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -235,18 +230,27 @@ export function ContentWorkspace() {
   if (!selectedPost) {
     return (
       <div className="flex-1 overflow-y-auto min-h-0">
-        <WorkspaceEmptyState isXHS={isXHS} />
+        <WorkspaceEmptyState />
       </div>
     );
   }
 
+  // ── Status-based border color ─────────────────────────────────────────────
+  const statusBorderColor = STATUS_BORDER_COLORS[(selectedPost.status as PostStatus)] || "border-l-slate-400";
+
   // ── Post selected ────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full min-h-0 relative">
-      {/* Floating AI Quick Actions Bar */}
+    <div className={`flex flex-col h-full min-h-0 relative border-l-2 ${statusBorderColor} transition-colors duration-300`}>
+      {/* Floating Quick Actions Bar (top) */}
+      <WorkspaceQuickBar
+        onEdit={() => { setPreviewMode(false); }}
+        onQualityScore={handleScoreBadgeClick}
+      />
+
+      {/* Floating AI Quick Actions Bar (bottom) */}
       <AIQuickActionsBar />
 
-      <div className="flex-1 overflow-y-auto min-h-0 smooth-scroll">
+      <div className="flex-1 overflow-y-auto min-h-0 workspace-scroll">
         <motion.div
           key={selectedPost.id}
           initial="hidden"
@@ -521,10 +525,13 @@ export function ContentWorkspace() {
             </Tabs>
           </motion.div>
 
-          {/* Bottom spacing — extra room for floating AI bar */}
-          <div className="h-16 sm:h-20" />
+          {/* Bottom spacing — extra room for floating bars */}
+          <div className="h-20 sm:h-24" />
         </motion.div>
       </div>
+
+      {/* Word Count Indicator */}
+      <WordCountIndicator />
     </div>
   );
 }
