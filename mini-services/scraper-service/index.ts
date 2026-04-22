@@ -91,8 +91,8 @@ app.get('/', (c) => {
 // ─── XHS Profile Scraper ──────────────────────────────────────────────────
 app.post('/api/scrape/xhs/profile', async (c) => {
   try {
-    const body = await c.req.json<{ homeUrl: string }>();
-    const { homeUrl } = body;
+    const body = await c.req.json<{ homeUrl: string; cookie?: string }>();
+    const { homeUrl, cookie: userCookie } = body;
 
     if (!homeUrl) {
       return c.json({ error: 'homeUrl is required' }, 400);
@@ -100,8 +100,15 @@ app.post('/api/scrape/xhs/profile', async (c) => {
 
     console.log(`[XHS Profile] Scraping: ${homeUrl}`);
 
+    const reqHeaders: Record<string, string> = { ...XHS_HEADERS };
+    // Add cookie if provided (for accessing private profile data)
+    if (userCookie) {
+      reqHeaders['Cookie'] = userCookie;
+      console.log('[XHS Profile] Using custom cookie');
+    }
+
     const response = await fetch(homeUrl, {
-      headers: XHS_HEADERS,
+      headers: reqHeaders,
       redirect: 'follow',
     });
 
@@ -127,46 +134,60 @@ app.post('/api/scrape/xhs/profile', async (c) => {
         const jsonStr = issrMatch[1].trim();
         const data = JSON.parse(jsonStr);
 
-        // Navigate XHS's deeply nested data structure
-        const userSection = extractNestedValue(data, 'user');
+        // XHS embeds data under various deeply nested paths
+        // Try multiple common paths for user profile data
+        const userSection =
+          extractNestedValue(data, 'user') ||
+          extractNestedValue(data, 'userInfo') ||
+          extractNestedValue(data, 'profile') ||
+          null;
         if (userSection) {
           profile = {
             nickname:
               extractNestedValue(userSection, 'nickname') ||
               extractNestedValue(userSection, 'nickName') ||
+              extractNestedValue(userSection, 'name') ||
               '',
             avatarUrl:
               extractNestedValue(userSection, 'avatar') ||
               extractNestedValue(userSection, 'image') ||
+              extractNestedValue(userSection, 'imageb') ||
+              extractNestedValue(userSection, 'imageUrl') ||
               '',
             bio:
               extractNestedValue(userSection, 'desc') ||
               extractNestedValue(userSection, 'description') ||
+              extractNestedValue(userSection, 'bio') ||
               '',
             followers: toNumber(
               extractNestedValue(userSection, 'fans') ||
                 extractNestedValue(userSection, 'fansCount') ||
                 extractNestedValue(userSection, 'followerCount') ||
+                extractNestedValue(userSection, 'redFansCount') ||
                 0
             ),
             following: toNumber(
               extractNestedValue(userSection, 'follows') ||
                 extractNestedValue(userSection, 'followCount') ||
+                extractNestedValue(userSection, 'followingCount') ||
                 0
             ),
             postsCount: toNumber(
               extractNestedValue(userSection, 'notes') ||
                 extractNestedValue(userSection, 'notesCount') ||
                 extractNestedValue(userSection, 'postCount') ||
+                extractNestedValue(userSection, 'noteCount') ||
                 0
             ),
             noteCount: toNumber(
               extractNestedValue(userSection, 'interaction') ||
                 extractNestedValue(userSection, 'interactCount') ||
+                extractNestedValue(userSection, 'likedCount') ||
                 0
             ),
           };
         }
+        console.log('[XHS Profile] ISSR extract - nickname:', profile.nickname, 'fans:', profile.followers, 'notes:', profile.postsCount);
       } catch (e) {
         console.log('[XHS Profile] Failed to parse ISSR_SCRIPT JSON:', e);
       }
@@ -202,7 +223,9 @@ app.post('/api/scrape/xhs/profile', async (c) => {
       );
       if (stateMatch) {
         try {
-          const stateData = JSON.parse(stateMatch[1]);
+          // Clean up the JSON string - replace undefined with null
+          let jsonStr = stateMatch[1].replace(/\bundefined\b/g, 'null');
+          const stateData = JSON.parse(jsonStr);
           const user =
             stateData?.user?.userPageMeta ||
             stateData?.user?.userInfo ||
@@ -213,6 +236,8 @@ app.post('/api/scrape/xhs/profile', async (c) => {
             profile.avatarUrl =
               user?.avatar || user?.image || ogImage || '';
             profile.bio = user?.desc || user?.description || ogDesc || '';
+
+            // Try direct numeric fields first
             profile.followers = toNumber(
               user?.fans || user?.fansCount || 0
             );
@@ -220,11 +245,31 @@ app.post('/api/scrape/xhs/profile', async (c) => {
               user?.follows || user?.followCount || 0
             );
             profile.postsCount = toNumber(
-              user?.notes || user?.notesCount || 0
+              user?.notesCount || user?.notes || 0
             );
-            profile.noteCount = toNumber(
-              user?.interaction || user?.interactCount || 0
-            );
+
+            // Parse interactions array (XHS stores stats as localized strings like "1万+")
+            const interactions = user?.interactions as Array<{type: string; count: string}> | undefined;
+            if (Array.isArray(interactions) && interactions.length > 0) {
+              const fansItem = interactions.find(i => i.type === 'fans');
+              const followsItem = interactions.find(i => i.type === 'follows');
+              const interactionItem = interactions.find(i => i.type === 'interaction');
+              if (fansItem?.count) profile.followers = parseChineseNumber(fansItem.count);
+              if (followsItem?.count) profile.following = parseChineseNumber(followsItem.count);
+              if (interactionItem?.count) profile.noteCount = parseChineseNumber(interactionItem.count);
+            }
+
+            // userPageData may also have stats
+            const upd = user?.userPageData as Record<string, unknown> | undefined;
+            if (upd) {
+              const updInteractions = upd?.interactions as Array<{type: string; count: string}> | undefined;
+              if (Array.isArray(updInteractions) && updInteractions.length > 0) {
+                const fansItem = updInteractions.find(i => i.type === 'fans');
+                const followsItem = updInteractions.find(i => i.type === 'follows');
+                if (fansItem?.count && profile.followers === 0) profile.followers = parseChineseNumber(fansItem.count);
+                if (followsItem?.count && profile.following === 0) profile.following = parseChineseNumber(followsItem.count);
+              }
+            }
           }
         } catch (e) {
           console.log(
@@ -269,7 +314,7 @@ app.post('/api/scrape/xhs/profile', async (c) => {
 
     console.log('[XHS Profile] Extracted:', profile.nickname);
 
-    return c.json({
+    const profileData = {
       nickname: profile.nickname || 'Unknown',
       avatarUrl: profile.avatarUrl || '',
       bio: profile.bio || '',
@@ -277,6 +322,12 @@ app.post('/api/scrape/xhs/profile', async (c) => {
       following: profile.following || 0,
       postsCount: profile.postsCount || 0,
       noteCount: profile.noteCount || 0,
+    };
+
+    return c.json({
+      profile: profileData,
+      // Also return flat fields for backward compatibility
+      ...profileData,
     });
   } catch (error) {
     console.error('[XHS Profile] Error:', error);
@@ -293,8 +344,9 @@ app.post('/api/scrape/xhs/notes', async (c) => {
     const body = await c.req.json<{
       homeUrl: string;
       limit?: number;
+      cookie?: string;
     }>();
-    const { homeUrl, limit = 30 } = body;
+    const { homeUrl, limit = 30, cookie: userCookie } = body;
 
     if (!homeUrl) {
       return c.json({ error: 'homeUrl is required' }, 400);
@@ -303,6 +355,12 @@ app.post('/api/scrape/xhs/notes', async (c) => {
     console.log(
       `[XHS Notes] Scraping notes from: ${homeUrl} (limit: ${limit})`
     );
+
+    const reqHeaders: Record<string, string> = { ...XHS_HEADERS };
+    if (userCookie) {
+      reqHeaders['Cookie'] = userCookie;
+      console.log('[XHS Notes] Using custom cookie');
+    }
 
     // Extract user_id from URL
     const userIdMatch = homeUrl.match(
@@ -318,7 +376,7 @@ app.post('/api/scrape/xhs/notes', async (c) => {
 
     // Fetch the profile page to get notes data
     const response = await fetch(homeUrl, {
-      headers: XHS_HEADERS,
+      headers: reqHeaders,
       redirect: 'follow',
     });
 
@@ -424,7 +482,8 @@ app.post('/api/scrape/xhs/notes', async (c) => {
       );
       if (stateMatch) {
         try {
-          const stateData = JSON.parse(stateMatch[1]);
+          let jsonStr2 = stateMatch[1].replace(/\bundefined\b/g, 'null');
+          const stateData = JSON.parse(jsonStr2);
           const notesSection =
             stateData?.user?.notesData ||
             stateData?.user?.notes ||
@@ -432,11 +491,20 @@ app.post('/api/scrape/xhs/notes', async (c) => {
             stateData?.noteList;
 
           if (Array.isArray(notesSection)) {
+            // XHS stores notes as nested paginated arrays: [[page1], [page2], ...]
+            // Flatten: if first element is also an array, flatten all pages
+            let flatNotes: unknown[] = [];
+            if (notesSection.length > 0 && Array.isArray(notesSection[0])) {
+              flatNotes = notesSection.flat();
+              console.log(`[XHS Notes] Detected paginated structure, flattened to ${flatNotes.length} items`);
+            } else {
+              flatNotes = notesSection;
+            }
             console.log(
-              `[XHS Notes] Found ${notesSection.length} notes from __INITIAL_STATE__`
+              `[XHS Notes] Found ${flatNotes.length} notes from __INITIAL_STATE__`
             );
-            for (const note of notesSection.slice(0, limit)) {
-              notes.push(normalizeNote(note));
+            for (const note of flatNotes.slice(0, limit)) {
+              notes.push(normalizeNote(note as Record<string, unknown>));
             }
           }
         } catch (e) {
@@ -475,7 +543,15 @@ app.post('/api/scrape/xhs/notes', async (c) => {
 
     console.log(`[XHS Notes] Total extracted: ${notes.length}`);
 
-    return c.json({ notes });
+    return c.json({
+      notes,
+      profile: {
+        nickname: '',
+        followers: 0,
+        following: 0,
+        postsCount: notes.length,
+      },
+    });
   } catch (error) {
     console.error('[XHS Notes] Error:', error);
     return c.json(
@@ -879,48 +955,80 @@ function extractArrays(obj: unknown): unknown[][] {
  * Normalize a note object from various formats
  */
 function normalizeNote(note: Record<string, unknown>): XhsNote {
+  // XHS wraps note data in a 'noteCard' sub-object
+  const card = (note.noteCard as Record<string, unknown> | undefined) || note;
+  const interactInfo = card.interactInfo as Record<string, unknown> | undefined;
+  const coverInfo = card.cover as Record<string, unknown> | undefined;
+  const imageList = card.imageList as string[] | undefined;
+
+  // Extract noteId: noteCard.noteId, noteCard.id, or xsecToken as fallback
+  const noteId =
+    (card.noteId as string) ||
+    (card.id as string) ||
+    (note.xsec_token as string) ||
+    (note.xsecToken as string) ||
+    '';
+
   return {
-    noteId:
-      (note.noteId as string) ||
-      (note.id as string) ||
-      (note.note_id as string) ||
-      '',
+    noteId,
     title:
-      (note.title as string) ||
-      (note.displayTitle as string) ||
+      (card.displayTitle as string) ||
+      (card.title as string) ||
       '',
     content:
-      (note.desc as string) ||
-      (note.description as string) ||
-      (note.content as string) ||
+      (card.desc as string) ||
+      (card.description as string) ||
+      (card.content as string) ||
       '',
     type:
-      (note.type as string) ||
-      (note.noteType as string) ||
+      (card.type as string) ||
+      (card.noteType as string) ||
       'normal',
-    likes: toNumber(note.likes || note.likedCount || 0),
+    likes: toNumber(
+      interactInfo?.likedCount ||
+      card.likes ||
+      card.likedCount ||
+      0
+    ),
     collected: toNumber(
-      note.collected || note.collectCount || 0
+      interactInfo?.collectedCount ||
+      card.collected ||
+      card.collectCount ||
+      0
     ),
     comments: toNumber(
-      note.comments || note.commentCount || 0
+      interactInfo?.commentCount ||
+      interactInfo?.shareCount ||
+      card.comments ||
+      card.commentCount ||
+      0
     ),
-    shares: toNumber(note.shares || note.shareCount || 0),
+    shares: toNumber(
+      interactInfo?.shareCount ||
+      card.shares ||
+      card.shareCount ||
+      0
+    ),
     publishDate:
-      (note.time as string) ||
-      (note.timestamp as string) ||
-      (note.lastUpdateTime as string) ||
+      (card.time as string) ||
+      (card.timestamp as string) ||
+      (card.lastUpdateTime as string) ||
       '',
     imageUrl:
-      (note.image as string) ||
-      (note.cover as string) ||
-      '',
+      (imageList?.[0] ||
+      (coverInfo?.urlDefault as string) ||
+      (coverInfo?.url as string) ||
+      (card.image as string) ||
+      (card.cover as string) ||
+      ''),
     tags:
-      Array.isArray(note.tagList)
-        ? (note.tagList as string[])
-        : Array.isArray(note.tags)
-          ? (note.tags as string[])
-          : [],
+      Array.isArray(card.tagList)
+        ? (card.tagList as string[])
+        : Array.isArray(card.tags)
+          ? (card.tags as string[])
+          : Array.isArray(card.mentionList)
+            ? (card.mentionList as string[])
+            : [],
   };
 }
 
@@ -1007,7 +1115,8 @@ function parseNoteDetail(
     );
     if (stateMatch) {
       try {
-        const stateData = JSON.parse(stateMatch[1]);
+        let jsonStr3 = stateMatch[1].replace(/\bundefined\b/g, 'null');
+        const stateData = JSON.parse(jsonStr3);
         const noteData =
           stateData?.note?.noteDetailMap ||
           stateData?.note?.noteData ||
@@ -1074,10 +1183,33 @@ function parseNoteDetail(
 function toNumber(value: unknown): number {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
-    const parsed = parseInt(value.replace(/[^\d.-]/g, ''), 10);
-    return isNaN(parsed) ? 0 : parsed;
+    // Handle Chinese number formats: "1万+" → 10000, "5000+" → 5000
+    return parseChineseNumber(value);
   }
   return 0;
+}
+
+/**
+ * Parse Chinese number strings like "1万+", "5000+", "10+" into numbers
+ */
+function parseChineseNumber(str: string | number): number {
+  if (typeof str === 'number') return str;
+  if (!str) return 0;
+  const s = str.toString().trim();
+  // Match patterns like "1.2万", "1万+", "5000+", "10+"
+  const wanMatch = s.match(/([\d.]+)\s*万/);
+  if (wanMatch) {
+    const num = parseFloat(wanMatch[1]);
+    return Math.round(num * 10000);
+  }
+  const yiMatch = s.match(/([\d.]+)\s*亿/);
+  if (yiMatch) {
+    const num = parseFloat(yiMatch[1]);
+    return Math.round(num * 100000000);
+  }
+  // Strip non-numeric chars (keep minus and dot) and parse
+  const parsed = parseInt(s.replace(/[^\d.-]/g, ''), 10);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 /**

@@ -93,7 +93,7 @@ ${content}
         issue.suggestion &&
         typeof issue.original === 'string' &&
         typeof issue.suggestion === 'string' &&
-        ['错别字', '标点错误', '语法问题'].includes(issue.type)
+        ['错别字', '标点错误', '语法问题'].includes(issue.type as string)
       )
       .map((issue: Record<string, unknown>) => ({
         original: issue.original,

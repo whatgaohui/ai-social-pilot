@@ -167,6 +167,34 @@ function generateDemoNotifications(): Omit<AppNotification, "id" | "timestamp" |
   ];
 }
 
+// ─── DB Notification → AppNotification mapper ─────────────────────────
+interface DbNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  actionUrl: string;
+  metadata: string;
+  createdAt: string;
+}
+
+function mapDbToApp(dbNotif: DbNotification): AppNotification {
+  let meta: Record<string, unknown> = {};
+  try { meta = JSON.parse(dbNotif.metadata || '{}'); } catch { /* ignore */ }
+  return {
+    id: dbNotif.id,
+    type: (dbNotif.type as NotificationType) || 'system',
+    title: dbNotif.title,
+    description: dbNotif.message || '',
+    timestamp: new Date(dbNotif.createdAt).getTime(),
+    read: dbNotif.read,
+    actionLabel: (meta.actionLabel as string) || undefined,
+    actionType: (meta.actionType as 'viewPost' | 'viewData' | 'dismiss') || undefined,
+    postId: (meta.postId as string) || undefined,
+  };
+}
+
 // ─── Helper: format relative time ───────────────────────────────────
 function formatTime(timestamp: number): string {
   const now = Date.now();
@@ -429,42 +457,132 @@ function NotificationCenterPanel({
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const initialized = useRef(false);
 
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications]
-  );
+  // API-persisted notifications (merged with store)
+  const [apiNotifications, setApiNotifications] = useState<AppNotification[]>([]);
+  const [clearingRead, setClearingRead] = useState(false);
 
-  // Generate demo notifications on first render if none exist
+  // Fetch notifications from API on mount
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
 
-    const current = useAppStore.getState().notifications;
-    if (current.length === 0) {
-      // Also check localStorage
+    // Try loading from API first
+    (async () => {
       try {
-        const stored = localStorage.getItem("app-notifications");
-        if (stored) {
-          const parsed = JSON.parse(stored) as AppNotification[];
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            useAppStore.setState({ notifications: parsed });
+        const res = await fetch('/api/notifications');
+        if (res.ok) {
+          const data: DbNotification[] = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setApiNotifications(data.map(mapDbToApp));
             return;
           }
         }
       } catch {
-        // ignore
+        // API unavailable – fall back to demo data
       }
 
-      // Generate demo notifications with staggered timestamps
-      const demos = generateDemoNotifications();
-      const now = Date.now();
-      demos.forEach((demo, index) => {
-        setTimeout(() => {
+      // Fallback: check localStorage or generate demo data
+      const current = useAppStore.getState().notifications;
+      if (current.length === 0) {
+        try {
+          const stored = localStorage.getItem("app-notifications");
+          if (stored) {
+            const parsed = JSON.parse(stored) as AppNotification[];
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              useAppStore.setState({ notifications: parsed });
+              return;
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        // Generate demo notifications
+        const demos = generateDemoNotifications();
+        for (const demo of demos) {
           addNotification(demo);
-        }, 0);
-      });
-    }
+        }
+      }
+    })();
   }, [addNotification]);
+
+  // Helper: create notification via API and add to local state
+  const createApiNotification = useCallback(async (
+    data: Omit<AppNotification, 'id' | 'timestamp' | 'read'>
+  ) => {
+    try {
+      const res = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: data.type,
+          title: data.title,
+          message: data.description,
+          actionUrl: '',
+          metadata: JSON.stringify({
+            actionLabel: data.actionLabel,
+            actionType: data.actionType,
+            postId: data.postId,
+          }),
+        }),
+      });
+      if (res.ok) {
+        const created: DbNotification = await res.json();
+        setApiNotifications((prev) => [mapDbToApp(created), ...prev].slice(0, 50));
+      }
+    } catch {
+      // API unavailable – add to store only
+    }
+  }, []);
+
+  // Helper: mark all as read (API + store)
+  const handleMarkAllRead = useCallback(async () => {
+    markAllNotificationsRead();
+    setApiNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAllRead: true }),
+      });
+    } catch {
+      // ignore
+    }
+  }, [markAllNotificationsRead]);
+
+  // Helper: clear read notifications (API + store)
+  const handleClearRead = useCallback(async () => {
+    clearNotifications();
+    setApiNotifications((prev) => prev.filter((n) => !n.read));
+    setClearingRead(true);
+    try {
+      await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clearRead: true }),
+      });
+    } catch {
+      // ignore
+    }
+    setTimeout(() => setClearingRead(false), 800);
+  }, [clearNotifications]);
+
+  // Merge: API notifications first, then store (demo) notifications, deduplicated
+  const mergedNotifications = useMemo(() => {
+    const storeIds = new Set(notifications.map((n) => n.id));
+    const apiFiltered = apiNotifications.filter((n) => !storeIds.has(n.id));
+    return [...apiFiltered, ...notifications].slice(0, 30);
+  }, [apiNotifications, notifications]);
+
+  const unreadCount = useMemo(
+    () => mergedNotifications.filter((n) => !n.read).length,
+    [mergedNotifications]
+  );
+
+  const hasReadItems = useMemo(
+    () => mergedNotifications.some((n) => n.read),
+    [mergedNotifications]
+  );
 
   // Smart reminders computed from contentPosts
   const reminders = useMemo(() => {
@@ -530,21 +648,21 @@ function NotificationCenterPanel({
 
   // Filter notifications (max 20)
   const filteredNotifications = useMemo(() => {
-    let filtered = notifications;
+    let filtered = mergedNotifications;
     if (activeFilter !== "all") {
       filtered = filtered.filter((n) => n.type === activeFilter);
     }
     return filtered.slice(0, 20);
-  }, [notifications, activeFilter]);
+  }, [mergedNotifications, activeFilter]);
 
   // Count per type for filter tabs
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const n of notifications) {
+    for (const n of mergedNotifications) {
       counts[n.type] = (counts[n.type] || 0) + 1;
     }
     return counts;
-  }, [notifications]);
+  }, [mergedNotifications]);
 
   const panelContent = (
     <div className="w-80 sm:w-96 max-h-[70vh] flex flex-col">
@@ -568,7 +686,7 @@ function NotificationCenterPanel({
               variant="ghost"
               size="sm"
               className="h-7 px-2 text-[10px]"
-              onClick={markAllNotificationsRead}
+              onClick={handleMarkAllRead}
             >
               <CheckCircle className="h-3 w-3 mr-1" />
               全部已读
@@ -578,10 +696,11 @@ function NotificationCenterPanel({
             variant="ghost"
             size="sm"
             className="h-7 px-2 text-[10px] text-muted-foreground hover:text-red-500"
-            onClick={clearNotifications}
+            onClick={handleClearRead}
+            disabled={clearingRead || !hasReadItems}
           >
-            <Trash2 className="h-3 w-3 mr-1" />
-            清空
+            <Trash2 className={`h-3 w-3 mr-1 ${clearingRead ? 'animate-pulse' : ''}`} />
+            清除已读
           </Button>
         </div>
       </div>
@@ -681,7 +800,7 @@ function NotificationCenterPanel({
               const isActive = activeFilter === tab.value;
               const count =
                 tab.value === "all"
-                  ? notifications.length
+                  ? mergedNotifications.length
                   : typeCounts[tab.value] || 0;
               return (
                 <button
@@ -727,7 +846,7 @@ function NotificationCenterPanel({
               <BarChart3 className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-xs font-semibold">操作记录</span>
               <span className="text-[10px] text-muted-foreground">
-                ({notifications.length})
+                ({mergedNotifications.length})
               </span>
             </div>
 
@@ -836,7 +955,7 @@ export function NotificationBell() {
       </div>
 
       {/* Mobile: Sheet */}
-      <div className="sm:block hidden">
+      <div className="sm:hidden block">
         <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
           <SheetTrigger asChild>
             <Button
@@ -874,30 +993,7 @@ export function NotificationBell() {
         </Sheet>
       </div>
 
-      {/* Mobile notification bell in the floating nav area */}
-      <button
-        onClick={() => setIsMobileOpen(true)}
-        className="sm:hidden flex items-center justify-center w-10 h-12 rounded-2xl text-muted-foreground transition-colors hover:text-foreground relative"
-        aria-label="通知中心"
-      >
-        <Bell className="h-[18px] w-[18px]" />
-        {unreadCount > 0 && (
-          <motion.span
-            key={unreadCount}
-            initial={{ scale: 0 }}
-            animate={{ scale: [1, 1.3, 1] }}
-            transition={{
-              type: "spring",
-              stiffness: 500,
-              damping: 15,
-              duration: 0.4,
-            }}
-            className="absolute top-0.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white px-1"
-          >
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </motion.span>
-        )}
-      </button>
+
     </>
   );
 }

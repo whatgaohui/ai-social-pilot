@@ -69,6 +69,7 @@ import {
   Bookmark,
   Repeat2,
   TrendingUp,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { TrackedAccount, Platform, ContentPost, ContentComment, ContentInteraction } from "@/types";
@@ -369,6 +370,10 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
 
       if (formMethod === "link") {
         body.homeUrl = formUrl.trim();
+        // Pass cookie if provided for richer data (e.g. follower count)
+        if (formCookie.trim()) {
+          body.cookie = formCookie.trim();
+        }
       }
       if (formMethod === "cookie") {
         body.homeUrl = formUrl.trim() || "";
@@ -1901,6 +1906,40 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                         粘贴目标账号的个人主页链接，系统将自动采集账号信息和笔记
                       </p>
                     </div>
+
+                    {formPlatform === "xiaohongshu" && (
+                      <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 p-3 flex items-start gap-2">
+                        <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                            小红书采集说明
+                          </p>
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-relaxed">
+                            基础信息（昵称、简介）可直接采集。粉丝数和笔记数需要提供登录态 Cookie 才能获取。
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">
+                        登录Cookie（可选）
+                      </Label>
+                      <Textarea
+                        placeholder="a1=...; web_session=..."
+                        value={formCookie}
+                        onChange={(e) => setFormCookie(e.target.value)}
+                        className="text-xs font-mono min-h-[60px]"
+                        rows={2}
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        从浏览器 DevTools → Application → Cookies 中复制
+                        <code className="text-[10px] bg-muted px-1 py-0.5 rounded mx-0.5">a1</code>
+                        和
+                        <code className="text-[10px] bg-muted px-1 py-0.5 rounded mx-0.5">web_session</code>
+                        的值，用分号连接
+                      </p>
+                    </div>
                   </motion.div>
                 )}
 
@@ -1961,7 +2000,11 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                         className="text-xs font-mono min-h-[80px]"
                       />
                       <p className="text-[10px] text-muted-foreground">
-                        通过Cookie可以采集更多深度数据，请确保Cookie有效
+                        从浏览器 DevTools → Application → Cookies 中复制
+                        <code className="text-[10px] bg-muted px-1 py-0.5 rounded mx-0.5">a1</code>
+                        和
+                        <code className="text-[10px] bg-muted px-1 py-0.5 rounded mx-0.5">web_session</code>
+                        的值，用分号连接。提供Cookie可获取粉丝数、笔记数等完整数据。
                       </p>
                     </div>
                   </motion.div>

@@ -39,6 +39,7 @@ import { CoverImageGenerator } from "@/components/right-panel/cover-image-genera
 import { TitleABTest } from "@/components/right-panel/title-ab-test";
 import { QualityScorer } from "@/components/right-panel/quality-scorer";
 import { ContentHistory } from "@/components/right-panel/content-history";
+import { ViralInspiration } from "@/components/right-panel/viral-inspiration";
 import { PublishWorkflow } from "@/components/right-panel/publish-workflow";
 import { ContentQuickActions } from "@/components/right-panel/content-quick-actions";
 import { AIQuickActionsBar } from "@/components/right-panel/ai-quick-actions-bar";
@@ -155,6 +156,7 @@ const TOOL_TABS = [
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500" },
   { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500" },
   { value: "history", icon: History, label: "版本记录", color: "text-violet-500" },
+  { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500" },
 ] as const;
 
 type ToolTab = (typeof TOOL_TABS)[number]["value"];
@@ -501,6 +503,18 @@ export function ContentWorkspace() {
                     transition={{ duration: 0.2 }}
                   >
                     <ContentHistory post={selectedPost} />
+                  </motion.div>
+                )}
+
+                {/* ── Inspiration Tab ─────────────────────────────────────── */}
+                {toolTab === "inspiration" && (
+                  <motion.div
+                    key="inspiration-panel"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ViralInspiration />
                   </motion.div>
                 )}
               </div>

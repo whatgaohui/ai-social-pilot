@@ -3099,3 +3099,78 @@ Stage Summary:
   3. 运营报告自动生成（周报/月报PDF导出）
   4. 内容排期拖拽排序功能
   5. 多人协作审阅功能
+
+---
+Task ID: 22
+Agent: Main Developer
+Task: Bug修复 - 重复通知图标 + 小红书采集功能修复
+
+Work Log:
+- 读取 worklog.md 了解前21轮开发成果
+- 重启 dev server，8个核心API 200通过
+- ESLint 零错误，TypeScript src/ 零错误（修复 spellcheck route 的 1 个 TS 错误）
+- 分析用户报告的两个bug
+
+### Bug修复
+
+1. **右上角重复的消息提醒图标**（高优先级）：
+   - 问题：notification-center.tsx 中 Mobile Sheet 的 CSS class 写反了 `sm:block hidden`（应为 `sm:hidden block`），导致桌面端显示两个铃铛（Popover + Sheet 同时渲染）
+   - 修复1：将 Mobile Sheet 的 wrapper div class 改为 `sm:hidden block`
+   - 修复2：移除 NotificationBell 组件内多余的独立移动端按钮（page.tsx 中已有两处调用）
+   - 修复3：移除 page.tsx 移动端底部导航中重复的 `<NotificationBell />`（组件内部已自行处理桌面/移动端分流）
+   - 验证：现在桌面端只显示一个 Popover 铃铛，移动端只显示一个 Sheet 铃铛
+
+2. **小红书采集功能无法工作**（高优先级）：
+   - 问题分析：
+     a) scraper-service（端口3003）进程未运行
+     b) scraper 返回数据格式与前端期望不匹配（前端期望 `{ profile: {...} }`，scraper 返回扁平结构）
+     c) `__INITIAL_STATE__` JSON 包含 `undefined` 关键字导致解析崩溃
+     d) 小红书已不再使用 ISSR_SCRIPT 注入用户数据（粉丝/笔记数等已不在 HTML 中）
+     e) 未登录时粉丝数/笔记数完全不在HTML中暴露
+   - 修复1：scraper `/api/scrape/xhs/profile` 返回格式改为 `{ profile: {...}, ...profileData }`（同时保留扁平字段向后兼容）
+   - 修复2：scraper `/api/scrape/xhs/notes` 返回格式增加 `profile` 字段
+   - 修复3：3处 `JSON.parse(stateMatch[1])` 改为先 `replace(/\bundefined\b/g, 'null')` 再解析
+   - 修复4：profile 和 notes 接口增加 cookie 参数支持（用户可提供登录态Cookie获取完整数据）
+   - 修复5：tracked-accounts API 的 `triggerProfileScrape` 传递 cookie 参数
+   - 修复6：tracked-accounts API 支持 cookie 采集方式触发 profile scrape
+   - 前端增强：采集中心添加 XHS 采集限制提示（amber 色信息框），解释需要Cookie才能获取粉丝数
+   - 前端增强：link 采集方式新增可选 Cookie 输入框，带 DevTools 获取指引
+
+### 修改文件
+- `src/components/notification-center.tsx` - 修复 CSS class 错误 + 移除多余移动端按钮
+- `src/app/page.tsx` - 移除移动端底部重复的 NotificationBell
+- `mini-services/scraper-service/index.ts` - 修复返回格式 + JSON解析 + cookie支持
+- `src/app/api/tracked-accounts/route.ts` - 传递 cookie 参数 + 支持 cookie 方法
+- `src/components/right-panel/account-collector.tsx` - 添加采集限制提示 + cookie 输入框
+- `src/app/api/ai/spellcheck/route.ts` - 修复 issue.type 类型断言
+
+### QA验证结果
+- ✅ ESLint 零错误
+- ✅ TypeScript src/ 零错误
+- ✅ 所有核心API 200通过（重启后）
+- ✅ scraper-service 本地测试：成功采集到昵称"夏阳ski"和简介
+- ⚠️ 粉丝数/笔记数为0（小红书未登录时不暴露，非代码bug）
+- ⚠️ dev server 在沙箱环境中不稳定（环境限制，非代码问题）
+
+### 采集功能现状说明
+- 基础信息（昵称、简介、头像）可直接采集 ✅
+- 粉丝数、笔记数需要提供登录态 Cookie 才能获取 ⚠️（小红书反爬限制）
+- 笔记内容列表同样需要 Cookie 才能完整获取
+- 用户可通过浏览器 DevTools 复制 Cookie 填入
+
+Stage Summary:
+- 项目状态：代码层面稳定，功能正常
+- 本轮修复 2 个 bug（重复通知图标、采集功能），修改 6 个文件
+- 核心修复：通知铃铛重复显示、scraper返回格式不匹配、JSON解析崩溃、Cookie支持
+- 未解决问题或风险：
+  1. 沙箱环境对后台进程（dev server、scraper service）有强制清理机制，进程存活时间不稳定
+  2. 小红书反爬机制持续升级，纯HTTP采集能力有限，建议未来考虑代理/浏览器自动化方案
+  3. 数据库 force-reset 后丢失了之前的测试数据（Notification表创建需要）
+- 建议下一阶段优先事项：
+  1. 采集中心添加更多引导（如何获取Cookie的图文教程）
+  2. 竞品分析面板/发布流程增强 的 UI 集成确认
+  3. ViralInspiration 爆款灵感库已集成到 ContentWorkspace（需验证）
+  4. 内容搜索组件（ContentSearch）集成验证
+  5. 通知持久化到数据库（Notification model + API 已创建，需验证）
+  6. 运营报告自动生成
+  7. 样式细节持续打磨

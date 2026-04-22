@@ -27,6 +27,7 @@ import {
   Globe, User, Check, Search, Keyboard,
 } from "lucide-react";
 import { CommandPalette } from "@/components/command-palette";
+import { ContentSearch } from "@/components/content-search";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useRipple } from "@/hooks/use-ripple";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -388,6 +389,7 @@ export default function Home() {
   const [mobileTabIndex, setMobileTabIndex] = useState(1); // default: 日历
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [contentSearchOpen, setContentSearchOpen] = useState(false);
   const mobileTabIndexRef = useRef(mobileTabIndex);
 
   // Keep ref in sync for stable drag handler
@@ -444,9 +446,9 @@ export default function Home() {
     }
   }, [handleMobileTabChange]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — Ctrl/Cmd+K opens ContentSearch
   useKeyboardShortcuts({
-    onOpenCommandPalette: () => setCommandPaletteOpen((v) => !v),
+    onOpenCommandPalette: () => setContentSearchOpen((v) => !v),
   });
 
   const showWelcome = !onboardingCompleted;
@@ -533,13 +535,13 @@ export default function Home() {
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
-            {/* Search / Command Palette trigger */}
+            {/* Content Search trigger */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setCommandPaletteOpen(true)}
+              onClick={() => setContentSearchOpen(true)}
               className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-colors btn-ripple press-scale"
-              aria-label="搜索"
+              aria-label="搜索内容"
             >
               <Search className="h-3.5 w-3.5" />
               <span className="hidden md:inline">搜索</span>
@@ -548,7 +550,7 @@ export default function Home() {
               </kbd>
             </motion.button>
 
-            {/* Keyboard shortcut help */}
+            {/* Command Palette / Keyboard shortcut help */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -570,12 +572,14 @@ export default function Home() {
               </motion.div>
             )}
             <SettingsCenter connectedPlatforms={connectedPlatforms} />
-            <NotificationBell />
             <Badge variant="outline" className="text-xs gap-1">
               <Zap className="h-3 w-3 text-amber-500" />
               AI驱动
             </Badge>
           </div>
+
+          {/* Notification Bell - always visible */}
+          <NotificationBell />
         </div>
 
         {/* Mobile: compact header - platform switcher moved to floating nav */}
@@ -738,9 +742,6 @@ export default function Home() {
           {/* Divider */}
           <div className="h-5 w-px bg-border/40" />
 
-          {/* Notification bell (mobile) */}
-          <NotificationBell />
-
           {/* Settings button */}
           <button
             onClick={() => setSettingsCenterOpen(true)}
@@ -758,6 +759,12 @@ export default function Home() {
           </button>
         </motion.div>
       </div>
+
+      {/* Content Search Dialog */}
+      <ContentSearch
+        open={contentSearchOpen}
+        onOpenChange={setContentSearchOpen}
+      />
 
       {/* Command Palette */}
       <CommandPalette

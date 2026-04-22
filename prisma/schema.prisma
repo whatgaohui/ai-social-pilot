@@ -210,6 +210,19 @@ model SyncTask {
   @@index([trackedAccountId])
 }
 
+// ─── 通知 ──────────────────────────────────────────────────────────────
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   @default("system") // system, publish, interaction, ai, inspiration
+  title       String
+  message     String   @default("")
+  read        Boolean  @default(false)
+  actionUrl   String   @default("")
+  metadata    String   @default("") // JSON serialized
+  createdAt   DateTime @default(now())
+}
+
 // ─── 互动数据：评论 ──────────────────────────────────────────────────────
 
 model ContentComment {

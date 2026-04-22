@@ -83,14 +83,14 @@ export async function POST(request: NextRequest) {
         collectMethod: method,
         cookie: (cookie || '').trim(),
         isOwn: isOwn !== undefined ? !!isOwn : true,
-        status: method === 'link' ? 'syncing' : 'idle',
+        status: (method === 'link' || method === 'cookie') ? 'syncing' : 'idle',
       },
     });
 
     // If collectMethod is 'link', trigger a profile scrape in the background
-    if (method === 'link') {
+    if (method === 'link' || method === 'cookie') {
       // Fire-and-forget: don't await the scraper call
-      triggerProfileScrape(account.id, platform.trim(), homeUrl.trim()).catch((err) => {
+      triggerProfileScrape(account.id, platform.trim(), homeUrl.trim(), cookie || undefined).catch((err) => {
         console.error(`[Background] Profile scrape failed for account ${account.id}:`, err);
       });
     }
@@ -110,6 +110,7 @@ async function triggerProfileScrape(
   accountId: string,
   platform: string,
   homeUrl: string,
+  cookie?: string,
 ) {
   try {
     const scrapeUrl = platform === 'xiaohongshu'
@@ -119,7 +120,7 @@ async function triggerProfileScrape(
     const response = await fetch(scrapeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ homeUrl }),
+      body: JSON.stringify({ homeUrl, cookie: cookie || undefined }),
     });
 
     if (!response.ok) {
