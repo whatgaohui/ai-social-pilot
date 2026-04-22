@@ -155,6 +155,16 @@
   }
 }
 
+/* Respect prefers-reduced-motion: disable animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Selection color */
 ::selection {
   background: oklch(0.7 0.15 300);
@@ -3798,4 +3808,58 @@ textarea {
   .toast-progress::after {
     display: none;
   }
+}
+
+/* ====== Drag & Drop / Calendar / Card / Notification / Progress / Sidebar / Skeleton / Badge / Tooltip / Confetti Utilities ====== */
+
+/* Drag ghost styling */
+.drag-ghost { opacity: 0.5; transform: scale(0.95); transition: all 0.2s; }
+
+/* Calendar drop target pulse */
+.calendar-drop-target { box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.6); animation: drop-target-pulse 1s ease-in-out infinite; }
+@keyframes drop-target-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.6); } 50% { box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3); } }
+
+/* Card press feedback */
+.card-press { transition: all 0.15s ease; }
+.card-press:active { transform: scale(0.98); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+/* Tag pop-in animation */
+.tag-pop { animation: tag-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+@keyframes tag-pop-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+/* Notification slide-in from right */
+.notification-slide { animation: notif-slide-in 0.3s ease-out forwards; }
+@keyframes notif-slide-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* Progress bar shimmer overlay */
+.progress-bar-animated { position: relative; overflow: hidden; }
+.progress-bar-animated::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); animation: progress-shimmer 2s infinite; }
+@keyframes progress-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+/* Sidebar active item left accent bar */
+.sidebar-item-active { position: relative; overflow: hidden; }
+.sidebar-item-active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(to bottom, #8b5cf6, #a855f7); border-radius: 0 4px 4px 0; animation: sidebar-active-in 0.3s ease-out; }
+@keyframes sidebar-active-in { from { height: 0; } to { height: 100%; } }
+
+/* Skeleton shine with CSS variable background */
+.skeleton-shine { position: relative; overflow: hidden; background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.1) 50%, hsl(var(--muted)) 75%); background-size: 200% 100%; animation: skeleton-shine-move 1.5s ease-in-out infinite; }
+@keyframes skeleton-shine-move { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Content type badge hover lift */
+.content-type-badge { transition: all 0.2s ease; }
+.content-type-badge:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+/* Tooltip arrow pop-in */
+.tooltip-arrow { animation: tooltip-arrow-in 0.2s ease-out; }
+@keyframes tooltip-arrow-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+/* Confetti burst celebration */
+.confetti-burst { animation: confetti-burst-anim 0.6s ease-out forwards; }
+@keyframes confetti-burst-anim { 0% { opacity: 1; transform: scale(0) rotate(0deg); } 50% { opacity: 1; transform: scale(1.2) rotate(180deg); } 100% { opacity: 0; transform: scale(1.5) rotate(360deg); } }
+
+/* prefers-reduced-motion: disable all above utility animations */
+@media (prefers-reduced-motion: reduce) {
+  .drag-ghost, .card-press, .tag-pop, .notification-slide, .progress-bar-animated::after,
+  .sidebar-item-active::before, .skeleton-shine, .content-type-badge, .tooltip-arrow,
+  .confetti-burst, .calendar-drop-target { animation: none !important; transition: none !important; }
 }

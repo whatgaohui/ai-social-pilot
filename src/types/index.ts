@@ -182,7 +182,20 @@ export interface ContentVersion {
   createdAt: string;
 }
 
-export type NotificationType = 'system' | 'publish' | 'interaction' | 'ai' | 'inspiration' | 'optimize' | 'polish' | 'generate' | 'reminder' | 'error';
+export type NotificationType =
+  | 'system'
+  | 'ai_task'
+  | 'completion'
+  | 'marketing'
+  | 'publish'
+  | 'interaction'
+  | 'ai'
+  | 'inspiration'
+  | 'optimize'
+  | 'polish'
+  | 'generate'
+  | 'reminder'
+  | 'error';
 
 export interface AppNotification {
   id: string;

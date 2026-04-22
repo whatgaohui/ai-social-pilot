@@ -649,6 +649,7 @@ interface EnhancedWeekDayColumnProps {
   // Drag-and-drop props
   isDragging: boolean;
   overDate: string | null;
+  droppedDate: string | null;
   onDragOver: (e: React.DragEvent<HTMLElement>, dateStr: string) => void;
   onDragEnter: (e: React.DragEvent<HTMLElement>, dateStr: string) => void;
   onDragLeave: (e: React.DragEvent<HTMLElement>, dateStr: string) => void;
@@ -666,6 +667,7 @@ function EnhancedWeekDayColumn({
   onDoubleClick,
   isDragging,
   overDate,
+  droppedDate,
   onDragOver,
   onDragEnter,
   onDragLeave,
@@ -674,6 +676,7 @@ function EnhancedWeekDayColumn({
   const dateStr = format(day, "yyyy-MM-dd");
   const truncatedPosts = posts.slice(0, 3);
   const isOverThis = isDragging && overDate === dateStr;
+  const isFlashThis = droppedDate === dateStr;
   const firstPost = posts[0];
 
   // Unique platforms in this day's posts
@@ -705,9 +708,22 @@ function EnhancedWeekDayColumn({
                 ? "bg-card border-border hover:border-primary/30 hover:bg-muted/50"
                 : "bg-muted/20 border-transparent hover:bg-muted/40"
           }
-          ${isOverThis ? "ring-2 ring-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/20 border-emerald-300 scale-[1.02]" : ""}
+          ${isOverThis ? "ring-2 ring-violet-500 bg-violet-500/10 dark:bg-violet-500/10 border-violet-300 scale-[1.02]" : ""}
         `}
       >
+        {/* Drop success flash animation */}
+        <AnimatePresence>
+          {isFlashThis && (
+            <motion.div
+              initial={{ opacity: 0.4, scale: 0.9 }}
+              animate={{ opacity: 0, scale: 1.1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="absolute inset-0 rounded-md bg-violet-500 pointer-events-none z-20"
+            />
+          )}
+        </AnimatePresence>
+
         {/* Drop hint overlay */}
         <AnimatePresence>
           {isOverThis && (
@@ -715,9 +731,9 @@ function EnhancedWeekDayColumn({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-10 flex items-center justify-center bg-emerald-500/5 rounded-md pointer-events-none"
+              className="absolute inset-0 z-10 flex items-center justify-center bg-violet-500/5 rounded-md pointer-events-none"
             >
-              <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center gap-1 text-violet-600 dark:text-violet-400">
                 <GripVertical className="h-3 w-3" />
                 <span className="text-[9px] font-medium">放置</span>
               </div>
@@ -888,6 +904,10 @@ export function CompactCalendar() {
   const swipeStartY = useRef(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // --- Drop flash animation state ---
+  const [droppedDate, setDroppedDate] = useState<string | null>(null);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // --- Keyboard navigation for calendar ---
   useEffect(() => {
     function handleCalendarKeys(e: KeyboardEvent) {
@@ -985,6 +1005,10 @@ export function CompactCalendar() {
         if (!res.ok) throw new Error("更新排期失败");
         updateContentPost(postId, { scheduledDate: newScheduledDate });
         toast.success("排期已更新");
+        // Trigger flash animation on target date
+        setDroppedDate(newScheduledDate);
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = setTimeout(() => setDroppedDate(null), 1000);
       } catch (error) {
         console.error("Failed to update scheduled date:", error);
         toast.error("排期更新失败，请重试");
@@ -1288,7 +1312,7 @@ export function CompactCalendar() {
             <Button
               variant={viewMode === "drag" ? "secondary" : "ghost"}
               size="sm"
-              className={`h-5 w-5 p-0 ${viewMode === "drag" ? "text-emerald-600 dark:text-emerald-400" : ""}`}
+              className={`h-5 w-5 p-0 ${viewMode === "drag" ? "text-violet-600 dark:text-violet-400" : ""}`}
               onClick={() => setViewMode(viewMode === "drag" ? "grid" : "drag")}
               title="拖拽排序"
             >
@@ -1308,18 +1332,18 @@ export function CompactCalendar() {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="mx-3 mb-2 px-2.5 py-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 flex items-center gap-2">
-              <div className="flex-shrink-0 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+            <div className="mx-3 mb-2 px-2.5 py-1.5 rounded-md bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/40 flex items-center gap-2">
+              <div className="flex-shrink-0 w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center">
                 <GripVertical className="h-2.5 w-2.5 text-white" />
               </div>
-              <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300 flex-1">
+              <span className="text-[10px] font-medium text-violet-700 dark:text-violet-300 flex-1">
                 拖拽内容到目标日期重新排期
               </span>
               <button
                 onClick={() => setViewMode("grid")}
-                className="flex-shrink-0 p-0.5 rounded hover:bg-emerald-100 dark:hover:bg-emerald-800/40 transition-colors"
+                className="flex-shrink-0 p-0.5 rounded hover:bg-violet-100 dark:hover:bg-violet-800/40 transition-colors"
               >
-                <X className="h-3 w-3 text-emerald-500" />
+                <X className="h-3 w-3 text-violet-500" />
               </button>
             </div>
           </motion.div>
@@ -1512,7 +1536,7 @@ export function CompactCalendar() {
                             <span className="text-[10px] font-semibold text-muted-foreground tabular-nums">{group.label}</span>
                             <span className="text-[9px] text-muted-foreground/60">{group.posts.length} 条</span>
                             {isOverThisDate && !isDraggedPostInThisDate && (
-                              <motion.span initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} className="text-[9px] font-medium text-emerald-600 dark:text-emerald-400 ml-auto">
+                              <motion.span initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} className="text-[9px] font-medium text-violet-600 dark:text-violet-400 ml-auto">
                                 放置到此处 ↑
                               </motion.span>
                             )}
@@ -1576,27 +1600,47 @@ export function CompactCalendar() {
                       const isMultiPlatform = platformFilter === "all" && posts && posts.length > 1;
                       const platformAccent = primaryPost?.platform ? PLATFORM_CELL_ACCENT[primaryPost.platform] || "" : "";
                       const hasContent = posts && posts.length > 0;
+                      const isOverThisCell = calDragState.isDragging && calDragState.overDate === dateStr;
+                      const isFlashCell = droppedDate === dateStr;
 
                       return (
                         <motion.button
                           key={dateStr}
                           variants={staggerChild}
-                          whileHover={hasContent ? { scale: 1.05, transition: { type: "spring", stiffness: 400, damping: 20 } } : {}}
+                          whileHover={hasContent && !calDragState.isDragging ? { scale: 1.05, transition: { type: "spring", stiffness: 400, damping: 20 } } : {}}
                           whileTap={{ scale: 0.92 }}
                           onClick={() => handleDayClick(dateStr)}
                           onDoubleClick={() => handleGridDayDoubleClick(dateStr)}
+                          onDragOver={(e) => calDragHandlers.onDateDragOver(e, dateStr)}
+                          onDragEnter={(e) => calDragHandlers.onDateDragEnter(e, dateStr)}
+                          onDragLeave={(e) => calDragHandlers.onDateDragLeave(e, dateStr)}
+                          onDrop={(e) => calDragHandlers.onDateDrop(e, dateStr)}
                           className={`
                             relative h-8 w-full rounded flex flex-col items-center justify-center cursor-pointer
                             transition-all duration-150 overflow-hidden
                             ${isSelected ? "ring-2 ring-primary ring-offset-1" : ""}
-                            ${today && !isSelected ? "ring-1 ring-primary/50 shimmer-border" : ""}
-                            ${today ? "bg-gradient-to-br from-violet-100/60 to-purple-100/40 dark:from-violet-950/40 dark:to-purple-950/30" : ""}
+                            ${today && !isSelected && !isOverThisCell ? "ring-1 ring-primary/50 shimmer-border" : ""}
+                            ${today && !isOverThisCell ? "bg-gradient-to-br from-violet-100/60 to-purple-100/40 dark:from-violet-950/40 dark:to-purple-950/30" : ""}
                             ${primaryPost
                               ? `${today ? "" : statusStyle.bg} ${isMultiPlatform ? platformAccent : statusStyle.border} hover:brightness-95 dark:hover:brightness-110`
                               : "hover:bg-muted/40"
                             }
+                            ${isOverThisCell && !isSelected ? "ring-2 ring-violet-500 bg-violet-500/10 scale-105 shadow-lg shadow-violet-500/20" : ""}
                           `}
                         >
+                          {/* Drop flash overlay */}
+                          <AnimatePresence>
+                            {isFlashCell && (
+                              <motion.div
+                                initial={{ opacity: 0.5, scale: 0.85 }}
+                                animate={{ opacity: 0, scale: 1.15 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                className="absolute inset-0 rounded bg-violet-500 pointer-events-none z-20"
+                              />
+                            )}
+                          </AnimatePresence>
+
                           {/* Today animated ring */}
                           {today && !isSelected && (
                             <motion.span
@@ -1759,6 +1803,7 @@ export function CompactCalendar() {
                         onDoubleClick={handleDayDoubleClick}
                         isDragging={calDragState.isDragging}
                         overDate={calDragState.overDate}
+                        droppedDate={droppedDate}
                         onDragOver={calDragHandlers.onDateDragOver}
                         onDragEnter={calDragHandlers.onDateDragEnter}
                         onDragLeave={calDragHandlers.onDateDragLeave}
@@ -1857,7 +1902,7 @@ export function CompactCalendar() {
                               className={`
                                 h-7 rounded flex flex-col items-center justify-center text-[9px] cursor-default
                                 transition-all duration-150
-                                ${isOver ? "bg-emerald-100 dark:bg-emerald-900/30 ring-1 ring-emerald-400 scale-105" : ""}
+                                ${isOver ? "bg-violet-100 dark:bg-violet-900/30 ring-1 ring-violet-500 scale-105" : ""}
                                 ${today ? "text-primary font-bold" : "text-muted-foreground"}
                                 ${hasPosts ? "bg-muted/50" : "bg-muted/20"}
                               `}
@@ -1867,11 +1912,23 @@ export function CompactCalendar() {
                                 <motion.span
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
-                                  className="text-[6px] text-emerald-600 dark:text-emerald-400"
+                                  className="text-[6px] text-violet-600 dark:text-violet-400"
                                 >
                                   放置
                                 </motion.span>
                               )}
+                              {/* Drop flash for list mini calendar */}
+                              <AnimatePresence>
+                                {droppedDate === dateStr && !isOver && (
+                                  <motion.div
+                                    initial={{ opacity: 0.4, scale: 0.85 }}
+                                    animate={{ opacity: 0, scale: 1.1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.7, ease: "easeOut" }}
+                                    className="absolute inset-0 rounded bg-violet-500 pointer-events-none z-10"
+                                  />
+                                )}
+                              </AnimatePresence>
                             </div>
                           );
                         })}

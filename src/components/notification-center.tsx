@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   Bell,
+  BellOff,
   CheckCircle,
   XCircle,
   Sparkles,
@@ -47,6 +48,9 @@ import {
   Info,
   Heart,
   Lightbulb,
+  Bot,
+  PartyPopper,
+  Target,
 } from "lucide-react";
 import type { AppNotification, NotificationType } from "@/types";
 import { formatDistanceToNow } from "date-fns";
@@ -69,6 +73,27 @@ const NOTIFICATION_CONFIG: Record<
     bgColor: "bg-violet-100 dark:bg-violet-900/30",
     label: "系统",
     dotColor: "bg-violet-500",
+  },
+  ai_task: {
+    icon: Bot,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    label: "AI任务",
+    dotColor: "bg-emerald-500",
+  },
+  completion: {
+    icon: PartyPopper,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    label: "完成",
+    dotColor: "bg-emerald-500",
+  },
+  marketing: {
+    icon: Target,
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-100 dark:bg-amber-900/30",
+    label: "营销",
+    dotColor: "bg-amber-500",
   },
   publish: {
     icon: Clock,
@@ -144,25 +169,25 @@ function generateDemoNotifications(): Omit<AppNotification, "id" | "timestamp" |
       description: "为您打造个性化内容策略，自动规划、生成、优化朋友圈内容。点击了解更多功能。",
     },
     {
-      type: "publish",
-      title: "你有3篇内容待发布",
-      description: "本周计划中有3篇内容尚未发布，建议尽快安排发布时间。",
+      type: "marketing",
+      title: "本周营销提醒",
+      description: "本周计划中有3篇内容尚未发布，建议尽快安排发布时间以保持活跃度。",
       actionLabel: "查看详情",
       actionType: "viewPost",
     },
     {
-      type: "interaction",
-      title: "「美食探店」获得12个新点赞",
-      description: "你发布的内容「周末探店记录」在过去1小时内收到了12个新点赞和3条评论。",
+      type: "ai_task",
+      title: "AI文案生成完成",
+      description: "「职场心得分享」的AI内容生成已完成，得分85分（优秀）。点击查看优化建议。",
       actionLabel: "查看详情",
       actionType: "viewPost",
     },
     {
-      type: "ai",
-      title: "AI质量评分完成：85分",
-      description: "「职场心得分享」的AI质量评估已完成，得分85分（优秀）。点击查看优化建议。",
-      actionLabel: "查看详情",
-      actionType: "viewPost",
+      type: "completion",
+      title: "内容计划已生成",
+      description: "本月内容计划已自动生成，共包含12篇内容。建议逐一审核并安排发布。",
+      actionLabel: "查看计划",
+      actionType: "viewData",
     },
     {
       type: "inspiration",
@@ -183,6 +208,7 @@ interface DbNotification {
   read: boolean;
   actionUrl: string;
   metadata: string;
+  data: string;
   createdAt: string;
 }
 
@@ -226,6 +252,29 @@ function formatTime(timestamp: number): string {
   }
 }
 
+// ─── Animation variants ─────────────────────────────────────────────
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -12, y: 4 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    transition: { type: "spring", stiffness: 500, damping: 30 },
+  },
+  exit: { opacity: 0, x: 12, height: 0, marginBottom: 0, transition: { duration: 0.2 } },
+};
+
 // ─── Single notification card ───────────────────────────────────────
 function NotificationCard({
   notification,
@@ -236,19 +285,17 @@ function NotificationCard({
   onRead: (id: string) => void;
   onAction: (notification: AppNotification) => void;
 }) {
-  const config = NOTIFICATION_CONFIG[notification.type];
+  const config = NOTIFICATION_CONFIG[notification.type] || NOTIFICATION_CONFIG.system;
   const Icon = config.icon;
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -12 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 12, height: 0, marginBottom: 0 }}
-      transition={{ duration: 0.2 }}
-      className={`group flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors hover:bg-muted/50 ${
+      variants={itemVariants}
+      layout
+      className={`group flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors hover:bg-muted/50 border-l-2 ${
         !notification.read
-          ? "bg-violet-50/50 dark:bg-violet-950/10"
-          : ""
+          ? "border-l-violet-500 bg-violet-50/50 dark:bg-violet-950/10 dark:border-l-violet-400"
+          : "border-l-transparent"
       }`}
       onClick={() => {
         if (!notification.read) onRead(notification.id);
@@ -263,7 +310,7 @@ function NotificationCard({
         <div className="flex items-center gap-2 mb-0.5">
           <span
             className={`text-xs truncate ${
-              !notification.read ? "font-bold" : "font-medium"
+              !notification.read ? "font-bold text-foreground" : "font-medium text-foreground/80"
             }`}
           >
             {notification.title}
@@ -371,7 +418,7 @@ function QuickStats() {
   const trendUp = stats.publishedRate >= 50;
 
   return (
-    <div className="grid grid-cols-3 gap-2 hover-lift-sm">
+    <div className="grid grid-cols-3 gap-2">
       <div className="rounded-lg bg-muted/50 p-2.5 text-center">
         <div className="text-lg font-bold tabular-nums text-foreground">
           {stats.total}
@@ -407,7 +454,7 @@ function QuickStats() {
   );
 }
 
-// ─── Empty state ────────────────────────────────────────────────────
+// ─── Empty state with BellOff ───────────────────────────────────────
 function EmptyState() {
   return (
     <motion.div
@@ -417,14 +464,14 @@ function EmptyState() {
       className="flex flex-col items-center py-10 text-muted-foreground"
     >
       <div className="relative mb-3">
-        <Bell className="h-10 w-10 opacity-20" />
+        <BellOff className="h-10 w-10 opacity-20" />
         <motion.div
           className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-muted-foreground/20"
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
       </div>
-      <span className="text-sm font-medium">暂无新通知</span>
+      <span className="text-sm font-medium">暂无通知</span>
       <span className="text-[11px] mt-1 text-muted-foreground/70">
         新消息和操作提醒将在这里显示
       </span>
@@ -435,11 +482,11 @@ function EmptyState() {
 // ─── Notification type filter tabs ──────────────────────────────────
 const FILTER_TABS = [
   { value: "all", label: "全部" },
+  { value: "ai_task", label: "AI任务" },
   { value: "system", label: "系统" },
-  { value: "publish", label: "发布" },
-  { value: "interaction", label: "互动" },
+  { value: "marketing", label: "营销" },
+  { value: "completion", label: "完成" },
   { value: "ai", label: "AI" },
-  { value: "inspiration", label: "灵感" },
 ] as const;
 
 type FilterValue = (typeof FILTER_TABS)[number]["value"];
@@ -541,6 +588,23 @@ function NotificationCenterPanel({
       // API unavailable – add to store only
     }
   }, []);
+
+  // Helper: mark single notification as read (API + store)
+  const handleMarkRead = useCallback(async (id: string) => {
+    markNotificationRead(id);
+    setApiNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+    try {
+      await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [id] }),
+      });
+    } catch {
+      // ignore
+    }
+  }, [markNotificationRead]);
 
   // Helper: mark all as read (API + store)
   const handleMarkAllRead = useCallback(async () => {
@@ -657,22 +721,33 @@ function NotificationCenterPanel({
   const filteredNotifications = useMemo(() => {
     let filtered = mergedNotifications;
     if (activeFilter !== "all") {
-      filtered = filtered.filter((n) => n.type === activeFilter);
+      // Map filter to notification types
+      if (activeFilter === "ai_task") {
+        filtered = filtered.filter((n) => n.type === "ai_task" || n.type === "ai" || n.type === "generate" || n.type === "optimize" || n.type === "polish");
+      } else if (activeFilter === "completion") {
+        filtered = filtered.filter((n) => n.type === "completion" || n.type === "generate");
+      } else if (activeFilter === "marketing") {
+        filtered = filtered.filter((n) => n.type === "marketing" || n.type === "publish");
+      } else {
+        filtered = filtered.filter((n) => n.type === activeFilter);
+      }
     }
     return filtered.slice(0, 20);
   }, [mergedNotifications, activeFilter]);
 
-  // Count per type for filter tabs
-  const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const n of mergedNotifications) {
-      counts[n.type] = (counts[n.type] || 0) + 1;
-    }
-    return counts;
+  // Count per filter for filter tabs
+  const filterCounts = useMemo(() => {
+    const all = mergedNotifications.length;
+    const aiTask = mergedNotifications.filter((n) => n.type === "ai_task" || n.type === "ai" || n.type === "generate" || n.type === "optimize" || n.type === "polish").length;
+    const system = mergedNotifications.filter((n) => n.type === "system").length;
+    const marketing = mergedNotifications.filter((n) => n.type === "marketing" || n.type === "publish").length;
+    const completion = mergedNotifications.filter((n) => n.type === "completion" || n.type === "generate").length;
+    const ai = mergedNotifications.filter((n) => n.type === "ai").length;
+    return { all, ai_task: aiTask, system, marketing, completion, ai };
   }, [mergedNotifications]);
 
   const panelContent = (
-    <div className="w-80 sm:w-96 max-h-[70vh] flex flex-col glass-card-xl">
+    <div className="w-80 sm:w-96 max-h-[70vh] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
@@ -712,7 +787,7 @@ function NotificationCenterPanel({
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 max-h-96">
         <div className="p-3 space-y-3">
           {/* Quick Stats */}
           <QuickStats />
@@ -805,10 +880,7 @@ function NotificationCenterPanel({
           <div className="flex gap-1 overflow-x-auto scrollbar-none pb-1">
             {FILTER_TABS.map((tab) => {
               const isActive = activeFilter === tab.value;
-              const count =
-                tab.value === "all"
-                  ? mergedNotifications.length
-                  : typeCounts[tab.value] || 0;
+              const count = filterCounts[tab.value as keyof typeof filterCounts] || 0;
               return (
                 <button
                   key={tab.value}
@@ -860,18 +932,23 @@ function NotificationCenterPanel({
             {filteredNotifications.length === 0 ? (
               <EmptyState />
             ) : (
-              <div className="space-y-1 pt-1">
+              <motion.div
+                className="space-y-1 pt-1"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
                 <AnimatePresence mode="popLayout">
                   {filteredNotifications.map((notification) => (
                     <NotificationCard
                       key={notification.id}
                       notification={notification}
-                      onRead={markNotificationRead}
+                      onRead={handleMarkRead}
                       onAction={handleNotificationAction}
                     />
                   ))}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>

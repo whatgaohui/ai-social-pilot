@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAIClient } from '@/lib/ai-client';
 import { db } from '@/lib/db';
+import { createNotification } from '@/lib/notification-helper';
 
 export async function POST(request: NextRequest) {
   try {
@@ -112,6 +113,14 @@ ${knowledgeItems && knowledgeItems.length > 0 ? `可参考的知识库素材：$
         console.error('Failed to auto-create content version:', versionError);
       }
     }
+
+    // Auto-create notification: AI optimization complete
+    createNotification({
+      type: 'completion',
+      title: 'AI内容优化完成',
+      message: `「${post?.topic || '未命名内容'}」已优化完毕（${cleaned.length}字），请查看最新版本。`,
+      metadata: { actionType: 'viewPost', postId: post?.id },
+    }).catch(() => {});
 
     return NextResponse.json({
       content: cleaned,

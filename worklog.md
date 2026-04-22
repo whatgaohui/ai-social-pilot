@@ -5131,3 +5131,161 @@ Stage Summary:
   6. 性能优化：React.memo、useMemo、虚拟列表
   7. PWA离线支持 + Service Worker
   8. 内容发布到真实社交平台API对接
+---
+Task ID: 30
+Agent: Main Orchestrator + 4 Parallel full-stack-developer Sub-agents
+Task: 第30轮开发 - 通知中心增强 + 内容竞争分析面板 + 定时发布 + 快捷操作 + CSS动画
+
+Work Log:
+- 读取 worklog.md（5133行，28轮迭代记录）了解完整项目历史
+- 硬约束：全程未使用 agent-browser（已知会导致OOM kill Next.js进程），使用 curl API级别测试
+- 验证项目状态：production build编译成功，7个核心API全部200（/ /api/persona /api/notifications /api/weekly-report /api/content /api/analytics /api/search /api/knowledge）
+- ESLint 零错误通过
+- 4个并行 full-stack-developer 子代理同时工作（部分成功，1个超时）
+- 确认内容排期拖拽排序功能已存在（compact-calendar.tsx + /api/content/[id]/reschedule）
+
+### 新功能 1: 通知中心增强
+
+1. **通知数据持久化**：
+   - Prisma Notification 模型新增 `data` JSON 字段
+   - types/index.ts 新增 ai_task/completion/marketing 类型
+
+2. **通知 API 增强**（`/api/notifications/route.ts`）：
+   - GET 支持 `?type=` 过滤（ai_task/completion/marketing）
+   - POST 支持可选 `data` 字段
+   - DELETE 支持按 `{ ids: string[] }` 批量删除
+
+3. **标记已读 API**（`/api/notifications/mark-read/route.ts`）：
+   - POST 端点，接收 `{ ids: string[] }` 批量标记已读
+
+4. **通知创建辅助函数**（`src/lib/notification-helper.ts`）：
+   - fire-and-forget 模式，供其他 API 路由调用
+   - 自动创建通知到数据库
+
+5. **通知中心面板增强**（`notification-center.tsx`）：
+   - 新增 ai_task/completion/marketing 类型图标配置（Bot/PartyPopper/Target）
+   - 分类 Tab 更新为全部/AI任务/系统/营销/完成/AI
+   - 未读通知左侧紫色列指示（border-l-violet-500）
+   - 空状态改用 BellOff 图标 + "暂无通知"
+   - framer-motion stagger 入场动画
+   - 完整暗黑模式支持
+
+6. **自动通知触发**：
+   - AI 生成完成后自动创建 ai_task 通知（/api/ai/generate）
+   - AI 优化完成后自动创建 completion 通知（/api/ai/optimize）
+   - 内容计划创建后自动创建 completion 通知（/api/plan）
+
+### 新功能 2: 内容竞争分析面板（content-competition-panel.tsx）
+
+1. **内容表现雷达图**（SVG inline）：
+   - 5个维度：互动率/多样性/发布频率/AI评分/增长潜力
+   - 双层多边形（紫色渐变 vs 灰色行业平均）
+   - framer-motion 绘制动画
+
+2. **内容健康度评分**：
+   - 综合评分 0-100（发布频率30%+互动率25%+多样性20%+AI评分15%+完成率10%）
+   - SVG 圆环进度条 + 4个子评分条
+   - 四级评级标签：优秀/良好/一般/待改进
+
+3. **内容类型效果对比**：
+   - 按 contentType 分组统计平均互动率
+   - SVG 水平条形图，最佳类型高亮
+
+4. **发布节奏分析**：
+   - 7个星期卡片（周一-周日）
+   - 发布数量+互动率颜色编码+最佳/最差日标记
+
+5. **运营建议卡片**：
+   - 纯客户端分析生成 3-5 条建议
+   - 三种类型：成功保持(green)/需要改进(amber)/重点关注(rose)
+
+### 新功能 3: 定时发布设置（scheduled-publish.tsx）
+
+1. **发布统计摘要**：
+   - 本周已发布/待发布/已过期三列卡片
+
+2. **定时发布时间选择器**：
+   - 日期+时间组合输入
+   - 5个快捷按钮（明天8/12/18/20点、下周一8点）
+   - 相对时间提示
+
+3. **发布提醒设置**：
+   - Switch + Select（提前5/15/30/60分钟）
+   - 浏览器 Notification API 权限请求
+   - 倒计时到达时 toast + 浏览器通知
+
+4. **发布队列管理**：
+   - 筛选待发布帖子，按时间排序
+   - 实时倒计时 + 立即发布/取消定时操作
+   - "全部立即发布"批量操作
+
+### 新功能 4: 快捷操作浮动工具栏（quick-actions-toolbar.tsx）
+
+1. **4个快捷按钮**：复制内容/重新生成(AI)/标记完成/发布到日历
+2. **设计**：absolute bottom + backdrop-blur 玻璃效果
+3. **动画**：framer-motion 从底部 spring 滑入
+4. **响应式**：移动端仅图标(32px)，桌面端图标+文字
+5. **条件显示**：仅在选中帖子时显示
+
+### CSS 动画增强（globals.css）
+
+新增 12 个 CSS 动画/工具类：
+1. `.drag-ghost` — 拖拽半透明缩小
+2. `.calendar-drop-target` + `@keyframes drop-target-pulse` — 日历放置目标脉冲
+3. `.card-press` — 卡片按下效果
+4. `.tag-pop` + `@keyframes tag-pop-in` — 标签弹出
+5. `.notification-slide` + `@keyframes notif-slide-in` — 通知滑入
+6. `.progress-bar-animated` + `@keyframes progress-shimmer` — 进度条光泽
+7. `.sidebar-item-active` + `@keyframes sidebar-active-in` — 侧边栏激活指示
+8. `.skeleton-shine` + `@keyframes skeleton-shine-move` — 骨架屏闪光
+9. `.content-type-badge` — Badge 悬停上浮
+10. `.tooltip-arrow` + `@keyframes tooltip-arrow-in` — Tooltip 箭头弹入
+11. `.confetti-burst` + `@keyframes confetti-burst-anim` — 庆祝效果
+12. `@media (prefers-reduced-motion: reduce)` — 全部动画禁用
+
+### 新增文件
+- `src/app/api/notifications/mark-read/route.ts` — 标记已读 API
+- `src/lib/notification-helper.ts` — 通知创建辅助函数
+- `src/components/right-panel/content-competition-panel.tsx` — 内容竞争分析面板
+- `src/components/right-panel/scheduled-publish.tsx` — 定时发布设置
+- `src/components/right-panel/quick-actions-toolbar.tsx` — 快捷操作工具栏
+
+### 修改文件
+- `prisma/schema.prisma` — Notification 模型新增 data 字段
+- `src/types/index.ts` — 新增通知类型
+- `src/app/api/notifications/route.ts` — 增强 GET/POST/DELETE
+- `src/components/notification-center.tsx` — 全面增强
+- `src/app/api/ai/generate/route.ts` — 自动创建通知
+- `src/app/api/ai/optimize/route.ts` — 自动创建通知
+- `src/app/api/plan/route.ts` — 自动创建通知
+- `src/components/right-panel/content-workspace.tsx` — 集成定时发布+快捷工具栏
+- `src/app/globals.css` — 12个新CSS动画类
+
+### QA验证结果
+- ✅ ESLint 零错误
+- ✅ Next.js production build 编译成功
+- ✅ 7个核心API全部200（/ /api/persona /api/notifications /api/weekly-report /api/content /api/analytics /api/search /api/knowledge）
+- ✅ 无 agent-browser 使用（遵循OOM约束）
+
+### 项目当前状态
+- 项目经过30轮迭代，功能极其丰富（105+自定义组件，40+个API路由）
+- 双平台运营：朋友圈 + 小红书
+- 零 lint 错误、production build 稳定
+- ⚠️ dev server（Turbopack）因沙箱内存限制不稳定，使用 production build + standalone server 替代
+- ⚠️ agent-browser 绝对不可用（导致OOM kill），使用 curl API 测试替代
+
+### 未解决问题或风险
+1. 沙箱环境内存限制导致 Turbopack dev server 不稳定（已改用 standalone production server）
+2. AI功能依赖外部 AI 服务可用性
+3. 小红书采集功能依赖外部 scraper 服务（端口3003），当前环境不可用
+4. 移动端布局未在真机上测试
+
+### 建议下一阶段优先事项
+1. 多人协作/团队账号管理功能
+2. 数据导入增强（CSV/Excel文件上传解析）
+3. 移动端真机测试和适配优化
+4. 性能优化：React.memo、useMemo、虚拟列表
+5. PWA离线支持 + Service Worker
+6. 内容发布到真实社交平台API对接
+7. 运营报告定时自动生成 + 邮件/消息推送
+8. API Key 加密存储方案

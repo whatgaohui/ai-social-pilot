@@ -59,6 +59,8 @@ import { AISchedulingAssistant } from "@/components/right-panel/ai-scheduling-as
 import { AIContentRewriter } from "@/components/right-panel/ai-content-rewriter";
 import { EmojiPicker } from "@/components/right-panel/emoji-picker";
 import { PublishChecklist } from "@/components/right-panel/publish-checklist";
+import { ScheduledPublish } from "@/components/right-panel/scheduled-publish";
+import { QuickActionsToolbar } from "@/components/right-panel/quick-actions-toolbar";
 
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
@@ -270,6 +272,9 @@ export function ContentWorkspace() {
 
       {/* Floating AI Quick Actions Bar (bottom) */}
       <AIQuickActionsBar />
+
+      {/* Floating Quick Actions Toolbar */}
+      <QuickActionsToolbar />
 
       <div className="flex-1 overflow-y-auto min-h-0 workspace-scroll">
         <motion.div
@@ -605,6 +610,7 @@ export function ContentWorkspace() {
                     className="space-y-3"
                   >
                     <PublishChecklist post={selectedPost} />
+                    <ScheduledPublish post={selectedPost} />
                     <PublishingAssistant
                       post={selectedPost}
                       onPlatformConnect={handlePlatformConnect}

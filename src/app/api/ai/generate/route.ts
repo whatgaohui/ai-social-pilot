@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAIClient } from '@/lib/ai-client';
 import { db } from '@/lib/db';
+import { createNotification } from '@/lib/notification-helper';
 
 // ── Content Rewrite Modes ───────────────────────────────────────────────────
 
@@ -318,6 +319,14 @@ ${knowledgeContext}
         console.error('Failed to auto-create content version:', versionError);
       }
     }
+
+    // Auto-create notification: AI content generation complete
+    createNotification({
+      type: 'ai_task',
+      title: 'AI内容生成完成',
+      message: `${topic || type === 'polish' ? '润色' : '自动生成'}内容已生成完毕（${generatedContent.length}字），请查看并优化。`,
+      metadata: { actionType: 'viewPost', postId: postId || undefined },
+    }).catch(() => {});
 
     return NextResponse.json({ 
       content: generatedContent,
