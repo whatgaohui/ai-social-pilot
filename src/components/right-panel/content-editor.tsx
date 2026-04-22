@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ContentPost } from "@/types";
 import { Copy, Edit3, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useAppStore } from "@/store/app-store";
 
 interface ContentEditorProps {
@@ -18,6 +19,7 @@ export function ContentEditor({ post, isXHS }: ContentEditorProps) {
   const updateContentPost = useAppStore((s) => s.updateContentPost);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
+  const { copied, copy } = useCopyToClipboard();
 
   const startEdit = () => {
     setEditContent(post.content);
@@ -44,8 +46,7 @@ export function ContentEditor({ post, isXHS }: ContentEditorProps) {
 
   const handleCopy = () => {
     if (post.content) {
-      navigator.clipboard.writeText(post.content);
-      toast.success("已复制到剪贴板");
+      copy(post.content);
     }
   };
 
@@ -76,10 +77,10 @@ export function ContentEditor({ post, isXHS }: ContentEditorProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                className="h-7 px-2 shadow-sm"
+                className={`h-7 px-2 shadow-sm ${copied ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : ""}`}
                 onClick={handleCopy}
               >
-                <Copy className="h-3 w-3" />
+                {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
               </Button>
               <Button
                 variant="secondary"

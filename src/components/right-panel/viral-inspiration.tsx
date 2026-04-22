@@ -40,6 +40,7 @@ import {
   Star,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import type { Platform } from "@/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -379,6 +380,11 @@ export function ViralInspiration() {
   const [expandingPrompt, setExpandingPrompt] = useState<string | null>(null);
   const [expandResult, setExpandResult] = useState<string>("");
 
+  // Copy feedback hooks
+  const { copied: formulaCopied, copy: copyFormula } = useCopyToClipboard();
+  const { copied: hashtagCopied, copy: copyHashtag } = useCopyToClipboard();
+  const { copied: otherCopied, copy: copyOther } = useCopyToClipboard();
+
   // Category filter
   const filteredFormulas =
     activeCategory === "all"
@@ -388,8 +394,7 @@ export function ViralInspiration() {
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   const handleCopyFormula = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("标题已复制到剪贴板");
+    copyFormula(text);
   };
 
   const handleAIRewrite = async (formula: TitleFormula) => {
@@ -454,13 +459,11 @@ export function ViralInspiration() {
 
   const handleCopyHashtag = (tag: string) => {
     const text = isXHS ? `#${tag}` : tag;
-    navigator.clipboard.writeText(text);
-    toast.success(`已复制: ${text}`);
+    copyHashtag(text);
   };
 
   const handleUseTopic = (idea: InspirationIdea) => {
-    navigator.clipboard.writeText(`${idea.title}\n${idea.description}`);
-    toast.success("话题已复制，可直接使用");
+    copyOther(`${idea.title}\n${idea.description}`);
   };
 
   const handleAIExpand = async (prompt: WritingPrompt) => {
@@ -695,16 +698,13 @@ export function ViralInspiration() {
                                             <Button
                                               variant="ghost"
                                               size="sm"
-                                              className="h-5 px-1.5 text-[10px]"
+                                              className={`h-5 px-1.5 text-[10px] ${otherCopied ? "text-emerald-600" : ""}`}
                                               onClick={() => {
-                                                navigator.clipboard.writeText(
-                                                  rewriteResult
-                                                );
-                                                toast.success("已复制");
+                                                copyOther(rewriteResult);
                                               }}
                                             >
-                                              <Copy className="h-2.5 w-2.5 mr-0.5" />
-                                              复制
+                                              {otherCopied ? <Check className="h-2.5 w-2.5 mr-0.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5 mr-0.5" />}
+                                              {otherCopied ? "已复制" : "复制"}
                                             </Button>
                                           </div>
                                           <p className="text-xs leading-relaxed">
@@ -722,10 +722,10 @@ export function ViralInspiration() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                    className={`h-7 w-7 p-0 ${formulaCopied ? "text-emerald-500" : "text-muted-foreground hover:text-foreground"}`}
                                     onClick={() => handleCopyFormula(example)}
                                   >
-                                    <Copy className="h-3.5 w-3.5" />
+                                    {formulaCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                                   </Button>
                                 </motion.div>
                                 <motion.div whileTap={{ scale: 0.9 }}>
@@ -775,14 +775,13 @@ export function ViralInspiration() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 px-2 text-[10px]"
+                              className={`h-6 px-2 text-[10px] ${otherCopied ? "text-emerald-600" : ""}`}
                               onClick={() => {
-                                navigator.clipboard.writeText(rewriteResult);
-                                toast.success("已复制到剪贴板");
+                                copyOther(rewriteResult);
                               }}
                             >
-                              <Copy className="h-2.5 w-2.5 mr-0.5" />
-                              复制
+                              {otherCopied ? <Check className="h-2.5 w-2.5 mr-0.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5 mr-0.5" />}
+                              {otherCopied ? "已复制" : "复制"}
                             </Button>
                             <Button
                               variant="ghost"
@@ -1095,17 +1094,16 @@ export function ViralInspiration() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-xs text-muted-foreground"
+                  className={`text-xs ${hashtagCopied ? "text-emerald-600" : "text-muted-foreground"}`}
                   onClick={() => {
                     const allTags = TRENDING_TOPICS.map((t) =>
                       isXHS ? `#${t.tag}` : t.tag
                     ).join(" ");
-                    navigator.clipboard.writeText(allTags);
-                    toast.success("全部话题标签已复制");
+                    copyHashtag(allTags);
                   }}
                 >
-                  <Copy className="h-3 w-3 mr-1" />
-                  复制全部话题标签
+                  {hashtagCopied ? <Check className="h-3 w-3 mr-1 text-emerald-500" /> : <Copy className="h-3 w-3 mr-1" />}
+                  {hashtagCopied ? "已复制" : "复制全部话题标签"}
                 </Button>
               </div>
             </motion.div>
@@ -1214,15 +1212,12 @@ export function ViralInspiration() {
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover/result:opacity-100 transition-opacity"
+                                          className={`absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover/result:opacity-100 transition-opacity ${otherCopied ? "text-emerald-500" : ""}`}
                                           onClick={() => {
-                                            navigator.clipboard.writeText(
-                                              expandResult
-                                            );
-                                            toast.success("已复制");
+                                            copyOther(expandResult);
                                           }}
                                         >
-                                          <Copy className="h-3 w-3" />
+                                          {otherCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                                         </Button>
                                         <p className="text-xs leading-relaxed whitespace-pre-wrap pr-6">
                                           {expandResult}
@@ -1262,14 +1257,13 @@ export function ViralInspiration() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 px-2 text-[10px]"
+                              className={`h-6 px-2 text-[10px] ${otherCopied ? "text-emerald-600" : ""}`}
                               onClick={() => {
-                                navigator.clipboard.writeText(expandResult);
-                                toast.success("已复制到剪贴板");
+                                copyOther(expandResult);
                               }}
                             >
-                              <Copy className="h-2.5 w-2.5 mr-0.5" />
-                              复制
+                              {otherCopied ? <Check className="h-2.5 w-2.5 mr-0.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5 mr-0.5" />}
+                              {otherCopied ? "已复制" : "复制"}
                             </Button>
                             <Button
                               variant="ghost"

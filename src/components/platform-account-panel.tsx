@@ -70,6 +70,7 @@ import {
   Clock3,
   Flame,
 } from "lucide-react";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -160,6 +161,7 @@ function WechatPersonalGuide() {
   const [showRecentPosts, setShowRecentPosts] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { copy } = useCopyToClipboard();
 
   // 获取最近的已优化帖子
   const fetchRecentPosts = useCallback(async () => {
@@ -185,21 +187,9 @@ function WechatPersonalGuide() {
 
   // 复制文案到剪贴板
   const copyContent = async (id: string, content: string) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      // 降级方案
-      const textArea = document.createElement("textarea");
-      textArea.value = content;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    }
+    copy(content);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1800);
   };
 
   // 复制步骤内容
@@ -207,16 +197,7 @@ function WechatPersonalGuide() {
     const allContent = recentPosts
       .map((p, i) => `【${i + 1}】${p.topic}\n${p.content}`)
       .join("\n\n---\n\n");
-    try {
-      await navigator.clipboard.writeText(allContent);
-    } catch {
-      const textArea = document.createElement("textarea");
-      textArea.value = allContent;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-    }
+    copy(allContent);
   };
 
   return (
@@ -481,6 +462,7 @@ function XiaohongshuPersonalGuide() {
   const [showRecentPosts, setShowRecentPosts] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { copy: copyXhs } = useCopyToClipboard();
 
   // 获取最近的已优化帖子
   const fetchRecentPosts = useCallback(async () => {
@@ -506,20 +488,9 @@ function XiaohongshuPersonalGuide() {
 
   // 复制文案到剪贴板
   const copyContent = async (id: string, content: string) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      const textArea = document.createElement("textarea");
-      textArea.value = content;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    }
+    copyXhs(content);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1800);
   };
 
   return (

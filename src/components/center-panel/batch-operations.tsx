@@ -48,8 +48,10 @@ import {
   ClipboardCheck,
   ChevronsRight,
   RefreshCw,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 // ---------------------------------------------------------------------------
 // Context types
@@ -294,6 +296,7 @@ export function BatchToolbar({ posts }: { posts: ContentPost[] }) {
     exitBatchMode,
   } = useBatchOperations();
   const { contentPosts, setContentPosts, updateContentPost } = useAppStore();
+  const { copied, copy } = useCopyToClipboard();
 
   // Batch operation states
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -472,22 +475,9 @@ export function BatchToolbar({ posts }: { posts: ContentPost[] }) {
       })
       .join(separator);
 
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`已复制 ${selectedCount} 条内容到剪贴板`);
-    } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.left = "-9999px";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      toast.success(`已复制 ${selectedCount} 条内容到剪贴板`);
-    }
-  }, [selectedCount, selectedPosts]);
+    copy(text);
+    toast.success(`已复制 ${selectedCount} 条内容到剪贴板`);
+  }, [selectedCount, selectedPosts, copy]);
 
   // -----------------------------------------------------------------------
   // Compute the next status for the "advance status" action
@@ -630,12 +620,12 @@ export function BatchToolbar({ posts }: { posts: ContentPost[] }) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-[10px] gap-1 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 disabled:opacity-40"
+              className={`h-7 px-2 text-[10px] gap-1 ${copied ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20" : "text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30"} disabled:opacity-40`}
               disabled={selectedCount === 0 || isOptimizing || isDeleting}
               onClick={handleBatchCopy}
             >
-              <Copy className="h-3 w-3" />
-              复制
+              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              {copied ? "已复制" : "复制"}
             </Button>
 
             {/* 4. Delete */}

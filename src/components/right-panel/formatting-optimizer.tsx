@@ -33,6 +33,7 @@ import {
   Copy,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 interface FormattingOptimizerProps {
   post?: ContentPost | null;
@@ -118,6 +119,7 @@ export function FormattingOptimizer({ post, onApply }: FormattingOptimizerProps)
   const [optimizing, setOptimizing] = useState(false);
   const [formattedContent, setFormattedContent] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   const formatChanges = getFormatChanges(platform);
 
@@ -166,8 +168,7 @@ export function FormattingOptimizer({ post, onApply }: FormattingOptimizerProps)
 
   const handleCopy = () => {
     if (!formattedContent) return;
-    navigator.clipboard.writeText(formattedContent);
-    toast.success("已复制到剪贴板");
+    copy(formattedContent);
   };
 
   const gradientClass = isXHS
@@ -350,11 +351,11 @@ export function FormattingOptimizer({ post, onApply }: FormattingOptimizerProps)
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-5 px-1.5 text-[10px]"
+                        className={`h-5 px-1.5 text-[10px] ${copied ? "text-emerald-600" : ""}`}
                         onClick={handleCopy}
                       >
-                        <Copy className="h-2.5 w-2.5 mr-0.5" />
-                        复制
+                        {copied ? <Check className="h-2.5 w-2.5 mr-0.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5 mr-0.5" />}
+                        {copied ? "已复制" : "复制"}
                       </Button>
                     </div>
                     <ScrollArea className="max-h-48">

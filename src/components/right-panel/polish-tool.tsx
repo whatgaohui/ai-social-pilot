@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Wand2, Loader2, Copy, ChevronDown, ChevronUp } from "lucide-react";
+import { Wand2, Loader2, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/app-store";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 interface PolishToolProps {
   isXHS: boolean;
@@ -27,6 +28,8 @@ export function PolishTool({ isXHS, mode, defaultOpen }: PolishToolProps) {
   const [polishResult, setPolishResult] = useState("");
   const [polishing, setPolishing] = useState(false);
   const [open, setOpen] = useState(defaultOpen ?? false);
+  const { copied: copiedMain, copy: copyMain } = useCopyToClipboard();
+  const { copied: copiedInline, copy: copyInline } = useCopyToClipboard();
 
   const handlePolish = async () => {
     if (!polishInput.trim()) {
@@ -89,15 +92,13 @@ export function PolishTool({ isXHS, mode, defaultOpen }: PolishToolProps) {
 
   const handleCopy = () => {
     if (polishResult) {
-      navigator.clipboard.writeText(polishResult);
-      toast.success("已复制到剪贴板");
+      copyMain(polishResult);
     }
   };
 
   const handleCopyInline = () => {
     if (polishResult) {
-      navigator.clipboard.writeText(polishResult);
-      toast.success("已复制");
+      copyInline(polishResult);
     }
   };
 
@@ -146,8 +147,8 @@ export function PolishTool({ isXHS, mode, defaultOpen }: PolishToolProps) {
                 <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 p-2.5 border border-amber-100 dark:border-amber-900/30 relative">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">润色结果</span>
-                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px]" onClick={handleCopyInline}>
-                      <Copy className="h-2.5 w-2.5 mr-0.5" />复制
+                    <Button variant="ghost" size="sm" className={`h-5 px-1.5 text-[10px] ${copiedInline ? "text-emerald-600 dark:text-emerald-400" : ""}`} onClick={handleCopyInline}>
+                      {copiedInline ? <Check className="h-2.5 w-2.5 mr-0.5" /> : <Copy className="h-2.5 w-2.5 mr-0.5" />}{copiedInline ? "已复制" : "复制"}
                     </Button>
                   </div>
                   <p className="text-xs leading-relaxed whitespace-pre-wrap">{polishResult}</p>
@@ -208,9 +209,9 @@ export function PolishTool({ isXHS, mode, defaultOpen }: PolishToolProps) {
             <div className="rounded-lg bg-background p-3 border relative">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">润色结果</span>
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={handleCopy}>
-                  <Copy className="h-3 w-3 mr-1" />
-                  复制
+                <Button variant="ghost" size="sm" className={`h-6 px-2 text-xs ${copiedMain ? "text-emerald-600 dark:text-emerald-400" : ""}`} onClick={handleCopy}>
+                  {copiedMain ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                  {copiedMain ? "已复制" : "复制"}
                 </Button>
               </div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{polishResult}</p>

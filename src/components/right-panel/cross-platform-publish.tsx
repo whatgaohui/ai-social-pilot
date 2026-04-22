@@ -35,6 +35,7 @@ import {
   CalendarPlus,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { format } from "date-fns";
 
 export function CrossPlatformPublish() {
@@ -55,7 +56,7 @@ export function CrossPlatformPublish() {
   const [adaptedContentType, setAdaptedContentType] = useState<string>("text");
   const [adaptedDate, setAdaptedDate] = useState("");
   const [publishing, setPublishing] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   // Determine target platform (the OTHER platform)
   const targetPlatform: Platform = platform === "wechat" ? "xiaohongshu" : "wechat";
@@ -254,10 +255,7 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
   // Copy adapted content
   const handleCopy = () => {
     if (adaptedContent) {
-      navigator.clipboard.writeText(adaptedContent);
-      setCopied(true);
-      toast.success("已复制到剪贴板");
-      setTimeout(() => setCopied(false), 2000);
+      copy(adaptedContent);
     }
   };
 
@@ -416,11 +414,11 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="h-6 px-2 text-[10px] shadow-sm"
+                      className={`h-6 px-2 text-[10px] shadow-sm ${copied ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800" : ""}`}
                       onClick={handleCopy}
                     >
                       {copied ? (
-                        <Check className="h-2.5 w-2.5 mr-0.5" />
+                        <Check className="h-2.5 w-2.5 mr-0.5 text-emerald-500" />
                       ) : (
                         <Copy className="h-2.5 w-2.5 mr-0.5" />
                       )}

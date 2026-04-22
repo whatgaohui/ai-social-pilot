@@ -14,6 +14,7 @@ import {
   Check, Copy, RotateCcw
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 interface ABComparisonProps {
   post: ContentPost;
@@ -26,6 +27,7 @@ export function ABComparison({ post }: ABComparisonProps) {
   const [versionB, setVersionB] = useState("");
   const [selectedVersion, setSelectedVersion] = useState<"a" | "b" | null>(null);
   const [applying, setApplying] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   const generateAlternative = async () => {
     setGenerating(true);
@@ -102,8 +104,7 @@ export function ABComparison({ post }: ABComparisonProps) {
   };
 
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("已复制到剪贴板");
+    copy(text);
   };
 
   return (
@@ -179,8 +180,8 @@ export function ABComparison({ post }: ABComparisonProps) {
                         </motion.div>
                       )}
                     </div>
-                    <Button variant="ghost" size="sm" className="h-5 px-1.5" onClick={(e) => { e.stopPropagation(); handleCopy(post.content); }}>
-                      <Copy className="h-2.5 w-2.5" />
+                    <Button variant="ghost" size="sm" className={`h-5 px-1.5 ${copied ? "text-emerald-600" : ""}`} onClick={(e) => { e.stopPropagation(); handleCopy(post.content); }}>
+                      {copied ? <Check className="h-2.5 w-2.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5" />}
                     </Button>
                   </div>
                   <p className="text-xs leading-relaxed whitespace-pre-wrap">{post.content}</p>
@@ -208,8 +209,8 @@ export function ABComparison({ post }: ABComparisonProps) {
                         </motion.div>
                       )}
                     </div>
-                    <Button variant="ghost" size="sm" className="h-5 px-1.5" onClick={(e) => { e.stopPropagation(); handleCopy(versionB); }}>
-                      <Copy className="h-2.5 w-2.5" />
+                    <Button variant="ghost" size="sm" className={`h-5 px-1.5 ${copied ? "text-emerald-600" : ""}`} onClick={(e) => { e.stopPropagation(); handleCopy(versionB); }}>
+                      {copied ? <Check className="h-2.5 w-2.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5" />}
                     </Button>
                   </div>
                   <p className="text-xs leading-relaxed whitespace-pre-wrap">{versionB}</p>

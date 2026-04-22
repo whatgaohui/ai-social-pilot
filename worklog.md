@@ -2016,3 +2016,51 @@ Stage Summary:
 - 项目状态：稳定可运行，交互体验优化完成
 - 本轮修改 4 个文件，修复 3 个 bug，1 个视觉增强
 - 核心改进：状态标记可撤销、内容工作台可正常滚动、AI工具Tab已清理
+
+---
+Task ID: 14
+Agent: Main Developer
+Task: 全局复制按钮点击反馈特效
+
+Work Log:
+- 搜索全部13个包含复制按钮的组件文件
+- 创建统一的 useCopyToClipboard hook（带自动重置的 copied 状态）
+- 分3批并行更新所有组件
+
+### 新增文件
+- `src/hooks/use-copy-to-clipboard.ts` - 复制反馈 hook
+  - 返回 `{ copied, copy }` 
+  - copy() 调用 navigator.clipboard（带 execCommand 回退）
+  - copied 状态自动 1.8s 后重置
+  - 使用 useRef 防止快速点击时 timer 冲突
+
+### 更新文件（13个组件）
+1. `copywriting-templates.tsx` - AI生成结果复制按钮
+2. `xiaohongshu-templates.tsx` - 小红书模板AI生成结果复制
+3. `polish-tool.tsx` - 润色结果复制（2个按钮：standalone + collapsible）
+4. `fragment-tool.tsx` - 碎片转化结果复制（2个按钮）
+5. `ab-comparison.tsx` - A/B对比版本复制
+6. `content-editor.tsx` - 内容编辑器复制按钮
+7. `title-ab-test.tsx` - 标题AB测试复制（单个+全部）
+8. `hashtag-recommender.tsx` - 话题标签复制（单个+全部）
+9. `cross-platform-publish.tsx` - 跨平台内容复制
+10. `formatting-optimizer.tsx` - 排版优化结果复制
+11. `viral-inspiration.tsx` - 灵感库多个复制点（标题公式/话题/创意/写作提示）
+12. `batch-operations.tsx` - 批量操作复制
+13. `platform-account-panel.tsx` - 平台引导复制
+
+### 视觉反馈方案
+- 小图标按钮（h-5/h-6）：Copy 图标变为绿色 Check 图标
+- 带文字按钮（"复制"）：图标变 Check + 文字变 "已复制" + 翡翠绿配色
+- 自动 1.8s 后恢复原始状态
+- 移除了 toast.success 通知（改为按钮内视觉反馈，更直观）
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（GET / 200）
+- ✅ 全局搜索确认零残留 navigator.clipboard.writeText 调用
+- ✅ 13个组件全部使用 useCopyToClipboard hook
+
+Stage Summary:
+- 新增 1 个 hook 文件，修改 13 个组件
+- 全局统一了复制操作的视觉反馈体验

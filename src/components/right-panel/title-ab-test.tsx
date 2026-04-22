@@ -24,6 +24,7 @@ import {
   Crown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 // ---------- helpers ----------
 
@@ -159,6 +160,8 @@ function TitleABTestInner({ post }: { post: ContentPost }) {
   const [alternatives, setAlternatives] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [applying, setApplying] = useState(false);
+  const { copied: copiedOne, copy: copyOne } = useCopyToClipboard();
+  const { copied: copiedAll, copy: copyAll } = useCopyToClipboard();
 
   // Build the 4 title variants: A (current) + B/C/D (generated)
   const variants: TitleVariant[] = useMemo(() => {
@@ -263,15 +266,13 @@ function TitleABTestInner({ post }: { post: ContentPost }) {
   // ---------- copy helpers ----------
 
   const handleCopyOne = useCallback((text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("已复制标题");
-  }, []);
+    copyOne(text);
+  }, [copyOne]);
 
   const handleCopyAll = useCallback(() => {
     const all = variants.map((v) => `${v.label}. ${v.text}`).join("\n");
-    navigator.clipboard.writeText(all);
-    toast.success("已复制全部标题");
-  }, [variants]);
+    copyAll(all);
+  }, [variants, copyAll]);
 
   // ---------- render ----------
 
@@ -408,13 +409,13 @@ function TitleABTestInner({ post }: { post: ContentPost }) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-5 px-1.5"
+                          className={`h-5 px-1.5 ${copiedOne ? "text-emerald-600" : ""}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleCopyOne(v.text);
                           }}
                         >
-                          <Copy className="h-2.5 w-2.5" />
+                          {copiedOne ? <Check className="h-2.5 w-2.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5" />}
                         </Button>
                       </div>
 
@@ -474,10 +475,10 @@ function TitleABTestInner({ post }: { post: ContentPost }) {
                 onClick={handleCopyAll}
                 size="sm"
                 variant="outline"
-                className="h-8 text-xs"
+                className={`h-8 text-xs ${copiedAll ? "border-emerald-300 text-emerald-600 dark:border-emerald-700 dark:text-emerald-400" : ""}`}
               >
-                <Copy className="h-3 w-3 mr-1" />
-                复制全部标题
+                {copiedAll ? <Check className="h-3 w-3 mr-1 text-emerald-500" /> : <Copy className="h-3 w-3 mr-1" />}
+                {copiedAll ? "已复制" : "复制全部标题"}
               </Button>
               <Button
                 onClick={handleGenerate}

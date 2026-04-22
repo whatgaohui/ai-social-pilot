@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUp, Loader2, Sparkles, Copy, ChevronDown, ChevronUp } from "lucide-react";
+import { FileUp, Loader2, Sparkles, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/app-store";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 interface FragmentToolProps {
   isXHS: boolean;
@@ -26,6 +27,8 @@ export function FragmentTool({ isXHS, mode, defaultOpen }: FragmentToolProps) {
   const [fragmentResult, setFragmentResult] = useState("");
   const [fragmenting, setFragmenting] = useState(false);
   const [open, setOpen] = useState(defaultOpen ?? false);
+  const { copied: copiedMain, copy: copyMain } = useCopyToClipboard();
+  const { copied: copiedInline, copy: copyInline } = useCopyToClipboard();
 
   const handleFragmentGenerate = async () => {
     if (!fragmentInput.trim()) {
@@ -64,15 +67,13 @@ export function FragmentTool({ isXHS, mode, defaultOpen }: FragmentToolProps) {
 
   const handleCopyInline = () => {
     if (fragmentResult) {
-      navigator.clipboard.writeText(fragmentResult);
-      toast.success("已复制");
+      copyInline(fragmentResult);
     }
   };
 
   const handleCopy = () => {
     if (fragmentResult) {
-      navigator.clipboard.writeText(fragmentResult);
-      toast.success("已复制到剪贴板");
+      copyMain(fragmentResult);
     }
   };
 
@@ -138,8 +139,8 @@ export function FragmentTool({ isXHS, mode, defaultOpen }: FragmentToolProps) {
                 <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 p-2.5 border border-blue-100 dark:border-blue-900/30 relative">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400">转化结果</span>
-                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px]" onClick={handleCopyInline}>
-                      <Copy className="h-2.5 w-2.5 mr-0.5" />复制
+                    <Button variant="ghost" size="sm" className={`h-5 px-1.5 text-[10px] ${copiedInline ? "text-emerald-600 dark:text-emerald-400" : ""}`} onClick={handleCopyInline}>
+                      {copiedInline ? <Check className="h-2.5 w-2.5 mr-0.5" /> : <Copy className="h-2.5 w-2.5 mr-0.5" />}{copiedInline ? "已复制" : "复制"}
                     </Button>
                   </div>
                   <p className="text-xs leading-relaxed whitespace-pre-wrap">{fragmentResult}</p>
@@ -200,9 +201,9 @@ export function FragmentTool({ isXHS, mode, defaultOpen }: FragmentToolProps) {
             <div className="rounded-lg bg-background p-3 border relative">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-blue-600 dark:text-blue-400">转化结果</span>
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={handleCopy}>
-                  <Copy className="h-3 w-3 mr-1" />
-                  复制
+                <Button variant="ghost" size="sm" className={`h-6 px-2 text-xs ${copiedMain ? "text-emerald-600 dark:text-emerald-400" : ""}`} onClick={handleCopy}>
+                  {copiedMain ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                  {copiedMain ? "已复制" : "复制"}
                 </Button>
               </div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{fragmentResult}</p>

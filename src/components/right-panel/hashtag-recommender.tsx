@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  Hash, Sparkles, Copy, Loader2, Plus, X, RefreshCw,
+  Hash, Sparkles, Copy, Loader2, Plus, X, RefreshCw, Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useAppStore } from "@/store/app-store";
 
 interface HashtagRecommenderProps {
@@ -33,6 +34,8 @@ export function HashtagRecommender({
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
   const [generating, setGenerating] = useState(false);
+  const { copied: copiedTag, copy: copyTag } = useCopyToClipboard();
+  const { copied: copiedAll, copy: copyAll } = useCopyToClipboard();
 
   const formatTag = (tag: string) => {
     const t = tag.trim().replace(/^#+/, "");
@@ -118,8 +121,7 @@ export function HashtagRecommender({
   };
 
   const handleCopyTag = (tag: string) => {
-    navigator.clipboard.writeText(tag);
-    toast.success(`已复制 ${tag}`);
+    copyTag(tag);
   };
 
   const handleCopyAll = () => {
@@ -127,8 +129,7 @@ export function HashtagRecommender({
       toast.error("暂无标签可复制");
       return;
     }
-    navigator.clipboard.writeText(hashtags.join(" "));
-    toast.success(`已复制 ${hashtags.length} 个标签`);
+    copyAll(hashtags.join(" "));
   };
 
   const isQuickTagSelected = (tag: string) => hashtags.includes(tag);
@@ -212,10 +213,10 @@ export function HashtagRecommender({
                     onClick={handleCopyAll}
                     size="sm"
                     variant="ghost"
-                    className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-primary gap-0.5"
+                    className={`h-5 px-1.5 text-[10px] gap-0.5 ${copiedAll ? "text-emerald-500" : "text-muted-foreground hover:text-primary"}`}
                   >
-                    <Copy className="h-2.5 w-2.5" />
-                    复制全部
+                    {copiedAll ? <Check className="h-2.5 w-2.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5" />}
+                    {copiedAll ? "已复制" : "复制全部"}
                   </Button>
                 </div>
               </div>

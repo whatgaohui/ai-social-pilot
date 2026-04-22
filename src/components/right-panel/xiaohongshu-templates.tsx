@@ -17,9 +17,11 @@ import {
   ListChecks,
   Loader2,
   Copy,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/app-store";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 interface Template {
   id: string;
@@ -173,9 +175,10 @@ export function XiaohongshuTemplates() {
     }
   };
 
+  const { copied: copiedResult, copy: copyResult } = useCopyToClipboard();
+
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("已复制到剪贴板");
+    copyResult(text);
   };
 
   return (
@@ -278,10 +281,10 @@ export function XiaohongshuTemplates() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover/result:opacity-100 transition-opacity"
+                              className={`absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover/result:opacity-100 transition-opacity ${copiedResult ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}`}
                               onClick={() => handleCopy(result)}
                             >
-                              <Copy className="h-3 w-3" />
+                              {copiedResult ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
                             </Button>
                             <p className="text-xs leading-relaxed whitespace-pre-wrap pr-6">
                               {result}
