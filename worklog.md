@@ -6554,3 +6554,417 @@ Work Log:
 8. API Key 加密存储方案
 9. 运营报告定时自动生成
 10. 数据备份/恢复功能
+
+---
+
+## Iteration 35: Content Scheduling System + Publishing Queue
+
+### Summary
+Implemented a comprehensive publishing queue system with API routes, a rich queue management component, and smart scheduling features.
+
+### Files Created
+1. **`src/app/api/publish-queue/route.ts`** — Main queue API (GET with pagination/filters/stats, POST to schedule, PUT to reschedule/cancel)
+2. **`src/app/api/publish-queue/batch/route.ts`** — Batch scheduling endpoint (up to 50 posts)
+3. **`src/app/api/publish-queue/process/route.ts`** — Process due posts (status→published, set publishedAt)
+4. **`src/app/api/publish-queue/auto-publish/route.ts`** — Cron-like auto-publish with summary
+5. **`src/components/right-panel/publishing-queue.tsx`** — Full publishing queue UI component
+
+### Files Modified
+1. **`prisma/schema.prisma`** — Added `scheduledAt` (DateTime?) and `publishedAt` (DateTime?) to ContentPost; added 'scheduled' status
+2. **`src/types/index.ts`** — Added `scheduledAt`/`publishedAt` to ContentPost, 'scheduled' to PostStatus, updated POST_STATUS_LABELS
+3. **`src/components/right-panel/content-workspace.tsx`** — Added "发布队列" tab (value="queue", icon=Layers, color=text-purple-500)
+4. **`src/app/globals.css`** — Added publishing queue CSS classes (.publish-queue-item, .publish-countdown, .schedule-timeline, .time-slot-chip, .queue-stats-bar, + animations)
+
+### Key Features
+- **Queue List View**: Timeline-style drag-reorderable list with platform badges, live countdown, overdue indicators
+- **Schedule Dialog**: Date/time picker with quick time slot suggestions (8 optimal posting hours), repeat options (none/daily/weekly), preview before confirming
+- **Queue Stats Bar**: Total/today/week/overdue counts + mini donut chart of platform composition
+- **Smart Scheduling**: "Auto-fill empty days" (distributes unscheduled posts across next 7 days at optimal hours), "Optimize schedule" (reorders by AI score)
+- **Quick Actions per item**: Publish now, edit time, duplicate, cancel schedule
+- **Filter tabs**: All / Upcoming / Overdue
+- **Process Due**: One-click to publish all overdue scheduled posts
+- **API**: Full REST endpoints with pagination, date range filtering, platform filtering, batch operations, and cron-like auto-publish
+
+
+---
+
+## Iteration 35: Loading State Optimization + Error Boundaries + Skeleton System Enhancement
+
+### Summary
+全面升级了加载状态系统、错误边界和骨架屏组件，覆盖6个新文件、2个增强文件、1个CSS增量更新。
+
+### New Files Created
+
+#### 1. `src/components/error-boundary.tsx` (Enhanced)
+- **6种错误类型**: network / server / data / render / timeout / unknown
+- **SVG内联动画插图**: 每种错误类型都有独立的SVG插画（网络断裂信号、服务器损坏、数据库异常、警告三角、时钟超时）
+- **错误详情折叠面板**: 点击"显示详情"展开堆栈追踪信息（framer-motion动画）
+- **自动重试机制**: 通过 `autoRetryInterval` prop 配置自动重试倒计时
+- **错误报告**: 结构化日志输出（section、type、timestamp、url、userAgent）
+- **重试按钮脉冲动画**: CSS `.retry-button-pulse` 效果
+- **向后兼容**: 保留原有的 `lightweight` 和 `fallback` props
+
+#### 2. `src/hooks/use-api-error.ts`
+- `useApiFetch<T>` hook — 完整的API请求错误处理
+  - 自动错误类型检测（network / timeout / rate_limit / 404 / 500）
+  - 指数退避重试（默认3次，可配置 base delay）
+  - Jitter随机化防止雷群效应
+  - Sonner toast 通知集成
+  - 手动/自动模式切换
+- `useApiErrorHandler()` — 简化版错误处理器
+  - `handleError(err, context)` — 统一错误处理
+  - `handleSuccess(message)` — 成功提示
+
+#### 3. `src/components/skeleton-system.tsx`
+- **ContentCalendarSkeleton**: 7列×5行日历网格骨架，含标题/导航/日期单元格
+- **ContentListSkeleton**: 内容列表骨架，含日期徽章/文本行/标签/操作按钮
+- **AnalyticsPanelSkeleton**: 数据分析面板骨架，含统计卡片/柱状图/列表
+- **ContentEditorSkeleton**: 编辑器骨架，含工具栏/文本区域/侧边栏AI建议
+- **DashboardSkeleton**: 仪表板骨架，含统计卡片/折线图/活动时间线
+- **FeedSkeleton**: 信息流骨架，含头像/内容/图片占位/互动按钮
+- 所有骨架使用 `WaveItem` 组件实现交错闪烁动画
+
+#### 4. `src/components/loading-overlay.tsx`
+- **LoadingOverlay**: 全屏加载遮罩
+  - 旋转动画Logo + 脉冲缩放
+  - 可配置加载消息（加载中/AI正在思考/正在生成等）
+  - 渐变进度条（紫→粉渐变，无限循环）
+  - 最小显示时长保证
+  - 可选取消按钮
+  - framer-motion 进入/退出动画 + 背景模糊
+- **LoadingScreen**: 简化版全屏加载页
+
+#### 5. `src/components/inline-loading.tsx`
+- **Spinner**: 多尺寸(sm/md/lg)×多颜色(violet/emerald/amber/rose/cyan/foreground)旋转加载器
+- **Dots**: 3点弹跳指示器，可配置大小/颜色/数量
+- **ProgressBar**: 线性进度条（确定/不确定模式），含百分比显示
+- **PulseLoading**: 内容占位脉冲动画
+- **TypingIndicator**: AI响应打字指示器（3点在气泡中弹跳）
+- **InlineLoading**: 通用内联加载包装器，自动切换显示/隐藏
+
+#### 6. `src/components/suspense-wrappers.tsx`
+- **SuspenseCalendar**: Calendar + ContentCalendarSkeleton
+- **SuspenseContentList**: Content + ContentListSkeleton
+- **SuspenseAnalytics**: Analytics + AnalyticsPanelSkeleton
+- **SuspenseDashboard**: Dashboard + DashboardSkeleton
+- **SuspenseDefault**: 通用 Spinner fallback
+
+### Modified Files
+
+#### 7. `src/components/page-transition.tsx` (Enhanced)
+- 新增导航状态遮罩层（bg-background/80 + backdrop-blur，防止骨架屏闪烁）
+- 新增底部进度指示器（滑动渐变条，重复动画）
+- 保留原有方向感知滑动 + 顶部进度条
+- 新增 `isNavigating` 状态自动清除
+
+#### 8. `src/app/globals.css` (CSS Increment)
+- `.error-boundary-container`, `.error-illustration`, `.error-float` 动画
+- `.skeleton-wave` — 骨架屏交错波浪动画
+- `.loading-overlay`, `.loading-logo-spin` — 加载遮罩样式
+- `.loading-bar-animated` — 加载条滑动光效
+- `.typing-dot`, `.dot-bounce-1/2/3` — 打字指示器弹跳
+- `.pulse-content`, `.pulse-content-line` — 内容占位脉冲
+- `.retry-button-pulse` — 重试按钮脉冲光晕
+- `.loading-bar-top` — 页面级顶部加载条
+- `.error-details-content` — 错误详情折叠过渡
+- 全部支持 `prefers-reduced-motion` 和暗色模式
+
+#### 9. `src/components/command-palette.tsx` (Bug Fix)
+- 修复 `ListQueue` 图标在 lucide-react 中不存在的构建错误 → 替换为 `List`
+
+### QA验证结果
+- ✅ ESLint 零错误、零警告（所有新/修改文件）
+- ✅ Next.js clean build 成功
+- ✅ 所有动画均支持 `prefers-reduced-motion`
+- ✅ 暗色模式完整支持
+- ✅ 无 agent-browser 使用（遵循 OOM 约束）
+
+
+## Iteration 35: Enhanced Global Search + Command Palette Upgrades
+
+### Changes Made
+
+**1. Bug Fix — Command Palette `handleAction` (src/components/command-palette.tsx)**
+- Fixed critical bug where `handleAction` was called but only partially defined. The refactored `handleAction(string)` function was missing handlers for `_search-posts`, `_toggle-dark`, `_toggle-platform`, and `_clear-cache` special actions.
+- Added all 4 special action cases to `handleAction` so both direct action calls and `handleCommandAction` delegation work correctly.
+- Updated dependency array to include `platform` and `setSearchHistory`/`setRecentCommands`.
+
+**2. Search API Enhancement (src/app/api/search/route.ts)**
+- Added `contentType` and `status` fields to content post search WHERE clause for broader matching.
+- Increased content result limit from 20 to 25.
+- Added knowledge result limit (20) with default sort (updatedAt desc).
+- Implemented fuzzy expansion: when fewer than 5 content results are found for multi-char queries, the API automatically broadens the search using the first half of the query string and applies fuzzy matching to filter extra results.
+- Improved sort logic to always have a deterministic default (updatedAt desc).
+
+**3. New Component — Search History (src/components/search-history.tsx)**
+- Created a standalone `SearchHistory` component with date-grouped display (今天/昨天/更早).
+- Exports `addSearchHistory()` and `clearSearchHistory()` utility functions.
+- Uses localStorage with key `search-history-detailed`, max 20 entries.
+- Each entry stores: query, timestamp, category, resultCount.
+- Animated list with staggered fade-in using framer-motion.
+- Individual remove buttons and "清除全部" (clear all) action.
+- Category color coding (content, knowledge, template, persona, accounts).
+
+**4. ContentSearch Integration (src/components/content-search.tsx)**
+- Replaced inline recent search list with the new `SearchHistory` component.
+- Integrated `addSearchHistory()` call when a search is performed, recording category and result count.
+
+**5. CSS Additions (src/app/globals.css)**
+- `.search-highlight` — Yellow underline marker for matched text in search results (light + dark mode).
+- `.filter-chip` / `.filter-chip-active` — Styled toggleable pill for filter buttons (light + dark mode).
+- `.search-history-item` — Hover/active states for search history entries.
+- `.command-group-header` — Styled heading for command palette group headers (light + dark mode).
+- `.recent-command` — Hover effect for recent command items.
+- `.animate-suggestion-in` — Slide-in animation for search suggestions.
+- `.search-result-item` — Staggered fade-in animation for search results (6 items).
+
+### Files Modified
+- `src/components/command-palette.tsx` — Fixed handleAction bug
+- `src/app/api/search/route.ts` — Enhanced search with fuzzy expansion
+- `src/components/search-history.tsx` — NEW component
+- `src/components/content-search.tsx` — Integrated SearchHistory
+- `src/app/globals.css` — Added 8 new CSS classes
+
+## Iteration 35: Competitor Intelligence + Trend Tracker
+
+### New Files Created
+- `src/app/api/trends/route.ts` — Trend Tracker API (GET + POST)
+- `src/components/right-panel/competitor-dashboard.tsx` — Competitor Dashboard component
+- `src/components/right-panel/trend-tracker.tsx` — Trend Tracker component
+
+### Modified Files
+- `src/app/globals.css` — Added 100+ lines of CSS for new components
+
+### API: /api/trends
+- **GET**: Analyzes ContentPost data for patterns:
+  - Top performing content types by avg engagement
+  - Best posting times by day/hour
+  - Content length vs engagement correlation
+  - Platform-specific trends (wechat vs xiaohongshu)
+  - Content calendar heatmap data (12-week grid)
+  - Trending topics extraction with heat scores
+  - Weekly pattern analysis
+  - Auto-generated recommendations
+- **POST**: AI-powered trend analysis via createAIClient():
+  - Analyzes patterns, finds content gaps, suggests opportunities
+  - Returns structured JSON: summary, contentGaps, opportunities, weeklyInsight, nextActions
+
+### Competitor Dashboard (竞品看板 tab)
+- 4-column overview cards: tracked count, total posts, avg engagement, top type
+- Competitor leaderboard table with mini sparkline SVG charts
+- Content gap analysis: SVG bar chart comparing our types vs competitors
+- Engagement comparison: SVG radar chart (5 axes: interaction, frequency, volume, influence, diversity)
+- Weekly intelligence summary card with competitor dynamics
+- Data fetched from /api/competitor-analysis
+
+### Trend Tracker (趋势追踪 tab)
+- Trending topics grid (2-column, heat-scored cards with gradient indicators)
+- Content pattern analysis cards with SVG mini area charts (engagement, posts, daily)
+- Content calendar heatmap (GitHub-style contribution graph, SVG, 12 weeks)
+- Best posting hours & content length performance cards
+- AI trend suggestions section (calls /api/trends POST)
+  - Content gaps with priority badges
+  - Opportunity discovery cards
+  - Weekly insight highlight
+  - Numbered action recommendations
+
+### CSS Additions
+- `.competitor-card` — Hover lift with violet glow
+- `.leaderboard-row` — Subtle hover background
+- `.trend-heat-indicator` — Pulsing scale animation
+- `.radar-chart-container` — Radial gradient backdrop
+- `.content-gap-bar` — Smooth width transition
+- `.trending-topic-card` — Lift + shadow on hover
+- `.contribution-heatmap` — Container for heatmap grid
+- `.heatmap-cell` through `.heatmap-cell-5` — Progressive violet→green fill
+- All with dark mode variants
+
+### Integration
+- Components already wired into `data-and-reports.tsx` tabs ("intelligence" + "trends")
+- Build passes, ESLint clean
+---
+Task ID: 35
+Agent: Main Orchestrator + 4 Parallel full-stack-developer Sub-agents (35-a/b/c/d)
+Task: 第35轮开发 - 发布调度系统+搜索增强+竞品趋势+错误边界骨架屏
+
+Work Log:
+- 读取 worklog.md 了解第34轮完整状态（34轮迭代，125+组件，46+API）
+- 硬约束：全程未使用 agent-browser（OOM限制），使用 build + eslint 验证
+- 验证项目状态：ESLint零错误，clean build成功
+- 4个并行 full-stack-developer 子代理（Track B/C重跑1次）
+
+### 项目当前状态
+- 项目极其成熟稳定，35轮迭代完成
+- 145个自定义组件（~55K行代码），56个API路由
+- 双平台运营：朋友圈 + 小红书
+- 零 lint 错误、零 TypeScript 错误、生产构建稳定
+
+### Track A: 内容发布调度系统
+
+1. **发布队列 API**（`/api/publish-queue/route.ts`）：
+   - GET 分页查询 + 日期范围/平台过滤 + 统计(total/today/week/overdue) + 平台组成
+   - POST 调度发布（scheduledAt, status='scheduled', 支持repeat模式）
+   - PUT 重新调度/取消调度
+
+2. **批量调度 API**（`/api/publish-queue/batch/route.ts`）：
+   - POST 批量调度最多50条帖子
+
+3. **发布处理 API**（`/api/publish-queue/process/route.ts`）：
+   - POST 处理到期帖子（status→published, publishedAt=now）
+
+4. **自动发布 API**（`/api/publish-queue/auto-publish/route.ts`）：
+   - POST cron式自动发布，返回已发布/即将发布摘要
+
+5. **发布队列组件**（`publishing-queue.tsx`, ~45K字符）：
+   - 队列统计栏：迷你环形图 + 4个统计卡片
+   - 智能调度：自动填充空白日、按AI评分优化排期、一键发布到期
+   - 筛选标签：全部/即将发布/已过期
+   - 时间线队列：拖拽排序 + 实时倒计时 + 平台标识 + 过期指示
+   - 快捷操作：立即发布/修改时间/复制/取消
+   - 调度对话框：日期时间选择 + 8个时段建议 + 重复选项 + 预览
+   - 未调度内容面板：快速调度
+
+6. **数据库变更**：
+   - ContentPost 新增 scheduledAt(DateTime?)、publishedAt(DateTime?) 字段
+   - PostStatus 新增 'scheduled' 状态
+
+### Track B: 智能搜索增强 + 命令面板
+
+1. **搜索 API 增强**（`/api/search/route.ts` 修改）：
+   - 扩展 contentType/status 匹配范围
+   - 模糊搜索：结果<5时自动扩展匹配
+   - 结果限制提升（内容25条，知识库20条）
+   - 确定性排序（updatedAt desc）
+
+2. **搜索建议 API**（`/api/search/suggestions/route.ts`）：
+   - GET 返回 top 5 搜索建议 + 缓存
+
+3. **搜索历史组件**（`search-history.tsx`）：
+   - 按日期分组（今天/昨天/更早）
+   - localStorage 持久化（max 20条）
+   - 交错动画 + 单条删除 + 清空全部
+   - 导出 addSearchHistory() / clearSearchHistory() 工具函数
+
+4. **内容搜索集成**（`content-search.tsx` 修改）：
+   - 替换内联最近搜索为 SearchHistory 组件
+   - 记录搜索分类和结果数
+
+5. **命令面板修复**（`command-palette.tsx` 修改）：
+   - 修复 4 个缺失的 action handler（search-posts, toggle-dark, toggle-platform, clear-cache）
+
+### Track C: 竞品分析 + 趋势追踪
+
+1. **趋势 API**（`/api/trends/route.ts`）：
+   - GET：7维度趋势分析（内容类型/最佳时间/长度关联/平台趋势/热力图/热门话题/周模式）
+   - POST：AI驱动的趋势洞察（内容缺口/机会发现/周报/行动建议）
+   - 使用 createAIClient() 调用 AI
+
+2. **竞品看板**（`competitor-dashboard.tsx`）：
+   - 4个概览指标卡片
+   - 竞品排行榜（可滚动 + SVG sparkline 趋势线）
+   - 内容缺口分析（SVG柱状图对比）
+   - 互动率对比（SVG雷达图，5轴：互动率/频率/数量/影响力/多样性）
+   - 周报智能摘要卡片
+
+3. **趋势追踪**（`trend-tracker.tsx`）：
+   - 热门话题网格（2列，热度评分渐变）
+   - SVG迷你面积图（周互动/发布量/日分布）
+   - GitHub风格贡献热力图（12周，5级颜色）
+   - AI趋势洞察（加载骨架 + 内容缺口 + 机会发现 + 行动建议）
+
+4. **追踪账号批量操作**（`/api/tracked-accounts/batch/route.ts`）：
+   - POST 批量操作追踪账号
+
+### Track D: 加载状态 + 错误边界 + 骨架屏
+
+1. **全局错误边界**（`error-boundary.tsx`）：
+   - 6种错误类型（网络/服务器/数据/渲染/超时/未知）
+   - SVG内联动画插图
+   - 错误详情折叠 + 堆栈跟踪
+   - 可配置自动重试（倒计时）
+   - 结构化错误报告
+
+2. **API 错误处理 Hook**（`use-api-error.ts`）：
+   - useApiFetch<T>：自动错误检测 + 指数退避重试(max 3) + 抖动
+   - 限流检测 + Sonner toast 集成
+   - useApiErrorHandler() 简化处理器
+
+3. **骨架屏系统**（`skeleton-system.tsx`）：
+   - 6个精确匹配布局的骨架组件
+   - WaveItem 交错波浪闪光效果
+
+4. **加载覆盖层**（`loading-overlay.tsx`）：
+   - 全屏加载（模糊背景 + 渐变进度条 + 取消按钮）
+   - LoadingScreen 简化版
+
+5. **内联加载组件**（`inline-loading.tsx`）：
+   - Spinner / Dots / ProgressBar / PulseLoading / TypingIndicator
+   - InlineLoading 统一包装器
+   - 可配置大小/颜色/标签
+
+6. **Suspense 包装器**（`suspense-wrappers.tsx`）：
+   - 5个命名 Suspense 包装器（Calendar/ContentList/Analytics/Dashboard/Default）
+
+7. **页面过渡增强**（`page-transition.tsx` 修改）：
+   - 导航状态背景模糊层（防止骨架屏闪烁）
+   - 底部滑动进度指示器
+
+8. **Bug修复**：command-palette.tsx ListQueue → List 图标修复
+
+### 新增文件 (18个)
+- `src/app/api/publish-queue/route.ts` — 发布队列 API
+- `src/app/api/publish-queue/batch/route.ts` — 批量调度 API
+- `src/app/api/publish-queue/process/route.ts` — 发布处理 API
+- `src/app/api/publish-queue/auto-publish/route.ts` — 自动发布 API
+- `src/app/api/trends/route.ts` — 趋势分析 API
+- `src/app/api/search/suggestions/route.ts` — 搜索建议 API
+- `src/app/api/tracked-accounts/batch/route.ts` — 批量追踪 API
+- `src/components/right-panel/publishing-queue.tsx` — 发布队列 UI
+- `src/components/content-search-filters.tsx` — 搜索过滤器
+- `src/components/search-history.tsx` — 搜索历史
+- `src/components/right-panel/competitor-dashboard.tsx` — 竞品看板
+- `src/components/right-panel/trend-tracker.tsx` — 趋势追踪
+- `src/components/error-boundary.tsx` — 错误边界
+- `src/hooks/use-api-error.ts` — API 错误处理 Hook
+- `src/components/skeleton-system.tsx` — 骨架屏系统
+- `src/components/loading-overlay.tsx` — 加载覆盖层
+- `src/components/inline-loading.tsx` — 内联加载组件
+- `src/components/suspense-wrappers.tsx` — Suspense 包装器
+
+### 修改文件
+- `prisma/schema.prisma` — ContentPost 新增 scheduledAt, publishedAt
+- `src/types/index.ts` — 新增状态和字段
+- `src/app/globals.css` — ~410行新CSS类
+- `src/app/page.tsx` — 错误边界集成
+- `src/components/right-panel/content-workspace.tsx` — 发布队列Tab
+- `src/components/right-panel/data-and-reports.tsx` — 竞品看板+趋势追踪Tab
+- `src/components/content-search.tsx` — 搜索历史集成
+- `src/components/command-palette.tsx` — Action handler修复
+- `src/components/page-transition.tsx` — 过渡增强
+
+### QA验证结果
+- ✅ ESLint 零错误、零警告
+- ✅ Next.js clean build 成功
+- ✅ 56 个 API 路由全部正确注册（含新增7个）
+- ✅ 145 个组件文件
+- ✅ 无 agent-browser 使用（遵循 OOM 约束）
+
+### 未解决问题或风险
+1. Dev server 在沙箱环境中因内存限制不稳定，生产构建和 standalone server 稳定
+2. agent-browser 不可用（OOM限制）
+3. 发布调度依赖服务器端定时触发（auto-publish端点），需配合外部cron或服务器调度
+4. 模糊搜索为简单实现，大规模数据可能需要全文索引
+5. 竞品分析数据来自手动录入的 tracked-accounts，非实时抓取
+6. 错误边界的自动重试在5秒后触发，可能不适合所有场景
+
+### 建议下一阶段优先事项
+1. WebSocket 实时数据推送（替代轮询）
+2. PWA 离线支持 + Service Worker
+3. 单元测试 + E2E 测试覆盖（Vitest + Playwright）
+4. 国际化 (i18n) 支持
+5. 多人协作/团队账号管理
+6. 移动端真机测试和适配优化
+7. API Key 加密存储方案
+8. 数据备份/恢复功能
+9. 内容发布到真实社交平台 API 对接
+10. 性能监控 + 错误追踪（Sentry集成）

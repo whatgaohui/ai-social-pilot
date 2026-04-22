@@ -51,8 +51,10 @@ model ContentPost {
   contentType   String   @default("text") // text, image, video, mixed, story, insight, interaction; xiaohongshu: seeding, review, tutorial, drygoods, vlog, daily, recommend, collection
   topic         String   @default("")
   content       String   @default("")
-  status        String   @default("planned") // planned, generated, optimized, published
+  status        String   @default("planned") // planned, generated, optimized, scheduled, published
   generationType String @default("auto") // auto, fragment, polish
+  scheduledAt   DateTime? // exact datetime for scheduled publishing
+  publishedAt   DateTime? // when the post was actually published
   likes         Int      @default(0)
   comments      Int      @default(0)
   shares        Int      @default(0)

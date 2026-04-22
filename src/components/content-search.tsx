@@ -27,9 +27,10 @@ import {
   X,
   ArrowRight,
   Sparkles,
-  Eraser,
+ Eraser,
   Users,
 } from "lucide-react";
+import { SearchHistory, addSearchHistory } from "@/components/search-history";
 import {
   CONTENT_TYPE_LABELS,
   POST_STATUS_LABELS,
@@ -612,6 +613,7 @@ export function ContentSearch({ open, onOpenChange }: ContentSearchProps) {
   const handleSelectResult = useCallback(
     (result: SearchResult) => {
       addRecentSearch(query);
+      addSearchHistory(query, activeTab, searchData?.total);
       onOpenChange(false);
 
       switch (result.type) {
@@ -806,38 +808,11 @@ export function ContentSearch({ open, onOpenChange }: ContentSearchProps) {
 
                 {/* Empty / Recent Searches (no query) */}
                 {!hasQuery && !loading && (
-                  <div className="py-4">
+                  <div className="py-2">
                     {recentSearches.length > 0 ? (
-                      <div>
-                        <div className="flex items-center justify-between px-4 py-1.5">
-                          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                            <Clock className="h-3 w-3" />
-                            最近搜索
-                          </span>
-                          <button
-                            onClick={handleClearRecent}
-                            className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5 transition-colors"
-                          >
-                            <Eraser className="h-2.5 w-2.5" />
-                            清除
-                          </button>
-                        </div>
-                        <div className="px-2">
-                          {recentSearches.map((term, i) => (
-                            <motion.button
-                              key={term}
-                              initial={{ opacity: 0, x: -8 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: i * 0.04, duration: 0.15 }}
-                              onClick={() => handleRecentSearchClick(term)}
-                              className="flex items-center gap-2 w-full px-2 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-                            >
-                              <Clock className="h-3 w-3 shrink-0 opacity-50" />
-                              <span className="truncate">{term}</span>
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
+                      <SearchHistory
+                        onSelect={handleRecentSearchClick}
+                      />
                     ) : (
                       <div className="flex flex-col items-center gap-3 py-6">
                         <div className="h-12 w-12 rounded-full bg-muted/60 flex items-center justify-center">

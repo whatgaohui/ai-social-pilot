@@ -48,6 +48,19 @@ import {
   ArrowUpDown,
   TrendingUp,
   LayoutTemplate,
+  Moon,
+  SunMedium,
+  RefreshCcw,
+  Download,
+  Upload,
+  List,
+  Activity,
+  FileSearch,
+  BookMarked,
+  BrainCircuit,
+  Bell,
+  Database,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -140,6 +153,37 @@ function clearHistory() {
   localStorage.removeItem(HISTORY_KEY);
 }
 
+// ─── Recently Used Commands ────────────────────────────────────────────────────
+
+const RECENT_COMMANDS_KEY = "cmd-palette-recent-commands";
+const MAX_RECENT_COMMANDS = 10;
+
+interface RecentCommand {
+  id: string;
+  label: string;
+  timestamp: number;
+}
+
+function loadRecentCommands(): RecentCommand[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_COMMANDS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentCommand(cmd: { id: string; label: string }) {
+  if (typeof window === "undefined") return;
+  const commands = loadRecentCommands().filter((c) => c.id !== cmd.id);
+  commands.unshift({ ...cmd, timestamp: Date.now() });
+  localStorage.setItem(
+    RECENT_COMMANDS_KEY,
+    JSON.stringify(commands.slice(0, MAX_RECENT_COMMANDS)),
+  );
+}
+
 // ─── Hot Keywords by Platform ─────────────────────────────────────────────────
 
 const HOT_KEYWORDS: Record<string, string[]> = {
@@ -154,6 +198,109 @@ function getSearchPlaceholder(): string {
   if (hour >= 6 && hour < 12) return "搜索内容或命令...";
   if (hour >= 12 && hour < 18) return "搜索帖子或灵感...";
   return "回顾今天的内容...";
+}
+
+// ─── Command Group Definitions ─────────────────────────────────────────────────
+
+interface CommandDef {
+  id: string;
+  label: string;
+  icon: typeof FileText;
+  iconColor: string;
+  action: string;
+  shortcut?: string;
+  group: "content" | "search" | "analytics" | "settings" | "actions";
+}
+
+const COMMAND_GROUPS = [
+  {
+    id: "content",
+    label: "内容",
+    icon: PenTool,
+    iconColor: "text-violet-500",
+    commands: [
+      { id: "new-content", label: "新建内容", icon: FileText, iconColor: "text-violet-500", action: "generate", shortcut: "⌘N" },
+      { id: "ai-today", label: "AI生成今日", icon: Sparkles, iconColor: "text-amber-500", action: "generate", shortcut: "⌘G" },
+      { id: "batch-optimize", label: "批量优化", icon: Zap, iconColor: "text-sky-500", action: "batch" },
+      { id: "publish-queue", label: "发布队列", icon: List, iconColor: "text-emerald-500", action: "data" },
+    ],
+  },
+  {
+    id: "search",
+    label: "搜索",
+    icon: FileSearch,
+    iconColor: "text-sky-500",
+    commands: [
+      { id: "search-content", label: "搜索内容", icon: Search, iconColor: "text-violet-500", action: "_search-posts", shortcut: "⌘F" },
+      { id: "search-knowledge", label: "搜索知识库", icon: BookOpen, iconColor: "text-amber-500", action: "knowledge" },
+      { id: "search-templates", label: "搜索模板", icon: LayoutTemplate, iconColor: "text-sky-500", action: "templates" },
+    ],
+  },
+  {
+    id: "analytics",
+    label: "数据",
+    icon: BarChart3,
+    iconColor: "text-emerald-500",
+    commands: [
+      { id: "view-data", label: "查看数据", icon: BarChart3, iconColor: "text-emerald-500", action: "data", shortcut: "⌘3" },
+      { id: "rhythm", label: "运营节奏", icon: Activity, iconColor: "text-rose-500", action: "data" },
+      { id: "health-report", label: "健康度报告", icon: Heart, iconColor: "text-pink-500", action: "data" },
+    ],
+  },
+  {
+    id: "settings",
+    label: "设置",
+    icon: Settings,
+    iconColor: "text-muted-foreground",
+    commands: [
+      { id: "ai-config", label: "AI模型配置", icon: BrainCircuit, iconColor: "text-violet-500", action: "settings", shortcut: "⌘," },
+      { id: "notifications", label: "通知设置", icon: Bell, iconColor: "text-amber-500", action: "settings" },
+      { id: "import-data", label: "导入数据", icon: Download, iconColor: "text-sky-500", action: "settings" },
+      { id: "export-data", label: "导出数据", icon: Upload, iconColor: "text-emerald-500", action: "settings" },
+    ],
+  },
+  {
+    id: "actions",
+    label: "快捷操作",
+    icon: Zap,
+    iconColor: "text-amber-500",
+    commands: [
+      { id: "toggle-dark", label: "切换暗黑模式", icon: Moon, iconColor: "text-violet-400", action: "_toggle-dark" },
+      { id: "toggle-platform", label: "切换平台", icon: MessageCircle, iconColor: "text-emerald-500", action: "_toggle-platform", shortcut: "⇧⌘P" },
+      { id: "clear-cache", label: "清空缓存", icon: Trash2, iconColor: "text-red-400", action: "_clear-cache" },
+    ],
+  },
+];
+
+// ─── Fuzzy Search Helper ───────────────────────────────────────────────────────
+
+function fuzzyMatch(text: string, query: string): boolean {
+  const lower = text.toLowerCase();
+  const ql = query.toLowerCase();
+  if (lower.includes(ql)) return true;
+  let qi = 0;
+  for (let i = 0; i < lower.length && qi < ql.length; i++) {
+    if (lower[i] === ql[qi]) qi++;
+  }
+  return qi === ql.length;
+}
+
+function fuzzyScore(text: string, query: string): number {
+  const lower = text.toLowerCase();
+  const ql = query.toLowerCase();
+  if (lower.includes(ql)) {
+    const idx = lower.indexOf(ql);
+    return 10 + (idx < 5 ? 5 : 0);
+  }
+  let qi = 0;
+  let score = 0;
+  for (let i = 0; i < lower.length && qi < ql.length; i++) {
+    if (lower[i] === ql[qi]) {
+      score += 1;
+      qi++;
+    }
+  }
+  return qi === ql.length ? score : -1;
 }
 
 // ─── Highlight Text Component ─────────────────────────────────────────────────
@@ -172,7 +319,6 @@ function HighlightText({
 
   if (!q) return <>{truncated}</>;
 
-  // Split by all occurrences of q (case-insensitive)
   const parts: { text: string; match: boolean }[] = [];
   const lowerText = truncated.toLowerCase();
   let lastIdx = 0;
@@ -200,7 +346,7 @@ function HighlightText({
         part.match ? (
           <span
             key={i}
-            className="bg-amber-200/60 dark:bg-amber-500/30 rounded px-0.5"
+            className="search-highlight"
           >
             {part.text}
           </span>
@@ -272,6 +418,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [searchHistory, setSearchHistory] = useState<string[]>(() => loadHistory());
   const [showHistory, setShowHistory] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [recentCommands, setRecentCommands] = useState<RecentCommand[]>(() => loadRecentCommands());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
   // ── Update placeholder every minute ─────────────────────────────────────
@@ -302,7 +450,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   }, [query]);
 
   const handleInputBlur = useCallback(() => {
-    // Delay to allow click events on history items
     setTimeout(() => setShowHistory(false), 150);
   }, []);
 
@@ -328,6 +475,19 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     setSearchHistory([]);
   }, []);
 
+  // ── Toggle group expansion ──────────────────────────────────────────────
+  const toggleGroup = useCallback((groupId: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  }, []);
+
   // ── Recent edits (last 5 by updatedAt) ─────────────────────────────────
   const recentPosts = useMemo(() => {
     return [...contentPosts]
@@ -335,20 +495,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       .slice(0, 5);
   }, [contentPosts]);
 
-  // ── Content search results ──────────────────────────────────────────────
+  // ── Content search results with fuzzy matching ──────────────────────────
   const contentResults = useMemo(() => {
     let filtered = contentPosts;
 
     if (query.trim()) {
-      const q = query.toLowerCase();
       filtered = contentPosts.filter(
         (p) =>
-          p.topic.toLowerCase().includes(q) ||
-          p.content.toLowerCase().includes(q),
+          fuzzyMatch(p.topic, query) ||
+          fuzzyMatch(p.content, query),
       );
     }
 
-    // Sort
     if (sortOption === "newest") {
       filtered = [...filtered].sort((a, b) =>
         (b.updatedAt || "").localeCompare(a.updatedAt || ""),
@@ -360,16 +518,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           (a.likes + a.comments + a.shares + a.views),
       );
     } else {
-      // relevance: match position & frequency
       const q = query.trim().toLowerCase();
       if (q) {
         filtered = [...filtered].sort((a, b) => {
-          const scoreA =
-            (a.topic.toLowerCase().includes(q) ? 3 : 0) +
-            ((a.content.toLowerCase().match(new RegExp(q, "g")) || []).length * 1);
-          const scoreB =
-            (b.topic.toLowerCase().includes(q) ? 3 : 0) +
-            ((b.content.toLowerCase().match(new RegExp(q, "g")) || []).length * 1);
+          const scoreA = fuzzyScore(`${a.topic} ${a.content}`, q);
+          const scoreB = fuzzyScore(`${b.topic} ${b.content}`, q);
           return scoreB - scoreA;
         });
       }
@@ -378,7 +531,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     return filtered;
   }, [query, contentPosts, sortOption]);
 
-  // ── Knowledge search results ────────────────────────────────────────────
+  // ── Knowledge search results with fuzzy matching ────────────────────────
   const knowledgeResults = useMemo(() => {
     let filtered = knowledgeItems;
 
@@ -386,13 +539,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       const q = query.toLowerCase();
       filtered = knowledgeItems.filter(
         (k) =>
-          k.title.toLowerCase().includes(q) ||
-          k.content.toLowerCase().includes(q) ||
-          k.tags.toLowerCase().includes(q),
+          fuzzyMatch(k.title, query) ||
+          fuzzyMatch(k.content, query) ||
+          fuzzyMatch(k.tags, query),
       );
     }
 
-    // Sort
     if (sortOption === "newest") {
       filtered = [...filtered].sort((a, b) =>
         (b.updatedAt || "").localeCompare(a.updatedAt || ""),
@@ -401,12 +553,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       const q = query.trim().toLowerCase();
       if (q) {
         filtered = [...filtered].sort((a, b) => {
-          const scoreA =
-            (a.title.toLowerCase().includes(q) ? 3 : 0) +
-            ((a.content.toLowerCase().match(new RegExp(q, "g")) || []).length * 1);
-          const scoreB =
-            (b.title.toLowerCase().includes(q) ? 3 : 0) +
-            ((b.content.toLowerCase().match(new RegExp(q, "g")) || []).length * 1);
+          const scoreA = fuzzyScore(`${a.title} ${a.content} ${a.tags}`, q);
+          const scoreB = fuzzyScore(`${b.title} ${b.content} ${b.tags}`, q);
           return scoreB - scoreA;
         });
       }
@@ -420,17 +568,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     if (!persona || !persona.name) return false;
     if (activeTab !== "all" && activeTab !== "persona") return false;
     if (!query.trim()) return true;
-    const q = query.toLowerCase();
-    return (
-      persona.name.toLowerCase().includes(q) ||
-      (persona.title || "").toLowerCase().includes(q) ||
-      (persona.bio || "").toLowerCase().includes(q) ||
-      (persona.industry || "").toLowerCase().includes(q) ||
-      (persona.tone || "").toLowerCase().includes(q)
+    return fuzzyMatch(
+      `${persona.name} ${persona.title || ""} ${persona.bio || ""} ${persona.industry || ""}`,
+      query,
     );
   }, [persona, query, activeTab]);
 
-  // ── Template search results (static) ───────────────────────────────────
+  // ── Template search results (static) with fuzzy matching ───────────────
   const templateResults = useMemo(() => {
     const TEMPLATES = [
       { id: "morning", title: "早安问候", description: "温暖有活力的早安文案，适合每日打卡", category: "日常" },
@@ -442,13 +586,26 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     ];
 
     if (!query.trim()) return TEMPLATES;
-    const q = query.toLowerCase();
     return TEMPLATES.filter(
       (t) =>
-        t.title.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q) ||
-        t.category.toLowerCase().includes(q),
+        fuzzyMatch(t.title, query) ||
+        fuzzyMatch(t.description, query) ||
+        fuzzyMatch(t.category, query),
     );
+  }, [query]);
+
+  // ── Filtered command groups with fuzzy search ──────────────────────────
+  const filteredCommandGroups = useMemo(() => {
+    if (!query.trim()) return COMMAND_GROUPS;
+
+    return COMMAND_GROUPS
+      .map((group) => ({
+        ...group,
+        commands: group.commands.filter((cmd) =>
+          fuzzyMatch(cmd.label, query),
+        ),
+      }))
+      .filter((group) => group.commands.length > 0);
   }, [query]);
 
   // ── Tab-filtered results ────────────────────────────────────────────────
@@ -482,11 +639,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         (showPosts && contentResults.length > 0) ||
         (showKnowledge && knowledgeResults.length > 0) ||
         (showPersona && personaMatch) ||
-        (showTemplates && templateResults.length > 0)
+        (showTemplates && templateResults.length > 0) ||
+        filteredCommandGroups.length > 0
       );
     }
-    return true; // When no query, we always show quick actions / recent
-  }, [hasQuery, showPosts, contentResults.length, showKnowledge, knowledgeResults.length, showPersona, personaMatch, showTemplates, templateResults.length]);
+    return true;
+  }, [hasQuery, showPosts, contentResults.length, showKnowledge, knowledgeResults.length, showPersona, personaMatch, showTemplates, templateResults.length, filteredCommandGroups.length]);
 
   // ── Hot keywords for current platform ───────────────────────────────────
   const hotKeywords = useMemo(() => {
@@ -538,7 +696,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     setQuery("");
   }, [setLeftPanelTab, onOpenChange]);
 
-  // ── Quick actions ───────────────────────────────────────────────────────
+  // ── Execute a command by action string (legacy shorthand) ───────────────
   const handleAction = useCallback(
     (action: string) => {
       switch (action) {
@@ -557,23 +715,57 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         case "settings":
           setSettingsCenterOpen(true);
           break;
-        case "wechat":
-          setPlatform("wechat");
-          break;
-        case "xiaohongshu":
-          setPlatform("xiaohongshu");
-          break;
         case "knowledge":
           setLeftPanelTab("knowledge");
           break;
         case "templates":
           setLeftPanelTab("templates");
           break;
+        case "wechat":
+        case "xiaohongshu":
+          setPlatform(action as "wechat" | "xiaohongshu");
+          toast.success(`已切换到${action === "wechat" ? "朋友圈" : "小红书"}`);
+          break;
+        case "_search-posts":
+          setActiveTab("posts");
+          setQuery("");
+          return; // don't close palette
+        case "_toggle-dark":
+          document.documentElement.classList.toggle("dark");
+          toast.success("已切换显示模式");
+          break;
+        case "_toggle-platform":
+          setPlatform(platform === "wechat" ? "xiaohongshu" : "wechat");
+          toast.success(`已切换到${platform === "wechat" ? "小红书" : "朋友圈"}`);
+          break;
+        case "_clear-cache":
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("cmd-palette-search-history");
+            localStorage.removeItem("cmd-palette-recent-commands");
+            localStorage.removeItem("search-filter-presets");
+            localStorage.removeItem("search-history-detailed");
+            setSearchHistory([]);
+            setRecentCommands([]);
+            toast.success("缓存已清空");
+          }
+          break;
+        default:
+          return;
       }
       onOpenChange(false);
       setQuery("");
     },
-    [setRightPanelTab, setLeftPanelTab, setPlatform, setSettingsCenterOpen, onOpenChange],
+    [setRightPanelTab, setLeftPanelTab, setPlatform, platform, setSettingsCenterOpen, onOpenChange],
+  );
+
+  // ── Execute a command action from CommandDef ───────────────────────────────────
+  const handleCommandAction = useCallback(
+    (cmd: CommandDef) => {
+      saveRecentCommand({ id: cmd.id, label: cmd.label });
+      setRecentCommands(loadRecentCommands());
+      handleAction(cmd.action);
+    },
+    [handleAction],
   );
 
   const handleOpenChange = useCallback(
@@ -599,11 +791,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     },
     [handleSearch],
   );
-
-  // ── Save search history when user submits (handled in handleHistoryClick & addHistory) ──
-  // History is saved directly in addHistory() via localStorage without effect.
-
-  // ── Hide history when query becomes non-empty (handled in onValueChange) ──
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
@@ -718,6 +905,34 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     </div>
   );
 
+  const renderRecentCommands = () => (
+    recentCommands.length > 0 ? (
+      <CommandGroup heading="最近使用">
+        {recentCommands.slice(0, 5).map((rc) => {
+          const allCmds = COMMAND_GROUPS.flatMap((g) => g.commands);
+          const cmd = allCmds.find((c) => c.id === rc.id);
+          if (!cmd) return null;
+          const CmdIcon = cmd.icon;
+          return (
+            <CommandItem
+              key={rc.id}
+              value={`recent-cmd-${rc.id}`}
+              onSelect={() => handleCommandAction(cmd)}
+              className="recent-command group"
+            >
+              <CmdIcon className={`h-4 w-4 ${cmd.iconColor}`} />
+              <span className="flex-1 text-sm">{cmd.label}</span>
+              {cmd.shortcut && (
+                <CommandShortcut className="text-[9px]">{cmd.shortcut}</CommandShortcut>
+              )}
+              <Clock className="h-3 w-3 text-muted-foreground/40" />
+            </CommandItem>
+          );
+        })}
+      </CommandGroup>
+    ) : null
+  );
+
   return (
     <CommandDialog open={open} onOpenChange={handleOpenChange}>
       <AnimatePresence>
@@ -819,10 +1034,17 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       {/* ── Empty State ─────────────────────────── */}
                       {hasQuery && !hasAnyResults && renderEmptyState()}
 
-                      {/* ── Quick Actions ───────────────────────── */}
+                      {/* ── Recently Used Commands ──────────────── */}
+                      {!hasQuery && renderRecentCommands()}
+
+                      {/* ── Quick Actions (no query) ────────────── */}
                       {showPosts && !hasQuery && (
                         <CommandGroup heading="快速操作">
-                          <CommandItem onSelect={() => handleAction("generate")}>
+                          <CommandItem onSelect={() => {
+                            saveRecentCommand({ id: "generate", label: "生成新内容" });
+                            setRecentCommands(loadRecentCommands());
+                            handleAction("generate");
+                          }}>
                             <Sparkles
                               className={`h-4 w-4 ${isXHS ? "text-rose-500" : "text-violet-500"}`}
                             />
@@ -831,11 +1053,19 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               <Zap className="h-3 w-3" />
                             </CommandShortcut>
                           </CommandItem>
-                          <CommandItem onSelect={() => handleAction("batch")}>
+                          <CommandItem onSelect={() => {
+                            saveRecentCommand({ id: "batch", label: "批量生成30天计划" });
+                            setRecentCommands(loadRecentCommands());
+                            handleAction("batch");
+                          }}>
                             <CalendarRange className="h-4 w-4 text-amber-500" />
                             <span>批量生成30天计划</span>
                           </CommandItem>
-                          <CommandItem onSelect={() => handleAction("data")}>
+                          <CommandItem onSelect={() => {
+                            saveRecentCommand({ id: "data", label: "查看运营报告" });
+                            setRecentCommands(loadRecentCommands());
+                            handleAction("data");
+                          }}>
                             <BarChart3 className="h-4 w-4 text-emerald-500" />
                             <span>查看运营报告</span>
                             <CommandShortcut>⌘3</CommandShortcut>
@@ -864,6 +1094,65 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       )}
 
                       {showPosts && !hasQuery && <CommandSeparator />}
+
+                      {/* ── Command Groups (when querying) ────────── */}
+                      {hasQuery && filteredCommandGroups.length > 0 && (
+                        <>
+                          {filteredCommandGroups.map((group) => {
+                            const isExpanded = !query.trim() || expandedGroups.has(group.id) || query.trim().length > 0;
+                            const GroupIcon = group.icon;
+                            return (
+                              <CommandGroup
+                                key={group.id}
+                                heading={
+                                  <div
+                                    className="command-group-header flex items-center gap-1.5 cursor-pointer select-none w-full"
+                                    onClick={() => toggleGroup(group.id)}
+                                  >
+                                    <GroupIcon className={`h-3 w-3 ${group.iconColor}`} />
+                                    <span>{group.label}</span>
+                                    <Badge variant="secondary" className="text-[9px] h-4 px-1 ml-auto">
+                                      {group.commands.length}
+                                    </Badge>
+                                  </div>
+                                }
+                              >
+                                <AnimatePresence>
+                                  {isExpanded &&
+                                    group.commands.map((cmd) => {
+                                      const CmdIcon = cmd.icon;
+                                      return (
+                                        <motion.div
+                                          key={cmd.id}
+                                          initial={{ opacity: 0, x: -8 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          exit={{ opacity: 0, x: -8 }}
+                                          transition={{ duration: 0.12 }}
+                                        >
+                                          <CommandItem
+                                            value={`cmd-${cmd.id}`}
+                                            onSelect={() => handleCommandAction(cmd)}
+                                          >
+                                            <CmdIcon className={`h-4 w-4 ${cmd.iconColor}`} />
+                                            <span className="flex-1 text-sm">
+                                              <HighlightText text={cmd.label} query={query} />
+                                            </span>
+                                            {cmd.shortcut && (
+                                              <CommandShortcut className="text-[9px]">
+                                                {cmd.shortcut}
+                                              </CommandShortcut>
+                                            )}
+                                          </CommandItem>
+                                        </motion.div>
+                                      );
+                                    })}
+                                </AnimatePresence>
+                              </CommandGroup>
+                            );
+                          })}
+                          <CommandSeparator />
+                        </>
+                      )}
 
                       {/* ── Persona Section ──────────────────────── */}
                       {showPersona && personaMatch && persona?.name && (
@@ -991,12 +1280,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                                     className="text-[10px] h-5 px-1.5"
                                   >
                                     {CONTENT_TYPE_LABELS[post.contentType as keyof typeof CONTENT_TYPE_LABELS] ?? post.contentType}
-                                  </Badge>
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] h-5 px-1.5"
-                                  >
-                                    {POST_STATUS_LABELS[post.status as keyof typeof POST_STATUS_LABELS] ?? post.status}
                                   </Badge>
                                 </div>
                               </div>

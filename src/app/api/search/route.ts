@@ -7,7 +7,9 @@ interface ContentResult {
   id: string;
   type: 'content';
   topic: string;
+  topicHighlighted: string;
   content: string;
+  contentHighlighted: string;
   platform: string;
   status: string;
   contentType: string;
@@ -16,6 +18,7 @@ interface ContentResult {
   comments: number;
   shares: number;
   views: number;
+  aiScore: number;
   updatedAt: string;
   /** relevance score – higher = better match */
   _score?: number;
@@ -25,7 +28,9 @@ interface KnowledgeResult {
   id: string;
   type: 'knowledge';
   title: string;
+  titleHighlighted: string;
   content: string;
+  contentHighlighted: string;
   category: string;
   tags: string;
   updatedAt: string;
@@ -36,6 +41,7 @@ interface PersonaResult {
   id: string;
   type: 'persona';
   name: string;
+  nameHighlighted: string;
   title: string;
   bio: string;
   industry: string;
@@ -46,8 +52,10 @@ interface AccountResult {
   id: string;
   type: 'account';
   nickname: string;
+  nicknameHighlighted: string;
   platform: string;
   bio: string;
+  bioHighlighted: string;
   followers: number;
   postsCount: number;
   updatedAt: string;
@@ -58,7 +66,9 @@ interface TemplateResult {
   id: string;
   type: 'template';
   title: string;
+  titleHighlighted: string;
   description: string;
+  descriptionHighlighted: string;
   category: string;
   _score?: number;
 }
@@ -79,11 +89,58 @@ interface SearchResponse {
   };
 }
 
+// ─── In-Memory Cache (1min TTL) ────────────────────────────────────────────────
+
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+const searchCache = new Map<string, CacheEntry<SearchResponse>>();
+const CACHE_TTL_MS = 60_000; // 1 minute
+
+function getCached(key: string): SearchResponse | null {
+  const entry = searchCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    searchCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCache(key: string, data: SearchResponse): void {
+  // Evict old entries when cache grows large
+  if (searchCache.size > 100) {
+    const oldestKey = searchCache.keys().next().value;
+    if (oldestKey) searchCache.delete(oldestKey);
+  }
+  searchCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+// ─── Fuzzy Matching ────────────────────────────────────────────────────────────
+
+/**
+ * Simple fuzzy match: checks if all characters of `q` appear in order
+ * within `text` (case-insensitive). Returns true for exact/partial match.
+ */
+function fuzzyMatch(text: string, q: string): boolean {
+  const lower = text.toLowerCase();
+  const ql = q.toLowerCase();
+  // Fast path: exact substring match
+  if (lower.includes(ql)) return true;
+  // Fuzzy: all chars must appear in order
+  let qi = 0;
+  for (let i = 0; i < lower.length && qi < ql.length; i++) {
+    if (lower[i] === ql[qi]) qi++;
+  }
+  return qi === ql.length;
+}
+
 // ─── Relevance Scoring ─────────────────────────────────────────────────────────
 
 /**
- * Simple relevance score: counts occurrences of `q` in `text`, with bonus
- * for matches at the beginning of the string.
+ * Relevance score with fuzzy bonus: counts exact occurrences + fuzzy match bonus.
  */
 function relevanceScore(text: string, q: string): number {
   if (!q) return 0;
@@ -99,10 +156,52 @@ function relevanceScore(text: string, q: string): number {
     score += 1 + (idx < 30 ? 2 : 0);
     pos = idx + 1;
   }
+
+  // Fuzzy match bonus (lower weight)
+  if (score === 0 && fuzzyMatch(text, q)) {
+    score = 0.5;
+  }
+
   return score;
 }
 
-// ─── Static Template Data (inline mirror of copywriting-templates.tsx) ────────
+// ─── Highlight Helper ──────────────────────────────────────────────────────────
+
+/**
+ * Wraps all exact (case-insensitive) occurrences of `q` in `text` with `<mark>` tags.
+ */
+function highlightText(text: string, q: string, maxLen = 80): string {
+  if (!q || !text) return text.slice(0, maxLen);
+  const lower = text.toLowerCase();
+  const ql = q.toLowerCase();
+  const parts: string[] = [];
+  let lastIdx = 0;
+  let pos = 0;
+  const limit = Math.min(text.length, maxLen);
+
+  while (pos <= limit) {
+    const idx = lower.indexOf(ql, pos);
+    if (idx === -1 || idx >= limit) break;
+    if (idx > lastIdx) {
+      parts.push(escapeHtml(text.slice(lastIdx, idx)));
+    }
+    parts.push(`<mark>${escapeHtml(text.slice(idx, idx + ql.length))}</mark>`);
+    lastIdx = idx + ql.length;
+    pos = idx + 1;
+  }
+  if (lastIdx < limit) {
+    parts.push(escapeHtml(text.slice(lastIdx, limit)));
+  }
+
+  const result = parts.join('');
+  return limit < text.length ? result + '…' : result;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ─── Static Template Data ─────────────────────────────────────────────────────
 
 const TEMPLATES = [
   { id: 'morning', title: '早安问候', description: '温暖有活力的早安文案，适合每日打卡', category: '日常' },
@@ -115,19 +214,26 @@ const TEMPLATES = [
 
 // ─── Allowed Values ────────────────────────────────────────────────────────────
 
-const VALID_CATEGORIES = ['all', 'posts', 'knowledge', 'persona', 'accounts', 'templates'] as const;
-const VALID_SORTS = ['relevance', 'newest', 'interactions'] as const;
+const VALID_CATEGORIES = ['all', 'posts', 'knowledge', 'persona', 'accounts', 'templates', 'content', 'template', 'history'] as const;
+const VALID_SORTS = ['relevance', 'newest', 'interactions', 'score', 'date'] as const;
 
-// ─── GET /api/search?q=xxx&category=all&sort=relevance ────────────────────────
+// ─── GET /api/search?q=xxx&category=all&sort=relevance&startDate=xxx&endDate=xxx ─
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q')?.trim() ?? '';
-    const category = searchParams.get('category') ?? 'all';
+    const rawCategory = searchParams.get('category') ?? 'all';
     const sort = searchParams.get('sort') ?? 'relevance';
+    const startDate = searchParams.get('startDate') ?? '';
+    const endDate = searchParams.get('endDate') ?? '';
 
-    // Validate params
+    // Normalize category aliases
+    let category = rawCategory;
+    if (category === 'content') category = 'posts';
+    if (category === 'template') category = 'templates';
+    if (category === 'history') category = 'all'; // history is a client-side concept
+
     const safeCategory = VALID_CATEGORIES.includes(category as typeof VALID_CATEGORIES[number])
       ? category
       : 'all';
@@ -135,20 +241,20 @@ export async function GET(request: NextRequest) {
       ? sort
       : 'relevance';
 
+    // Build cache key
+    const cacheKey = `search:${q}:${safeCategory}:${safeSort}:${startDate}:${endDate}`;
+    const cached = getCached(cacheKey);
+    if (cached) return NextResponse.json(cached);
+
     if (!q) {
-      return NextResponse.json<SearchResponse>({
+      const emptyResponse: SearchResponse = {
         query: '',
         category: safeCategory,
         sort: safeSort,
         total: 0,
-        results: {
-          content: [],
-          knowledge: [],
-          persona: [],
-          accounts: [],
-          templates: [],
-        },
-      });
+        results: { content: [], knowledge: [], persona: [], accounts: [], templates: [] },
+      };
+      return NextResponse.json(emptyResponse);
     }
 
     const results: SearchResponse['results'] = {
@@ -159,29 +265,76 @@ export async function GET(request: NextRequest) {
       templates: [],
     };
 
+    // Build date filter for Prisma
+    const dateFilter: Record<string, { gte?: Date; lte?: Date }> | undefined =
+      startDate || endDate
+        ? {
+            ...(startDate ? { gte: new Date(startDate) } : {}),
+            ...(endDate ? { lte: new Date(endDate + 'T23:59:59.999Z') } : {}),
+          }
+        : undefined;
+
     // ── Search Content Posts ───────────────────────────────────────────────
     if (safeCategory === 'all' || safeCategory === 'posts') {
+      const whereClause: Record<string, unknown> = {
+        OR: [
+          { topic: { contains: q } },
+          { content: { contains: q } },
+          { platform: { contains: q } },
+          { contentType: { contains: q } },
+          { status: { contains: q } },
+        ],
+      };
+      if (dateFilter) {
+        whereClause.updatedAt = dateFilter;
+      }
+
+      // Sort: default to updatedAt desc
+      const orderBy = safeSort === 'newest' || safeSort === 'date'
+        ? { updatedAt: 'desc' as const }
+        : safeSort === 'score'
+          ? { aiScore: 'desc' as const }
+          : { updatedAt: 'desc' as const };
+
       const posts = await db.contentPost.findMany({
-        where: {
-          OR: [
-            { topic: { contains: q } },
-            { content: { contains: q } },
-            { platform: { contains: q } },
-          ],
-        },
-        orderBy: safeSort === 'newest'
-          ? { updatedAt: 'desc' }
-          : safeSort === 'interactions'
-            ? undefined
-            : undefined,
-        take: 20,
+        where: whereClause,
+        orderBy,
+        take: 25,
       });
 
-      results.content = posts.map((p) => ({
+      // Apply fuzzy matching on client-side for additional results
+      // and re-score with fuzzy bonus
+      let filteredPosts = posts;
+
+      // Fuzzy expansion: if we have fewer than 5 results and query is multi-char,
+      // try fetching with just the first 2 chars for broader results
+      if (filteredPosts.length < 5 && q.length >= 2) {
+        const broadQuery = q.slice(0, Math.ceil(q.length / 2));
+        const extraPosts = await db.contentPost.findMany({
+          where: {
+            OR: [
+              { topic: { contains: broadQuery } },
+              { content: { contains: broadQuery } },
+            ],
+            id: { notIn: filteredPosts.map((p) => p.id) },
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 10,
+        });
+        // Only add fuzzy matches (score > 0)
+        const fuzzyExtra = extraPosts.filter(
+          (p) => fuzzyMatch(`${p.topic} ${p.content}`, q) && !filteredPosts.some((fp) => fp.id === p.id),
+        );
+        filteredPosts = [...filteredPosts, ...fuzzyExtra];
+      }
+
+      results.content = filteredPosts.map((p) => ({
         id: p.id,
         type: 'content' as const,
         topic: p.topic,
+        topicHighlighted: highlightText(p.topic, q),
         content: p.content,
+        contentHighlighted: highlightText(p.content, q, 60),
         platform: p.platform,
         status: p.status,
         contentType: p.contentType,
@@ -190,11 +343,11 @@ export async function GET(request: NextRequest) {
         comments: p.comments,
         shares: p.shares,
         views: p.views,
+        aiScore: p.aiScore,
         updatedAt: p.updatedAt.toISOString(),
         _score: relevanceScore(`${p.topic} ${p.content}`, q),
       }));
 
-      // Sort client-side when needed
       if (safeSort === 'relevance') {
         results.content.sort((a, b) => (b._score ?? 0) - (a._score ?? 0));
       } else if (safeSort === 'interactions') {
@@ -206,24 +359,31 @@ export async function GET(request: NextRequest) {
 
     // ── Search Knowledge Items ─────────────────────────────────────────────
     if (safeCategory === 'all' || safeCategory === 'knowledge') {
+      const whereClause: Record<string, unknown> = {
+        OR: [
+          { title: { contains: q } },
+          { content: { contains: q } },
+          { category: { contains: q } },
+          { tags: { contains: q } },
+        ],
+      };
+      if (dateFilter) {
+        whereClause.updatedAt = dateFilter;
+      }
+
       const items = await db.knowledgeItem.findMany({
-        where: {
-          OR: [
-            { title: { contains: q } },
-            { content: { contains: q } },
-            { category: { contains: q } },
-            { tags: { contains: q } },
-          ],
-        },
-        orderBy: safeSort === 'newest' ? { updatedAt: 'desc' } : undefined,
-        take: 15,
+        where: whereClause,
+        orderBy: safeSort === 'newest' || safeSort === 'date' ? { updatedAt: 'desc' } : { updatedAt: 'desc' },
+        take: 20,
       });
 
       results.knowledge = items.map((k) => ({
         id: k.id,
         type: 'knowledge' as const,
         title: k.title,
+        titleHighlighted: highlightText(k.title, q),
         content: k.content,
+        contentHighlighted: highlightText(k.content, q, 60),
         category: k.category,
         tags: k.tags,
         updatedAt: k.updatedAt.toISOString(),
@@ -255,6 +415,7 @@ export async function GET(request: NextRequest) {
         id: p.id,
         type: 'persona' as const,
         name: p.name,
+        nameHighlighted: highlightText(p.name, q),
         title: p.title,
         bio: p.bio,
         industry: p.industry,
@@ -283,15 +444,17 @@ export async function GET(request: NextRequest) {
         id: a.id,
         type: 'account' as const,
         nickname: a.nickname,
+        nicknameHighlighted: highlightText(a.nickname, q),
         platform: a.platform,
         bio: a.bio,
+        bioHighlighted: highlightText(a.bio, q, 60),
         followers: a.followers,
         postsCount: a.postsCount,
         updatedAt: a.updatedAt.toISOString(),
         _score: relevanceScore(`${a.nickname} ${a.bio}`, q),
       }));
 
-      if (safeSort === 'newest') {
+      if (safeSort === 'newest' || safeSort === 'date') {
         results.accounts.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       } else if (safeSort === 'interactions') {
         results.accounts.sort((a, b) => b.followers - a.followers);
@@ -302,19 +465,20 @@ export async function GET(request: NextRequest) {
 
     // ── Search Templates (static) ──────────────────────────────────────────
     if (safeCategory === 'all' || safeCategory === 'templates') {
-      const ql = q.toLowerCase();
       const matched = TEMPLATES.filter(
         (t) =>
-          t.title.toLowerCase().includes(ql) ||
-          t.description.toLowerCase().includes(ql) ||
-          t.category.toLowerCase().includes(ql),
+          fuzzyMatch(t.title, q) ||
+          fuzzyMatch(t.description, q) ||
+          fuzzyMatch(t.category, q),
       );
 
       results.templates = matched.map((t) => ({
         id: t.id,
         type: 'template' as const,
         title: t.title,
+        titleHighlighted: highlightText(t.title, q),
         description: t.description,
+        descriptionHighlighted: highlightText(t.description, q),
         category: t.category,
         _score: relevanceScore(`${t.title} ${t.description} ${t.category}`, q),
       }));
@@ -331,13 +495,18 @@ export async function GET(request: NextRequest) {
       results.accounts.length +
       results.templates.length;
 
-    return NextResponse.json<SearchResponse>({
+    const response: SearchResponse = {
       query: q,
       category: safeCategory,
       sort: safeSort,
       total,
       results,
-    });
+    };
+
+    // Cache the response
+    setCache(cacheKey, response);
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('[Search API] Error:', error);
     return NextResponse.json(

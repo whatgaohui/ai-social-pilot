@@ -26,6 +26,7 @@ import {
   Table,
   ImageIcon,
   Download,
+  Layers,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -69,6 +70,7 @@ import { ScheduledPublish } from "@/components/right-panel/scheduled-publish";
 import { QuickActionsToolbar } from "@/components/right-panel/quick-actions-toolbar";
 import { AIBatchOperations } from "@/components/right-panel/ai-batch-operations";
 import { ContentHealthDashboard } from "@/components/right-panel/content-health-dashboard";
+import { PublishingQueue } from "@/components/right-panel/publishing-queue";
 
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
@@ -183,6 +185,7 @@ const TOOL_TABS = [
   { value: "batch", icon: Bot, label: "批量操作", color: "text-violet-500" },
   { value: "schedule", icon: CalendarClock, label: "智能排期", color: "text-cyan-500" },
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500" },
+  { value: "queue", icon: Layers, label: "发布队列", color: "text-purple-500" },
   { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500" },
   { value: "history", icon: History, label: "版本记录", color: "text-violet-500" },
   { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500" },
@@ -730,6 +733,19 @@ export function ContentWorkspace() {
                     exit="exit"
                   >
                     <AIBatchOperations />
+                  </motion.div>
+                )}
+
+                {/* ── Publishing Queue Tab ─────────────────────────────── */}
+                {toolTab === "queue" && (
+                  <motion.div
+                    key="publish-queue-panel"
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <PublishingQueue />
                   </motion.div>
                 )}
 

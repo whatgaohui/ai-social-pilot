@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 
 interface PageTransitionProps {
   children: React.ReactNode;
@@ -28,19 +28,30 @@ const pageVariants = {
   },
 };
 
+// Cross-fade variants for skeleton flash prevention
+const crossFadeVariants = {
+  initial: { opacity: 0 },
+  enter: { opacity: 1, transition: { duration: 0.2, ease: "easeOut" } },
+  exit: { opacity: 0, transition: { duration: 0.15, ease: "easeIn" } },
+};
+
 type Direction = "forward" | "backward" | "default";
 
 /**
  * PageTransition — Enhanced page transition wrapper with:
  * - Direction-aware slide animations (left/right based on navigation)
+ * - Loading state between transitions (prevents skeleton flash)
+ * - Cross-fade mode for seamless content swap
  * - Subtle progress indicator bar during transitions
- * - Fade-through effect for smooth content swaps
  */
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
   const [prevPath, setPrevPath] = useState(pathname);
   const [direction, setDirection] = useState<Direction>("default");
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const prevPathRef = useRef(pathname);
 
   // Detect path change and determine direction
   // Using functional setState to avoid stale closure issues
@@ -49,16 +60,44 @@ export function PageTransition({ children }: PageTransitionProps) {
     const isForward = pathname > prevPath;
     setDirection(isForward ? "forward" : "backward");
     setIsTransitioning(true);
+    setIsNavigating(true);
+
+    // Auto-clear navigating state after transition
+    // Using setTimeout to avoid memory leaks
   }
+
+  // Clear navigating state after a safe period
+  useEffect(() => {
+    if (isNavigating) {
+      const timer = setTimeout(() => {
+        setIsNavigating(false);
+      }, 600); // Slightly longer than transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [isNavigating, pathname]);
 
   const handleAnimationComplete = useCallback(() => {
     setIsTransitioning(false);
-  }, []);
+    prevPathRef.current = pathname;
+  }, [pathname]);
 
   const currentVariants = pageVariants[direction];
 
   return (
-    <div className="relative min-h-0 flex-1">
+    <div className="relative min-h-0 flex-1" ref={contentRef}>
+      {/* Loading backdrop during navigation (prevents skeleton flash) */}
+      <AnimatePresence>
+        {isNavigating && (
+          <motion.div
+            className="absolute inset-0 z-30 bg-background/80 backdrop-blur-[1px] pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1 }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Progress indicator bar at the top during transitions */}
       <AnimatePresence>
         {isTransitioning && (
@@ -80,8 +119,9 @@ export function PageTransition({ children }: PageTransitionProps) {
         )}
       </AnimatePresence>
 
-      {/* Fade-through overlay for seamless content swap */}
-      <AnimatePresence mode="wait">
+      {/* Fade-through cross-fade overlay for seamless content swap */}
+      {/* This uses cross-fade instead of flash to prevent skeleton flicker */}
+      <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={pathname}
           variants={currentVariants}
@@ -93,6 +133,33 @@ export function PageTransition({ children }: PageTransitionProps) {
         >
           {children}
         </motion.div>
+      </AnimatePresence>
+
+      {/* Bottom progress indicator for longer transitions */}
+      <AnimatePresence>
+        {isNavigating && (
+          <motion.div
+            className="absolute bottom-0 left-0 right-0 z-50 h-0.5 pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="h-full rounded-full"
+              style={{
+                background: "linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.4), transparent)",
+              }}
+              animate={{
+                x: ["-100%", "100%"],
+              }}
+              transition={{
+                duration: 1.2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );

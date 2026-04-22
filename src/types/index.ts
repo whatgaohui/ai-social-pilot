@@ -43,6 +43,8 @@ export interface ContentPost {
   content: string;
   status: string;
   generationType: string;
+  scheduledAt?: string | null;
+  publishedAt?: string | null;
   likes: number;
   comments: number;
   shares: number;
@@ -83,7 +85,7 @@ export interface AnalyticsSummary {
 export type Platform = 'wechat' | 'xiaohongshu';
 export type ContentType = 'text' | 'image' | 'video' | 'mixed' | 'story' | 'insight' | 'interaction';
 export type XHSContentType = 'seeding' | 'review' | 'tutorial' | 'drygoods' | 'vlog' | 'daily' | 'recommend' | 'collection';
-export type PostStatus = 'planned' | 'generated' | 'optimized' | 'published';
+export type PostStatus = 'planned' | 'generated' | 'optimized' | 'scheduled' | 'published';
 export type GenerationType = 'auto' | 'fragment' | 'polish';
 export type ToneType = 'professional' | 'casual' | 'humorous' | 'inspirational' | 'storytelling';
 export type StyleType = 'concise' | 'detailed' | 'emotional' | 'balanced';
@@ -135,6 +137,7 @@ export const POST_STATUS_LABELS: Record<PostStatus, string> = {
   planned: '待生成',
   generated: '已生成',
   optimized: '已优化',
+  scheduled: '已排期',
   published: '已发布',
 };
 

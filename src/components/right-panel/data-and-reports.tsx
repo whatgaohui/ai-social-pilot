@@ -14,7 +14,9 @@ import { WeeklyStatsCard } from "@/components/right-panel/weekly-stats-card";
 import ContentCompetitionPanel from "@/components/right-panel/content-competition-panel";
 import { TrendComparisonChart } from "@/components/right-panel/trend-comparison-chart";
 import { CompetitorCalendarView } from "@/components/right-panel/competitor-calendar-view";
-import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity } from "lucide-react";
+import { CompetitorDashboard } from "@/components/right-panel/competitor-dashboard";
+import { TrendTracker } from "@/components/right-panel/trend-tracker";
+import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity, Radar, Flame } from "lucide-react";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
 import { OpsRhythmDashboard } from "@/components/right-panel/ops-rhythm-dashboard";
 
@@ -32,6 +34,13 @@ export function DataAndReports() {
 
   const isWeChat = platform === "wechat";
 
+  const tabTriggerClass = (value: string) =>
+    `flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm ${
+      !isWeChat
+        ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
+        : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
+    }`;
+
   return (
     <div className="flex flex-col h-full">
       {/* ── Tab Bar ────────────────────────────────────────────────── */}
@@ -43,60 +52,33 @@ export function DataAndReports() {
         >
           <Tabs defaultValue="report" className="w-full">
             <TabsList className="w-full h-8 bg-muted/50 p-0.5">
-              <TabsTrigger
-                value="report"
-                className={`flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm ${
-                  !isWeChat
-                    ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
-                    : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
-                }`}
-              >
+              <TabsTrigger value="report" className={tabTriggerClass("report")}>
                 <FileBarChart className="h-3.5 w-3.5" />
                 运营报告
               </TabsTrigger>
-              <TabsTrigger
-                value="analytics"
-                className={`flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm ${
-                  !isWeChat
-                    ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
-                    : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
-                }`}
-              >
+              <TabsTrigger value="analytics" className={tabTriggerClass("analytics")}>
                 <BarChart3 className="h-3.5 w-3.5" />
                 数据分析
               </TabsTrigger>
-              <TabsTrigger
-                value="competitor"
-                className={`flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm ${
-                  !isWeChat
-                    ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
-                    : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
-                }`}
-              >
+              <TabsTrigger value="competitor" className={tabTriggerClass("competitor")}>
                 <Users className="h-3.5 w-3.5" />
                 竞品分析
               </TabsTrigger>
-              <TabsTrigger
-                value="dashboard"
-                className={`flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm ${
-                  !isWeChat
-                    ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
-                    : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
-                }`}
-              >
-                <LayoutDashboard className="h-3.5 w-3.5" />
-                运营看板
+              <TabsTrigger value="intelligence" className={tabTriggerClass("intelligence")}>
+                <Radar className="h-3.5 w-3.5" />
+                竞品看板
               </TabsTrigger>
-              <TabsTrigger
-                value="rhythm"
-                className={`flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm ${
-                  !isWeChat
-                    ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
-                    : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
-                }`}
-              >
+              <TabsTrigger value="trends" className={tabTriggerClass("trends")}>
+                <Flame className="h-3.5 w-3.5" />
+                趋势追踪
+              </TabsTrigger>
+              <TabsTrigger value="dashboard" className={tabTriggerClass("dashboard")}>
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                看板
+              </TabsTrigger>
+              <TabsTrigger value="rhythm" className={tabTriggerClass("rhythm")}>
                 <Activity className="h-3.5 w-3.5" />
-                运营节奏
+                节奏
               </TabsTrigger>
             </TabsList>
 
@@ -175,6 +157,26 @@ export function DataAndReports() {
               </div>
             </TabsContent>
 
+            {/* ── Intelligence Tab (Competitor Dashboard) ──────────────── */}
+            <TabsContent
+              value="intelligence"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
+            >
+              <div className="flex flex-col flex-1 min-h-0">
+                <CompetitorDashboard />
+              </div>
+            </TabsContent>
+
+            {/* ── Trends Tab (Trend Tracker) ─────────────────────────────── */}
+            <TabsContent
+              value="trends"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
+            >
+              <div className="flex flex-col flex-1 min-h-0">
+                <TrendTracker />
+              </div>
+            </TabsContent>
+
             {/* ── Dashboard Tab ──────────────────────────────────────── */}
             <TabsContent
               value="dashboard"
@@ -185,7 +187,7 @@ export function DataAndReports() {
               </div>
             </TabsContent>
 
-            {/* ── Ops Rhythm Tab ────────────────────────────────────── */}
+            {/* ── Rhythm Tab ────────────────────────────────────── */}
             <TabsContent
               value="rhythm"
               className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
