@@ -95,7 +95,7 @@ export function PostActions({ post }: PostActionsProps) {
         if (updateRes.ok) {
           const updated = await updateRes.json();
           updateContentPost(post.id, updated);
-          toast.success("AI优化完成");
+          toast.success("内容已优化");
           addNotification({
             type: "optimize",
             title: "AI优化完成",

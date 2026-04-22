@@ -25,7 +25,7 @@ import {
   Sparkles, BookOpen, PenTool, CalendarDays,
   BarChart3, Zap, FileText, MessageCircle,
   Settings, Send, ChevronLeft, ChevronRight,
-  Globe, User, Check, Search, Keyboard,
+  Globe, User, Check, Search,
 } from "lucide-react";
 import { CommandPalette } from "@/components/command-palette";
 import { ContentSearch } from "@/components/content-search";
@@ -385,11 +385,10 @@ function MainContentPanel() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, leftPanelTab, setLeftPanelTab, contentPosts, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted, onboardingInit, setSettingsCenterOpen } = useAppStore();
+  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, leftPanelTab, setLeftPanelTab, contentPosts, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted, onboardingInit, setSettingsCenterOpen, commandPaletteOpen, setCommandPaletteOpen } = useAppStore();
   const [connectedPlatforms, setConnectedPlatforms] = useState(0);
   const [mobileTabIndex, setMobileTabIndex] = useState(1); // default: 日历
   const [swipeDirection, setSwipeDirection] = useState(0);
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [contentSearchOpen, setContentSearchOpen] = useState(false);
   const mobileTabIndexRef = useRef(mobileTabIndex);
 
@@ -447,9 +446,9 @@ export default function Home() {
     }
   }, [handleMobileTabChange]);
 
-  // Keyboard shortcuts — Ctrl/Cmd+K opens ContentSearch
+  // Keyboard shortcuts — Ctrl/Cmd+K opens CommandPalette
   useKeyboardShortcuts({
-    onOpenCommandPalette: () => setContentSearchOpen((v) => !v),
+    onOpenCommandPalette: () => setCommandPaletteOpen((v) => !v),
   });
 
   const showWelcome = !onboardingCompleted;
@@ -549,30 +548,19 @@ export default function Home() {
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
-            {/* Content Search trigger */}
+            {/* Command Palette trigger — ⌘K */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setContentSearchOpen(true)}
+              onClick={() => setCommandPaletteOpen(true)}
               className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-colors btn-ripple press-scale"
-              aria-label="搜索内容"
+              aria-label="命令面板"
             >
               <Search className="h-3.5 w-3.5" />
               <span className="hidden md:inline">搜索</span>
               <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border bg-background px-1 font-mono text-[10px] text-muted-foreground">
                 ⌘K
               </kbd>
-            </motion.button>
-
-            {/* Command Palette / Keyboard shortcut help */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setCommandPaletteOpen(true)}
-              className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="快捷键帮助"
-            >
-              <Keyboard className="h-4 w-4" />
             </motion.button>
 
             {isGenerating && (
@@ -676,7 +664,7 @@ export default function Home() {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring' as const, stiffness: 300, damping: 30, delay: 0.2 }}
-          className="flex items-center gap-0.5 px-1 py-1 rounded-[1.5rem] bg-background/75 backdrop-blur-2xl saturate-200 border border-white/15 dark:border-white/[0.08] shadow-[0_8px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]"
+          className="flex items-center gap-0.5 px-1 py-1 rounded-[1.5rem] bg-background/75 backdrop-blur-2xl saturate-200 border border-white/15 dark:border-white/[0.08] shadow-[0_-1px_8px_rgba(0,0,0,0.06),0_8px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_-1px_8px_rgba(0,0,0,0.15),0_8px_40px_rgba(0,0,0,0.5)]"
         >
           {/* Platform switcher dots */}
           <div className="flex items-center gap-1.5 px-2">
@@ -763,6 +751,16 @@ export default function Home() {
                     </motion.div>
                   </span>
                   <span className="relative z-10 mt-0.5 leading-none">{tab.label}</span>
+
+                  {/* Small colored indicator dot for active tab */}
+                  {isActive && (
+                    <motion.span
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring' as const, stiffness: 500, damping: 20 }}
+                      className="absolute -top-0.5 left-1/2 -translate-x-1/2 z-20 h-1.5 w-1.5 rounded-full bg-white shadow-sm"
+                    />
+                  )}
 
                   {/* Notification badge on 数据 tab */}
                   {tab.key === 'data' && unpublishedCount > 0 && (

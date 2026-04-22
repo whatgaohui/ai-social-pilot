@@ -30,18 +30,24 @@ import {
   Keyboard,
   Clock,
   User,
+  Copy,
+  Check,
+  Briefcase,
+  Heart,
 } from "lucide-react";
+import { toast } from "sonner";
 import { CONTENT_TYPE_LABELS, POST_STATUS_LABELS, KNOWLEDGE_CATEGORY_LABELS, type ContentPost, type KnowledgeItem } from "@/types";
 import { SHORTCUT_LIST } from "@/hooks/use-keyboard-shortcuts";
 
 // ─── Search Tab Types ──────────────────────────────────────────────────────────
 
-type SearchTab = "all" | "posts" | "knowledge";
+type SearchTab = "all" | "posts" | "knowledge" | "persona";
 
-const SEARCH_TABS: { value: SearchTab; label: string }[] = [
-  { value: "all", label: "全部" },
-  { value: "posts", label: "帖子" },
-  { value: "knowledge", label: "知识库" },
+const SEARCH_TABS: { value: SearchTab; label: string; icon: typeof FileText }[] = [
+  { value: "all", label: "全部", icon: Search },
+  { value: "posts", label: "帖子", icon: FileText },
+  { value: "knowledge", label: "知识库", icon: BookOpen },
+  { value: "persona", label: "人设", icon: User },
 ];
 
 // ─── Status Indicator Colors ───────────────────────────────────────────────────
@@ -99,17 +105,20 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const {
     contentPosts,
     knowledgeItems,
+    persona,
     platform,
     setPlatform,
     setRightPanelTab,
     setLeftPanelTab,
     setSelectedPostId,
+    setSelectedDate,
     setSettingsCenterOpen,
   } = useAppStore();
 
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
   const [placeholder, setPlaceholder] = useState(getSearchPlaceholder());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Update placeholder every minute
   useEffect(() => {
@@ -148,22 +157,55 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     );
   }, [query, knowledgeItems]);
 
+  // ── Persona search match ──────────────────────────────────────────────────
+  const personaMatch = useMemo(() => {
+    if (!persona || !persona.name) return false;
+    if (activeTab !== "all" && activeTab !== "persona") return false;
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return (
+      persona.name.toLowerCase().includes(q) ||
+      (persona.title || "").toLowerCase().includes(q) ||
+      (persona.bio || "").toLowerCase().includes(q) ||
+      (persona.industry || "").toLowerCase().includes(q) ||
+      (persona.tone || "").toLowerCase().includes(q)
+    );
+  }, [persona, query, activeTab]);
+
   // ── Tab-filtered results ──────────────────────────────────────────────────
   const showPosts = activeTab === "all" || activeTab === "posts";
   const showKnowledge = activeTab === "all" || activeTab === "knowledge";
+  const showPersona = activeTab === "all" || activeTab === "persona";
 
   const isXHS = platform === "xiaohongshu";
   const hasQuery = query.trim().length > 0;
+
+  // ── Copy post content to clipboard ────────────────────────────────────
+  const handleCopyPost = useCallback(
+    async (post: ContentPost, e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(post.content);
+        setCopiedId(post.id);
+        toast.success("内容已复制到剪贴板");
+        setTimeout(() => setCopiedId(null), 2000);
+      } catch {
+        toast.error("复制失败");
+      }
+    },
+    [],
+  );
 
   // ── Select a content post ─────────────────────────────────────────────────
   const handleSelectPost = useCallback(
     (post: ContentPost) => {
       setSelectedPostId(post.id);
+      setSelectedDate(post.scheduledDate);
       setRightPanelTab("workspace");
       onOpenChange(false);
       setQuery("");
     },
-    [setSelectedPostId, setRightPanelTab, onOpenChange],
+    [setSelectedPostId, setSelectedDate, setRightPanelTab, onOpenChange],
   );
 
   // ── Select a knowledge item ───────────────────────────────────────────────
@@ -247,44 +289,51 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
               {/* ── Search Category Tabs ────────────────────────────── */}
               <div className="flex items-center gap-1 px-3 pt-1 pb-0">
-                {SEARCH_TABS.map((tab) => (
-                  <button
-                    key={tab.value}
-                    onClick={() => handleTabChange(tab.value)}
-                    className={`
-                      relative flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium
-                      transition-all duration-200
-                      ${activeTab === tab.value
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                      }
-                    `}
-                  >
-                    {activeTab === tab.value && (
-                      <motion.div
-                        layoutId="search-tab-active"
-                        className="absolute inset-0 rounded-full bg-primary/10"
-                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                      />
-                    )}
-                    <span className="relative z-10">{tab.label}</span>
-                    {tab.value === "all" && (
-                      <span className="relative z-10 text-[9px] text-muted-foreground">
-                        {contentPosts.length + knowledgeItems.length}
-                      </span>
-                    )}
-                    {tab.value === "posts" && (
-                      <span className="relative z-10 text-[9px] text-muted-foreground">
-                        {contentPosts.length}
-                      </span>
-                    )}
-                    {tab.value === "knowledge" && (
-                      <span className="relative z-10 text-[9px] text-muted-foreground">
-                        {knowledgeItems.length}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {SEARCH_TABS.map((tab) => {
+                  const TabIcon = tab.icon;
+                  return (
+                    <button
+                      key={tab.value}
+                      onClick={() => handleTabChange(tab.value)}
+                      className={`
+                        relative flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium
+                        transition-all duration-200
+                        ${activeTab === tab.value
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                        }
+                      `}
+                    >
+                      {activeTab === tab.value && (
+                        <motion.div
+                          layoutId="search-tab-active"
+                          className="absolute inset-0 rounded-full bg-primary/10"
+                          transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                        />
+                      )}
+                      <TabIcon className="relative z-10 h-3 w-3" />
+                      <span className="relative z-10">{tab.label}</span>
+                      {tab.value === "all" && (
+                        <span className="relative z-10 text-[9px] text-muted-foreground">
+                          {contentPosts.length + knowledgeItems.length}
+                        </span>
+                      )}
+                      {tab.value === "posts" && (
+                        <span className="relative z-10 text-[9px] text-muted-foreground">
+                          {contentPosts.length}
+                        </span>
+                      )}
+                      {tab.value === "knowledge" && (
+                        <span className="relative z-10 text-[9px] text-muted-foreground">
+                          {knowledgeItems.length}
+                        </span>
+                      )}
+                      {tab.value === "persona" && persona?.name && (
+                        <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               <CommandList className="max-h-[400px]">
@@ -296,46 +345,108 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 </CommandEmpty>
 
                 {/* ── Quick Actions ─────────────────────────────────── */}
-                <CommandGroup heading="快速操作">
-                  <CommandItem onSelect={() => handleAction("generate")}>
-                    <Sparkles
-                      className={`h-4 w-4 ${isXHS ? "text-rose-500" : "text-violet-500"}`}
-                    />
-                    <span>生成新内容</span>
-                    <CommandShortcut>
-                      <Zap className="h-3 w-3" />
-                    </CommandShortcut>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleAction("batch")}>
-                    <CalendarRange className="h-4 w-4 text-amber-500" />
-                    <span>批量生成30天计划</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleAction("data")}>
-                    <BarChart3 className="h-4 w-4 text-emerald-500" />
-                    <span>查看运营报告</span>
-                    <CommandShortcut>⌘3</CommandShortcut>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleAction("collect")}>
-                    <Globe className="h-4 w-4 text-sky-500" />
-                    <span>打开采集中心</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleAction("settings")}>
-                    <Settings className="h-4 w-4 text-muted-foreground" />
-                    <span>打开设置</span>
-                  </CommandItem>
-                  <CommandItem
-                    onSelect={() =>
-                      handleAction(isXHS ? "wechat" : "xiaohongshu")
-                    }
-                  >
-                    <MessageCircle
-                      className={`h-4 w-4 ${isXHS ? "text-green-500" : "text-red-500"}`}
-                    />
-                    <span>
-                      切换到{isXHS ? "朋友圈" : "小红书"}
-                    </span>
-                  </CommandItem>
-                </CommandGroup>
+                {showPosts && (
+                  <CommandGroup heading="快速操作">
+                    <CommandItem onSelect={() => handleAction("generate")}>
+                      <Sparkles
+                        className={`h-4 w-4 ${isXHS ? "text-rose-500" : "text-violet-500"}`}
+                      />
+                      <span>生成新内容</span>
+                      <CommandShortcut>
+                        <Zap className="h-3 w-3" />
+                      </CommandShortcut>
+                    </CommandItem>
+                    <CommandItem onSelect={() => handleAction("batch")}>
+                      <CalendarRange className="h-4 w-4 text-amber-500" />
+                      <span>批量生成30天计划</span>
+                    </CommandItem>
+                    <CommandItem onSelect={() => handleAction("data")}>
+                      <BarChart3 className="h-4 w-4 text-emerald-500" />
+                      <span>查看运营报告</span>
+                      <CommandShortcut>⌘3</CommandShortcut>
+                    </CommandItem>
+                    <CommandItem onSelect={() => handleAction("collect")}>
+                      <Globe className="h-4 w-4 text-sky-500" />
+                      <span>打开采集中心</span>
+                    </CommandItem>
+                    <CommandItem onSelect={() => handleAction("settings")}>
+                      <Settings className="h-4 w-4 text-muted-foreground" />
+                      <span>打开设置</span>
+                    </CommandItem>
+                    <CommandItem
+                      onSelect={() =>
+                        handleAction(isXHS ? "wechat" : "xiaohongshu")
+                      }
+                    >
+                      <MessageCircle
+                        className={`h-4 w-4 ${isXHS ? "text-green-500" : "text-red-500"}`}
+                      />
+                      <span>
+                        切换到{isXHS ? "朋友圈" : "小红书"}
+                      </span>
+                    </CommandItem>
+                  </CommandGroup>
+                )}
+
+                <CommandSeparator />
+
+                {/* ── Persona Section ──────────────────────────────── */}
+                {showPersona && personaMatch && persona?.name && (
+                  <>
+                    <CommandGroup heading="人设信息">
+                      <CommandItem
+                        onSelect={() => handleAction("knowledge")}
+                        className="flex-col !items-start gap-1.5 card-glow rounded-lg py-2.5"
+                      >
+                        <div className="flex items-center gap-2.5 w-full">
+                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm flex-shrink-0">
+                            <User className="h-4 w-4 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold truncate">{persona.name}</span>
+                              <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">活跃</Badge>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {persona.title && (
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                  <Briefcase className="h-2.5 w-2.5" />
+                                  {persona.title}
+                                </span>
+                              )}
+                              {persona.industry && (
+                                <span className="text-[10px] text-muted-foreground">· {persona.industry}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {persona.tone && (
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                                <Heart className="h-2.5 w-2.5 mr-0.5" />
+                                {persona.tone}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        {persona.bio && (
+                          <p className="text-xs text-muted-foreground line-clamp-1 pl-[42px]">
+                            {persona.bio.length > 60 ? persona.bio.slice(0, 60) + "…" : persona.bio}
+                          </p>
+                        )}
+                      </CommandItem>
+                    </CommandGroup>
+                  </>
+                )}
+
+                {showPersona && !persona?.name && (
+                  <CommandGroup heading="人设">
+                    <CommandItem onSelect={() => handleAction("knowledge")}>
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">尚未设置人设，点击设置</span>
+                      <CommandShortcut>⌘1</CommandShortcut>
+                    </CommandItem>
+                  </CommandGroup>
+                )}
 
                 <CommandSeparator />
 
@@ -381,7 +492,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 {/* ── Content Search ─────────────────────────────────── */}
                 {showPosts && contentResults.length > 0 && (
                   <CommandGroup heading={hasQuery ? "内容搜索" : undefined}>
-                    {(hasQuery ? contentResults : contentResults).slice(0, 6).map((post) => (
+                    {contentResults.slice(0, 6).map((post) => (
                       <CommandItem
                         key={post.id}
                         value={`post-${post.id}`}
@@ -410,11 +521,24 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                             </Badge>
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-1 pl-6">
-                          {post.content.length > 50
-                            ? post.content.slice(0, 50) + "…"
-                            : post.content}
-                        </p>
+                        <div className="flex items-center gap-2 pl-6 w-full">
+                          <p className="text-xs text-muted-foreground line-clamp-1 flex-1">
+                            {post.content.length > 50
+                              ? post.content.slice(0, 50) + "…"
+                              : post.content}
+                          </p>
+                          <button
+                            onClick={(e) => handleCopyPost(post, e)}
+                            className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                            title="复制内容"
+                          >
+                            {copiedId === post.id ? (
+                              <><Check className="h-3 w-3 text-emerald-500" />已复制</>
+                            ) : (
+                              <><Copy className="h-3 w-3" />复制</>
+                            )}
+                          </button>
+                        </div>
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -457,46 +581,50 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 <CommandSeparator />
 
                 {/* ── Panel Navigation ───────────────────────────────── */}
-                <CommandGroup heading="面板导航">
-                  <CommandItem onSelect={() => handleAction("knowledge")}>
-                    <BookOpen className="h-4 w-4 text-amber-500" />
-                    <span>打开知识库</span>
-                    <CommandShortcut>⌘1</CommandShortcut>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleAction("generate")}>
-                    <PenTool className="h-4 w-4 text-violet-500" />
-                    <span>打开工作台</span>
-                    <CommandShortcut>⌘2</CommandShortcut>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleAction("data")}>
-                    <BarChart3 className="h-4 w-4 text-emerald-500" />
-                    <span>打开数据与报告</span>
-                    <CommandShortcut>⌘3</CommandShortcut>
-                  </CommandItem>
-                  <CommandItem onSelect={() => handleAction("templates")}>
-                    <FileText className="h-4 w-4 text-sky-500" />
-                    <span>打开模板库</span>
-                  </CommandItem>
-                </CommandGroup>
+                {showPosts && (
+                  <CommandGroup heading="面板导航">
+                    <CommandItem onSelect={() => handleAction("knowledge")}>
+                      <BookOpen className="h-4 w-4 text-amber-500" />
+                      <span>打开知识库</span>
+                      <CommandShortcut>⌘1</CommandShortcut>
+                    </CommandItem>
+                    <CommandItem onSelect={() => handleAction("generate")}>
+                      <PenTool className="h-4 w-4 text-violet-500" />
+                      <span>打开工作台</span>
+                      <CommandShortcut>⌘2</CommandShortcut>
+                    </CommandItem>
+                    <CommandItem onSelect={() => handleAction("data")}>
+                      <BarChart3 className="h-4 w-4 text-emerald-500" />
+                      <span>打开数据与报告</span>
+                      <CommandShortcut>⌘3</CommandShortcut>
+                    </CommandItem>
+                    <CommandItem onSelect={() => handleAction("templates")}>
+                      <FileText className="h-4 w-4 text-sky-500" />
+                      <span>打开模板库</span>
+                    </CommandItem>
+                  </CommandGroup>
+                )}
 
                 <CommandSeparator />
 
                 {/* ── Keyboard Shortcuts Help ────────────────────────── */}
-                <CommandGroup heading="快捷键">
-                  {SHORTCUT_LIST.slice(0, 5).map((sc) => (
-                    <CommandItem
-                      key={sc.label}
-                      value={`shortcut-${sc.label}`}
-                      onSelect={() => {
-                        /* no-op — informational only */
-                      }}
-                    >
-                      <Keyboard className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{sc.label}</span>
-                      <CommandShortcut>{sc.keys.join("")}</CommandShortcut>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+                {showPosts && (
+                  <CommandGroup heading="快捷键">
+                    {SHORTCUT_LIST.slice(0, 5).map((sc) => (
+                      <CommandItem
+                        key={sc.label}
+                        value={`shortcut-${sc.label}`}
+                        onSelect={() => {
+                          /* no-op — informational only */
+                        }}
+                      >
+                        <Keyboard className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{sc.label}</span>
+                        <CommandShortcut>{sc.keys.join("")}</CommandShortcut>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
               </CommandList>
 
               {/* ── Footer ──────────────────────────────────────────── */}

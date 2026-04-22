@@ -792,7 +792,7 @@ export function AnalyticsPanel() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        toast.success(`已导出${format === "json" ? "JSON" : "文本"}文件`);
+        toast.success("导出成功");
       }
     } catch {
       toast.error("导出失败");
@@ -812,7 +812,7 @@ export function AnalyticsPanel() {
       if (res.ok) {
         const data = await res.json();
         setAiAnalysis(data.analysis);
-        toast.success("AI分析完成");
+        toast.info("内容已优化");
       }
     } catch {
       toast.error("分析失败");

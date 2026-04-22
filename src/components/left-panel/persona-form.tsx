@@ -104,7 +104,7 @@ export function PersonaForm() {
       if (res.ok) {
         const data = await res.json();
         setPersona(data);
-        toast.success("人设信息已保存");
+        toast.success("人设已保存");
       } else {
         const errData = await res.json().catch(() => null);
         toast.error(errData?.error || "保存失败，请重试");

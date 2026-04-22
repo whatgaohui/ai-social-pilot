@@ -64,6 +64,10 @@ interface AppState {
   settingsCenterOpen: boolean;
   setSettingsCenterOpen: (open: boolean) => void;
 
+  // Command Palette
+  commandPaletteOpen: boolean;
+  setCommandPaletteOpen: (open: boolean) => void;
+
   // Notifications
   notifications: AppNotification[];
   addNotification: (notification: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
@@ -133,6 +137,10 @@ export const useAppStore = create<AppState>((set) => ({
   // Settings Center
   settingsCenterOpen: false,
   setSettingsCenterOpen: (open) => set({ settingsCenterOpen: open }),
+
+  // Command Palette
+  commandPaletteOpen: false,
+  setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
 
   // Onboarding (always start false on SSR to avoid hydration mismatch;
   //   client-side init reads from localStorage via useAppStore.onboardingInit())

@@ -87,7 +87,7 @@ export function DataAndReports() {
             {/* ── Report Tab (DEFAULT — prominent) ────────────────── */}
             <TabsContent
               value="report"
-              className="flex flex-col min-h-0 mt-1"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
               <AnimatePresence mode="wait">
                 {showReportGenerator ? (
@@ -134,7 +134,7 @@ export function DataAndReports() {
             {/* ── Analytics Tab ────────────────────────────────────── */}
             <TabsContent
               value="analytics"
-              className="flex flex-col min-h-0 mt-1"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
               <div className="flex flex-col flex-1 min-h-0">
                 <AnalyticsPanel />
@@ -144,7 +144,7 @@ export function DataAndReports() {
             {/* ── Competitor Analysis Tab ─────────────────────────────── */}
             <TabsContent
               value="competitor"
-              className="flex flex-col min-h-0 mt-1"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
               <div className="flex flex-col flex-1 min-h-0">
                 <CompetitorAnalysis />
@@ -154,7 +154,7 @@ export function DataAndReports() {
             {/* ── Dashboard Tab ──────────────────────────────────────── */}
             <TabsContent
               value="dashboard"
-              className="flex flex-col min-h-0 mt-1"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
               <div className="flex flex-col flex-1 min-h-0">
                 <OperationsDashboard />

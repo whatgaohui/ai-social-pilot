@@ -57,7 +57,7 @@ export function KnowledgeBase() {
         addKnowledgeItem(data);
         setForm({ title: "", content: "", category: "expertise", tags: "" });
         setDialogOpen(false);
-        toast.success("知识条目已添加");
+        toast.success("知识已添加");
       }
     } catch {
       toast.error("添加失败");
@@ -69,7 +69,7 @@ export function KnowledgeBase() {
       const res = await fetch(`/api/knowledge/${id}`, { method: "DELETE" });
       if (res.ok) {
         removeKnowledgeItem(id);
-        toast.success("已删除");
+        toast.success("知识已删除");
       }
     } catch {
       toast.error("删除失败");

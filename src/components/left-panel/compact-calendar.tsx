@@ -31,6 +31,7 @@ import {
   GripVertical,
   ArrowUpDown,
   X,
+  Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -335,13 +336,19 @@ export function CompactCalendar() {
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
   }, [filteredPosts]);
 
-  // --- Stats ---
+  // --- Posts for the current displayed month (used for stats & completion) ---
+  const monthPosts = useMemo(() => {
+    const monthPrefix = format(currentMonth, "yyyy-MM");
+    return filteredPosts.filter((p) => p.scheduledDate && p.scheduledDate.startsWith(monthPrefix));
+  }, [filteredPosts, currentMonth]);
+
+  // --- Stats (scoped to current displayed month) ---
   const stats = useMemo(() => {
-    const total = filteredPosts.length;
-    const optimized = filteredPosts.filter((p) => p.status === "optimized").length;
-    const published = filteredPosts.filter((p) => p.status === "published").length;
+    const total = monthPosts.length;
+    const optimized = monthPosts.filter((p) => p.status === "optimized").length;
+    const published = monthPosts.filter((p) => p.status === "published").length;
     return { total, optimized, published };
-  }, [filteredPosts]);
+  }, [monthPosts]);
 
   // --- Handlers ---
   const handlePrevMonth = () => setCurrentMonth((prev) => subMonths(prev, 1));
@@ -417,7 +424,7 @@ export function CompactCalendar() {
       const genData = await genRes.json();
       setCurrentPlan({ ...plan, status: "active" });
       setContentPosts(genData.posts);
-      toast.success(`成功生成 ${genData.count} 条内容！`);
+      toast.success("内容已生成");
     } catch (error) {
       console.error("Generation error:", error);
       toast.error("生成失败，请稍后重试");
@@ -571,33 +578,139 @@ export function CompactCalendar() {
         })}
       </div>
 
+      {/* ====== Content Completion Progress Bar ====== */}
+      {filteredPosts.length > 0 && (() => {
+        const completedCount = stats.published + stats.optimized;
+        const completionPercent = stats.total > 0 ? Math.round((completedCount / stats.total) * 100) : 0;
+        const barColor = completionPercent > 80
+          ? "bg-emerald-500"
+          : completionPercent >= 50
+            ? "bg-amber-500"
+            : "bg-rose-500";
+        const labelColor = completionPercent > 80
+          ? "text-emerald-600 dark:text-emerald-400"
+          : completionPercent >= 50
+            ? "text-amber-600 dark:text-amber-400"
+            : "text-rose-600 dark:text-rose-400";
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="px-3 pb-1.5"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className={`text-[9px] font-semibold ${labelColor}`}>
+                本月完成度 {completionPercent}%
+              </span>
+            </div>
+            <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`absolute inset-y-0 left-0 rounded-full ${barColor} animate-progress`}
+                style={{ width: `${completionPercent}%` }}
+              />
+            </div>
+          </motion.div>
+        );
+      })()}
+
       {/* ====== Compact Stats Summary ====== */}
       {filteredPosts.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="flex items-center gap-1.5 px-3 pb-2"
+          transition={{ duration: 0.25, delay: 0.05 }}
+          className="px-3 pb-2"
         >
-          <span className="text-[9px] text-muted-foreground/70 mr-0.5">本月</span>
-          <Badge
-            variant="secondary"
-            className="h-4 px-1.5 text-[8px] font-semibold tabular-nums bg-muted/80 text-foreground"
-          >
-            {stats.total}篇
-          </Badge>
-          <span className="text-[9px] text-violet-500 font-medium flex items-center gap-0.5">
-            <span className="h-1 w-1 rounded-full bg-violet-500" />
-            <span className="animate-counter tabular-nums">{stats.published}</span>已发
-          </span>
-          <span className="text-[9px] text-amber-500 font-medium flex items-center gap-0.5">
-            <span className="h-1 w-1 rounded-full bg-amber-500" />
-            <span className="animate-counter tabular-nums">{stats.optimized}</span>已优
-          </span>
-          <span className="text-[9px] text-muted-foreground font-medium flex items-center gap-0.5">
-            <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
-            <span className="animate-counter tabular-nums">{stats.total - stats.published - stats.optimized}</span>待办
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-muted-foreground/70 mr-0.5">本月</span>
+            <Badge
+              variant="secondary"
+              className="h-4 px-1.5 text-[8px] font-semibold tabular-nums bg-muted/80 text-foreground"
+            >
+              <span className="animate-number-tick">{stats.total}</span>篇
+            </Badge>
+            <span className="text-[9px] text-violet-500 font-medium flex items-center gap-0.5">
+              <span className="h-1 w-1 rounded-full bg-violet-500" />
+              <span className="animate-number-tick tabular-nums">{stats.published}</span>已发
+            </span>
+            <span className="text-[9px] text-amber-500 font-medium flex items-center gap-0.5">
+              <span className="h-1 w-1 rounded-full bg-amber-500" />
+              <span className="animate-number-tick tabular-nums">{stats.optimized}</span>已优
+            </span>
+            <span className="text-[9px] text-muted-foreground font-medium flex items-center gap-0.5">
+              <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+              <span className="animate-number-tick tabular-nums">{stats.total - stats.published - stats.optimized}</span>待办
+            </span>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ====== Content Health Indicator ====== */}
+      {filteredPosts.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="mx-3 mb-2 p-2 rounded-lg bg-muted/30 border border-border/40"
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+              <Activity className="h-3 w-3" />
+              内容健康度
+            </span>
+            {(() => {
+              const completionRate = stats.total > 0 ? Math.round((stats.published / stats.total) * 100) : 0;
+              const rateColor = completionRate > 80
+                ? "text-emerald-600 dark:text-emerald-400"
+                : completionRate >= 50
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-rose-600 dark:text-rose-400";
+              const rateLabel = completionRate > 80 ? "优秀" : completionRate >= 50 ? "良好" : "需努力";
+              return (
+                <span className={`text-[9px] font-bold tabular-nums ${rateColor}`}>
+                  {rateLabel} {completionRate}%
+                </span>
+              );
+            })()}
+          </div>
+          {/* Progress bar */}
+          <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
+            <motion.div
+              className="absolute inset-y-0 left-0 rounded-full"
+              initial={{ width: 0 }}
+              animate={{
+                width: `${stats.total > 0 ? (stats.published / stats.total) * 100 : 0}%`,
+              }}
+              transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                background: stats.total > 0 && (stats.published / stats.total) > 0.8
+                  ? "linear-gradient(90deg, #10b981, #34d399)"
+                  : stats.total > 0 && (stats.published / stats.total) >= 0.5
+                    ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
+                    : "linear-gradient(90deg, #ef4444, #f87171)",
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-1.5">
+            <span className="text-[9px] text-muted-foreground tabular-nums">
+              已发布 {stats.published}/{stats.total} 篇
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-0.5 text-[8px] text-emerald-500 tabular-nums">
+                <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                {stats.published}
+              </span>
+              <span className="flex items-center gap-0.5 text-[8px] text-amber-500 tabular-nums">
+                <span className="h-1 w-1 rounded-full bg-amber-500" />
+                {stats.optimized}
+              </span>
+              <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground tabular-nums">
+                <span className="h-1 w-1 rounded-full bg-gray-400" />
+                {stats.total - stats.published - stats.optimized}
+              </span>
+            </div>
+          </div>
         </motion.div>
       )}
 

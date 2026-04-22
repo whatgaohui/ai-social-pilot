@@ -116,7 +116,7 @@ export function CopywritingTemplates() {
       if (res.ok) {
         const data = await res.json();
         setResults(prev => ({ ...prev, [template.id]: data.content }));
-        toast.success("模板文案已生成");
+        toast.success("内容已生成");
       }
     } catch {
       toast.error("生成失败");
