@@ -10,6 +10,7 @@ import {
   Pencil,
   Sparkles,
   Rocket,
+  Bot,
   History,
   MessageSquare,
   ThumbsUp,
@@ -64,6 +65,8 @@ import { EmojiPicker } from "@/components/right-panel/emoji-picker";
 import { PublishChecklist } from "@/components/right-panel/publish-checklist";
 import { ScheduledPublish } from "@/components/right-panel/scheduled-publish";
 import { QuickActionsToolbar } from "@/components/right-panel/quick-actions-toolbar";
+import { AIBatchOperations } from "@/components/right-panel/ai-batch-operations";
+import { ContentHealthDashboard } from "@/components/right-panel/content-health-dashboard";
 
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
@@ -175,6 +178,7 @@ const STATUS_BORDER_COLORS: Record<PostStatus, string> = {
 // Using a different visual style (underline-style) to differentiate from action buttons above
 const TOOL_TABS = [
   { value: "ai", icon: Sparkles, label: "智能分析", color: "text-amber-500" },
+  { value: "batch", icon: Bot, label: "批量操作", color: "text-violet-500" },
   { value: "schedule", icon: CalendarClock, label: "智能排期", color: "text-cyan-500" },
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500" },
   { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500" },
@@ -662,6 +666,8 @@ export function ContentWorkspace() {
                       <QualityScorer post={selectedPost} />
                     </div>
                     <ContentSpellcheck post={selectedPost} />
+                    <Separator className="my-1" />
+                    <ContentHealthDashboard />
                   </motion.div>
                 )}
 
@@ -709,6 +715,19 @@ export function ContentWorkspace() {
                         />
                       </>
                     )}
+                  </motion.div>
+                )}
+
+                {/* ── Batch Operations Tab ─────────────────────────────── */}
+                {toolTab === "batch" && (
+                  <motion.div
+                    key="batch-ops-panel"
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <AIBatchOperations />
                   </motion.div>
                 )}
 

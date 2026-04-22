@@ -518,7 +518,7 @@ export default function Home() {
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <motion.div
-              className={`h-9 w-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg logo-hover-spin animate-breathe ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-300/50 dark:shadow-violet-900/50' : 'from-red-500 to-rose-600 shadow-red-300/50 dark:shadow-red-900/50'}`}
+              className={`h-9 w-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg logo-hover-spin animate-breathe ${notifications.filter(n => !n.read).length > 0 ? 'logo-notification-pulse' : ''} ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-300/50 dark:shadow-violet-900/50' : 'from-red-500 to-rose-600 shadow-red-300/50 dark:shadow-red-900/50'}`}
               whileHover={{ scale: 1.08, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 20 }}
@@ -543,7 +543,7 @@ export default function Home() {
                 className="absolute h-9 w-1/2 rounded-full"
                 layoutId="platform-glow"
                 style={{ left: platform === 'wechat' ? '0' : '50%' }}
-                transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.8 }}
               >
                 <div className={`h-full w-full rounded-full blur-md ${platform === 'wechat' ? 'bg-green-400/30' : 'bg-red-400/30'}`} />
               </motion.div>
@@ -554,9 +554,9 @@ export default function Home() {
                   width: 'calc(50% - 2px)',
                   left: platform === 'wechat' ? '2px' : 'calc(50%)',
                 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.8 }}
               >
-                <div className={`h-full w-full rounded-full shadow-lg ${platform === 'wechat' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`} />
+                <div className={`h-full w-full rounded-full shadow-lg transition-colors duration-500 ${platform === 'wechat' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`} />
               </motion.div>
               <button
                 onClick={() => setPlatform('wechat')}
@@ -589,7 +589,7 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setCommandPaletteOpen(true)}
-              className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-colors btn-ripple press-scale btn-press btn-shine"
+              className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-all duration-300 btn-ripple press-scale btn-press btn-shine search-expand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
               aria-label="命令面板"
             >
               <Search className="h-3.5 w-3.5" />
@@ -628,7 +628,9 @@ export default function Home() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <SettingsCenter connectedPlatforms={connectedPlatforms} />
+                  <div className="gear-spin">
+                    <SettingsCenter connectedPlatforms={connectedPlatforms} />
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs">
                   <p>设置中心</p>

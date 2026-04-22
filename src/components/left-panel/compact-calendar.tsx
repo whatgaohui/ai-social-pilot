@@ -86,6 +86,8 @@ import {
   CalendarDateDropZone,
 } from "@/components/center-panel/drag-sort-calendar";
 import { CalendarHeatmap } from "@/components/left-panel/calendar-heatmap";
+import { CalendarQuickActions } from "@/components/left-panel/calendar-quick-actions";
+import { WeeklyMiniStats } from "@/components/left-panel/weekly-mini-stats";
 
 // --- Color maps ---
 
@@ -626,14 +628,11 @@ function WeekViewHeader({ weekStart, weekEnd, onPrevWeek, onNextWeek, onToday }:
           <ChevronRight className="h-3.5 w-3.5" />
         </Button>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={`h-5 px-2 text-[9px] font-medium ${isCurrentWeek ? "text-primary" : "text-muted-foreground"}`}
-        onClick={onToday}
-      >
-        今天
-      </Button>
+      <div className="flex items-center gap-0.5">
+        <Button variant="ghost" size="sm" className="h-5 px-2 text-[9px] font-medium" onClick={onToday}>
+          回到今天
+        </Button>
+      </div>
     </div>
   );
 }
@@ -675,10 +674,11 @@ function EnhancedWeekDayColumn({
   onDrop,
 }: EnhancedWeekDayColumnProps) {
   const dateStr = format(day, "yyyy-MM-dd");
-  const truncatedPosts = posts.slice(0, 3);
+  const truncatedPosts = posts.slice(0, 2);
   const isOverThis = isDragging && overDate === dateStr;
   const isFlashThis = droppedDate === dateStr;
   const firstPost = posts[0];
+  const isWeekend = dayIndex >= 5; // Saturday=5, Sunday=6
 
   // Unique platforms in this day's posts
   const platforms = posts.reduce<string[]>((acc, p) => {
@@ -706,9 +706,12 @@ function EnhancedWeekDayColumn({
             : isTodayFlag
               ? "ring-1 ring-primary/30 bg-primary/5 border-primary/20"
               : posts.length > 0
-                ? "bg-card border-border hover:border-primary/30 hover:bg-muted/50"
-                : "bg-muted/20 border-transparent hover:bg-muted/40"
+                ? `bg-card border-border hover:border-primary/30 hover:bg-muted/50 ${isWeekend ? "dark:bg-card/80" : ""}`
+                : isWeekend
+                  ? "bg-muted/10 border-transparent hover:bg-muted/30"
+                  : "bg-muted/20 border-transparent hover:bg-muted/40"
           }
+          ${isWeekend && !isSelected && !isTodayFlag && !isOverThis ? "dark:bg-muted/5" : ""}
           ${isOverThis ? "ring-2 ring-violet-500 bg-violet-500/10 dark:bg-violet-500/10 border-violet-300 scale-[1.02]" : ""}
         `}
       >
@@ -782,7 +785,7 @@ function EnhancedWeekDayColumn({
           </div>
         </button>
 
-        {/* Posts list - mini content preview */}
+        {/* Posts list - mini content preview with platform color */}
         <div className="px-1 py-1 space-y-0.5 min-h-[28px]">
           {truncatedPosts.map((post, idx) => (
             <motion.div
@@ -792,8 +795,8 @@ function EnhancedWeekDayColumn({
               transition={{ delay: idx * 0.03 + 0.1 }}
               className="flex items-center gap-[2px] leading-tight"
             >
-              <span className={`h-[4px] w-[4px] rounded-full flex-shrink-0 ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
-              <span className="text-[7px] font-medium text-foreground/80 truncate max-w-[55px]">
+              <span className={`h-[4px] w-[4px] rounded-full flex-shrink-0 ${PLATFORM_DOT_COLORS[post.platform || "wechat"]}`} />
+              <span className={`text-[7px] font-medium truncate max-w-[55px] ${post.platform === "xiaohongshu" ? "text-rose-400/80 dark:text-rose-300/80" : "text-emerald-600/80 dark:text-emerald-400/80"}`}>
                 {post.topic.length > 12 ? post.topic.slice(0, 12) + "…" : post.topic}
               </span>
             </motion.div>
@@ -809,8 +812,8 @@ function EnhancedWeekDayColumn({
               </Badge>
             </div>
           )}
-          {posts.length > 3 && (
-            <span className="text-[7px] text-muted-foreground">+{posts.length - 3}更多</span>
+          {posts.length > 2 && (
+            <span className="text-[7px] text-muted-foreground">+{posts.length - 2}更多</span>
           )}
         </div>
       </div>
@@ -890,6 +893,7 @@ export function CompactCalendar() {
   const [platformFilter, setPlatformFilter] = useState<"all" | "wechat" | "xiaohongshu">("all");
   const [isSavingDate, setIsSavingDate] = useState(false);
   const [weekAnchor, setWeekAnchor] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [weekSlideDir, setWeekSlideDir] = useState<0 | -1 | 1>(0);
 
   // Quick create dialog state
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
@@ -1074,9 +1078,9 @@ export function CompactCalendar() {
     });
   }, [weekDays, postsByDate]);
 
-  const handlePrevWeek = useCallback(() => setWeekAnchor((prev) => subWeeks(prev, 1)), []);
-  const handleNextWeek = useCallback(() => setWeekAnchor((prev) => addWeeks(prev, 1)), []);
-  const handleTodayWeek = useCallback(() => setWeekAnchor(startOfWeek(new Date(), { weekStartsOn: 1 })), []);
+  const handlePrevWeek = useCallback(() => { setWeekSlideDir(1); setWeekAnchor((prev) => subWeeks(prev, 1)); }, []);
+  const handleNextWeek = useCallback(() => { setWeekSlideDir(-1); setWeekAnchor((prev) => addWeeks(prev, 1)); }, []);
+  const handleTodayWeek = useCallback(() => { setWeekSlideDir(0); setWeekAnchor(startOfWeek(new Date(), { weekStartsOn: 1 })); }, []);
 
   const isDragMode = viewMode === "drag";
 
@@ -1350,6 +1354,19 @@ export function CompactCalendar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ====== Calendar Quick Actions Bar ====== */}
+      {!isDragMode && (
+        <CalendarQuickActions
+          onOpenQuickCreate={(date) => {
+            setQuickCreateDate(date);
+            setQuickCreateOpen(true);
+          }}
+          onOpenWeeklyStats={() => {
+            // The WeeklyMiniStats is rendered as a popover, this is a no-op trigger
+          }}
+        />
+      )}
 
       {/* ====== Platform filter ====== */}
       <div className="flex items-center gap-1 px-3 pb-2">
@@ -1781,7 +1798,14 @@ export function CompactCalendar() {
               </motion.div>
             ) : viewMode === "week" ? (
               /* ====== ENHANCED WEEK VIEW WITH DnD ====== */
-              <motion.div key="week" {...viewTransition} className="px-3 pb-2">
+              <motion.div
+                key={`week-${weekAnchor.getTime()}`}
+                initial={weekSlideDir !== 0 ? { opacity: 0, x: weekSlideDir * 30 } : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, x: 0, y: 0 }}
+                exit={weekSlideDir !== 0 ? { opacity: 0, x: -weekSlideDir * 30 } : { opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="px-3 pb-2"
+              >
                 <WeekViewHeader
                   weekStart={weekDays[0]}
                   weekEnd={weekDays[6]}
@@ -1790,6 +1814,16 @@ export function CompactCalendar() {
                   onToday={handleTodayWeek}
                 />
                 <WeekStatsBar weekPosts={weekPosts} />
+
+                {/* Mini weekly stats popover - inline after stats bar */}
+                <WeeklyMiniStats
+                  posts={contentPosts}
+                  onViewDetails={() => {
+                    const { setRightPanelTab } = useAppStore.getState();
+                    setRightPanelTab("data");
+                    toast.info("已切换到数据分析面板");
+                  }}
+                />
                 {/* 7-column grid with DnD and staggered animation */}
                 <motion.div className="grid grid-cols-7 gap-1" variants={staggerContainer} initial="hidden" animate="show">
                   {weekDays.map((day, idx) => {

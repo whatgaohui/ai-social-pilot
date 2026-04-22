@@ -5835,3 +5835,378 @@ Work Log:
 8. API Key 加密存储方案
 9. 国际化(i18n)支持
 10. 单元测试 + E2E测试覆盖
+
+---
+Task ID: 32-c
+Agent: Main Developer
+Task: AI助手增强 - 批量操作面板 + 内容健康度评分
+
+Work Log:
+- 分析现有项目架构：AI API路由、quality-scorer.tsx、content-workspace.tsx、useAppStore
+- 运行 lint 检查（零错误通过）
+
+### 新增文件
+
+1. **AI批量操作面板** (`src/components/right-panel/ai-batch-operations.tsx`, ~500行):
+   - 4个独立操作卡片，每个使用Collapsible折叠：
+     - **批量优化**：checkbox多选帖子 → 顺序调用 /api/ai/optimize → 进度条 "正在优化 N/M..." → 结果汇总 ✅成功/⚠️跳过/❌失败
+     - **批量打分**：一键评分所有未评分帖子 → 调用 /api/ai/quality-score → 进度条 → 评分分布图(优秀/良好/中等/待改进) → 低分帖子( <60)琥珀色警告
+     - **批量生成封面**：为无封面内容生成 → 调用 /api/ai/cover-generate → 2列网格展示 → 单张下载
+     - **智能重排**：AI分析内容建议最优排期 → 调用 /api/ai/analyze 或回退到评分排序 → 前后对比视图 → "应用排期"调用 /api/content/reorder
+   - Bot图标 + 总操作数Badge
+   - framer-motion stagger入场动画
+   - 每个操作有渐变色图标(violet/amber/emerald/cyan)
+
+2. **内容健康度仪表盘** (`src/components/right-panel/content-health-dashboard.tsx`, ~550行):
+   - **综合健康评分(0-100)**：SVG圆形仪表盘(渐变描边+动画) + 分数权重说明
+     - 计算公式：AI质量(35%) + 发布率(20%) + 互动(15%) + 完整度(15%) + 多样性(10%) + 规律性(5%)
+     - 颜色编码：green(80+) / amber(50-80) / red(<50)
+     - AnimatedCounter 挂载动画(easeOutExpo)
+   - **健康指标网格(2x3)**：内容完整度/AI质量均分/发布率/互动表现/类型多样性/发布规律
+     - 每个指标卡片：渐变图标 + 标签 + 数值
+     - Shannon多样性指数计算内容类型分布
+   - **问题自动检测**：根据数据自动发现 issues
+     - 严重(hi)/建议(medium)/提示(low) 三级
+     - 每个问题：图标+描述+影响数量+修复按钮
+     - 示例：缺少主题/发布率低/AI评分低/未评分/类型单一/无互动数据
+   - **趋势Sparkline**：近7天健康趋势(mini SVG bar chart) 红→黄→绿渐变
+   - **周对比**：本周vs上周 发布数/已发布/均分/互动 ↑↓→趋势指示器
+
+### 修改文件
+
+3. **content-workspace.tsx** 集成:
+   - 新增 `Bot` icon 导入
+   - 新增 `AIBatchOperations` 和 `ContentHealthDashboard` 导入
+   - TOOL_TABS 新增 "批量操作" tab (Bot icon, violet)
+   - 智能分析 tab 底部添加 ContentHealthDashboard
+   - 批量操作 tab 渲染 AIBatchOperations
+
+### QA验证结果
+- ✅ ESLint: 零错误零警告 (--max-warnings=0)
+- ✅ Next.js build: 编译成功，所有路由正常生成
+
+Stage Summary:
+- 项目状态：稳定可运行，AI批量操作和内容健康度功能完整
+- 本轮新增 2 个文件，修改 1 个文件
+- 核心能力：4种AI批量操作（优化/打分/封面/重排）、内容健康综合评分+6项指标+问题检测+趋势图+周对比
+- 未使用外部图表库，全部SVG内联实现
+- 已有API完全复用（/api/ai/optimize, /api/ai/quality-score, /api/ai/cover-generate, /api/content/reorder）
+---
+Task ID: 32-b
+Agent: Main Developer
+Task: 运营日历增强 - 周视图 + 快捷操作面板
+
+Work Log:
+- 阅读现有 compact-calendar.tsx（1990行），了解已有 grid/list/week/drag 四种视图模式
+- 阅读 app-store.ts、types/index.ts 了解状态管理和数据结构
+- 确认已有的 WeekViewHeader、EnhancedWeekDayColumn、WeekStatsBar 子组件
+
+### 新增文件
+- `src/components/left-panel/calendar-quick-actions.tsx` - 日历快捷操作面板
+- `src/components/left-panel/weekly-mini-stats.tsx` - 迷你周统计弹窗
+
+### 新功能
+
+1. **日历快捷操作面板**（calendar-quick-actions.tsx）：
+   - 5个快捷操作按钮（图标+Tooltip）：
+     - ➕ "新建内容" — 打开快速创建对话框（当天日期）
+     - 🤖 "AI生成今日" — 调用AI为今天生成内容
+     - 📊 "本周统计" — 触发WeeklyMiniStats弹窗
+     - ⚡ "一键排满" — 自动为本周空白天创建草稿
+     - 📋 "复制上周" — 复制上周内容到本周（日期平移7天）
+   - 每个按钮独立loading状态和成功动画（✓图标反馈）
+   - magnetic-hover类+whileHover缩放+whileTap弹跳微交互
+   - 仅在非拖拽模式下显示
+
+2. **迷你周统计弹窗**（weekly-mini-stats.tsx）：
+   - Popover触发（BarChart3图标按钮）
+   - 4个指标卡片（2×2网格）：
+     - 本周发布（含趋势箭头 vs 上周）
+     - 平均AI评分（带颜色编码：≥80绿 ≥60琥珀 <60红）
+     - 总互动量（含趋势箭头 vs 上周）
+     - 完成率百分比（带颜色编码）
+   - CSS-only迷你柱状图（7天 daily post count / daily interactions）
+   - framer-motion scale+fade 入场动画
+   - "查看详情"按钮跳转数据分析面板
+   - 自动计算本周/上周对比数据
+
+3. **周视图增强**（compact-calendar.tsx）：
+   - 周末列差异化底色（isWeekend = dayIndex >= 5）
+   - 平台颜色指示（绿色=朋友圈, 红色=小红书）
+   - 帖子预览截断为2条（原3条），更紧凑
+   - "回到今天"按钮替代原"今天"按钮
+   - framer-motion水平滑动动画（weekSlideDir状态追踪方向）
+   - 左右切换周时内容水平滑入/滑出
+   - "今天"按钮回到当前周时淡入效果
+   - WeeklyMiniStats嵌入WeekStatsBar下方
+
+### 修改文件
+- `src/components/left-panel/compact-calendar.tsx` - 周视图增强+集成
+- `src/components/data-import.tsx` - 修复 AlertCircle2 → AlertCircle（lucide-react兼容）
+
+### QA验证结果
+- ✅ eslint通过（left-panel目录零错误）
+- ✅ next build成功（全部路由编译完成）
+
+Stage Summary:
+- 本轮新增2个文件，修改2个文件
+- 核心能力：快捷操作面板（5个AI快捷按钮）、迷你周统计（4指标+趋势+柱状图）、周视图UI增强（周末底色/平台颜色/滑动动画）
+- 所有组件适配暗黑模式、响应式布局
+
+## Task 32-d: Dashboard 视觉打磨 + 微交互动画增强
+
+### 完成内容
+
+#### 1. Dashboard Overview 增强 (`src/components/dashboard-overview.tsx`)
+- **Animated Counter Numbers**: 使用 framer-motion `useMotionValue` + `useTransform` 实现数字从0计数到目标值，duration 1.5s easeOut，支持大数格式化（1.2k, 3.5w）
+- **Stat Card Hover Effects**: 新增 `stat-card-shine` 类实现渐变边框动画，图标 hover 时轻微旋转，卡片提升2px + 阴影增强
+- **Activity Feed Mini Timeline**: 新增"最近动态"区域，显示6条活动记录，左侧时间线 + 圆点 + 图标 + 描述 + 相对时间，支持 staggered entrance animation 和"查看全部"链接
+- **Quick Action Cards Enhancement**: 新增 2x2 网格快速操作卡片（AI生成内容/查看日历/数据报告/爆款灵感），每个卡片带渐变背景、hover 箭头和 framer-motion 交互动画
+- **Enhanced Tooltip 集成**: 在核心统计卡片上使用 `EnhancedTooltip` 组件，显示标题、描述和键盘快捷键
+
+#### 2. Header 动画增强 (`src/app/page.tsx`)
+- **Logo pulse on notification**: 当有未读通知时，logo 添加 `logo-notification-pulse` 类实现脉冲发光效果
+- **Search bar focus animation**: 搜索按钮添加 `search-expand` 类，focus 时扩展 padding + 紫色光晕边框
+- **Platform switcher**: 改进 spring 物理参数 (stiffness: 280, damping: 24, mass: 0.8) 实现更平滑的指示器滑动
+- **Settings gear rotation**: 设置中心图标包裹 `gear-spin` 类，hover 时 360° 缓慢旋转（2s）
+
+#### 3. Empty State Illustrations (`src/components/empty-state-illustrations.tsx`)
+- `EmptyCalendar` — 带幽灵页面的日历 SVG 插图
+- `EmptyContent` — 带星光的笔 SVG 插图
+- `EmptyAnalytics` — 带问号的图表 SVG 插图
+- `EmptyNotifications` — 带睡眠"Z"的铃铛 SVG 插图
+- 所有插图: 120x120px，muted 颜色，使用 `illustration-float` CSS 动画
+
+#### 4. Enhanced Tooltip (`src/components/enhanced-tooltip.tsx`)
+- 包装 Radix UI Tooltip，支持 title、description、shortcut 属性
+- 键盘快捷键显示在 `tooltip-shortcut` kbd 元素中
+- 描述文本使用 muted 颜色，500ms 延迟出现
+- 包含 Arrow 指向触发元素
+
+#### 5. Progress Ring (`src/components/progress-ring.tsx`)
+- 可复用 SVG 进度环组件
+- Props: value(0-100), size, strokeWidth, color, bgColor, animated, label
+- 使用 framer-motion 实现 stroke-dasharray 过渡动画
+- 紫色到粉色渐变，可配置颜色和尺寸
+
+#### 6. CSS 新增 (`src/app/globals.css` 末尾追加)
+- `.number-counter` — 动画数字计数器容器
+- `.stat-card-shine` — 统计卡片 hover 时的闪光效果
+- `.activity-dot` — 时间线圆点脉冲动画（最新活动）
+- `.quick-action-card` — 快速操作卡片 hover 渐变边框
+- `.logo-notification-pulse` — Logo 通知脉冲动画
+- `.search-expand` — 搜索栏 focus 展开动画
+- `.gear-spin` — 齿轮图标 hover 缓慢旋转
+- `.tooltip-shortcut` — Tooltip 内 kbd 元素样式
+- `.illustration-float` — 空状态插图浮动动画
+- 所有新动画均遵守 `@media (prefers-reduced-motion: reduce)`
+
+### 验证结果
+- ✅ `npx eslint src/ --max-warnings=0` — 0 errors, 0 warnings
+- ✅ `npx next build` — 构建成功
+
+---
+Task ID: 32-a
+Agent: Full-Stack Developer
+Task: 数据导入增强 - CSV/JSON 文件上传解析
+
+Work Log:
+- 阅读 Prisma schema、types/index.ts、settings-center.tsx 了解数据模型和现有集成点
+- settings-center.tsx 已预置 DataImport 组件导入（line 69）和对话框集成（line 583）
+
+### API 端点：/api/import/route.ts
+- POST multipart/form-data 文件上传
+- 支持 CSV 和 JSON 两种格式，从文件扩展名自动检测
+- CSV 解析：BOM 去除、双引号字段处理、逗号分隔（纯正则实现，无外部依赖）
+- JSON 解析：支持数组对象格式
+- 导入类型通过 `type` 字段指定："content"（内容帖子）或 "knowledge"（知识库）
+- 内容帖子导入：自动查找/创建当月 ContentPlan，映射 scheduledDate/topic/content/contentType/platform/status 字段，逐行校验
+- 知识库导入：映射 title/content/category 字段，逐行校验
+- 必填字段校验、日期格式校验、平台/状态枚举校验，跳过无效行并收集错误信息
+- 5MB 文件大小限制
+- 返回格式：`{ success, imported, skipped, errors[] }`
+
+### 前端组件：src/components/data-import.tsx
+- Dialog 对话框模式，接收 `open` 和 `onOpenChange` props（与 settings-center.tsx 预期接口一致）
+- 导入类型选择器：RadioGroup 双卡片布局（内容帖子/知识库），各带平台色高亮
+- 模板下载：根据导入类型生成含 BOM 的 CSV 模板（含示例数据），通过 Blob + URL.createObjectURL 下载
+- 拖拽上传区域：虚线边框、拖入高亮、文件选择后显示文件名/大小/格式 Badge、移除按钮
+- 导入按钮：紫-紫渐变色、Loader2 加载动画、禁用态
+- 结果展示：framer-motion 动画显示成功/部分成功/失败状态卡片
+  - 成功数/跳过数统计
+  - 错误列表（最多显示10条，ScrollArea 滚动）
+- shadcn/ui 组件：Dialog, RadioGroup, Card, Badge, Button, ScrollArea, Separator
+- 暗黑模式兼容，中文 UI 标签
+
+### 集成
+- DataImport 组件已在 settings-center.tsx 的"数据管理"区域集成
+- "导入数据 (CSV/JSON)" 按钮触发 importOpen 状态，打开 DataImport Dialog
+
+### New Files
+- `src/app/api/import/route.ts` - 数据导入 API 端点
+- `src/components/data-import.tsx` - 数据导入前端组件
+
+### Modified Files
+- 无修改（settings-center.tsx 已预置集成代码）
+
+### QA Results
+- ✅ `npx eslint src/ --max-warnings=0` — 0 errors, 0 warnings
+- ✅ `npx next build` — 构建成功，/api/import 路由正确注册
+
+Stage Summary:
+- 完成数据导入功能：CSV/JSON 文件上传解析，支持内容帖子和知识库两种导入目标
+- 前端拖拽上传 + 类型选择 + 模板下载 + 结果展示，已集成到设置中心
+- 纯内置实现，无新增外部依赖
+
+---
+Task ID: 32
+Agent: Main Orchestrator + 4 Parallel full-stack-developer Sub-agents (32-a/b/c/d)
+Task: 第32轮开发 - 数据导入增强+日历周视图+AI批量操作+Dashboard视觉打磨
+
+Work Log:
+- 读取 worklog.md 了解第31轮完整状态（31轮迭代，105+组件，40+API）
+- 硬约束：全程未使用 agent-browser（OOM限制），使用 curl + standalone server 测试
+- 验证项目状态：12个核心API全部200，ESLint零错误，clean build成功
+- 4个并行 full-stack-developer 子代理（Track A重跑1次）
+- Track B 修复了 data-import.tsx 中的 AlertCircle2 → AlertCircle 图标错误
+
+### 项目当前状态
+- 项目极其成熟稳定，32轮迭代完成
+- 115+自定义组件（~43K行代码），42+API路由
+- globals.css: 5020+行CSS动画/工具类
+- 双平台运营：朋友圈 + 小红书
+- 零 lint 错误、零 TypeScript 错误、生产构建稳定
+
+### Track A: 数据导入增强 - CSV/JSON 文件上传解析
+
+1. **数据导入 API**（`/api/import/route.ts`, 316行）：
+   - POST 端点，multipart/form-data 文件上传
+   - 支持 CSV（BOM处理、引号字段）和 JSON 格式
+   - 两种导入目标：content（帖子）和 knowledge（知识库）
+   - 逐行验证，跳过无效行，返回详细错误信息
+   - 5MB 文件大小限制
+   - 返回：{ success, imported, skipped, errors[] }
+
+2. **数据导入组件**（`data-import.tsx`, 499行）：
+   - Dialog 式导入界面
+   - 拖放上传区域（虚线边框，拖拽高亮）
+   - 导入类型选择：内容帖子 / 知识库
+   - CSV模板下载（BOM编码+示例数据）
+   - 导入按钮+加载状态+结果展示
+   - 已集成到 settings-center.tsx
+
+### Track B: 运营日历增强 - 周视图 + 快捷操作
+
+1. **日历周视图增强**（compact-calendar.tsx 修改）：
+   - 周末列不同背景色区分
+   - 每日最多显示2条帖子预览
+   - 平台颜色指示器（绿色=朋友圈，红色=小红书）
+   - 左右滑动切换周（framer-motion slide 动画）
+   - "回到今天"按钮
+
+2. **日历快捷操作栏**（`calendar-quick-actions.tsx`, 389行）：
+   - 5个快捷操作按钮：
+     - ➕ 新建内容 — 快速创建对话框
+     - 🤖 AI生成今日 — 调用AI生成今日内容
+     - 📊 本周统计 — 打开迷你统计弹窗
+     - ⚡ 一键排满 — AI填充本周空白日
+     - 📋 复制上周 — 复制上周内容到本周（日期+7）
+   - 每个按钮：独立加载/成功状态、magnetic-hover、spring动画
+
+3. **迷你周统计弹窗**（`weekly-mini-stats.tsx`, 284行）：
+   - 2×2指标网格：本周发布/平均AI评分/总互动量/完成率
+   - 趋势箭头（↑↓→）对比上周
+   - CSS-only迷你柱状图
+   - "查看详情"跳转数据分析面板
+
+### Track C: AI助手增强 - 批量操作 + 内容健康度
+
+1. **AI批量操作面板**（`ai-batch-operations.tsx`, 967行）：
+   - 4个可折叠操作卡片：
+     - 批量优化：多选→逐一调用/optimize→进度→结果
+     - 批量打分：一键评分未评分帖子→分数分布图→低分警告
+     - 批量生成封面：为无封面帖子生成→2列图片网格
+     - 智能重排：AI建议最优排期→前后对比→应用排期
+   - 每个操作：进度条、成功/跳过/失败计数
+   - 已集成到 content-workspace.tsx 工具栏
+
+2. **内容健康度仪表盘**（`content-health-dashboard.tsx`, 880行）：
+   - 总体健康评分（0-100）：SVG环形仪表+动画计数器
+   - 权重公式：AI质量35%+发布率20%+互动15%+完整度15%+多样性10%+规律性5%
+   - 6个健康指标卡片（2×3网格）
+   - 自动检测问题列表（🔴🟡🟢严重度+修复操作）
+   - 7天趋势迷你柱状图
+   - 本周vs上周对比分析
+   - 已集成到 content-workspace.tsx 智能分析Tab
+
+### Track D: Dashboard 视觉打磨 + 微交互动画
+
+1. **Dashboard Overview 增强**（dashboard-overview.tsx 修改）：
+   - 数字计数动画：useMotionValue+useTransform，1.5s easeOut
+   - 大数格式化（1.2k, 3.5w）
+   - 统计卡片悬停效果：渐变边框光泽、图标旋转、阴影提升
+   - 活动时间线："最近动态"6条活动，脉冲动画，交错入场
+   - 快捷操作卡片（2×2网格）：AI生成/查看日历/数据报告/爆款灵感
+   - EnhancedTooltip 集成到所有统计卡片
+
+2. **Header 动画增强**（page.tsx 修改）：
+   - Logo通知脉冲：未读通知时logo脉冲动画
+   - 搜索栏聚焦展开+发光效果
+   - 平台切换器更平滑的spring物理
+   - 设置齿轮悬停慢速旋转（360°/2s）
+
+3. **可复用组件**：
+   - `progress-ring.tsx`（77行）— SVG进度环，可配置大小/颜色/动画
+   - `empty-state-illustrations.tsx`（176行）— 4个SVG空状态插图（日历/内容/分析/通知）
+   - `enhanced-tooltip.tsx`（61行）— 增强Tooltip，支持标题+描述+快捷键
+
+4. **新增CSS类**（globals.css 追加9个）：
+   - .number-counter, .stat-card-shine, .activity-dot, .quick-action-card
+   - .logo-notification-pulse, .search-expand, .gear-spin, .tooltip-shortcut
+   - .illustration-float
+   - 全部支持 prefers-reduced-motion: reduce
+
+### 新增文件 (9个)
+- `src/app/api/import/route.ts` — 数据导入API
+- `src/components/data-import.tsx` — 数据导入UI组件
+- `src/components/left-panel/calendar-quick-actions.tsx` — 日历快捷操作栏
+- `src/components/left-panel/weekly-mini-stats.tsx` — 迷你周统计弹窗
+- `src/components/right-panel/ai-batch-operations.tsx` — AI批量操作面板
+- `src/components/right-panel/content-health-dashboard.tsx` — 内容健康度仪表盘
+- `src/components/progress-ring.tsx` — 可复用SVG进度环
+- `src/components/empty-state-illustrations.tsx` — 空状态SVG插图
+- `src/components/enhanced-tooltip.tsx` — 增强Tooltip组件
+
+### 修改文件
+- `src/app/globals.css` — 新增9个CSS动画类
+- `src/app/page.tsx` — Header动画增强
+- `src/components/dashboard-overview.tsx` — 数字动画+悬停效果+活动时间线+快捷卡片
+- `src/components/left-panel/compact-calendar.tsx` — 周视图增强+快捷操作集成
+- `src/components/right-panel/content-workspace.tsx` — 集成批量操作+健康度仪表盘
+
+### QA验证结果
+- ✅ ESLint 零错误
+- ✅ Next.js clean build 成功
+- ✅ 11个核心API全部正常（/ /api/import(405) /api/persona /api/content /api/analytics /api/knowledge /api/notifications /api/competitor-analysis /api/search /api/weekly-report /api/settings/stats）
+- ✅ 无 agent-browser 使用（遵循OOM约束）
+- ✅ 使用 standalone production server 稳定测试
+- ✅ 修复了 AlertCircle2 → AlertCircle 图标错误
+
+### 未解决问题或风险
+1. Dev server (turbopack) 在并行请求时可能OOM，standalone server 稳定
+2. agent-browser 不可用（OOM限制），使用 curl 测试
+3. AI批量操作依赖外部AI服务可用性
+4. CSV解析为简单正则实现，不支持所有边缘情况（嵌套引号等）
+5. 数据导入无事务回滚（部分导入成功后会保留）
+
+### 建议下一阶段优先事项
+1. 性能优化：React.memo/useMemo/virtual list/代码分割/lazy loading
+2. 数据导出增强：Excel格式(.xlsx)导出
+3. 内容发布到真实社交平台API对接
+4. 运营报告定时自动生成 + 邮件/消息推送
+5. PWA离线支持 + Service Worker
+6. 多人协作/团队账号管理
+7. 移动端真机测试和适配优化
+8. 单元测试 + E2E测试覆盖
+9. 国际化(i18n)支持
+10. API Key加密存储方案

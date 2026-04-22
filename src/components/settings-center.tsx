@@ -51,6 +51,7 @@ import {
   Thermometer,
   Download,
   RefreshCw,
+  Upload,
   LayoutGrid,
   List,
   Minimize2,
@@ -65,6 +66,7 @@ import { toast } from "sonner";
 import { PRESET_PROVIDERS } from "@/lib/ai-providers";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PersonaForm } from "@/components/left-panel/persona-form";
+import { DataImport } from "@/components/data-import";
 import type { Platform } from "@/types";
 
 /* ================================================================
@@ -436,6 +438,7 @@ function DataManagementSection() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings/stats")
@@ -551,6 +554,14 @@ function DataManagementSection() {
           导出全部数据 (JSON)
         </Button>
         <Button
+          onClick={() => setImportOpen(true)}
+          variant="outline"
+          className="w-full h-9 text-xs justify-start"
+        >
+          <Upload className="h-3.5 w-3.5 mr-2" />
+          导入数据 (CSV/JSON)
+        </Button>
+        <Button
           onClick={handleClearCache}
           disabled={clearing}
           variant="outline"
@@ -568,6 +579,8 @@ function DataManagementSection() {
           清除缓存不会删除已保存的内容和配置
         </p>
       </div>
+
+      <DataImport open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

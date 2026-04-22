@@ -5011,3 +5011,205 @@ textarea {
     transition: none !important;
   }
 }
+
+/* ====== Task 32-d: Dashboard Visual Polish & Micro-interaction Enhancements ====== */
+
+/* Animated number counter container */
+.number-counter {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+}
+
+/* Stat card shimmer/shine effect on hover */
+.stat-card-shine {
+  position: relative;
+  overflow: hidden;
+}
+.stat-card-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    135deg,
+    transparent 20%,
+    rgba(139, 92, 246, 0.25) 40%,
+    rgba(236, 72, 153, 0.2) 60%,
+    transparent 80%
+  );
+  background-size: 200% 200%;
+  background-position: 100% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease, background-position 0.6s ease;
+}
+.stat-card-shine:hover::before {
+  opacity: 1;
+  background-position: 0% 0%;
+}
+.dark .stat-card-shine::before {
+  background: linear-gradient(
+    135deg,
+    transparent 20%,
+    rgba(167, 139, 250, 0.3) 40%,
+    rgba(251, 113, 133, 0.25) 60%,
+    transparent 80%
+  );
+  background-size: 200% 200%;
+  background-position: 100% 100%;
+}
+.dark .stat-card-shine:hover::before {
+  background-position: 0% 0%;
+}
+
+/* Activity timeline dot with pulse for latest item */
+.activity-dot {
+  position: relative;
+}
+.activity-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.3);
+  animation: activity-dot-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.dark .activity-dot::after {
+  background: rgba(167, 139, 250, 0.3);
+}
+@keyframes activity-dot-ping {
+  0% { transform: scale(1); opacity: 0.6; }
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+/* Quick action card with gradient hover */
+.quick-action-card {
+  position: relative;
+}
+.quick-action-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.15));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.quick-action-card:hover::before {
+  opacity: 1;
+}
+.dark .quick-action-card::before {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(251, 113, 133, 0.2));
+}
+
+/* Logo notification pulse animation */
+.logo-notification-pulse {
+  animation: logo-pulse 2s ease-in-out infinite;
+}
+@keyframes logo-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0), 0 0 16px 2px rgba(139, 92, 246, 0.15); }
+}
+.dark .logo-notification-pulse {
+  animation-name: logo-pulse-dark;
+}
+@keyframes logo-pulse-dark {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(167, 139, 250, 0), 0 0 20px 4px rgba(167, 139, 250, 0.2); }
+}
+
+/* Search bar focus expand animation */
+.search-expand {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.search-expand:focus {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2), 0 0 12px rgba(139, 92, 246, 0.1);
+  background-color: oklch(0.97 0 0);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+.dark .search-expand:focus {
+  background-color: oklch(0.22 0 0);
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3), 0 0 16px rgba(139, 92, 246, 0.15);
+}
+
+/* Settings gear slow rotation on hover */
+.gear-spin {
+  transition: transform 0.3s ease;
+}
+.gear-spin:hover {
+  animation: gear-rotate 2s linear infinite;
+}
+@keyframes gear-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Styled kbd element inside tooltips */
+.tooltip-shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 1px solid oklch(0.85 0 0);
+  background: oklch(0.95 0 0);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: oklch(0.5 0 0);
+  line-height: 1;
+  box-shadow: 0 1px 0 oklch(0.85 0 0);
+}
+.dark .tooltip-shortcut {
+  border-color: oklch(0.3 0 0);
+  background: oklch(0.2 0 0);
+  color: oklch(0.65 0 0);
+  box-shadow: 0 1px 0 oklch(0.15 0 0);
+}
+
+/* Floating animation for empty state illustrations */
+.illustration-float {
+  animation: illustration-float-keyframe 4s ease-in-out infinite;
+}
+@keyframes illustration-float-keyframe {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-6px) rotate(1deg); }
+  75% { transform: translateY(3px) rotate(-0.5deg); }
+}
+
+/* ─── Reduced Motion for New Animations ─── */
+@media (prefers-reduced-motion: reduce) {
+  .stat-card-shine::before,
+  .quick-action-card::before {
+    transition: none !important;
+  }
+  .logo-notification-pulse,
+  .activity-dot::after {
+    animation: none !important;
+  }
+  .gear-spin:hover {
+    animation: none !important;
+    transform: rotate(90deg);
+  }
+  .search-expand:focus {
+    transition-duration: 0.01ms !important;
+  }
+  .illustration-float {
+    animation: none !important;
+  }
+}
