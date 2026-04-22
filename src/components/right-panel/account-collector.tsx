@@ -33,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -71,6 +72,8 @@ import {
   Repeat2,
   TrendingUp,
   Info,
+  Wand2,
+  CheckCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { TrackedAccount, Platform, ContentPost, ContentComment, ContentInteraction } from "@/types";
@@ -231,6 +234,19 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
   const [manualSourceLabel, setManualSourceLabel] = useState("");
   const [isParsing, setIsParsing] = useState(false);
 
+  // ── AI parse preview state ────────────────────────────────────────────
+  const [aiParsedItems, setAiParsedItems] = useState<Array<{
+    title: string;
+    content: string;
+    tags: string[];
+    type: string;
+    likes: number;
+    comments: number;
+    scheduledDate?: string;
+  }>>([]);
+  const [selectedParsedIndices, setSelectedParsedIndices] = useState<Set<number>>(new Set());
+  const [aiParseError, setAiParseError] = useState<string | null>(null);
+
   // ── Sync / progress state ─────────────────────────────────────────────
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncProgress, setSyncProgress] = useState<{
@@ -386,11 +402,22 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
 
   // Check scraper availability on mount
   useEffect(() => {
-    checkScraperService();
+    checkScraperService().then((available) => {
+      // Auto-switch to manual import when scraper unavailable for XHS
+      if (!available && formPlatform === "xiaohongshu") {
+        setFormMethod("manual");
+      }
+    });
     // Re-check every 60 seconds
-    const interval = setInterval(checkScraperService, 60000);
+    const interval = setInterval(() => {
+      checkScraperService().then((available) => {
+        if (!available && formPlatform === "xiaohongshu" && formMethod !== "manual") {
+          setFormMethod("manual");
+        }
+      });
+    }, 60000);
     return () => clearInterval(interval);
-  }, [checkScraperService]);
+  }, [checkScraperService, formPlatform, formMethod]);
 
   // ── Generate demo account handler ─────────────────────────────────────
   const isGeneratingDemoRef = useRef(false);
@@ -922,6 +949,159 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
         shares,
       };
     });
+  };
+
+  // ── AI Smart Parse handler ─────────────────────────────────────────────
+  const handleAiParse = async () => {
+    if (!manualContent.trim()) {
+      toast.error("请先粘贴要解析的内容");
+      return;
+    }
+
+    setIsParsing(true);
+    setAiParseError(null);
+    setAiParsedItems([]);
+    setSelectedParsedIndices(new Set());
+
+    try {
+      const res = await fetch("/api/scrape/ai-parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: manualContent,
+          platform: manualPlatform,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "AI 解析失败");
+      }
+
+      const data = await res.json();
+
+      if (!data.items || data.items.length === 0) {
+        setAiParseError("AI 未能识别到有效内容，请检查粘贴的内容格式");
+        return;
+      }
+
+      setAiParsedItems(data.items);
+      // Select all by default
+      setSelectedParsedIndices(new Set(data.items.map((_: unknown, i: number) => i)));
+      toast.success(`成功解析 ${data.items.length} 条内容`);
+    } catch (err) {
+      setAiParseError(
+        err instanceof Error ? err.message : "AI 解析失败，请重试"
+      );
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  // ── Toggle parsed item selection ──────────────────────────────────────
+  const toggleParsedSelection = (index: number) => {
+    setSelectedParsedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  // ── Toggle all parsed items ───────────────────────────────────────────
+  const toggleAllParsed = () => {
+    if (selectedParsedIndices.size === aiParsedItems.length) {
+      setSelectedParsedIndices(new Set());
+    } else {
+      setSelectedParsedIndices(new Set(aiParsedItems.map((_, i) => i)));
+    }
+  };
+
+  // ── Confirm AI parsed import ──────────────────────────────────────────
+  const handleConfirmAiImport = async () => {
+    if (selectedParsedIndices.size === 0) {
+      toast.error("请至少选择一条内容");
+      return;
+    }
+    if (!manualSourceLabel.trim()) {
+      toast.error("请填写来源标签");
+      return;
+    }
+
+    const selectedItems = Array.from(selectedParsedIndices).map(
+      (i) => aiParsedItems[i]
+    );
+
+    const posts = selectedItems.map((item) => ({
+      topic: item.title,
+      content: item.content,
+      contentType: "mixed",
+      scheduledDate: item.scheduledDate || new Date().toISOString().slice(0, 10),
+      likes: item.likes,
+      comments: item.comments,
+      shares: 0,
+      tags: item.tags.join(" "),
+    }));
+
+    setIsParsing(true);
+    setImportProgress({
+      imported: 0,
+      total: 0,
+      message: "正在导入到数据库...",
+    });
+
+    try {
+      const res = await fetch("/api/scrape/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: manualPlatform,
+          sourceLabel: manualSourceLabel.trim(),
+          posts,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "导入失败");
+      }
+
+      const data = await res.json();
+
+      setImportProgress({
+        imported: data.imported || 0,
+        total: (data.imported || 0) + (data.skipped || 0),
+        message: data.message || `完成！成功导入 ${data.imported || 0} 条`,
+      });
+
+      toast.success(
+        data.message || `成功导入 ${data.imported || 0} 条内容`
+      );
+
+      fetchAccounts();
+
+      // Navigate to notes view for the imported account
+      if (data.accountId) {
+        setTimeout(() => {
+          handleViewNotes(data.accountId);
+        }, 1500);
+      }
+
+      // Reset AI parse state
+      setAiParsedItems([]);
+      setSelectedParsedIndices(new Set());
+      setAiParseError(null);
+    } catch (err) {
+      setImportProgress(null);
+      toast.error(
+        err instanceof Error ? err.message : "导入失败"
+      );
+    } finally {
+      setIsParsing(false);
+    }
   };
 
   // ── Filtered notes ────────────────────────────────────────────────────
@@ -2461,11 +2641,17 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
           open={showManualDialog}
           onOpenChange={(open) => {
             if (!isParsing) {
+              if (!open) {
+                // Reset AI parse state on close
+                setAiParsedItems([]);
+                setSelectedParsedIndices(new Set());
+                setAiParseError(null);
+              }
               setShowManualDialog(open);
             }
           }}
         >
-          <DialogContent className="sm:max-w-lg max-h-[90vh]">
+          <DialogContent className={`max-h-[90vh] ${aiParsedItems.length > 0 ? "sm:max-w-2xl" : "sm:max-w-lg"}`}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -2474,7 +2660,9 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                 手动导入内容
               </DialogTitle>
               <DialogDescription>
-                粘贴内容，每条内容用空行分隔，AI将智能解析并导入
+                {aiParsedItems.length > 0
+                  ? `已解析 ${aiParsedItems.length} 条内容，请选择要导入的条目`
+                  : "粘贴内容，每条内容用空行分隔，AI将智能解析并导入"}
               </DialogDescription>
             </DialogHeader>
 
@@ -2495,26 +2683,170 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                 </span>
               </div>
 
-              {/* Format hints for manual import */}
-              <div className="rounded-lg bg-muted/50 border border-border/50 p-3">
-                <div className="flex items-start gap-2">
-                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-medium text-muted-foreground">
-                      格式提示
-                    </p>
-                    <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
-                      从小红书或朋友圈复制帖子内容，每条帖子用空行分隔。AI会自动识别标题、正文、互动数据等信息。也可以包含话题标签（#）。
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {/* AI Parsed Results Preview */}
+              <AnimatePresence mode="wait">
+                {aiParsedItems.length > 0 ? (
+                  <motion.div
+                    key="parsed-results"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-3"
+                  >
+                    {/* Select all toggle */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={selectedParsedIndices.size === aiParsedItems.length && aiParsedItems.length > 0}
+                          onCheckedChange={toggleAllParsed}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span className="text-[10px] text-muted-foreground">
+                          全选（已选 {selectedParsedIndices.size}/{aiParsedItems.length}）
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          setAiParsedItems([]);
+                          setSelectedParsedIndices(new Set());
+                          setAiParseError(null);
+                        }}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        重新解析
+                      </Button>
+                    </div>
 
-              {/* Textarea for pasting content */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">粘贴内容</Label>
-                <Textarea
-                  placeholder={`粘贴内容，每条内容用空行分隔。格式示例：
+                    {/* Parsed items list */}
+                    <ScrollArea className="max-h-[320px]">
+                      <div className="space-y-2 pr-2">
+                        {aiParsedItems.map((item, index) => {
+                          const isSelected = selectedParsedIndices.has(index);
+                          return (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, x: -8 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05, duration: 0.2 }}
+                            >
+                              <Card
+                                className={`transition-all duration-200 cursor-pointer ${
+                                  isSelected
+                                    ? "border-primary/50 bg-primary/[0.03] dark:bg-primary/[0.05] shadow-sm"
+                                    : "border-border/50 hover:border-border opacity-70 hover:opacity-100"
+                                }`}
+                                onClick={() => toggleParsedSelection(index)}
+                              >
+                                <CardContent className="p-3">
+                                  <div className="flex items-start gap-2.5">
+                                    {/* Checkbox */}
+                                    <div className="pt-0.5 shrink-0">
+                                      <Checkbox
+                                        checked={isSelected}
+                                        onCheckedChange={() => toggleParsedSelection(index)}
+                                        className="h-3.5 w-3.5"
+                                      />
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                      {/* Title row */}
+                                      <div className="flex items-center gap-2">
+                                        <p className={`text-xs font-semibold leading-snug truncate ${
+                                          isSelected ? "text-foreground" : "text-muted-foreground"
+                                        }`}>
+                                          {item.title}
+                                        </p>
+                                      </div>
+
+                                      {/* Content preview */}
+                                      <p className="text-[10px] text-muted-foreground/70 leading-relaxed line-clamp-2">
+                                        {item.content.slice(0, 100)}
+                                        {item.content.length > 100 ? "..." : ""}
+                                      </p>
+
+                                      {/* Tags and type */}
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        {/* Content type badge */}
+                                        <Badge
+                                          className="text-[9px] px-1.5 py-0 h-4 border-0 font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                                        >
+                                          {item.type}
+                                        </Badge>
+                                        {/* Tags */}
+                                        {item.tags.slice(0, 3).map((tag, ti) => (
+                                          <Badge
+                                            key={ti}
+                                            className="text-[9px] px-1.5 py-0 h-4 border-0 font-medium bg-muted text-muted-foreground"
+                                          >
+                                            #{tag}
+                                          </Badge>
+                                        ))}
+                                        {item.tags.length > 3 && (
+                                          <span className="text-[9px] text-muted-foreground">
+                                            +{item.tags.length - 3}
+                                          </span>
+                                        )}
+                                        {/* Stats */}
+                                        {(item.likes > 0 || item.comments > 0) && (
+                                          <span className="text-[9px] text-muted-foreground/60 ml-auto shrink-0">
+                                            {item.likes > 0 && (
+                                              <span className="inline-flex items-center gap-0.5">
+                                                <Heart className="h-2.5 w-2.5" />
+                                                {item.likes}
+                                              </span>
+                                            )}
+                                            {item.comments > 0 && (
+                                              <span className="inline-flex items-center gap-0.5 ml-2">
+                                                <MessageSquare className="h-2.5 w-2.5" />
+                                                {item.comments}
+                                              </span>
+                                            )}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="input-form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-4"
+                  >
+                    {/* Format hints for manual import */}
+                    <div className="rounded-lg bg-muted/50 border border-border/50 p-3">
+                      <div className="flex items-start gap-2">
+                        <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-medium text-muted-foreground">
+                            格式提示
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                            从小红书或朋友圈复制帖子内容，每条帖子用空行分隔。AI会自动识别标题、正文、互动数据等信息。也可以包含话题标签（#）。
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Textarea for pasting content */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">粘贴内容</Label>
+                      <Textarea
+                        placeholder={`粘贴内容，每条内容用空行分隔。格式示例：
 
 【美食探店】今天去了新开的咖啡馆...
 发布时间：2025-04-20
@@ -2522,63 +2854,176 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
 
 【日常分享】周末去了郊外踏青...
 发布时间：2025-04-19`}
-                  value={manualContent}
-                  onChange={(e) => setManualContent(e.target.value)}
-                  className="text-xs min-h-[200px] leading-relaxed"
-                  disabled={isParsing}
-                />
-              </div>
+                        value={manualContent}
+                        onChange={(e) => {
+                          setManualContent(e.target.value);
+                          // Clear any previous AI parse results when content changes
+                          if (aiParsedItems.length > 0) {
+                            setAiParsedItems([]);
+                            setSelectedParsedIndices(new Set());
+                            setAiParseError(null);
+                          }
+                        }}
+                        className="text-xs min-h-[200px] leading-relaxed"
+                        disabled={isParsing}
+                      />
+                    </div>
 
-              {/* Parsed count preview */}
-              {manualContent.trim() && !isParsing && (
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                  <FileText className="h-3 w-3" />
-                  <span>
-                    已识别约{" "}
-                    <span className="font-semibold text-foreground">
-                      {
-                        manualContent
-                          .split(/\n\s*\n/)
-                          .filter((b) => b.trim().length > 0).length
-                      }
-                    </span>{" "}
-                    条内容
-                  </span>
-                </div>
+                    {/* Parsed count preview */}
+                    {manualContent.trim() && !isParsing && (
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <FileText className="h-3 w-3" />
+                        <span>
+                          已识别约{" "}
+                          <span className="font-semibold text-foreground">
+                            {
+                              manualContent
+                                .split(/\n\s*\n/)
+                                .filter((b) => b.trim().length > 0).length
+                            }
+                          </span>{" "}
+                          条内容
+                        </span>
+                      </div>
+                    )}
+
+                    {/* AI Parse Error */}
+                    {aiParseError && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-lg bg-destructive/10 border border-destructive/20 p-3"
+                      >
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+                          <p className="text-[10px] text-destructive leading-relaxed">
+                            {aiParseError}
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* AI parsing loading shimmer */}
+              {isParsing && aiParsedItems.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="space-y-3"
+                >
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
+                    <span>AI 正在智能解析内容...</span>
+                  </div>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="rounded-lg border border-border/50 p-3 space-y-2">
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-2.5 w-full" />
+                      <Skeleton className="h-2.5 w-5/6" />
+                      <div className="flex gap-1.5">
+                        <Skeleton className="h-4 w-12 rounded-full" />
+                        <Skeleton className="h-4 w-10 rounded-full" />
+                        <Skeleton className="h-4 w-14 rounded-full" />
+                      </div>
+                    </div>
+                  ))}
+                </motion.div>
               )}
             </div>
 
             <DialogFooter className="flex-col gap-2 sm:flex-row">
-              <Button
-                variant="ghost"
-                onClick={() => setShowManualDialog(false)}
-                disabled={isParsing}
-                size="sm"
-              >
-                取消
-              </Button>
-              <motion.div whileTap={{ scale: 0.95 }}>
-                <Button
-                  onClick={handleManualImport}
-                  disabled={
-                    isParsing || !manualContent.trim()
-                  }
-                  size="sm"
-                  className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm hover:from-amber-600 hover:to-orange-700 gap-1.5"
-                >
-                  {isParsing ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      解析导入中...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-3.5 w-3.5" />
-                      AI智能解析并导入
-                    </>
-                  )}
-                </Button>
-              </motion.div>
+              {aiParsedItems.length > 0 ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setAiParsedItems([]);
+                      setSelectedParsedIndices(new Set());
+                      setAiParseError(null);
+                    }}
+                    disabled={isParsing}
+                    size="sm"
+                  >
+                    返回编辑
+                  </Button>
+                  <motion.div whileTap={{ scale: 0.95 }}>
+                    <Button
+                      onClick={handleConfirmAiImport}
+                      disabled={isParsing || selectedParsedIndices.size === 0}
+                      size="sm"
+                      className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm hover:from-amber-600 hover:to-orange-700 gap-1.5"
+                    >
+                      {isParsing ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          导入中...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCheck className="h-3.5 w-3.5" />
+                          确认导入 {selectedParsedIndices.size} 条
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowManualDialog(false)}
+                    disabled={isParsing}
+                    size="sm"
+                  >
+                    取消
+                  </Button>
+                  <motion.div whileTap={{ scale: 0.95 }} className="flex gap-2">
+                    <Button
+                      onClick={handleManualImport}
+                      disabled={
+                        isParsing || !manualContent.trim()
+                      }
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                    >
+                      {isParsing ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          解析导入中...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowDownToLine className="h-3.5 w-3.5" />
+                          快速导入
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={handleAiParse}
+                      disabled={
+                        isParsing || !manualContent.trim()
+                      }
+                      size="sm"
+                      className="bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-sm hover:from-violet-600 hover:to-purple-700 gap-1.5"
+                    >
+                      {isParsing ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          AI解析中...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="h-3.5 w-3.5" />
+                          AI智能解析
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

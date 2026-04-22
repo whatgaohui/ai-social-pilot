@@ -3777,3 +3777,100 @@ Work Log:
 4. 添加运营报告自动生成功能
 5. 完善移动端适配测试
 6. 采集中心增加更多手动导入模板
+---
+Task ID: 22
+Agent: Main Orchestrator
+Task: 第22轮Cron开发 - Bug修复+采集增强+样式打磨
+
+Work Log:
+- 读取worklog.md了解前25轮开发成果（项目经历25+轮迭代，功能极其丰富）
+- 发现dev server启动后处理请求即崩溃，排查确认为Next.js 16 Turbopack内存问题
+- 使用 `npx next build` 成功编译（零错误），使用 `npx next start` 验证生产构建可用
+- 并行调查两个用户反馈的bug
+
+### Bug修复
+
+1. **右上角重复消息提醒图标**（高优先级）：
+   - 问题：`notification-center.tsx` 中的 `unreadBadge` 变量是一个单一JSX元素实例，被桌面端和移动端两个Button共享使用。React在协调时只能挂载一次，导致badge在两个按钮间"移动"，产生视觉上的重复/消失artifact
+   - 根因：React anti-pattern — 共享JSX变量在多个渲染位置使用
+   - 修复：将 `unreadBadge` 提取为独立的 `UnreadBadge` React组件（接受 `count` prop），在桌面端和移动端分别渲染独立实例
+   - 文件：`src/components/notification-center.tsx`
+   - 验证：ESLint零错误，build成功
+
+2. **采集中心无法真正采集小红书信息**（高优先级）：
+   - 问题：用户输入小红书博主主页链接后无法采集到任何数据
+   - 根因：scraper mini-service（Hono/Bun, 端口3003）未运行。采集流程依赖 Caddy 反向代理（XTransformPort=3003）将请求转发到scraper服务，而scraper服务未启动
+   - 修复方案（多层）：
+     a. 确认scraper service代码完整（`mini-services/scraper-service/index.ts`，1230+行），可用 `bun index.ts` 启动
+     b. 验证scraper服务启动后可正常响应（OPTIONS请求返回204）
+     c. 注意：即使scraper运行，小红书反爬机制仍可能阻止服务端直接抓取
+     d. 改进 `account-collector.tsx`：当scraper不可用时，自动切换到"手动导入"模式
+     e. 新增AI智能解析功能（见下方新功能），让用户可以通过粘贴内容+AI解析的方式导入
+   - 文件：`src/components/right-panel/account-collector.tsx`
+
+### 新功能
+
+1. **AI智能解析导入**（`/api/scrape/ai-parse` + account-collector增强）：
+   - 新增API路由 `POST /api/scrape/ai-parse`
+     - 接收 `{ content: string, platform: string }`
+     - 使用 `createAIClient()` 调用AI解析粘贴的小红书/朋友圈原始文本
+     - 返回结构化数据：title、content、tags、type、likes、comments
+     - 支持markdown代码块清理、JSON验证、内容长度限制
+   - 增强 `account-collector.tsx` 手动导入对话框：
+     - 新增"AI智能解析"按钮（紫色渐变，Wand2图标）
+     - 两步流程：Step 1=粘贴内容+选择操作 → Step 2=预览AI解析结果
+     - 解析结果展示：标题、内容预览、标签Badge、类型Badge
+     - 支持勾选/全选/取消导入
+     - 确认导入后调用已有 `/api/scrape/import` 端点
+     - Shimmer加载骨架屏 + 错误处理
+
+2. **CSS样式系统增强**（`src/app/globals.css`）：
+   - 品牌色系统CSS变量：`--brand-primary`/`--brand-accent`/`--brand-gradient`
+   - `.glass-card-xl` — 高级毛玻璃效果（blur(24px) + saturate(200%) + 内嵌高光）
+   - `.shine-effect` — 移动光反射扫过效果（加载状态）
+   - `.gradient-border-spin` — 旋转渐变边框动画（@property驱动）
+   - `.float-label` — 浮动表单标签效果
+   - `.pulse-ring` — 向外扩展的脉冲环动画
+   - `.hover-lift-sm` — 悬停微交互（translateY + scale + shadow）
+   - `.tooltip-fade` / `.tooltip-fade.tooltip-exit` — 平滑提示框动画
+   - `.card-enter` / `.card-enter-stagger` — 卡片入场动画（60ms交错）
+   - `.status-dot-breathing` — 呼吸灯状态指示器（绿/琥珀/玫红/紫4色）
+   - `.scrollbar-hover` — 悬停时显示滚动条
+   - `.ambient-glow` — 径向环境光效
+   - `.text-highlight-flash` — AI响应文本闪烁高亮
+   - `.number-tick` — 数字变化弹跳动画
+   - `.input-focus-glow` — 输入框聚焦发光效果
+   - 增强自定义滚动条样式（圆角、暗色模式紫色调、Firefox兼容）
+   - 所有动画包含 `prefers-reduced-motion` 无障碍支持
+
+### 新增文件
+- `src/app/api/scrape/ai-parse/route.ts` — AI智能解析API
+
+### 修改文件
+- `src/components/notification-center.tsx` — 修复重复通知图标bug
+- `src/components/right-panel/account-collector.tsx` — 采集中心增强+AI解析集成
+- `src/app/globals.css` — 样式系统增强
+
+### QA验证结果
+- ✅ ESLint零错误（notification-center.tsx, account-collector.tsx, ai-parse/route.ts）
+- ✅ `next build` 编译成功（零错误）
+- ✅ 所有API路由正常返回
+- ⚠️ dev server（Turbopack）存在内存问题，处理后崩溃。生产构建（next build + next start）正常工作
+- ⚠️ agent-browser不可用（导致OOM），使用curl替代QA
+
+Stage Summary:
+- 项目状态：功能极其丰富（25+轮迭代），代码库稳定，两个用户反馈的bug已修复
+- 本轮修复2个bug，新增2个功能，CSS样式系统大幅增强
+- 核心修复：通知图标重复（React共享JSX anti-pattern）、采集中心增强（AI智能解析+自动切换手动模式）
+- 未解决问题或风险：
+  1. Next.js 16 Turbopack dev server在当前环境有内存问题（处理后崩溃），建议使用 `npx next build && npx next start` 或 `HOSTNAME=0.0.0.0 npx next dev`
+  2. 小红书反爬机制限制服务端直接抓取，AI智能解析是更可靠的替代方案
+  3. scraper mini-service需要手动启动（`cd mini-services/scraper-service && bun index.ts`）
+- 建议下一阶段优先事项：
+  1. 添加scraper service自动启动机制（作为Next.js的子进程或systemd服务）
+  2. 将新增的CSS工具类应用到现有组件（glass-card-xl用于设置/通知面板，status-dot用于账号状态等）
+  3. AI智能解析结果直接创建为ContentPost（跳过import中间步骤）
+  4. 添加内容排期拖拽排序功能
+  5. 运营报告自动生成（PDF/图片格式）
+  6. 定时发布提醒功能
+  7. 多人协作文案审阅功能

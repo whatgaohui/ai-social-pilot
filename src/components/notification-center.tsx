@@ -881,6 +881,27 @@ function NotificationCenterPanel({
   return panelContent;
 }
 
+// ─── Unread Badge Component ───────────────────────────────────────
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <motion.span
+      key={count}
+      initial={{ scale: 0 }}
+      animate={{ scale: [1, 1.3, 1] }}
+      transition={{
+        type: "spring",
+        stiffness: 500,
+        damping: 15,
+        duration: 0.4,
+      }}
+      className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
+    >
+      {count > 9 ? "9+" : count}
+    </motion.span>
+  );
+}
+
 // ─── NotificationBell (exported for header) ─────────────────────────
 export function NotificationBell() {
   const { notifications } = useAppStore();
@@ -917,24 +938,6 @@ export function NotificationBell() {
     setIsMobileOpen(false);
   }, []);
 
-  // Badge indicator for unread count
-  const unreadBadge = unreadCount > 0 && (
-    <motion.span
-      key={unreadCount}
-      initial={{ scale: 0 }}
-      animate={{ scale: [1, 1.3, 1] }}
-      transition={{
-        type: "spring",
-        stiffness: 500,
-        damping: 15,
-        duration: 0.4,
-      }}
-      className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
-    >
-      {unreadCount > 9 ? "9+" : unreadCount}
-    </motion.span>
-  );
-
   return (
     <TooltipProvider delayDuration={300}>
       <>
@@ -952,7 +955,7 @@ export function NotificationBell() {
                   >
                     <Bell className="h-4 w-4" />
                     <span className="hidden lg:inline text-xs">通知</span>
-                    {unreadBadge}
+                    <UnreadBadge count={unreadCount} />
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
@@ -983,7 +986,7 @@ export function NotificationBell() {
                     aria-label="通知中心"
                   >
                     <Bell className="h-4 w-4 text-muted-foreground" />
-                    {unreadBadge}
+                    <UnreadBadge count={unreadCount} />
                   </Button>
                 </SheetTrigger>
               </TooltipTrigger>
