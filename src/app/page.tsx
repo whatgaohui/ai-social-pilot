@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { CommandPalette } from "@/components/command-palette";
 import { ContentSearch } from "@/components/content-search";
+import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useRipple } from "@/hooks/use-ripple";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -391,6 +392,7 @@ export default function Home() {
   const [mobileTabIndex, setMobileTabIndex] = useState(1); // default: 日历
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [contentSearchOpen, setContentSearchOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const mobileTabIndexRef = useRef(mobileTabIndex);
 
   // Keep ref in sync for stable drag handler
@@ -451,6 +453,18 @@ export default function Home() {
   useKeyboardShortcuts({
     onOpenCommandPalette: () => setCommandPaletteOpen((v) => !v),
   });
+
+  // Open shortcuts help with ? key (when not in an input)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "?" && !["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
+        e.preventDefault();
+        setShortcutsOpen(true);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const showWelcome = !onboardingCompleted;
 
@@ -678,7 +692,7 @@ export default function Home() {
             >
               <span className={`h-3 w-3 rounded-full transition-all duration-200 ${
                 platform === 'wechat'
-                  ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] ring-2 ring-green-500/30'
+                  ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] ring-2 ring-green-500/30 animate-breathe'
                   : 'bg-green-400/40'
               }`} />
             </button>
@@ -689,7 +703,7 @@ export default function Home() {
             >
               <span className={`h-3 w-3 rounded-full transition-all duration-200 ${
                 platform === 'xiaohongshu'
-                  ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] ring-2 ring-red-500/30'
+                  ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] ring-2 ring-red-500/30 animate-breathe'
                   : 'bg-red-400/40'
               }`} />
             </button>
@@ -814,6 +828,9 @@ export default function Home() {
         onOpenChange={setCommandPaletteOpen}
       />
 
+      {/* Keyboard Shortcuts Dialog */}
+      <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+
       {/* Platform Account Panel Dialog */}
       <PlatformAccountPanel
         open={accountPanelOpen}
@@ -826,7 +843,7 @@ export default function Home() {
       <AIWritingAssistant />
 
       {/* Footer */}
-      <footer className="hidden sm:block footer-gradient-border bg-background/85 backdrop-blur-xl py-2 px-4 mt-auto pb-safe">
+      <footer className="hidden sm:block footer-gradient-border bg-background/85 backdrop-blur-xl py-2 px-4 mt-auto pb-safe animate-slide-in-bottom">
         <div className="flex items-center justify-between text-[9px] text-muted-foreground/70">
           <div className="flex items-center gap-2">
             <motion.div

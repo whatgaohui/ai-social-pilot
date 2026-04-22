@@ -4345,3 +4345,89 @@ Stage Summary:
   4. 移动端真机测试
   5. 运营报告自动生成（PDF/图片格式导出）
   6. 多账号管理增强
+---
+Task ID: 26
+Agent: Cron Review Agent (Round 26)
+Task: 第26轮开发 - 快捷键帮助+本周数据卡片+右键菜单+样式打磨
+
+Work Log:
+- 读取 worklog.md 了解前25轮开发成果（4348行）
+- curl 验证 dev server（端口3000）+ scraper service（端口3003）运行状态
+- 验证8个核心API端点（全部200）
+- ESLint 零错误通过
+- 使用4个并行 Task 代理同时开发
+
+### 项目当前状态
+- Next.js (Turbopack) 运行在端口3000，Scraper mini-service 运行在端口3003
+- ESLint 零错误，8个核心API全部200
+- 页面编译成功
+- 已完成26轮迭代
+
+### 新功能
+
+1. **快捷键帮助弹窗**（keyboard-shortcuts-dialog.tsx）：
+   - 新建独立组件，Dialog 弹窗展示13个快捷键
+   - 5个分类（导航/面板/操作/显示/日历），每个分类有颜色编码Badge
+   - 快捷键以 `<kbd>` 样式渲染，支持组合键显示（⌘+K, ⌘+S 等）
+   - 按 `?` 键快捷打开（输入框中不触发）
+   - 集成到 page.tsx（与 CommandPalette 并列）
+   - 使用 CircleX 替代不存在的 Escape lucide 图标
+
+2. **本周运营数据总结卡片**（weekly-stats-card.tsx）：
+   - 新建独立组件，紧凑型数据卡片
+   - 自动计算本周数据：内容数、浏览量、点赞、评论、转发、收藏
+   - 与上周对比计算趋势（↑/↓/→ 箭头 + 百分比变化）
+   - 互动率计算 + 渐变进度条（颜色随比率变化：绿≥5%/黄≥2%/红<2%）
+   - 活跃天数指示器（7段条形图显示本周有内容的天数）
+   - 平台感知：头部渐变色和活跃条颜色跟随当前平台
+   - 集成到 data-and-reports.tsx 运营报告 tab 顶部
+
+3. **日历帖子右键菜单**（content-calendar.tsx）：
+   - 新增 ContextMenu 组件包裹日历网格单元格和列表视图项
+   - 「切换状态」子菜单：待规划/已生成/已优化/已发布，当前状态有 ✓ 标记
+   - 「复制内容」：一键复制帖子文案到剪贴板
+   - 「删除」：确认后删除帖子（destructive 红色样式）
+   - 3个 handler 函数：handleStatusChange (PUT API)、handleCopyContent (clipboard)、handleDeletePost (DELETE API)
+   - 操作后自动更新 Zustand store + toast 通知反馈
+   - 空日历格子不显示右键菜单
+
+### 样式打磨
+
+1. **`card-glass-hover`** 应用到 analytics-panel.tsx 统计卡片（浏览/点赞/评论/转发/总览）— 悬停时毛玻璃+紫色边框发光
+2. **`animate-slide-in-bottom`** 应用到 page.tsx Footer — 页面加载时从底部滑入
+3. **`animate-breathe`** 应用到移动端平台切换器活跃圆点 — 呼吸发光效果
+4. **`skeleton-shine`** 应用到 AnalyticsSkeleton 7个骨架屏区块 — 光泽扫过效果
+5. **`platform-transition`** 应用到 content-calendar.tsx 平台筛选按钮和生成按钮 — 平台切换平滑过渡
+
+### 新增文件
+- `src/components/keyboard-shortcuts-dialog.tsx` - 快捷键帮助弹窗组件
+- `src/components/right-panel/weekly-stats-card.tsx` - 本周数据总结卡片
+
+### 修改文件
+- `src/app/page.tsx` - 快捷键帮助集成 + Footer滑入动画 + 平台圆点呼吸动画
+- `src/components/right-panel/data-and-reports.tsx` - 本周数据卡片集成
+- `src/components/center-panel/content-calendar.tsx` - 右键菜单 + 平台过渡动画
+- `src/components/right-panel/analytics-panel.tsx` - 毛玻璃卡片 + 骨架屏光泽
+
+### QA验证结果
+- ✅ ESLint 零错误通过
+- ✅ 页面编译成功（HTTP 200）
+- ✅ 8个核心API全部返回200
+- ✅ Scraper service 运行正常（端口3003）
+
+Stage Summary:
+- 项目状态：稳定可运行，新功能已集成
+- 本轮新增 2 个文件，修改 4 个文件
+- 核心能力：快捷键帮助（?键唤起）、本周数据总结（趋势对比+互动率）、右键菜单（状态切换+复制+删除）、5处CSS动画应用
+- 未解决问题或风险：
+  1. 小红书反爬机制仍然存在（需要cookie/登录态才能获取完整笔记内容）
+  2. Scraper service需要手动启动
+  3. 旧组件清理待执行
+  4. 移动端真机测试未执行
+- 建议下一阶段优先事项：
+  1. 添加 scraper service 自动启动/监控机制（pm2或进程守护）
+  2. 旧组件清理（移除不再使用的旧版组件）
+  3. 运营报告自动生成（PDF/图片格式导出）
+  4. 移动端体验优化（真机测试+适配修复）
+  5. 多账号管理增强（支持同时追踪多个平台账号）
+  6. 数据导出增强（支持更多格式：Markdown/CSV）

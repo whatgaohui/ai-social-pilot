@@ -643,13 +643,13 @@ function AnalyticsSkeleton() {
   return (
     <div className="p-4 space-y-4">
       {/* Export buttons skeleton */}
-      <div className="flex gap-2">
+      <div className="skeleton-shine flex gap-2">
         <Skeleton className="h-8 flex-1 rounded-md" />
         <Skeleton className="h-8 flex-1 rounded-md" />
       </div>
 
       {/* Stats grid skeleton */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="skeleton-shine grid grid-cols-2 gap-3">
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
@@ -665,7 +665,7 @@ function AnalyticsSkeleton() {
       </div>
 
       {/* Engagement rate skeleton */}
-      <div className="rounded-lg border bg-card p-4">
+      <div className="skeleton-shine rounded-lg border bg-card p-4">
         <div className="flex items-center gap-4">
           <Skeleton className="h-[94px] w-[94px] rounded-full flex-shrink-0" />
           <div className="flex-1 space-y-2">
@@ -677,7 +677,7 @@ function AnalyticsSkeleton() {
       </div>
 
       {/* Donut chart skeleton */}
-      <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="skeleton-shine rounded-lg border bg-card p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Skeleton className="h-6 w-6 rounded" />
           <Skeleton className="h-4 w-24" />
@@ -696,7 +696,7 @@ function AnalyticsSkeleton() {
       </div>
 
       {/* Bar chart skeleton */}
-      <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="skeleton-shine rounded-lg border bg-card p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Skeleton className="h-6 w-6 rounded" />
           <Skeleton className="h-4 w-24" />
@@ -720,7 +720,7 @@ function AnalyticsSkeleton() {
       </div>
 
       {/* Status ring skeleton */}
-      <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="skeleton-shine rounded-lg border bg-card p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Skeleton className="h-6 w-6 rounded" />
           <Skeleton className="h-4 w-20" />
@@ -739,7 +739,7 @@ function AnalyticsSkeleton() {
       </div>
 
       {/* AI analysis skeleton */}
-      <div className="rounded-lg border bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 p-4 space-y-3">
+      <div className="skeleton-shine rounded-lg border bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Skeleton className="h-6 w-6 rounded" />
           <Skeleton className="h-4 w-20" />
@@ -948,7 +948,7 @@ export function AnalyticsPanel() {
                 whileHover={{ y: -2, transition: { duration: 0.2 } }}
                 transition={{ duration: 0.3, delay: idx * 0.06 }}
               >
-                <Card className="border-0 shadow-sm stat-card-hover">
+                <Card className="border-0 shadow-sm stat-card-hover card-glass-hover">
                   <CardContent className="p-3 flex items-center gap-3">
                     <div
                       className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center flex-shrink-0`}

@@ -15,7 +15,8 @@ import {
   CalendarDays, ChevronLeft, ChevronRight, Sparkles,
   CheckCircle2, Clock, FileText, Loader2, Calendar,
   BarChart3, Zap, LayoutGrid, List, Heart, MessageSquare,
-  Share2, Eye, Star, GripVertical, Save, Wifi
+  Share2, Eye, Star, GripVertical, Save, Wifi,
+  Wand2, Copy, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +29,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
+  ContextMenuShortcut,
+} from "@/components/ui/context-menu";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, addMonths, subMonths, parseISO } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
@@ -442,6 +454,47 @@ export function ContentCalendar() {
     }
   };
 
+  // Context menu handlers
+  const handleStatusChange = async (postId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/content/${postId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setContentPosts(contentPosts.map((p) => (p.id === postId ? { ...p, ...updated } : p)));
+        toast.success("状态已更新");
+      }
+    } catch {
+      toast.error("更新失败");
+    }
+  };
+
+  const handleCopyContent = (post: ContentPost) => {
+    if (post.content) {
+      navigator.clipboard.writeText(post.content);
+      toast.success("内容已复制到剪贴板");
+    } else {
+      toast.error("该帖子没有内容可复制");
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm("确定要删除这条内容吗？")) return;
+    try {
+      const res = await fetch(`/api/content/${postId}`, { method: "DELETE" });
+      if (res.ok) {
+        setContentPosts(contentPosts.filter((p) => p.id !== postId));
+        if (selectedPostId === postId) setSelectedPostId(null);
+        toast.success("内容已删除");
+      }
+    } catch {
+      toast.error("删除失败");
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 space-y-4">
@@ -509,7 +562,7 @@ export function ContentCalendar() {
                       key={pf.value}
                       variant={isSelected ? "secondary" : "ghost"}
                       size="sm"
-                      className={`h-7 px-2 text-[10px] gap-1 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20 ${
+                      className={`h-7 px-2 text-[10px] gap-1 platform-transition transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20 ${
                         isSelected && isWechat
                           ? 'bg-green-500 text-white hover:bg-green-600 shadow-sm shadow-green-200 dark:shadow-green-900/30'
                           : isSelected && isXH
@@ -555,7 +608,7 @@ export function ContentCalendar() {
               onClick={createPlanAndGenerate}
               disabled={isGenerating}
               size="sm"
-              className={`h-8 ${isXHS ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-md shadow-red-200 dark:shadow-red-900/30' : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md shadow-purple-200 dark:shadow-purple-900/30'} text-white`}
+              className={`h-8 platform-transition ${isXHS ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-md shadow-red-200 dark:shadow-red-900/30' : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md shadow-purple-200 dark:shadow-purple-900/30'} text-white`}
             >
               {isGenerating ? (
                 <>
@@ -676,7 +729,7 @@ export function ContentCalendar() {
                       ? PLATFORM_RING_COLORS[primaryPost.platform] || ''
                       : '';
 
-                    return (
+                    const cellContent = (
                       <div
                         key={dateStr}
                         draggable={!!primaryPost}
@@ -767,6 +820,58 @@ export function ContentCalendar() {
                         </motion.div>
                       </div>
                     );
+
+                    if (primaryPost) {
+                      return (
+                        <ContextMenu key={dateStr}>
+                          <ContextMenuTrigger asChild>
+                            {cellContent}
+                          </ContextMenuTrigger>
+                          <ContextMenuContent className="w-48">
+                            <ContextMenuSub>
+                              <ContextMenuSubTrigger>
+                                <Clock className="h-4 w-4 mr-2" />
+                                切换状态
+                              </ContextMenuSubTrigger>
+                              <ContextMenuSubContent>
+                                <ContextMenuItem onClick={() => handleStatusChange(primaryPost.id, "planned")}>
+                                  <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                                  待规划
+                                  {primaryPost.status === "planned" && <CheckCircle2 className="h-3 w-3 ml-auto text-emerald-500" />}
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => handleStatusChange(primaryPost.id, "generated")}>
+                                  <Sparkles className="h-4 w-4 mr-2 text-violet-500" />
+                                  已生成
+                                  {primaryPost.status === "generated" && <CheckCircle2 className="h-3 w-3 ml-auto text-emerald-500" />}
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => handleStatusChange(primaryPost.id, "optimized")}>
+                                  <Wand2 className="h-4 w-4 mr-2 text-amber-500" />
+                                  已优化
+                                  {primaryPost.status === "optimized" && <CheckCircle2 className="h-3 w-3 ml-auto text-emerald-500" />}
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => handleStatusChange(primaryPost.id, "published")}>
+                                  <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-500" />
+                                  已发布
+                                  {primaryPost.status === "published" && <CheckCircle2 className="h-3 w-3 ml-auto text-emerald-500" />}
+                                </ContextMenuItem>
+                              </ContextMenuSubContent>
+                            </ContextMenuSub>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem onClick={() => handleCopyContent(primaryPost)}>
+                              <Copy className="h-4 w-4 mr-2" />
+                              复制内容
+                              <ContextMenuShortcut>⌘C</ContextMenuShortcut>
+                            </ContextMenuItem>
+                            <ContextMenuItem onClick={() => handleDeletePost(primaryPost.id)} variant="destructive">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              删除
+                            </ContextMenuItem>
+                          </ContextMenuContent>
+                        </ContextMenu>
+                      );
+                    }
+
+                    return cellContent;
                   })}
                 </div>
 
@@ -840,105 +945,148 @@ export function ContentCalendar() {
                     }
 
                     return (
-                      <motion.div
-                        key={post.id}
-                        layout
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, delay: index * 0.015 }}
-                        onClick={() => handleListItemClick(post)}
-                        className={`
-                          group relative rounded-lg border p-3 cursor-pointer transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:outline-none
-                          hover:shadow-md hover:border-primary/30
-                          ${isSelected 
-                            ? "ring-2 ring-primary bg-primary/[0.03] border-primary/40 shadow-md calendar-glow" 
-                            : index % 2 === 1
-                              ? "bg-muted/40 border-border"
-                              : "bg-card border-border"
-                          }
-                        `}
-                      >
-                        <div className="flex items-start gap-3">
-                          {/* Date Column */}
-                          <div className="flex-shrink-0 w-[68px]">
-                            <div className="text-[10px] text-muted-foreground leading-tight">
-                              {formattedDate}
-                            </div>
-                          </div>
+                      <ContextMenu key={post.id}>
+                        <ContextMenuTrigger asChild>
+                          <motion.div
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, delay: index * 0.015 }}
+                            onClick={() => handleListItemClick(post)}
+                            className={`
+                              group relative rounded-lg border p-3 cursor-pointer transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:outline-none
+                              hover:shadow-md hover:border-primary/30
+                              ${isSelected
+                                ? "ring-2 ring-primary bg-primary/[0.03] border-primary/40 shadow-md calendar-glow"
+                                : index % 2 === 1
+                                  ? "bg-muted/40 border-border"
+                                  : "bg-card border-border"
+                              }
+                            `}
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Date Column */}
+                              <div className="flex-shrink-0 w-[68px]">
+                                <div className="text-[10px] text-muted-foreground leading-tight">
+                                  {formattedDate}
+                                </div>
+                              </div>
 
-                          {/* Content Column */}
-                          <div className="flex-1 min-w-0 space-y-1.5">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {/* Platform indicator */}
-                              {post.platform && (
-                                <Badge
-                                  className={`text-[8px] px-1 py-0 h-3.5 leading-3 ${post.platform === 'xiaohongshu' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300'}`}
-                                  variant="secondary"
-                                >
-                                  {post.platform === 'xiaohongshu' ? '小红书' : '朋友圈'}
-                                </Badge>
-                              )}
-                              <Badge
-                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${getContentTypeColorForPost(post)}`}
-                                variant="secondary"
-                              >
-                                {getContentTypeLabelForPost(post)}
-                              </Badge>
-                              <Badge
-                                className={`text-[9px] px-1.5 py-0 h-4 leading-4 animate-bounce-in ${STATUS_BADGE_COLORS[post.status as PostStatus] || ""}`}
-                                variant="secondary"
-                              >
-                                {POST_STATUS_LABELS[post.status as PostStatus]}
-                              </Badge>
-                              {post.aiScore > 0 && (
-                                <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
-                                  <Star className="h-2.5 w-2.5" />
-                                  {post.aiScore}
-                                </span>
-                              )}
-                            </div>
+                              {/* Content Column */}
+                              <div className="flex-1 min-w-0 space-y-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {/* Platform indicator */}
+                                  {post.platform && (
+                                    <Badge
+                                      className={`text-[8px] px-1 py-0 h-3.5 leading-3 ${post.platform === 'xiaohongshu' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300'}`}
+                                      variant="secondary"
+                                    >
+                                      {post.platform === 'xiaohongshu' ? '小红书' : '朋友圈'}
+                                    </Badge>
+                                  )}
+                                  <Badge
+                                    className={`text-[9px] px-1.5 py-0 h-4 leading-4 ${getContentTypeColorForPost(post)}`}
+                                    variant="secondary"
+                                  >
+                                    {getContentTypeLabelForPost(post)}
+                                  </Badge>
+                                  <Badge
+                                    className={`text-[9px] px-1.5 py-0 h-4 leading-4 animate-bounce-in ${STATUS_BADGE_COLORS[post.status as PostStatus] || ""}`}
+                                    variant="secondary"
+                                  >
+                                    {POST_STATUS_LABELS[post.status as PostStatus]}
+                                  </Badge>
+                                  {post.aiScore > 0 && (
+                                    <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                                      <Star className="h-2.5 w-2.5" />
+                                      {post.aiScore}
+                                    </span>
+                                  )}
+                                </div>
 
-                            <p className="text-xs font-medium truncate">
-                              {post.topic}
-                            </p>
+                                <p className="text-xs font-medium truncate">
+                                  {post.topic}
+                                </p>
 
-                            <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
-                              {post.content.length > 80 ? post.content.slice(0, 80) + '...' : post.content}
-                            </p>
+                                <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+                                  {post.content.length > 80 ? post.content.slice(0, 80) + '...' : post.content}
+                                </p>
 
-                            {/* Engagement stats */}
-                            {(post.likes > 0 || post.comments > 0 || post.views > 0 || post.shares > 0) && (
-                              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                                {post.views > 0 && (
-                                  <span className="flex items-center gap-0.5">
-                                    <Eye className="h-2.5 w-2.5" />{post.views}
-                                  </span>
-                                )}
-                                {post.likes > 0 && (
-                                  <span className="flex items-center gap-0.5 text-rose-500">
-                                    <Heart className="h-2.5 w-2.5" />{post.likes}
-                                  </span>
-                                )}
-                                {post.comments > 0 && (
-                                  <span className="flex items-center gap-0.5">
-                                    <MessageSquare className="h-2.5 w-2.5" />{post.comments}
-                                  </span>
-                                )}
-                                {post.shares > 0 && (
-                                  <span className="flex items-center gap-0.5">
-                                    <Share2 className="h-2.5 w-2.5" />{post.shares}
-                                  </span>
+                                {/* Engagement stats */}
+                                {(post.likes > 0 || post.comments > 0 || post.views > 0 || post.shares > 0) && (
+                                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                                    {post.views > 0 && (
+                                      <span className="flex items-center gap-0.5">
+                                        <Eye className="h-2.5 w-2.5" />{post.views}
+                                      </span>
+                                    )}
+                                    {post.likes > 0 && (
+                                      <span className="flex items-center gap-0.5 text-rose-500">
+                                        <Heart className="h-2.5 w-2.5" />{post.likes}
+                                      </span>
+                                    )}
+                                    {post.comments > 0 && (
+                                      <span className="flex items-center gap-0.5">
+                                        <MessageSquare className="h-2.5 w-2.5" />{post.comments}
+                                      </span>
+                                    )}
+                                    {post.shares > 0 && (
+                                      <span className="flex items-center gap-0.5">
+                                        <Share2 className="h-2.5 w-2.5" />{post.shares}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
-                            )}
-                          </div>
 
-                          {/* Status dot */}
-                          <div className="flex-shrink-0 pt-1">
-                            <div className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
-                          </div>
-                        </div>
-                      </motion.div>
+                              {/* Status dot */}
+                              <div className="flex-shrink-0 pt-1">
+                                <div className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
+                              </div>
+                            </div>
+                          </motion.div>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent className="w-48">
+                          <ContextMenuSub>
+                            <ContextMenuSubTrigger>
+                              <Clock className="h-4 w-4 mr-2" />
+                              切换状态
+                            </ContextMenuSubTrigger>
+                            <ContextMenuSubContent>
+                              <ContextMenuItem onClick={() => handleStatusChange(post.id, "planned")}>
+                                <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                                待规划
+                                {post.status === "planned" && <CheckCircle2 className="h-3 w-3 ml-auto text-emerald-500" />}
+                              </ContextMenuItem>
+                              <ContextMenuItem onClick={() => handleStatusChange(post.id, "generated")}>
+                                <Sparkles className="h-4 w-4 mr-2 text-violet-500" />
+                                已生成
+                                {post.status === "generated" && <CheckCircle2 className="h-3 w-3 ml-auto text-emerald-500" />}
+                              </ContextMenuItem>
+                              <ContextMenuItem onClick={() => handleStatusChange(post.id, "optimized")}>
+                                <Wand2 className="h-4 w-4 mr-2 text-amber-500" />
+                                已优化
+                                {post.status === "optimized" && <CheckCircle2 className="h-3 w-3 ml-auto text-emerald-500" />}
+                              </ContextMenuItem>
+                              <ContextMenuItem onClick={() => handleStatusChange(post.id, "published")}>
+                                <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-500" />
+                                已发布
+                                {post.status === "published" && <CheckCircle2 className="h-3 w-3 ml-auto text-emerald-500" />}
+                              </ContextMenuItem>
+                            </ContextMenuSubContent>
+                          </ContextMenuSub>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem onClick={() => handleCopyContent(post)}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            复制内容
+                            <ContextMenuShortcut>⌘C</ContextMenuShortcut>
+                          </ContextMenuItem>
+                          <ContextMenuItem onClick={() => handleDeletePost(post.id)} variant="destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            删除
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     );
                   })
                 )}
