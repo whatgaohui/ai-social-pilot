@@ -14,8 +14,9 @@ import { WeeklyStatsCard } from "@/components/right-panel/weekly-stats-card";
 import ContentCompetitionPanel from "@/components/right-panel/content-competition-panel";
 import { TrendComparisonChart } from "@/components/right-panel/trend-comparison-chart";
 import { CompetitorCalendarView } from "@/components/right-panel/competitor-calendar-view";
-import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles } from "lucide-react";
+import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity } from "lucide-react";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
+import { OpsRhythmDashboard } from "@/components/right-panel/ops-rhythm-dashboard";
 
 /**
  * DataAndReports — unified "数据与报告" view that merges
@@ -85,6 +86,17 @@ export function DataAndReports() {
               >
                 <LayoutDashboard className="h-3.5 w-3.5" />
                 运营看板
+              </TabsTrigger>
+              <TabsTrigger
+                value="rhythm"
+                className={`flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm ${
+                  !isWeChat
+                    ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
+                    : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
+                }`}
+              >
+                <Activity className="h-3.5 w-3.5" />
+                运营节奏
               </TabsTrigger>
             </TabsList>
 
@@ -170,6 +182,16 @@ export function DataAndReports() {
             >
               <div className="flex flex-col flex-1 min-h-0">
                 <OperationsDashboard />
+              </div>
+            </TabsContent>
+
+            {/* ── Ops Rhythm Tab ────────────────────────────────────── */}
+            <TabsContent
+              value="rhythm"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
+            >
+              <div className="flex flex-col flex-1 min-h-0">
+                <OpsRhythmDashboard />
               </div>
             </TabsContent>
           </Tabs>

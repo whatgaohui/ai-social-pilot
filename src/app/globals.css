@@ -5831,3 +5831,341 @@ textarea {
   gap: 8px;
 }
 
+/* ─── Iteration 34: Responsive & Accessibility ─────────────────────────── */
+
+/* Skip navigation link — visible on keyboard focus */
+.skip-nav {
+  position: fixed;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 8px 24px;
+  border-radius: 0 0 8px 8px;
+  background: oklch(0.205 0 0);
+  color: oklch(0.985 0 0);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  outline: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: top 0.2s ease;
+}
+.skip-nav:focus {
+  top: 0;
+}
+.dark .skip-nav {
+  background: oklch(0.922 0 0);
+  color: oklch(0.205 0 0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Enhanced focus ring — WCAG 2.1 AA compliant */
+.focus-ring:focus-visible {
+  outline: 2px solid rgba(139, 92, 246, 0.6);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.dark .focus-ring:focus-visible {
+  outline-color: rgba(167, 139, 250, 0.6);
+}
+/* High contrast focus for macOS */
+@media (prefers-contrast: high) {
+  .focus-ring:focus-visible {
+    outline: 3px solid oklch(0.205 0 0);
+    outline-offset: 3px;
+  }
+}
+
+/* Container queries for component-level responsive */
+.container-sm {
+  container-type: inline-size;
+  container-name: sm;
+}
+.container-md {
+  container-type: inline-size;
+  container-name: md;
+}
+.container-lg {
+  container-type: inline-size;
+  container-name: lg;
+}
+
+/* Safe area insets for notched devices */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.safe-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Touch target sizes (minimum 44px per WCAG) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Text selection colors per platform */
+.selection-wechat ::selection {
+  background: oklch(0.55 0.2 300);
+  color: white;
+}
+.selection-xiaohongshu ::selection {
+  background: oklch(0.6 0.2 10);
+  color: white;
+}
+
+/* Print styles */
+@media print {
+  .no-print,
+  .skip-nav,
+  [data-sonner-toaster],
+  .toast-container {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 10pt;
+    color: #666;
+  }
+  header, footer {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Reduced data usage — disable decorative images/animations */
+@media (prefers-reduced-data: reduce) {
+  *,
+  *::before,
+  *::after {
+    background-image: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Horizontal scroll container — touch-friendly */
+.scroll-x-container {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-x-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive text truncation */
+.truncate-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── Footer-specific animations ──────────────────────────────────────── */
+
+/* Footer refresh pulse */
+@keyframes footer-refresh {
+  0% { box-shadow: inset 0 1px 0 0 rgba(139, 92, 246, 0.08); }
+  50% { box-shadow: inset 0 1px 0 0 rgba(139, 92, 246, 0.25), 0 0 12px rgba(139, 92, 246, 0.06); }
+  100% { box-shadow: inset 0 1px 0 0 rgba(139, 92, 246, 0.08); }
+}
+.footer-refresh-pulse {
+  animation: footer-refresh 0.6s ease-out;
+}
+
+/* Footer slide-in from bottom */
+@keyframes slide-in-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.35s ease-out;
+}
+
+/* Respect prefers-reduced-motion for footer animations */
+@media (prefers-reduced-motion: reduce) {
+  .footer-refresh-pulse,
+  .animate-slide-in-bottom {
+    animation: none !important;
+  }
+  .skip-nav {
+    transition: none !important;
+  }
+}
+
+
+/* ====== Round 34: Enhanced Content Editor Styles ====== */
+
+/* Floating editor toolbar */
+.editor-toolbar {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.dark .editor-toolbar {
+  background: rgba(20, 20, 30, 0.88);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Inline emoji picker */
+.inline-emoji-picker {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+.dark .inline-emoji-picker {
+  background: rgba(20, 20, 30, 0.95);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Emoji grid layout */
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  padding: 4px;
+}
+.emoji-grid button {
+  height: 32px;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+.emoji-grid button:hover {
+  background: rgba(0, 0, 0, 0.06);
+  transform: scale(1.2);
+}
+.dark .emoji-grid button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Writing goal progress bar */
+.writing-goal-bar {
+  padding: 2px 0;
+}
+.writing-goal-bar .h-1\.5 {
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.writing-goal-bar .h-1\.5 > div {
+  border-radius: 9999px;
+  transition: width 0.4s ease-out, background-color 0.3s ease;
+}
+
+/* Auto save indicator animation */
+.auto-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+.auto-save-indicator.saved {
+  color: oklch(0.65 0.2 150);
+}
+.auto-save-indicator.saving {
+  color: oklch(0.556 0 0);
+}
+.auto-save-indicator.unsaved {
+  color: oklch(0.75 0.18 85);
+}
+
+/* Template chip hover/active states */
+.template-chip {
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  user-select: none;
+}
+.template-chip:hover {
+  background: rgba(139, 92, 246, 0.06);
+  border-color: rgba(139, 92, 246, 0.2);
+  color: rgb(139, 92, 246);
+}
+.dark .template-chip {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.dark .template-chip:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.25);
+  color: rgb(167, 139, 250);
+}
+.template-chip:active {
+  transform: scale(0.97);
+}
+
+/* Editor textarea auto-resize */
+.enhanced-textarea {
+  min-height: 120px;
+  max-height: 400px;
+  overflow-y: auto;
+  resize: none;
+  field-sizing: content;
+}
+
+/* Toolbar button active state */
+.editor-toolbar button:active {
+  transform: scale(0.93);
+}
+
+/* Smooth textarea transition */
+.editor-toolbar ~ textarea {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}

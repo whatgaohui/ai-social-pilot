@@ -35,6 +35,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
+        {/* Skip navigation link — WCAG 2.1 AA */}
+        <a href="#main-content" className="skip-nav">
+          跳到主要内容
+        </a>
         <ToastProvider>
           <ErrorBoundary sectionName="应用根节点">
             {children}

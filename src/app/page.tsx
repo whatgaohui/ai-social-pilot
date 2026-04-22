@@ -7,31 +7,32 @@ import { KnowledgeBase } from "@/components/left-panel/knowledge-base";
 import { CompactCalendar } from "@/components/left-panel/compact-calendar";
 import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
 import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templates";
-import { ContentWorkspace } from "@/components/right-panel/content-workspace";
-import { DataAndReports } from "@/components/right-panel/data-and-reports";
-import { AccountCollector } from "@/components/right-panel/account-collector";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { WelcomeOnboarding } from "@/components/welcome-onboarding";
-import { PlatformAccountPanel } from "@/components/platform-account-panel";
-import { AIWritingAssistant } from "@/components/ai-writing-assistant";
-import { SettingsCenter } from "@/components/settings-center";
+import {
+  LazySettingsCenter,
+  LazyCommandPalette,
+  LazyContentSearch,
+  LazyKeyboardShortcutsDialog,
+  LazyPlatformAccountPanel,
+  LazyAIWritingAssistant,
+  LazyWelcomeOnboarding,
+  LazyDashboardOverview,
+  LazyContentWorkspace,
+  LazyDataAndReports,
+  LazyAccountCollector,
+} from "@/components/lazy-components";
 import {
   Sparkles, BookOpen, PenTool, CalendarDays,
   BarChart3, Zap, FileText,
   Settings, Globe, User, Check, Search,
   HelpCircle,
 } from "lucide-react";
-import { CommandPalette } from "@/components/command-palette";
-import { ContentSearch } from "@/components/content-search";
-import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
-import { DashboardOverview } from "@/components/dashboard-overview";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
-import { useRipple } from "@/hooks/use-ripple";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PageTransition } from "@/components/page-transition";
 import { NotificationPing } from "@/components/notification-ping";
@@ -39,6 +40,7 @@ import { EnhancedNotificationBell } from "@/components/notification-center-enhan
 import { useSmartReminders } from "@/hooks/use-smart-reminders";
 import { useAchievements } from "@/components/achievement-toast";
 import { QuickStatsFloat } from "@/components/quick-stats-float";
+import { EnhancedFooter } from "@/components/enhanced-footer";
 
 // ─── Notification Enhancement Hooks ──────────────────────────────────────
 function NotificationHooks() {
@@ -383,18 +385,18 @@ function MainContentPanel() {
       </div>
 
       {/* Dashboard Overview - collapsible, only in workspace tab */}
-      {effectiveTab === 'workspace' && <DashboardOverview />}
+      {effectiveTab === 'workspace' && <LazyDashboardOverview />}
 
       {/* Tab Content - each tab gets full remaining height */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {effectiveTab === 'workspace' && (
-          <ContentWorkspace />
+          <LazyContentWorkspace />
         )}
         {effectiveTab === 'data' && (
-          <DataAndReports />
+          <LazyDataAndReports />
         )}
         {effectiveTab === 'collect' && (
-          <AccountCollector selectedPost={selectedPost ? { id: selectedPost.id, topic: selectedPost.topic, platform: selectedPost.platform || '' } : null} />
+          <LazyAccountCollector selectedPost={selectedPost ? { id: selectedPost.id, topic: selectedPost.topic, platform: selectedPost.platform || '' } : null} />
         )}
       </div>
     </div>
@@ -515,7 +517,7 @@ export default function Home() {
       {/* 顶部加载进度条 */}
       <DataInitializer />
       {/* Top Header */}
-      <header className="header-gradient-border border-b border-border/50 bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300">
+      <header role="banner" className="header-gradient-border border-b border-border/50 bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <motion.div
@@ -630,7 +632,7 @@ export default function Home() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="gear-spin">
-                    <SettingsCenter connectedPlatforms={connectedPlatforms} />
+                    <LazySettingsCenter connectedPlatforms={connectedPlatforms} />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs">
@@ -662,11 +664,11 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      <main id="main-content" className="flex-1 overflow-hidden">
         <PageTransition>
         {showWelcome ? (
           <div className="h-full">
-            <WelcomeOnboarding onComplete={() => setOnboardingCompleted(true)} />
+            <LazyWelcomeOnboarding onComplete={() => setOnboardingCompleted(true)} />
           </div>
         ) : (
           <>
@@ -864,22 +866,22 @@ export default function Home() {
       </div>
 
       {/* Content Search Dialog */}
-      <ContentSearch
+      <LazyContentSearch
         open={contentSearchOpen}
         onOpenChange={setContentSearchOpen}
       />
 
       {/* Command Palette */}
-      <CommandPalette
+      <LazyCommandPalette
         open={commandPaletteOpen}
         onOpenChange={setCommandPaletteOpen}
       />
 
       {/* Keyboard Shortcuts Dialog */}
-      <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <LazyKeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
 
       {/* Platform Account Panel Dialog */}
-      <PlatformAccountPanel
+      <LazyPlatformAccountPanel
         open={accountPanelOpen}
         onOpenChange={setAccountPanelOpen}
         connectedCount={connectedPlatforms}
@@ -890,30 +892,10 @@ export default function Home() {
       <QuickStatsFloat />
 
       {/* AI Writing Assistant FAB */}
-      <AIWritingAssistant />
+      <LazyAIWritingAssistant />
 
       {/* Footer */}
-      <footer className="hidden sm:block footer-gradient-border bg-background/85 backdrop-blur-xl py-2 px-4 mt-auto pb-safe animate-slide-in-bottom">
-        <div className="flex items-center justify-between text-[9px] text-muted-foreground/70">
-          <div className="flex items-center gap-2">
-            <motion.div
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="h-1.5 w-1.5 rounded-full bg-emerald-500"
-            />
-            <span className="font-medium text-foreground/40">{platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}</span>
-            <span className="text-foreground/30">·</span>
-            <span>{platform === 'wechat' ? '让每条朋友圈都有价值' : '让每篇笔记都成爆款'}</span>
-          </div>
-          <span className="flex items-center gap-2">
-            <span className="version-badge">v2.1</span>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full ai-badge-pulse bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/15">
-              <Sparkles className="h-3 w-3 text-violet-500" />
-              <span className="font-medium text-violet-600 dark:text-violet-400">AI Powered</span>
-            </span>
-          </span>
-        </div>
-      </footer>
+      <EnhancedFooter />
     </div>
   );
 }

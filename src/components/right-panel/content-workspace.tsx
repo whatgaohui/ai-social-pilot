@@ -41,6 +41,7 @@ import type { PostStatus } from "@/types";
 
 import { PostDetailHeader } from "@/components/right-panel/post-detail-header";
 import { ContentEditor } from "@/components/right-panel/content-editor";
+import { EnhancedContentEditor } from "@/components/right-panel/enhanced-content-editor";
 import { PostActions } from "@/components/right-panel/post-actions";
 import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 import { XiaohongshuPreview } from "@/components/right-panel/xiaohongshu-preview";
@@ -414,7 +415,7 @@ export function ContentWorkspace() {
                   exit="exit"
                   className="space-y-3"
                 >
-                  <ContentEditor post={selectedPost} isXHS={isXHS} onScoreBadgeClick={handleScoreBadgeClick} />
+                  <EnhancedContentEditor post={selectedPost} isXHS={isXHS} onScoreBadgeClick={handleScoreBadgeClick} />
 
                   {/* ── Quick Emoji Picker Row ─────────────────────────── */}
                   <div className="flex items-center gap-1">
