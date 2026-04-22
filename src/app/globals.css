@@ -1052,7 +1052,33 @@ textarea {
   transition: transform 0.1s ease, box-shadow 0.15s ease;
 }
 .btn-press:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+}
+
+/* Success flash for copy/action buttons */
+@keyframes btn-flash-success {
+  0% { background-color: inherit; }
+  30% { background-color: oklch(0.85 0.15 155); }
+  100% { background-color: inherit; }
+}
+.btn-flash-success {
+  animation: btn-flash-success 0.6s ease-out;
+}
+
+/* Subtle pulse glow on click */
+@keyframes btn-click-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+}
+.btn-click-pulse {
+  animation: btn-click-pulse 0.4s ease-out;
+}
+
+/* Copy button success state */
+.btn-copy-success {
+  color: oklch(0.65 0.2 150) !important;
+  transition: color 0.2s ease;
 }
 
 /* Calendar selected glow pulse */

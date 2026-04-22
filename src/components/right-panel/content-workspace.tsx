@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import {
   CalendarDays,
@@ -13,9 +13,7 @@ import {
   Sparkles,
   Rocket,
   History,
-  BarChart3,
   MessageSquare,
-  Heart,
   ThumbsUp,
   Repeat2,
   Eye as EyeIcon,
@@ -32,10 +30,9 @@ import { PostActions } from "@/components/right-panel/post-actions";
 import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 import { XiaohongshuPreview } from "@/components/right-panel/xiaohongshu-preview";
 import { PublishingAssistant } from "@/components/right-panel/publishing-assistant";
-import { CrossPlatformPublish } from "@/components/right-panel/cross-platform-publish";
+// CrossPlatformPublish removed - feature simplified
 import { HashtagRecommender } from "@/components/right-panel/hashtag-recommender";
 import { CoverImageGenerator } from "@/components/right-panel/cover-image-generator";
-import { ABComparison } from "@/components/right-panel/ab-comparison";
 import { TitleABTest } from "@/components/right-panel/title-ab-test";
 import { QualityScorer } from "@/components/right-panel/quality-scorer";
 import { ContentHistory } from "@/components/right-panel/content-history";
@@ -151,10 +148,11 @@ function EmptyState() {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 // Sub-tabs for the tool panel below the editor
+// Using a different visual style (underline-style) to differentiate from action buttons above
 const TOOL_TABS = [
-  { value: "ai", icon: Sparkles, label: "AI工具" },
-  { value: "publish", icon: Rocket, label: "发布" },
-  { value: "history", icon: History, label: "历史" },
+  { value: "ai", icon: Sparkles, label: "智能分析", color: "text-amber-500" },
+  { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500" },
+  { value: "history", icon: History, label: "版本记录", color: "text-violet-500" },
 ] as const;
 
 type ToolTab = (typeof TOOL_TABS)[number]["value"];
@@ -268,24 +266,37 @@ export function ContentWorkspace() {
 
           <Separator />
 
-          {/* ── Tool Tabs ────────────────────────────────────────────────── */}
+          {/* ── Tool Tabs (underline style, distinct from action buttons) ──── */}
           <motion.div variants={staggerItem}>
             <Tabs value={toolTab} onValueChange={(v) => { setToolTab(v as ToolTab); setShowHistory(false); }}>
-              <TabsList className="w-full h-9 bg-muted/50 p-0.5">
+              {/* Underline-style tab bar — visually distinct from the pill buttons above */}
+              <div className="relative flex items-center border-b border-border">
                 {TOOL_TABS.map((tab) => {
                   const Icon = tab.icon;
+                  const isActive = toolTab === tab.value;
                   return (
-                    <TabsTrigger
+                    <button
                       key={tab.value}
-                      value={tab.value}
-                      className="flex-1 h-8 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm"
+                      onClick={() => setToolTab(tab.value as ToolTab)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
+                        isActive
+                          ? `text-foreground ${tab.color}`
+                          : "text-muted-foreground hover:text-foreground/70"
+                      }`}
                     >
                       <Icon className="h-3.5 w-3.5" />
                       {tab.label}
-                    </TabsTrigger>
+                      {isActive && (
+                        <motion.div
+                          layoutId="tool-tab-indicator"
+                          className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-current"
+                          transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                        />
+                      )}
+                    </button>
                   );
                 })}
-              </TabsList>
+              </div>
 
               {/* ── AI Tools Tab ──────────────────────────────────────────── */}
               <div className="mt-3 space-y-3">
@@ -297,7 +308,6 @@ export function ContentWorkspace() {
                     transition={{ duration: 0.2 }}
                     className="space-y-3"
                   >
-                    <ABComparison post={selectedPost} />
                     {isXHS && <TitleABTest post={selectedPost} />}
                     <QualityScorer post={selectedPost} />
                   </motion.div>
@@ -316,7 +326,6 @@ export function ContentWorkspace() {
                       post={selectedPost}
                       onPlatformConnect={handlePlatformConnect}
                     />
-                    <CrossPlatformPublish />
                     {isXHS && (
                       <>
                         <HashtagRecommender

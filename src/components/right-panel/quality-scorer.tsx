@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Collapsible,
@@ -21,6 +21,8 @@ import {
   Award,
   TrendingUp,
   Star,
+  Wand2,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -92,7 +94,6 @@ function CircularProgress({ score, size = 120, strokeWidth = 8 }: { score: numbe
             />
           </linearGradient>
         </defs>
-        {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -101,7 +102,6 @@ function CircularProgress({ score, size = 120, strokeWidth = 8 }: { score: numbe
           strokeWidth={strokeWidth}
           className="stroke-muted"
         />
-        {/* Progress circle */}
         <motion.circle
           cx={size / 2}
           cy={size / 2}
@@ -178,6 +178,13 @@ export function QualityScorer({ post }: { post: ContentPost }) {
   const [isOpen, setIsOpen] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<QualityScoreResult | null>(null);
+  const [optimizing, setOptimizing] = useState(false);
+
+  // Track the content that was last scored, so we can detect changes
+  const lastScoredContentRef = useRef<string | null>(null);
+
+  // Detect if content has changed since last score
+  const contentChanged = result && lastScoredContentRef.current !== post.content;
 
   const handleScore = async () => {
     if (!post.content) {
@@ -203,7 +210,10 @@ export function QualityScorer({ post }: { post: ContentPost }) {
       if (res.ok) {
         const data = await res.json();
         setResult(data);
-        toast.success("AI质量评分完成");
+        lastScoredContentRef.current = post.content;
+        // Auto-save score to post
+        updateContentPost(post.id, { aiScore: data.overallScore });
+        toast.success(`AI质量评分完成：${data.overallScore}分`);
       } else {
         const errData = await res.json();
         toast.error(errData.error || "评分失败，请重试");
@@ -215,10 +225,94 @@ export function QualityScorer({ post }: { post: ContentPost }) {
     }
   };
 
-  const handleApplyScore = () => {
-    if (!result) return;
-    updateContentPost(post.id, { aiScore: result.overallScore });
-    toast.success(`已应用评分：${result.overallScore}分`);
+  // Generate optimization plan based on improvement suggestions
+  const handleGenerateOptimization = async () => {
+    if (!result || !post.content) return;
+
+    setOptimizing(true);
+
+    // Build the optimization prompt from the score results
+    const improvementsText = result.improvements.join("\n- ");
+    const dimensionsText = result.dimensions
+      .filter((d) => d.score < 70)
+      .map((d) => `${d.name}（${d.score}分）：${d.suggestion}`)
+      .join("\n");
+
+    const prompt = `请根据以下AI评分的改进建议，对原文进行针对性优化改写。
+
+原文：
+${post.content}
+
+评分结果：${result.overallScore}分
+改进建议：
+- ${improvementsText}
+
+需要重点改进的维度：
+${dimensionsText}
+
+要求：
+1. 针对每条改进建议进行实质性修改
+2. 保留原文的核心信息和风格
+3. 优化后的文案要自然流畅，不要生硬
+4. 直接输出优化后的完整文案，不要解释修改了什么`;
+
+    try {
+      const res = await fetch("/api/ai/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post: { ...post, content: post.content },
+          persona: useAppStore.getState().persona,
+          feedback: prompt,
+          knowledgeItems: useAppStore.getState().knowledgeItems,
+          platform,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Save version snapshot before optimization
+        try {
+          await fetch(`/api/content/${post.id}/versions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: post.content,
+              changeType: "optimize",
+              summary: `评分优化（原${result.overallScore}分）`,
+              aiScore: result.overallScore,
+            }),
+          });
+        } catch (e) {
+          console.error("Failed to save version snapshot:", e);
+        }
+
+        // Apply optimized content
+        const updateRes = await fetch(`/api/content/${post.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: data.content,
+            status: "optimized",
+          }),
+        });
+
+        if (updateRes.ok) {
+          const updated = await updateRes.json();
+          updateContentPost(post.id, updated);
+          // Clear result since content changed
+          setResult(null);
+          lastScoredContentRef.current = null;
+          toast.success("已根据评分建议生成优化方案");
+        }
+      } else {
+        toast.error("生成优化方案失败，请重试");
+      }
+    } catch {
+      toast.error("网络错误，请重试");
+    } finally {
+      setOptimizing(false);
+    }
   };
 
   return (
@@ -229,6 +323,7 @@ export function QualityScorer({ post }: { post: ContentPost }) {
             variant="ghost"
             className="w-full h-auto p-4 hover:bg-muted/50 rounded-lg"
             onClick={(e) => {
+              // First click: auto-trigger scoring (when no result yet and not already scoring)
               if (!isOpen && !result && !scoring) {
                 e.preventDefault();
                 handleScore();
@@ -244,11 +339,18 @@ export function QualityScorer({ post }: { post: ContentPost }) {
                 {result && (
                   <span className={`text-xs font-bold ${getScoreColor(result.overallScore)}`}>
                     {result.overallScore}分
+                    {contentChanged && (
+                      <span className="text-amber-500 ml-1 text-[10px] font-normal">（内容已变更）</span>
+                    )}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 {scoring && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                {/* Show re-score icon when content changed */}
+                {contentChanged && !scoring && (
+                  <RefreshCw className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+                )}
                 {isOpen ? (
                   <ChevronUp className="h-4 w-4 text-muted-foreground" />
                 ) : (
@@ -364,15 +466,40 @@ export function QualityScorer({ post }: { post: ContentPost }) {
                     </div>
                   </div>
 
-                  {/* Apply Score Button */}
-                  <Button
-                    onClick={handleApplyScore}
-                    size="sm"
-                    className="w-full h-9 text-xs gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    应用评分
-                  </Button>
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    {/* Generate Optimization Plan - main action */}
+                    <Button
+                      onClick={handleGenerateOptimization}
+                      disabled={optimizing || result.improvements.length === 0}
+                      size="sm"
+                      className="w-full h-9 text-xs gap-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-sm btn-press"
+                    >
+                      {optimizing ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          正在生成优化方案...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="h-3.5 w-3.5" />
+                          根据改进建议生成优化方案
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Re-score button */}
+                    <Button
+                      onClick={handleScore}
+                      disabled={scoring}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${scoring ? "animate-spin" : ""}`} />
+                      重新评分
+                    </Button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -389,7 +516,7 @@ export function QualityScorer({ post }: { post: ContentPost }) {
                 <Button
                   onClick={handleScore}
                   size="sm"
-                  className="h-8 text-xs gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                  className="h-8 text-xs gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white btn-press"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   开始AI评分

@@ -281,7 +281,7 @@ export function XiaohongshuTemplates() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className={`absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover/result:opacity-100 transition-opacity ${copiedResult ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}`}
+                              className={`absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover/result:opacity-100 transition-opacity btn-press ${copiedResult ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}`}
                               onClick={() => handleCopy(result)}
                             >
                               {copiedResult ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}

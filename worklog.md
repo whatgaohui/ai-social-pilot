@@ -2118,3 +2118,76 @@ Work Log:
 | 滚动长度 | 很长，需要大量滚动 | 紧凑，一次可见核心内容 |
 | 互动数据 | 独立卡片区块 | 内联一行数据条 |
 | 冗余工具 | 4个 | 0个 |
+
+---
+Task ID: 13
+Agent: Main Developer
+Task: UI优化 - 去掉A/B对比、AI评分改进、Tab视觉区分、按钮反馈增强
+
+Work Log:
+- 读取 worklog.md 和所有关键组件代码
+- 运行 lint 检查（零错误通过）
+
+### 变更 1: 去掉A/B对比测试功能
+- 从 content-workspace.tsx 移除 ABComparison 组件导入和使用
+- ab-comparison.tsx 文件保留但不再被引用
+
+### 变更 2: AI质量评分重新设计 (quality-scorer.tsx)
+- **移除"应用评分"按钮**：评分完成后自动保存分数到帖子，不再需要手动应用
+- **新增"根据改进建议生成优化方案"按钮**：
+  - 自动构建优化prompt（整合评分结果、改进建议、低分维度）
+  - 调用 /api/ai/optimize 生成优化后的文案
+  - 自动保存版本快照（changeType: "optimize", summary: "评分优化"）
+  - 优化后自动更新内容并清除评分结果
+- **修复重新评分问题**：
+  - 使用 useRef 追踪上次评分时的内容（lastScoredContentRef）
+  - 文案修改后自动检测变更，显示"（内容已变更）"提示
+  - 评分header显示旋转刷新图标提示内容已改
+  - 新增"重新评分"按钮，任何时刻都可以再次触发评分
+
+### 变更 3: 发布Tab精简
+- 从发布tab移除 CrossPlatformPublish 组件（多平台同步发布）
+- 发布tab仅保留：AI发布助手(PublishingAssistant) + 小红书标签/封面工具
+
+### 变更 4: Tab UI视觉区分
+- 将工作区下方Tab从 shadcn TabsList 改为**下划线式Tab**
+- Tab名称更新：AI工具→智能分析、发布→发布管理、历史→版本记录
+- 每个Tab有独立的颜色标识（amber/emerald/violet）
+- 使用 framer-motion layoutId 实现滑动下划线动画
+- 与上方的操作按钮（生成/优化/发布）在视觉上明显区分
+
+### 变更 5: 按钮点击反馈增强
+- 增强 .btn-press 类的缩放效果（scale 0.97）
+- 新增 .btn-flash-success 动画（绿色闪烁反馈）
+- 新增 .btn-click-pulse 动画（紫色脉冲光晕）
+- 新增 .btn-copy-success 类（复制成功颜色状态）
+- 增强 useCopyToClipboard hook：复制成功后自动显示 toast 通知（含内容预览）
+- 为模板组件中的复制按钮添加 btn-press 类
+- 清理未使用的导入（TabsList, TabsTrigger, Heart, BarChart3）
+
+### 修改文件
+- src/components/right-panel/content-workspace.tsx - 移除A/B/CrossPlatform，Tab改为下划线式
+- src/components/right-panel/quality-scorer.tsx - 完全重写评分逻辑
+- src/components/left-panel/copywriting-templates.tsx - 复制按钮添加btn-press
+- src/components/right-panel/xiaohongshu-templates.tsx - 复制按钮添加btn-press
+- src/hooks/use-copy-to-clipboard.ts - 增强为带toast反馈
+- src/app/globals.css - 新增3个CSS动画类
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（GET / 200）
+- ✅ 所有Tab切换正常
+- ✅ 评分组件首次点击自动触发
+- ✅ 内容变更检测正常
+- ✅ 重新评分按钮可用
+- ✅ "根据改进建议生成优化方案"按钮逻辑完整
+
+Stage Summary:
+- 项目状态：稳定可运行，UI交互体验大幅提升
+- 本轮修改 6 个文件，无新增文件
+- 核心变更：去掉冗余功能(A/B/多平台同步)、评分逻辑重设计、Tab视觉区分、按钮反馈增强
+- 建议下一阶段优先事项：
+  1. 数据分析与报告整合优化
+  2. 报告可见性提升
+  3. 灵感与内容管理合并
+  4. 设置页面结构重构
