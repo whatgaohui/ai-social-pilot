@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { KnowledgeBase } from "@/components/left-panel/knowledge-base";
 import { CompactCalendar } from "@/components/left-panel/compact-calendar";
@@ -24,7 +24,7 @@ import {
   Sparkles, BookOpen, PenTool, CalendarDays,
   BarChart3, Zap, FileText, MessageCircle,
   Settings, Send, ChevronLeft, ChevronRight,
-  Globe, User,
+  Globe, User, Check,
 } from "lucide-react";
 
 // ─── Main tabs for the right content area ──────────────────────────────────────

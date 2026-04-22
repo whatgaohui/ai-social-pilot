@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { User, Sparkles, Save, Briefcase, MessageSquare, Heart, Tag } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const TONE_OPTIONS = [
   { value: "professional", label: "专业严谨" },
@@ -119,6 +120,9 @@ export function PersonaForm() {
     setForm({ ...form, keywords: value });
   };
 
+  // Show empty state banner when persona hasn't been configured yet
+  const hasPersona = persona && persona.name;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -126,6 +130,19 @@ export function PersonaForm() {
       transition={{ duration: 0.3 }}
       className="space-y-4"
     >
+      {/* Empty state when no persona set */}
+      {!hasPersona && (
+        <EmptyState
+          icon={User}
+          title="设置您的人设"
+          description="定义您的品牌形象和内容风格"
+          action={{ label: "开始设置", onClick: () => { const nameInput = document.querySelector('input[placeholder="输入您的姓名"]') as HTMLInputElement; nameInput?.focus(); } }}
+          variant="gradient"
+          size="sm"
+          gradientClass="from-violet-500 to-purple-600"
+        />
+      )}
+
       {/* Basic Info */}
       <Card className="border-0 shadow-sm bg-gradient-to-br from-card to-card/80">
         <CardHeader className="pb-3 px-4 pt-4">

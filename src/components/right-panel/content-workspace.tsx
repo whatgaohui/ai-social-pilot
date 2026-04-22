@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import {
-  CalendarDays,
   Eye,
   Pencil,
   Sparkles,
@@ -27,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { useAppStore } from "@/store/app-store";
 
+import { EmptyState } from "@/components/ui/empty-state";
 import { PostDetailHeader } from "@/components/right-panel/post-detail-header";
 import { ContentEditor } from "@/components/right-panel/content-editor";
 import { PostActions } from "@/components/right-panel/post-actions";
@@ -128,23 +128,18 @@ function InlineEngagementBar({ post, isXHS }: { post: ReturnType<typeof useAppSt
   );
 }
 
-// ─── Empty State ────────────────────────────────────────────────────────────
+// ─── Empty State (uses reusable component) ──────────────────────────────────
 
-function EmptyState() {
+function WorkspaceEmptyState({ isXHS }: { isXHS: boolean }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center py-16 px-6 text-center"
-    >
-      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 flex items-center justify-center mb-4">
-        <CalendarDays className="h-8 w-8 text-violet-500" />
-      </div>
-      <h3 className="text-base font-semibold text-foreground mb-1.5">内容工作台</h3>
-      <p className="text-sm text-muted-foreground max-w-[240px] leading-relaxed">
-        从左侧日历中选择一个日期，即可开始编辑和发布内容
-      </p>
-    </motion.div>
+    <EmptyState
+      icon={FileText}
+      title="选择一条内容开始"
+      description="在左侧日历中选择日期，或创建新内容"
+      variant="gradient"
+      size="lg"
+      gradientClass={isXHS ? "from-rose-500 to-red-600" : "from-violet-500 to-purple-600"}
+    />
   );
 }
 
@@ -223,7 +218,7 @@ export function ContentWorkspace() {
   if (!selectedPost) {
     return (
       <div className="flex-1 overflow-y-auto min-h-0">
-        <EmptyState />
+        <WorkspaceEmptyState isXHS={isXHS} />
       </div>
     );
   }

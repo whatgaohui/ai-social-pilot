@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookOpen, Plus, Search, Trash2, Tag, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const CATEGORIES: KnowledgeCategory[] = ["expertise", "experience", "opinion", "story", "resource"];
 
@@ -205,11 +206,14 @@ export function KnowledgeBase() {
         <div className="space-y-2 pr-3">
           <AnimatePresence>
             {filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <BookOpen className="h-10 w-10 mb-3 opacity-30" />
-                <p className="text-sm">暂无知识条目</p>
-                <p className="text-xs mt-1">添加您的专业知识、经验总结等</p>
-              </div>
+              <EmptyState
+                icon={BookOpen}
+                title="知识库还是空的"
+                description="添加您的专业知识、行业洞察和品牌信息"
+                action={{ label: "添加知识条目", onClick: () => setDialogOpen(true) }}
+                variant="default"
+                size="md"
+              />
             ) : (
               filtered.map((item) => (
                 <motion.div

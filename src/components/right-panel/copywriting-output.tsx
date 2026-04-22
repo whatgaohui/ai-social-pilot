@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Eye, Pencil } from "lucide-react";
+import { FileText, Eye, Pencil, ClipboardList } from "lucide-react";
 import { PostDetailHeader } from "@/components/right-panel/post-detail-header";
 import { ContentEditor } from "@/components/right-panel/content-editor";
 import { PostActions } from "@/components/right-panel/post-actions";
@@ -15,6 +15,7 @@ import { FragmentTool } from "@/components/right-panel/fragment-tool";
 import { PublishToCalendar } from "@/components/right-panel/publish-to-calendar";
 import { WeChatPreview } from "@/components/right-panel/wechat-preview";
 import { XiaohongshuPreview } from "@/components/right-panel/xiaohongshu-preview";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function CopywritingOutput() {
   const {
@@ -46,11 +47,13 @@ export function CopywritingOutput() {
             <PublishToCalendar isXHS={isXHS} mode="standalone" />
 
             {/* Hint */}
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <FileText className="h-10 w-10 mb-3 opacity-30" />
-              <p className="text-sm text-center">点击日历中的日期查看文案详情</p>
-              <p className="text-xs mt-1 text-center">选中某天的内容后可以查看、编辑和AI优化</p>
-            </div>
+            <EmptyState
+              icon={FileText}
+              title="点击日历中的日期查看文案详情"
+              description="选中某天的内容后可以查看、编辑和AI优化"
+              variant="muted"
+              size="sm"
+            />
           </motion.div>
         </ScrollArea>
       </div>
