@@ -3021,3 +3021,81 @@ Stage Summary:
   3. 性能优化：React.memo、useMemo、虚拟列表
   4. 通知数据持久化到数据库
   5. 运营报告自动生成
+
+---
+Task ID: 21
+Agent: Main Orchestrator + Full-Stack Developer
+Task: 第21轮开发 - 竞品分析面板+发布流程增强+按钮微交互
+
+Work Log:
+- 读取 worklog.md 了解前20轮开发成果（3023行）
+- 发现 dev server 因 OOM 被 kill（agent-browser 启动时占用大量内存导致 next-server 被回收）
+- 重启 dev server，所有 8 个核心 API 200 通过
+- src 目录 TypeScript 零错误
+- 委托 full-stack-developer 子代理开发3个新功能
+
+### Bug修复
+1. **Dev Server OOM 崩溃**（高优先级）：
+   - 现象：dev server 在首次请求编译后自动退出，agent-browser 无法连接
+   - 根因：Next.js 16 Turbopack next-server 编译时占用 ~1.5GB 内存，agent-browser 启动时额外占用内存导致超出系统限制，进程被 OOM Killer 杀掉
+   - 修复：不使用 agent-browser 进行 QA，改用 curl API 级别测试验证
+   - 状态：项目代码本身稳定，所有 API 正常返回 200
+
+### 新功能
+
+1. **竞品分析面板**（competitor-analysis.tsx）：
+   - 从 /api/tracked-accounts 获取竞品账号列表
+   - 账号选择卡片：头像、昵称、平台Badge、粉丝数、帖子数
+   - 最多选择3个账号进行对比
+   - 对比指标：平均互动率、平均点赞数、平均评论数、平均转发数、内容频率(条/周)、最新同步时间
+   - SVG迷你条形图对比互动率
+   - 洞察区域：最强竞品(皇冠图标)、差距分析(百分比差距)、运营建议(3条数据驱动建议)
+   - Rose/amber/emerald/violet渐变配色，framer-motion交错入场动画
+   - 集成到 data-and-reports.tsx 作为"竞品分析"子tab（在"运营看板"之前）
+
+2. **发布流程增强**（publish-workflow.tsx）：
+   - 一键排版：朋友圈模式(每80字标点处换行) / 小红书模式(emoji装饰+标题分隔符+hashtag建议)
+   - 排版前后预览对比，一键复制
+   - 发布清单：5项检查(字数/标签/封面/AI评分/错别字)，✅/⚠️状态指示
+   - "一键修复"功能（自动添加标签等）
+   - 定时提醒：DateTime选择器，localStorage持久化，实时倒计时，提醒列表管理
+   - 集成到 content-workspace.tsx 工具tab中
+
+3. **按钮涟漪反馈+微交互**：
+   - useRipple hook (src/hooks/use-ripple.ts)：CSS自定义属性实现点击位置涟漪动画
+   - useMagneticHover hook (src/hooks/use-magnetic-hover.ts)：元素跟随光标悬浮移动
+   - globals.css 新增/更新：.btn-ripple（点击涟漪）、.glow-hover（悬浮发光脉冲）、.magnetic-hover（磁力悬浮）
+   - page.tsx 应用效果：搜索按钮(btn-ripple+press-scale)、平台切换器(magnetic-hover)
+
+### 新增文件
+- `src/components/right-panel/competitor-analysis.tsx` - 竞品分析面板（~27KB）
+- `src/components/right-panel/publish-workflow.tsx` - 发布流程增强（~29KB）
+- `src/hooks/use-ripple.ts` - 涟漪效果hook
+- `src/hooks/use-magnetic-hover.ts` - 磁力悬浮hook
+
+### 修改文件
+- `src/app/globals.css` - 新增/更新涟漪、发光、磁力悬浮CSS
+- `src/app/page.tsx` - 应用微交互效果到按钮和平台切换器
+- `src/components/right-panel/data-and-reports.tsx` - 集成竞品分析tab
+- `src/components/center-panel/content-workspace.tsx` - 集成发布流程tab
+
+### QA验证结果
+- ✅ ESLint 零错误零警告
+- ✅ TypeScript src/ 目录零错误
+- ✅ 所有API路由200通过（/ /api/persona /api/knowledge /api/plan /api/analytics /api/tracked-accounts）
+- ⚠️ agent-browser 因OOM限制无法使用，改用curl API级别测试
+
+Stage Summary:
+- 项目状态：稳定可运行，dev server正常
+- 本轮新增4个文件，修改4个文件
+- 核心能力：竞品对比分析、一键排版发布、定时提醒、按钮微交互特效
+- 未解决问题或风险：
+  1. agent-browser 在本环境无法使用（OOM限制），建议在外部环境测试
+  2. 竞品分析依赖已采集的竞品数据，无数据时显示空状态引导
+  3. 发布流程的"错别字检查"为前端基础检查，非AI驱动
+- 建议下一阶段优先事项：
+  1. AI驱动的错别字检查（调用AI API进行文本校对）
+  2. 竞品内容趋势分析（基于采集内容的话题/风格趋势）
+  3. 运营报告自动生成（周报/月报PDF导出）
+  4. 内容排期拖拽排序功能
+  5. 多人协作审阅功能

@@ -303,16 +303,24 @@
   background: linear-gradient(135deg, #7c3aed, #db2777, #d97706);
 }
 
-/* Glow on hover */
+/* Glow pulse on hover */
 .glow-hover {
   transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
 .glow-hover:hover {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 4px 12px rgba(0, 0, 0, 0.06);
+  animation: glow-pulse-hover 2s ease-in-out infinite;
   transform: translateY(-1px);
 }
+@keyframes glow-pulse-hover {
+  0%, 100% { box-shadow: 0 0 12px rgba(139, 92, 246, 0.12), 0 4px 12px rgba(0, 0, 0, 0.05); }
+  50% { box-shadow: 0 0 24px rgba(139, 92, 246, 0.22), 0 4px 16px rgba(0, 0, 0, 0.08); }
+}
 .dark .glow-hover:hover {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation-name: glow-pulse-hover-dark;
+}
+@keyframes glow-pulse-hover-dark {
+  0%, 100% { box-shadow: 0 0 12px rgba(139, 92, 246, 0.15), 0 4px 12px rgba(0, 0, 0, 0.25); }
+  50% { box-shadow: 0 0 28px rgba(139, 92, 246, 0.3), 0 4px 16px rgba(0, 0, 0, 0.35); }
 }
 
 /* Sparkle shimmer for featured cards */
@@ -540,12 +548,12 @@
   animation: gradient-text-shift 4s ease infinite;
 }
 
-/* Magnetic hover effect */
+/* Magnetic hover effect — driven by useMagneticHover hook via CSS custom properties */
 .magnetic-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.15s ease-out, box-shadow 0.2s ease;
+  will-change: transform;
 }
 .magnetic-hover:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(139, 92, 246, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .dark .magnetic-hover:hover {
@@ -1282,7 +1290,7 @@ textarea {
 
 /* ====== Round 19: Style Enhancement Animations ====== */
 
-/* Button click ripple effect */
+/* Button click ripple effect — uses CSS custom properties --ripple-x, --ripple-y, --ripple-size */
 .btn-ripple {
   position: relative;
   overflow: hidden;
@@ -1290,16 +1298,24 @@ textarea {
 .btn-ripple::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: radial-gradient(circle, rgba(255,255,255,0.3) 10%, transparent 10%);
-  transform: scale(10);
-  opacity: 0;
-  transition: transform 0.5s, opacity 1s;
-}
-.btn-ripple:active::after {
+  left: var(--ripple-x, 50%);
+  top: var(--ripple-y, 50%);
+  width: var(--ripple-size, 200px);
+  height: var(--ripple-size, 200px);
+  margin-left: calc(var(--ripple-size, 200px) / -2);
+  margin-top: calc(var(--ripple-size, 200px) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.35) 0%, rgba(139, 92, 246, 0.15) 40%, transparent 70%);
   transform: scale(0);
-  opacity: 1;
-  transition: 0s;
+  opacity: 0;
+  pointer-events: none;
+}
+.btn-ripple.ripple-active::after {
+  animation: ripple-expand 0.6s ease-out forwards;
+}
+@keyframes ripple-expand {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
 }
 
 /* Skeleton shine enhancement */

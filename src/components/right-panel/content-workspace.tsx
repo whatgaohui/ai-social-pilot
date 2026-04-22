@@ -39,6 +39,7 @@ import { CoverImageGenerator } from "@/components/right-panel/cover-image-genera
 import { TitleABTest } from "@/components/right-panel/title-ab-test";
 import { QualityScorer } from "@/components/right-panel/quality-scorer";
 import { ContentHistory } from "@/components/right-panel/content-history";
+import { PublishWorkflow } from "@/components/right-panel/publish-workflow";
 import { ContentQuickActions } from "@/components/right-panel/content-quick-actions";
 import { AIQuickActionsBar } from "@/components/right-panel/ai-quick-actions-bar";
 
@@ -152,6 +153,7 @@ function WorkspaceEmptyState({ isXHS }: { isXHS: boolean }) {
 const TOOL_TABS = [
   { value: "ai", icon: Sparkles, label: "智能分析", color: "text-amber-500" },
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500" },
+  { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500" },
   { value: "history", icon: History, label: "版本记录", color: "text-violet-500" },
 ] as const;
 
@@ -475,6 +477,18 @@ export function ContentWorkspace() {
                         />
                       </>
                     )}
+                  </motion.div>
+                )}
+
+                {/* ── Workflow Tab ──────────────────────────────────────── */}
+                {toolTab === "workflow" && (
+                  <motion.div
+                    key="workflow-panel"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <PublishWorkflow selectedPost={selectedPost} />
                   </motion.div>
                 )}
 

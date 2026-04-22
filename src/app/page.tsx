@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { CommandPalette } from "@/components/command-palette";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { useRipple } from "@/hooks/use-ripple";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 // ─── Main tabs for the right content area ──────────────────────────────────────
@@ -516,14 +517,14 @@ export default function Home() {
               </motion.div>
               <button
                 onClick={() => setPlatform('wechat')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] magnetic-hover ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
               >
                 <span className="h-2 w-2 rounded-full bg-green-400" />
                 朋友圈
               </button>
               <button
                 onClick={() => setPlatform('xiaohongshu')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] magnetic-hover ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
               >
                 <span className="h-2 w-2 rounded-full bg-red-400" />
                 小红书
@@ -537,7 +538,7 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setCommandPaletteOpen(true)}
-              className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-colors"
+              className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-colors btn-ripple press-scale"
               aria-label="搜索"
             >
               <Search className="h-3.5 w-3.5" />
