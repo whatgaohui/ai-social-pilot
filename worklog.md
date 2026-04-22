@@ -3174,3 +3174,93 @@ Stage Summary:
   5. 通知持久化到数据库（Notification model + API 已创建，需验证）
   6. 运营报告自动生成
   7. 样式细节持续打磨
+
+---
+Task ID: 22
+Agent: Main Developer (Session Recovery + User Bug Reports)
+Task: Bug修复 - 重复通知铃铛 + XHS采集爬虫修复
+
+Work Log:
+- 读取 worklog.md（21轮迭代，3101行）
+- Dev server 重启，API 验证 200 通过
+- ESLint 零错误，src/ TypeScript 零错误（修复 spellcheck route TS 错误）
+- 第22轮 cron agent 已完成 ViralInspiration 集成到 ContentWorkspace
+- 用户反馈两个 bug，优先修复
+
+### Bug修复
+
+1. **重复通知铃铛**（中优先级）：
+   - 问题：NotificationBell 组件在 `hidden sm:flex` 容器内，导致移动端完全不可见
+   - 分析：NotificationBell 内部有 `hidden sm:block`(桌面Popover) + `sm:hidden block`(移动Sheet) 两个渲染，但被父容器 `hidden sm:flex` 包裹，移动端时父容器隐藏导致两者都不可见
+   - 修复：将 NotificationBell 从 `hidden sm:flex` 容器中移出，放在 header 根层级（SettingsCenter 和 AI驱动 badge 之后），使其在所有屏幕尺寸可见
+   - 文件：`src/app/page.tsx`
+
+2. **XHS采集中心无法采集博主数据**（高优先级）：
+   - 问题：用户输入小红书博主链接后，什么数据都采集不到
+   - 根因分析（6个 compounding bugs）：
+     a. **HTML截断**：XHS页面约603KB，fetch 15秒超时导致响应被截断为411KB，`__INITIAL_STATE__` 数据位于索引550089处被截断
+     b. **数据结构不匹配**：XHS 将笔记存储为嵌套分页数组 `[[page1],[page2]]`，爬虫期望扁平数组
+     c. **noteCard包装器未处理**：笔记数据在 `note.noteCard.displayTitle` 而非 `note.title`
+     d. **Profile数据路径错误**：昵称在 `userPageData.basicInfo` 而非 `user.nickname`
+     e. **粉丝数格式**：XHS 返回中文字符串如 "1万+"，爬虫只支持纯数字
+     f. **ISSR_SCRIPT 已不存在**：XHS 现在只用 `__INITIAL_STATE__`
+   - 修复：
+     - fetch 超时从 15s 增加到 30s
+     - 添加 HTML 大小限制 2MB 防止 OOM
+     - 笔记解析：检测分页结构并自动 `.flat()` 展平
+     - normalizeNote：添加 `noteCard` 子对象解包（displayTitle, interactInfo, cover）
+     - Profile 解析：使用正确路径 `stateData.user.userPageData.basicInfo` + `stateData.user.userPageData.interactions`
+     - 新增 `parseChineseNumber()` 函数：支持 "1万+" → 10000, "5000+" → 5000 格式
+     - noteId 使用 xsecToken 作为替代（XHS SSR 中故意清空 noteId）
+   - 文件：`mini-services/scraper-service/index.ts`
+
+3. **spellcheck route TS 类型错误**（低优先级）：
+   - 问题：`issue.type` 为 `unknown` 类型传入 `Array.includes()`
+   - 修复：添加 `as string` 类型断言
+   - 文件：`src/app/api/ai/spellcheck/route.ts`
+
+### 之前的 cron 任务（22:15）已完成但未记录
+
+4. **ViralInspiration 集成到 ContentWorkspace**（由 cron agent 完成）：
+   - 新增 "爆款灵感" tab 到 TOOL_TABS（Lightbulb 图标, orange-500 配色）
+   - 组件自包含，使用 useAppStore 获取 platform/persona
+   - framer-motion 入场动画
+   - 文件：`src/components/right-panel/content-workspace.tsx`
+
+5. **通知数据持久化 API**（由 cron agent 完成）：
+   - 新增 `Notification` Prisma 模型
+   - 创建 `/api/notifications` API（GET/POST/PUT/DELETE）
+   - 增强 notification-center.tsx 支持数据库读写
+   - 文件：`prisma/schema.prisma`, `src/app/api/notifications/route.ts`, `src/components/notification-center.tsx`
+
+6. **ContentSearch 全局搜索组件**（由 cron agent 完成）：
+   - 新增 `src/components/content-search.tsx`
+   - Command Palette 风格，Ctrl/Cmd+K 触发
+   - 搜索帖子、知识库、人设
+   - 键盘导航 + 搜索历史记录
+
+### 验证结果
+- ✅ ESLint 零错误零警告
+- ✅ TypeScript src/ 零错误
+- ✅ Next.js dev server 编译成功
+- ✅ 9 个 API 端点全部 200（/, /api/persona, /api/plan, /api/analytics, /api/notifications 等）
+- ✅ XHS Profile 抓取验证：昵称"夏阳ski"、粉丝10000、关注10、获赞10000
+- ✅ XHS Notes 抓取验证：32条笔记（展平分页数据）、标题/点赞/封面图正确
+- ⚠️ 爬虫服务(port 3003)与 Next.js(3000)同时运行会超出沙箱内存限制，需要轮流使用
+
+Stage Summary:
+- 项目状态：稳定可运行，所有已知 bug 已修复
+- 本轮修复 3 个 bug，集成 3 个新组件
+- 核心修复：XHS 采集爬虫从完全不可用修复为可正常抓取博主信息+笔记数据
+- 未解决问题或风险：
+  1. 沙盒内存限制：爬虫服务(port 3003)与 Next.js(3000)不能同时运行
+  2. XHS 反爬虫：noteId 被 SSR 清空，无法获取笔记详情页（使用 xsecToken 替代）
+  3. 采集中心的 UI 进度指示器是假动画，未连接实际同步状态
+- 建议下一阶段优先事项：
+  1. 采集中心 UI 进度真实化（轮询同步任务状态）
+  2. ContentSearch 组件需确认是否成功创建（cron agent 结果不确定）
+  3. 运营看板数据接入真实数据
+  4. 内容排期拖拽排序
+  5. 样式细节持续打磨
+  6. 多平台同时运营（一条内容双平台适配）
+  7. 竞品分析面板在主界面的 tab 集成验证

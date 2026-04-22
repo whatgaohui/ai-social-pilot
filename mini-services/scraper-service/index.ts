@@ -110,6 +110,7 @@ app.post('/api/scrape/xhs/profile', async (c) => {
     const response = await fetch(homeUrl, {
       headers: reqHeaders,
       redirect: 'follow',
+      signal: AbortSignal.timeout(30000), // 30s timeout for large XHS pages
     });
 
     if (!response.ok) {
@@ -119,7 +120,13 @@ app.post('/api/scrape/xhs/profile', async (c) => {
       );
     }
 
-    const html = await response.text();
+    // Limit HTML size to prevent OOM (XHS pages can be 1MB+)
+    let html = await response.text();
+    const MAX_HTML_SIZE = 2000000; // 2MB limit
+    if (html.length > MAX_HTML_SIZE) {
+      console.log(`[XHS Profile] HTML too large (${html.length}), truncating to ${MAX_HTML_SIZE}`);
+      html = html.substring(0, MAX_HTML_SIZE);
+    }
     console.log(`[XHS Profile] Fetched ${html.length} chars`);
 
     // Strategy 1: Parse ISSR_SCRIPT tag for embedded state data
@@ -226,30 +233,40 @@ app.post('/api/scrape/xhs/profile', async (c) => {
           // Clean up the JSON string - replace undefined with null
           let jsonStr = stateMatch[1].replace(/\bundefined\b/g, 'null');
           const stateData = JSON.parse(jsonStr);
-          const user =
-            stateData?.user?.userPageMeta ||
-            stateData?.user?.userInfo ||
-            stateData?.user;
-          if (user) {
+          // XHS data structure: stateData.user.userPageData contains profile info
+          const userData = stateData?.user as Record<string, unknown> | undefined;
+          const userPageData = userData?.userPageData as Record<string, unknown> | undefined;
+          const basicInfo = userPageData?.basicInfo as Record<string, unknown> | undefined;
+          if (userData) {
+            // Nickname: try multiple paths
             profile.nickname =
-              user?.nickname || user?.nickName || ogTitle || '';
+              (basicInfo?.nickname as string) ||
+              (basicInfo?.redId as string) ||
+              (userPageData?.nickname as string) ||
+              ogTitle || '';
             profile.avatarUrl =
-              user?.avatar || user?.image || ogImage || '';
-            profile.bio = user?.desc || user?.description || ogDesc || '';
+              (basicInfo?.images as string) ||
+              (basicInfo?.image as string) ||
+              (userPageData?.avatar as string) ||
+              ogImage || '';
+            profile.bio = 
+              (basicInfo?.desc as string) ||
+              (userPageData?.desc as string) ||
+              ogDesc || '';
 
             // Try direct numeric fields first
             profile.followers = toNumber(
-              user?.fans || user?.fansCount || 0
+              basicInfo?.fans || basicInfo?.fansCount || 0
             );
             profile.following = toNumber(
-              user?.follows || user?.followCount || 0
+              basicInfo?.follows || basicInfo?.followCount || 0
             );
             profile.postsCount = toNumber(
-              user?.notesCount || user?.notes || 0
+              basicInfo?.notesCount || basicInfo?.notes || 0
             );
 
             // Parse interactions array (XHS stores stats as localized strings like "1万+")
-            const interactions = user?.interactions as Array<{type: string; count: string}> | undefined;
+            const interactions = userPageData?.interactions as Array<{type: string; count: string}> | undefined;
             if (Array.isArray(interactions) && interactions.length > 0) {
               const fansItem = interactions.find(i => i.type === 'fans');
               const followsItem = interactions.find(i => i.type === 'follows');
@@ -257,18 +274,6 @@ app.post('/api/scrape/xhs/profile', async (c) => {
               if (fansItem?.count) profile.followers = parseChineseNumber(fansItem.count);
               if (followsItem?.count) profile.following = parseChineseNumber(followsItem.count);
               if (interactionItem?.count) profile.noteCount = parseChineseNumber(interactionItem.count);
-            }
-
-            // userPageData may also have stats
-            const upd = user?.userPageData as Record<string, unknown> | undefined;
-            if (upd) {
-              const updInteractions = upd?.interactions as Array<{type: string; count: string}> | undefined;
-              if (Array.isArray(updInteractions) && updInteractions.length > 0) {
-                const fansItem = updInteractions.find(i => i.type === 'fans');
-                const followsItem = updInteractions.find(i => i.type === 'follows');
-                if (fansItem?.count && profile.followers === 0) profile.followers = parseChineseNumber(fansItem.count);
-                if (followsItem?.count && profile.following === 0) profile.following = parseChineseNumber(followsItem.count);
-              }
             }
           }
         } catch (e) {
@@ -378,6 +383,7 @@ app.post('/api/scrape/xhs/notes', async (c) => {
     const response = await fetch(homeUrl, {
       headers: reqHeaders,
       redirect: 'follow',
+      signal: AbortSignal.timeout(30000), // 30s timeout for large XHS pages
     });
 
     if (!response.ok) {
@@ -387,7 +393,9 @@ app.post('/api/scrape/xhs/notes', async (c) => {
       );
     }
 
-    const html = await response.text();
+    let html = await response.text();
+    const MAX_HTML = 2000000;
+    if (html.length > MAX_HTML) html = html.substring(0, MAX_HTML);
     console.log(`[XHS Notes] Fetched ${html.length} chars`);
 
     const notes: XhsNote[] = [];
