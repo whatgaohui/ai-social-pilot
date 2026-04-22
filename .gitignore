@@ -50,5 +50,6 @@ test
 prompt
 
 server.log
+scraper-service.log
 # Skills directory
 /skills/

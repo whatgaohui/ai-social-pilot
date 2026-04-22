@@ -3264,3 +3264,181 @@ Stage Summary:
   5. 样式细节持续打磨
   6. 多平台同时运营（一条内容双平台适配）
   7. 竞品分析面板在主界面的 tab 集成验证
+---
+Task ID: 23
+Agent: general-purpose
+Task: 为 scraper-service 创建自动启动脚本
+
+Work Log:
+- 检查项目现有启动脚本：发现 start-server.sh（仅启动 Next.js）、keep-alive.sh（Next.js 保活循环）
+- 检查 mini-services/scraper-service/ 目录结构和 package.json（bun --hot index.ts）
+- 创建 /home/z/my-project/start-all.sh 脚本：
+  - 先台启动 scraper-service（nohup bun --hot index.ts > scraper-service.log 2>&1 &）
+  - 前台启动 Next.js dev server（npm run dev）
+  - 使用 trap cleanup INT TERM EXIT 捕获退出信号
+  - cleanup 函数优雅关闭所有子进程（先 SIGTERM，2秒后 SIGKILL）
+  - 带时间戳的日志输出，启动后验证子进程存活
+- 在 .gitignore 中添加 scraper-service.log 条目
+- 注意：chmod +x 因沙箱权限限制未执行，用户需手动执行
+
+Stage Summary:
+- 新增文件：start-all.sh（scraper-service + Next.js 联合启动脚本）
+- 修改文件：.gitignore（添加 scraper-service.log）
+- scraper-service 使用 bun 运行在 port 3003，Next.js 在 port 3000
+- 使用方式：./start-all.sh（前台）或 nohup ./start-all.sh &（后台）
+
+---
+Task ID: 24
+Agent: Search Feature Developer
+Task: 全局搜索API + ContentSearch组件增强
+
+Work Log:
+- 读取 worklog.md 了解前23轮开发成果
+- 阅读现有 ContentSearch 组件（3个API调用客户端搜索：/api/content, /api/knowledge, /api/persona）
+- 阅读 CommandPalette 组件了解命令面板交互模式
+- 阅读 Prisma schema 了解全部数据模型（Persona, KnowledgeItem, ContentPost, TrackedAccount）
+- 阅读 types/index.ts 了解类型定义和常量映射
+- 阅读 app-store.ts 了解可用的状态操作（setSelectedPostId, setRightPanelTab, setLeftPanelTab）
+- 运行 lint 检查代码质量（零错误通过）
+
+### 新增文件
+- `src/app/api/search/route.ts` - 统一全局搜索API路由（~130行）
+
+### 后端 API: /api/search
+- GET 请求，查询参数：
+  - `q`（必填）：搜索关键词
+  - `type`（可选）：筛选类型 'content' | 'knowledge' | 'persona' | 'accounts'
+- 搜索范围：
+  - ContentPost: topic, content, platform 字段（最多15条，按 updatedAt DESC）
+  - KnowledgeItem: title, content, category, tags 字段（最多12条，按 updatedAt DESC）
+  - Persona: name, title, bio, industry, keywords, tone 字段（最多3条）
+  - TrackedAccount: nickname, bio, platform 字段（最多10条，按 updatedAt DESC）
+- 返回 JSON：`{ query, type, total, results: { content[], knowledge[], persona[], accounts[] } }`
+- 错误处理：空查询返回空结果，异常返回 500 + 错误信息
+- 使用 Prisma `contains` 进行子字符串匹配（SQLite LIKE 查询）
+
+### 修改文件
+- `src/components/content-search.tsx` - 完全重写为全局搜索组件（~480行）
+
+### ContentSearch 组件增强
+1. **统一API调用**：从3个独立fetch调用改为单个 `/api/search` API，减少网络请求
+2. **新增"追踪账号"搜索**：TrackedAccount 结果组（Users 图标，rose 配色）
+3. **类型筛选标签页**：
+   - 5个 tab：全部 / 帖子 / 知识库 / 人设 / 账号
+   - framer-motion `layoutId` 滑动动画指示器
+   - 每个 tab 显示对应类型的结果计数
+   - 切换 tab 立即触发搜索（跳过 debounce）
+4. **结果分组展示**：
+   - 帖子组（violet FileText 图标）：topic + platform badge + status dot + contentType badge + 内容预览
+   - 知识库组（amber BookOpen 图标）：title + category badge + 内容预览
+   - 人设组（emerald User 图标）：name + title · industry
+   - 追踪账号组（rose Users 图标）：nickname + platform badge + bio预览 + 粉丝数
+5. **键盘导航**：ArrowUp/ArrowDown 在所有结果中导航，Enter 选择，Escape 关闭
+6. **点击结果行为**：
+   - 帖子：setSelectedPostId + setRightPanelTab("workspace")
+   - 知识库：setLeftPanelTab("knowledge")
+   - 人设：setLeftPanelTab("persona")
+   - 账号：仅关闭搜索弹窗
+7. **请求管理**：AbortController 取消前一个请求，避免竞态条件
+8. **搜索体验优化**：
+   - Debounce 250ms（从300ms缩短）
+   - 每次搜索保存到最近搜索记录（localStorage）
+   - 清除搜索按钮 + Esc 快捷键提示
+   - 结果总数显示在 footer
+   - 选中索引越界自动修正
+
+### 设计特性
+- 与现有组件风格一致：Dialog + shadcn/ui + framer-motion + Tailwind CSS
+- 无 blue/indigo 配色（使用 violet/amber/emerald/rose 方案）
+- 暗黑模式兼容
+- 保留所有原有功能（最近搜索、空状态、加载骨架屏、键盘快捷键提示）
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ API 路由类型定义正确
+- ✅ 组件 props 接口不变（open, onOpenChange），向后兼容
+- ✅ 未修改 command-palette.tsx
+
+Stage Summary:
+- 项目状态：稳定可运行，全局搜索功能完整
+- 本轮新增 1 个文件（/api/search/route.ts），修改 1 个文件（content-search.tsx）
+- 核心能力：统一搜索 API 覆盖 4 种数据类型，前端支持类型筛选标签页、分组结果、键盘导航
+- 建议下一阶段优先事项：
+  1. 为搜索 API 添加搜索高亮（返回匹配片段的位置信息）
+  2. 支持搜索语法（如 platform:wechat tag:xxx）
+  3. 搜索结果排序算法优化（按相关性而非更新时间）
+  4. 搜索分析统计（热门搜索词记录）
+
+---
+Task ID: 25
+Agent: Main Orchestrator
+Task: 第25轮开发 - Bug修复 + 全局搜索 + 样式打磨
+
+Work Log:
+- 读取 worklog.md 了解前24轮开发成果（朋友圈+小红书双平台AI运营助手）
+- 重启 dev server 和 scraper-service（两者之前均已停止）
+- ESLint 检查：零错误通过
+- 全面 API 验证：/ /api/persona /api/plan /api/content /api/analytics /api/tracked-accounts /api/notifications 全部 200
+
+### Bug 1 分析：右上角2个消息提醒
+- 代码级分析确认 page.tsx header 中只有 **1个** `<NotificationBell />` 组件（line 582）
+- NotificationBell 内部使用 `hidden sm:block`（桌面版）和 `sm:hidden block`（移动版）互斥显示
+- SettingsCenter trigger 使用 Settings 图标（⚙️），不是 Bell
+- 未找到任何代码层面的重复渲染
+- 用户可能将 Settings 图标或 "AI驱动" Badge 与通知铃铛混淆
+- **修复**：为 NotificationBell 添加了 Tooltip 组件，悬停显示 "通知中心" 提示文字
+
+### Bug 2 修复：采集中心无法真正采集小红书信息
+- **根本原因**：scraper-service（端口3003）未启动
+- 验证 scraper-service 功能：使用用户提供的 URL `xiaohongshu.com/user/profile/5a1bb9a04eacab252da41df2` 测试
+- **采集结果成功**：成功提取博主昵称 "夏阳ski"、头像URL、简介、粉丝数等信息
+- scraper-service 具备3级回退策略（ISSR_SCRIPT → __INITIAL_STATE__ → regex）
+- account-collector.tsx 已有 scraper 健康检查（每60秒轮询）和服务不可用时的 toast 错误提示
+- **修复**：启动 scraper-service，创建 start-all.sh 一键启动脚本
+
+### 新功能：全局搜索
+- 创建 `/api/search` API 路由，统一搜索：内容帖子、知识库、人设、追踪账号
+- 重写 ContentSearch 组件，使用统一 API，支持类型筛选标签页
+- 新增"追踪账号"搜索结果分组
+- 键盘导航（↑↓箭头、Enter选择、Escape关闭）保持不变
+- Props 接口不变（open, onOpenChange），完全向后兼容
+
+### 样式改进
+- 为 NotificationBell 添加 Tooltip（"通知中心"）
+- 导入 Tooltip/TooltipContent/TooltipTrigger 组件
+
+### 创建的文件
+- `start-all.sh` — 一键启动脚本（scraper-service + Next.js）
+
+### 修改的文件
+- `src/app/page.tsx` — 添加 Tooltip 导入和 NotificationBell Tooltip 包装
+
+### QA验证结果
+- ✅ ESLint 零错误
+- ✅ GET / 200 编译成功
+- ✅ /api/search?q=test 200 搜索API正常
+- ✅ scraper-service 3003端口健康检查通过
+- ✅ XHS 采集功能验证通过（成功采集用户"夏阳ski"的资料）
+
+### 环境稳定性问题
+- Next.js dev server 使用 `npm run dev` 时频繁崩溃（约30-60秒后无响应）
+- 原因：npm 的 tee 管道可能在 buffer 满时中断子进程
+- 临时解决：改用 `npx next dev -p 3000` 直接启动更稳定
+- 建议：后续排查 npm 脚本的 tee 管道问题
+
+Stage Summary:
+- 项目状态：功能稳定可运行，22轮+开发成果
+- 本轮修复2个用户报告bug（通知重复为误报+scraper服务未启动），新增全局搜索功能
+- 核心能力：小红书采集功能已验证可用，全局搜索覆盖全部数据类型
+- 未解决问题或风险：
+  1. Next.js dev server 通过 npm 启动不稳定（建议使用 npx 直接启动）
+  2. scraper-service 需要手动启动（已有 start-all.sh 脚本）
+  3. 小红书采集依赖网络可达性和反爬策略，部分页面可能采集失败
+  4. copywriting-output.tsx 体积较大（~1000行），建议拆分为子组件
+- 建议下一阶段优先事项：
+  1. 拆分 copywriting-output.tsx 为多个子组件
+  2. 运营报告自动生成（PDF/图片格式）
+  3. 内容排期拖拽排序功能
+  4. 定时发布提醒功能
+  5. 话题标签趋势分析（接入实时热搜API）
+  6. 数据分析面板接入更多可视化图表

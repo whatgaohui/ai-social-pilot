@@ -118,7 +118,7 @@ const SECTIONS: Array<{
   { id: "ai", icon: Cpu, label: "AI模型配置", gradient: "from-violet-500 to-purple-600", description: "管理AI大模型配置和连接" },
   { id: "accounts", icon: Link2, label: "平台账号管理", gradient: "from-emerald-500 to-teal-600", description: "管理微信和小红书账号" },
   { id: "notifications", icon: Bell, label: "通知设置", gradient: "from-amber-500 to-orange-500", description: "配置通知和提醒偏好" },
-  { id: "data", icon: Database, label: "数据管理", gradient: "from-cyan-500 to-blue-600", description: "导出数据和管理缓存" },
+  { id: "data", icon: Database, label: "数据管理", gradient: "from-violet-500 to-purple-600", description: "导出数据和管理缓存" },
   { id: "display", icon: Palette, label: "显示偏好", gradient: "from-pink-500 to-rose-500", description: "主题和界面设置" },
   { id: "about", icon: Info, label: "关于", gradient: "from-slate-400 to-slate-600", description: "应用信息和版本" },
 ];
@@ -1458,7 +1458,7 @@ export function SettingsCenter({ connectedPlatforms }: SettingsCenterProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-9 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
+            className="h-8 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
           >
             <Settings className="h-4 w-4" />
             <span className="hidden lg:inline text-xs">设置</span>

@@ -117,13 +117,34 @@ async function triggerProfileScrape(
       ? '/api/scrape/xhs/profile?XTransformPort=3003'
       : '/api/scrape/wechat/profile?XTransformPort=3003';
 
-    const response = await fetch(scrapeUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ homeUrl, cookie: cookie || undefined }),
-    });
+    // Use AbortController with timeout for service availability detection
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    let response: Response;
+    try {
+      response = await fetch(scrapeUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ homeUrl, cookie: cookie || undefined }),
+        signal: controller.signal,
+      });
+    } catch (fetchErr) {
+      clearTimeout(timeout);
+      const isTimeout = fetchErr instanceof DOMException && fetchErr.name === 'AbortError';
+      throw new Error(
+        isTimeout
+          ? '采集服务响应超时，请稍后重试'
+          : '采集服务未启动，请稍后重试（Scraper service unreachable）'
+      );
+    }
+    clearTimeout(timeout);
 
     if (!response.ok) {
+      // 502/503/504 typically means service is down or gateway issue
+      if ([502, 503, 504].includes(response.status)) {
+        throw new Error(`采集服务暂时不可用（HTTP ${response.status}），请稍后重试`);
+      }
       const errorText = await response.text();
       throw new Error(`Scraper returned ${response.status}: ${errorText}`);
     }

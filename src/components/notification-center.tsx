@@ -21,6 +21,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Bell,
   CheckCircle,
   XCircle,
@@ -58,10 +64,10 @@ const NOTIFICATION_CONFIG: Record<
 > = {
   system: {
     icon: Info,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-100 dark:bg-blue-900/30",
+    color: "text-violet-600 dark:text-violet-400",
+    bgColor: "bg-violet-100 dark:bg-violet-900/30",
     label: "系统",
-    dotColor: "bg-blue-500",
+    dotColor: "bg-violet-500",
   },
   publish: {
     icon: Clock,
@@ -240,7 +246,7 @@ function NotificationCard({
       transition={{ duration: 0.2 }}
       className={`group flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors hover:bg-muted/50 ${
         !notification.read
-          ? "bg-blue-50/50 dark:bg-blue-950/10"
+          ? "bg-violet-50/50 dark:bg-violet-950/10"
           : ""
       }`}
       onClick={() => {
@@ -669,12 +675,12 @@ function NotificationCenterPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-blue-500" />
+          <Bell className="h-4 w-4 text-violet-500" />
           <span className="text-sm font-semibold">通知中心</span>
           {unreadCount > 0 && (
             <Badge
               variant="secondary"
-              className="h-5 px-1.5 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+              className="h-5 px-1.5 text-[10px] bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
             >
               {unreadCount} 未读
             </Badge>
@@ -907,93 +913,94 @@ export function NotificationBell() {
     [notifications]
   );
 
-  // Use unreadCount directly as key for bounce animation
-
   const handleAction = useCallback((_notification: AppNotification) => {
     setIsMobileOpen(false);
   }, []);
 
+  // Badge indicator for unread count
+  const unreadBadge = unreadCount > 0 && (
+    <motion.span
+      key={unreadCount}
+      initial={{ scale: 0 }}
+      animate={{ scale: [1, 1.3, 1] }}
+      transition={{
+        type: "spring",
+        stiffness: 500,
+        damping: 15,
+        duration: 0.4,
+      }}
+      className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
+    >
+      {unreadCount > 9 ? "9+" : unreadCount}
+    </motion.span>
+  );
+
   return (
-    <>
-      {/* Desktop: Popover */}
-      <div className="hidden sm:block">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
-              aria-label="通知中心"
+    <TooltipProvider delayDuration={300}>
+      <>
+        {/* Desktop: Popover with label + tooltip */}
+        <div className="hidden sm:block">
+          <Popover>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="relative h-8 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
+                    aria-label="通知中心"
+                  >
+                    <Bell className="h-4 w-4" />
+                    <span className="hidden lg:inline text-xs">通知</span>
+                    {unreadBadge}
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                <p>通知中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ''}</p>
+              </TooltipContent>
+            </Tooltip>
+            <PopoverContent
+              className="w-auto p-0 border-border/50 shadow-xl"
+              align="end"
+              sideOffset={8}
             >
-              <Bell className="h-4 w-4 text-muted-foreground" />
-              {unreadCount > 0 && (
-                <motion.span
-                  key={unreadCount}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 15,
-                    duration: 0.4,
-                  }}
-                  className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
-                >
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </motion.span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-auto p-0 border-border/50 shadow-xl"
-            align="end"
-            sideOffset={8}
-          >
-            <NotificationCenterPanel onAction={handleAction} />
-          </PopoverContent>
-        </Popover>
-      </div>
+              <NotificationCenterPanel onAction={handleAction} />
+            </PopoverContent>
+          </Popover>
+        </div>
 
-      {/* Mobile: Sheet */}
-      <div className="sm:hidden block">
-        <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
-              aria-label="通知中心"
-            >
-              <Bell className="h-4 w-4 text-muted-foreground" />
-              {unreadCount > 0 && (
-                <motion.span
-                  key={unreadCount}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 15,
-                    duration: 0.4,
-                  }}
-                  className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
-                >
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </motion.span>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-md p-0">
-            <SheetHeader className="sr-only">
-              <SheetTitle>通知中心</SheetTitle>
-              <SheetDescription>查看所有通知消息</SheetDescription>
-            </SheetHeader>
-            <NotificationCenterPanel onAction={handleAction} />
-          </SheetContent>
-        </Sheet>
-      </div>
-
-
-    </>
+        {/* Mobile: Sheet with tooltip */}
+        <div className="sm:hidden block">
+          <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
+                    aria-label="通知中心"
+                  >
+                    <Bell className="h-4 w-4 text-muted-foreground" />
+                    {unreadBadge}
+                  </Button>
+                </SheetTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                <p>通知中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ''}</p>
+              </TooltipContent>
+            </Tooltip>
+            <SheetContent side="right" className="w-full sm:max-w-md p-0">
+              <SheetHeader className="sr-only">
+                <SheetTitle>通知中心</SheetTitle>
+                <SheetDescription>查看所有通知消息</SheetDescription>
+              </SheetHeader>
+              <NotificationCenterPanel onAction={handleAction} />
+            </SheetContent>
+          </Sheet>
+        </div>
+      </>
+    </TooltipProvider>
   );
 }

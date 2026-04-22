@@ -56,6 +56,7 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
+  XCircle,
   Inbox,
   ArrowLeft,
   Search,
@@ -349,6 +350,35 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
     };
   }, [accounts, fetchAccounts]);
 
+  // ── Scraper service health check ────────────────────────────────────
+  const [scraperAvailable, setScraperAvailable] = useState<boolean | null>(null);
+
+  const checkScraperService = useCallback(async (): Promise<boolean> => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(
+        "/api/scrape/xhs/profile?XTransformPort=3003",
+        { method: "OPTIONS", signal: controller.signal }
+      );
+      clearTimeout(timeout);
+      // Any response (including 404/405) means the service is reachable
+      setScraperAvailable(true);
+      return true;
+    } catch {
+      setScraperAvailable(false);
+      return false;
+    }
+  }, []);
+
+  // Check scraper availability on mount
+  useEffect(() => {
+    checkScraperService();
+    // Re-check every 60 seconds
+    const interval = setInterval(checkScraperService, 60000);
+    return () => clearInterval(interval);
+  }, [checkScraperService]);
+
   // ── Add account handler ───────────────────────────────────────────────
   const handleAddAccount = async () => {
     if (formMethod === "link" && !formUrl.trim()) {
@@ -358,6 +388,19 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
     if (formMethod === "cookie" && !formCookie.trim()) {
       toast.error("请填写Cookie信息");
       return;
+    }
+
+    // Health check for link/cookie methods
+    if (formMethod === "link" || formMethod === "cookie") {
+      toast.info("正在检查采集服务...");
+      const isAvailable = await checkScraperService();
+      if (!isAvailable) {
+        toast.error("采集服务未启动，请稍后重试", {
+          description: "小红书采集服务（端口3003）当前不可用，请等待服务启动后再试。",
+          duration: 6000,
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -370,7 +413,6 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
 
       if (formMethod === "link") {
         body.homeUrl = formUrl.trim();
-        // Pass cookie if provided for richer data (e.g. follower count)
         if (formCookie.trim()) {
           body.cookie = formCookie.trim();
         }
@@ -394,7 +436,7 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
       const account = await res.json();
 
       toast.success(
-        formMethod === "link"
+        formMethod === "link" || formMethod === "cookie"
           ? "账号添加成功，正在采集信息..."
           : "账号添加成功"
       );
@@ -404,28 +446,68 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
       setFormMethod("link");
       fetchAccounts();
 
-      // Show progress for link method
-      if (formMethod === "link") {
+      // Show progress for link/cookie methods
+      if (formMethod === "link" || formMethod === "cookie") {
         setSyncProgress({
           taskId: "",
           accountId: account.id,
           status: "syncing",
-          progress: 30,
+          progress: 10,
           message: "正在采集账号信息...",
         });
-        // Simulate progress
-        setTimeout(() => {
-          setSyncProgress((prev) =>
-            prev
-              ? { ...prev, progress: 60, message: "已获取账号基本信息..." }
-              : null
-          );
+
+        // Poll for account status changes
+        const pollInterval = setInterval(async () => {
+ try {
+          const accountRes = await fetch(`/api/tracked-accounts/${account.id}`);
+          if (accountRes.ok) {
+            const updated = await accountRes.json();
+            if (updated.status === "success") {
+              clearInterval(pollInterval);
+              setSyncProgress({
+                taskId: "",
+                accountId: account.id,
+                status: "success",
+                progress: 100,
+                message: `采集成功！已获取 ${updated.nickname || "账号"} 的信息`,
+              });
+              fetchAccounts();
+              setTimeout(() => setSyncProgress(null), 3000);
+            } else if (updated.status === "error") {
+              clearInterval(pollInterval);
+              const isServiceDown = updated.lastError?.includes("fetch failed")
+                || updated.lastError?.includes("ECONNREFUSED")
+                || updated.lastError?.includes("connect")
+                || updated.lastError?.includes("Service Unavailable");
+              setSyncProgress({
+                taskId: "",
+                accountId: account.id,
+                status: "error",
+                progress: 0,
+                message: isServiceDown ? "采集服务未启动，请稍后重试" : `采集失败: ${updated.lastError || "未知错误"}`,
+              });
+              fetchAccounts();
+              if (isServiceDown) setScraperAvailable(false);
+            } else {
+              // Still syncing - update progress
+              setSyncProgress((prev) =>
+                prev
+                  ? { ...prev, progress: Math.min(prev.progress + 15, 90), message: "正在采集账号信息..." }
+                  : null
+              );
+            }
+          }
+        } catch {
+          // Keep polling
+        }
         }, 3000);
-        // Clear after accounts refresh picks up the status
+
+        // Timeout after 60 seconds
         setTimeout(() => {
+          clearInterval(pollInterval);
           setSyncProgress(null);
           fetchAccounts();
-        }, 8000);
+        }, 60000);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "添加账号失败");
@@ -456,6 +538,18 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
     const account = accounts.find((a) => a.id === id);
     if (!account || account.status === "syncing") return;
 
+    // Health check before syncing
+    if (account.platform === "xiaohongshu") {
+      const isAvailable = await checkScraperService();
+      if (!isAvailable) {
+        toast.error("采集服务未启动，请稍后重试", {
+          description: "小红书采集服务（端口3003）当前不可用。",
+          duration: 5000,
+        });
+        return;
+      }
+    }
+
     setSyncingId(id);
     setSyncProgress({
       taskId: "",
@@ -475,39 +569,72 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
         throw new Error(data.error || "同步失败");
       }
 
-      // Start simulated progress
-      const steps = [
-        { p: 25, m: "正在采集账号信息..." },
-        { p: 50, m: "已获取12条笔记..." },
-        { p: 75, m: "正在导入到数据库..." },
-        { p: 95, m: "即将完成..." },
-      ];
+      // Poll for sync completion using account status
+      let pollCount = 0;
+      const pollInterval = setInterval(async () => {
+        pollCount++;
+        if (pollCount > 30) {
+          // 30 * 3s = 90s timeout
+          clearInterval(pollInterval);
+          setSyncProgress(null);
+          setSyncingId(null);
+          fetchAccounts();
+          return;
+        }
 
-      for (let i = 0; i < steps.length; i++) {
-        await new Promise((r) => setTimeout(r, 1500 + Math.random() * 1000));
-        setSyncProgress((prev) =>
-          prev
-            ? { ...prev, progress: steps[i].p, message: steps[i].m }
-            : null
-        );
-      }
+        try {
+          const acctRes = await fetch(`/api/tracked-accounts/${id}`);
+          if (!acctRes.ok) return;
+          const updated = await acctRes.json();
 
-      // Final refresh
-      await fetchAccounts();
+          if (updated.status === "success") {
+            clearInterval(pollInterval);
+            const totalImported = updated.totalCollected || 0;
+            setSyncProgress({
+              taskId: "",
+              accountId: id,
+              status: "success",
+              progress: 100,
+              message: `完成！成功导入 ${totalImported} 条内容`,
+            });
+            toast.success(`同步完成，成功导入 ${totalImported} 条内容`);
+            fetchAccounts();
+            setTimeout(() => {
+              setSyncProgress(null);
+              setSyncingId(null);
+            }, 3000);
+          } else if (updated.status === "error") {
+            clearInterval(pollInterval);
+            const isServiceDown = updated.lastError?.includes("fetch failed")
+              || updated.lastError?.includes("ECONNREFUSED")
+              || updated.lastError?.includes("connect")
+              || updated.lastError?.includes("Service Unavailable");
+            setSyncProgress({
+              taskId: "",
+              accountId: id,
+              status: "error",
+              progress: 0,
+              message: isServiceDown ? "采集服务未启动，请稍后重试" : `同步失败: ${updated.lastError || "未知错误"}`,
+            });
+            toast.error(isServiceDown ? "采集服务未启动" : "同步失败");
+            if (isServiceDown) setScraperAvailable(false);
+            fetchAccounts();
+            setSyncingId(null);
+          } else {
+            // Still syncing - increment progress gradually
+            setSyncProgress((prev) =>
+              prev
+                ? { ...prev, progress: Math.min(prev.progress + 5, 95), message: "正在采集笔记数据..." }
+                : null
+            );
+          }
+        } catch {
+          // Keep polling
+        }
+      }, 3000);
 
-      const refreshed = accounts.find((a) => a.id === id);
-      const totalImported =
-        data.totalImported || refreshed?.totalCollected || 0;
-
-      setSyncProgress({
-        taskId: "",
-        accountId: id,
-        status: "success",
-        progress: 100,
-        message: `完成！成功导入 ${totalImported} 条内容`,
-      });
-
-      toast.success(`同步完成，成功导入 ${totalImported} 条内容`);
+      // Store poll interval ref for cleanup
+      pollTimerRef.current = pollInterval;
     } catch (err) {
       setSyncProgress((prev) =>
         prev
@@ -522,7 +649,6 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
       toast.error(
         err instanceof Error ? err.message : "同步失败"
       );
-    } finally {
       setSyncingId(null);
     }
   };
@@ -959,6 +1085,79 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
         animate="visible"
         className="p-4 space-y-4"
       >
+        {/* ── Scraper service status banner ────────────────────────────── */}
+        {scraperAvailable === false && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30"
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                  采集服务未启动
+                </p>
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
+                  小红书采集服务不可用，链接导入和同步功能暂不可用。请等待服务启动。
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => checkScraperService()}
+                className="h-7 text-[10px] gap-1 border-amber-200 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 shrink-0"
+              >
+                <RefreshCw className="h-3 w-3" />
+                重试
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Sync progress banner ────────────────────────────────────── */}
+        {syncProgress && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className={`p-3 rounded-xl border ${
+              syncProgress.status === "syncing"
+                ? "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800/30"
+                : syncProgress.status === "success"
+                ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30"
+                : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30"
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              {syncProgress.status === "syncing" && (
+                <Loader2 className="h-4 w-4 text-violet-500 animate-spin shrink-0" />
+              )}
+              {syncProgress.status === "success" && (
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+              )}
+              {syncProgress.status === "error" && (
+                <XCircle className="h-4 w-4 text-red-500 shrink-0" />
+              )}
+              <span className={`text-xs font-medium ${
+                syncProgress.status === "syncing"
+                  ? "text-violet-700 dark:text-violet-300"
+                  : syncProgress.status === "success"
+                  ? "text-emerald-700 dark:text-emerald-300"
+                  : "text-red-700 dark:text-red-300"
+              }`}>
+                {syncProgress.message}
+              </span>
+            </div>
+            {(syncProgress.status === "syncing" || syncProgress.status === "success") && (
+              <Progress
+                value={syncProgress.progress}
+                className="h-1.5"
+              />
+            )}
+          </motion.div>
+        )}
+
         {/* ── Header ────────────────────────────────────────────────────── */}
         <motion.div
           variants={itemVariants}
@@ -1226,15 +1425,25 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                           })}
                         </div>
 
-                        {/* Error banner */}
+                        {/* Error banner with retry */}
                         {account.status === "error" && account.lastError && (
                           <div className="mb-3 p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 flex items-center gap-2">
                             <AlertCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                            <span className="text-[10px] text-red-600 dark:text-red-400 truncate">
+                            <span className="text-[10px] text-red-600 dark:text-red-400 flex-1 min-w-0 truncate">
                               {account.lastError.length > 60
                                 ? account.lastError.slice(0, 60) + "..."
                                 : account.lastError}
                             </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSync(account.id)}
+                              disabled={account.status === "syncing"}
+                              className="h-5 px-1.5 text-[9px] text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 shrink-0"
+                            >
+                              <RefreshCw className="h-2.5 w-2.5 mr-0.5" />
+                              重试
+                            </Button>
                           </div>
                         )}
 

@@ -15,6 +15,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WelcomeOnboarding } from "@/components/welcome-onboarding";
 import { NotificationBell } from "@/components/notification-center";
@@ -579,7 +580,16 @@ export default function Home() {
           </div>
 
           {/* Notification Bell - always visible */}
-          <NotificationBell />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <NotificationBell />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              通知中心
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Mobile: compact header - platform switcher moved to floating nav */}
@@ -588,13 +598,13 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 overflow-hidden">
         {showWelcome ? (
-          <div className="h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-3.5rem)]">
+          <div className="h-full">
             <WelcomeOnboarding onComplete={() => setOnboardingCompleted(true)} />
           </div>
         ) : (
           <>
             {/* Desktop: Two-panel resizable layout */}
-            <div className="hidden sm:block h-[calc(100vh-3.5rem)]">
+            <div className="hidden sm:block h-full">
               <ResizablePanelGroup direction="horizontal" className="h-full">
                 {/* Left Sidebar */}
                 <ResizablePanel defaultSize={24} minSize={20} maxSize={32}>
@@ -619,7 +629,7 @@ export default function Home() {
             </div>
 
             {/* Mobile: Swipeable single panel view */}
-            <div className="sm:hidden h-[calc(100vh-3.5rem)] overflow-hidden">
+            <div className="sm:hidden h-full overflow-hidden">
               <div className="relative h-full">
                 <motion.div
                   key={mobileTabIndex}
