@@ -65,6 +65,8 @@ model ContentPost {
   
   plan          ContentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   versions      ContentVersion[]
+  postComments  ContentComment[]
+  postInteractions ContentInteraction[]
 }
 
 model ContentVersion {
@@ -158,4 +160,96 @@ model PlatformAccount {
   updatedAt     DateTime @updatedAt
 
   @@unique([platform, accountType])
+}
+
+// ─── 账号采集功能 ────────────────────────────────────────────────────────
+
+// 追踪的目标账号（自己的或竞品的）
+model TrackedAccount {
+  id            String   @id @default(cuid())
+  platform      String   // wechat, xiaohongshu
+  homeUrl       String   @default("") // 主页链接（小红书：https://www.xiaohongshu.com/user/profile/xxx）
+  nickname      String   @default("") // 昵称
+  avatarUrl     String   @default("") // 头像
+  bio           String   @default("") // 简介
+  followers     Int      @default(0)
+  following     Int      @default(0)
+  postsCount    Int      @default(0)
+  isOwn         Boolean  @default(true) // 是否是自己的账号
+  status        String   @default("idle") // idle, syncing, success, error
+  lastSyncAt    DateTime?
+  lastError     String   @default("")
+  collectMethod  String   @default("link") // link, cookie, manual
+  cookie        String   @default("") // 存储采集用的Cookie
+  totalCollected Int      @default(0) // 已采集内容总数
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  syncTasks     SyncTask[]
+  @@index([platform])
+}
+
+// 采集任务记录
+model SyncTask {
+  id            String   @id @default(cuid())
+  trackedAccountId String
+  status        String   @default("pending") // pending, running, success, partial, error
+  totalFound    Int      @default(0)
+  totalImported Int      @default(0)
+  totalFailed   Int      @default(0)
+  errorMessage  String   @default("")
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  metadata      String   @default("{}") // JSON: 采集范围、参数等
+
+  trackedAccount TrackedAccount @relation(fields: [trackedAccountId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+
+  @@index([trackedAccountId])
+}
+
+// ─── 互动数据：评论 ──────────────────────────────────────────────────────
+
+model ContentComment {
+  id            String   @id @default(cuid())
+  postId        String
+  platform      String   @default("wechat")
+  authorName     String   @default("")
+  authorAvatar   String   @default("")
+  content       String   @default("")
+  likes         Int      @default(0)
+  replyTo       String   @default("")
+  replyToName   String   @default("")
+  publishedAt    String   @default("")
+  sourceType    String   @default("collected") // collected, manual
+  syncedAt      DateTime @default(now())
+
+  post          ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([platform])
+  @@index([authorName])
+}
+
+// ─── 互动数据：转发/分享记录 ──────────────────────────────────────────────
+
+model ContentInteraction {
+  id            String   @id @default(cuid())
+  postId        String
+  platform      String   @default("wechat")
+  interactionType String   @default("share") // share, forward, collect
+  authorName     String   @default("")
+  authorAvatar   String   @default("")
+  content       String   @default("")
+  publishedAt    String   @default("")
+  sourceType    String   @default("collected") // collected, manual
+  syncedAt      DateTime @default(now())
+
+  post          ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([platform])
+  @@index([interactionType])
 }

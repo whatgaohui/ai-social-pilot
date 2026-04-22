@@ -303,14 +303,14 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
 };
 
 const shimmerVariants = {
   initial: { backgroundPosition: "-200% 0" },
   animate: {
     backgroundPosition: "200% 0",
-    transition: { repeat: Infinity, duration: 2, ease: "linear" },
+    transition: { repeat: Infinity, duration: 2, ease: "linear" as const },
   },
 };
 

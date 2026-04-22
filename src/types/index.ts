@@ -295,3 +295,67 @@ export function parseXHSNote(content: string): XHSNote {
     coverType: 'photo',
   };
 }
+
+// Collection / Sync types
+export interface TrackedAccount {
+  id: string;
+  platform: string;
+  homeUrl: string;
+  nickname: string;
+  avatarUrl: string;
+  bio: string;
+  followers: number;
+  following: number;
+  postsCount: number;
+  isOwn: boolean;
+  status: string;
+  lastSyncAt: string | null;
+  lastError: string;
+  collectMethod: string;
+  cookie: string;
+  totalCollected: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SyncTask {
+  id: string;
+  trackedAccountId: string;
+  status: string;
+  totalFound: number;
+  totalImported: number;
+  totalFailed: number;
+  errorMessage: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  metadata: string;
+  createdAt: string;
+}
+
+export interface ContentComment {
+  id: string;
+  postId: string;
+  platform: string;
+  authorName: string;
+  authorAvatar: string;
+  content: string;
+  likes: number;
+  replyTo: string;
+  replyToName: string;
+  publishedAt: string;
+  sourceType: string;
+  syncedAt: string;
+}
+
+export interface ContentInteraction {
+  id: string;
+  postId: string;
+  platform: string;
+  interactionType: string;
+  authorName: string;
+  authorAvatar: string;
+  content: string;
+  publishedAt: string;
+  sourceType: string;
+  syncedAt: string;
+}

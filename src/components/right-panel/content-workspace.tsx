@@ -40,7 +40,7 @@ import { ContentHistory } from "@/components/right-panel/content-history";
 
 const fadeSlideIn = {
   hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" as const } },
   exit: { opacity: 0, y: -4, transition: { duration: 0.15 } },
 };
 
@@ -51,7 +51,7 @@ const staggerContainer = {
 
 const staggerItem = {
   hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" as const } },
 };
 
 // ─── Inline Engagement Bar ──────────────────────────────────────────────────
