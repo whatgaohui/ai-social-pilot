@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -316,7 +316,7 @@ const shimmerVariants = {
 
 // ─── Section Header Component ───────────────────────────────────────────────
 
-function SectionHeader({
+const SectionHeader = React.memo(function SectionHeader({
   icon: Icon,
   title,
   subtitle,
@@ -352,12 +352,13 @@ function SectionHeader({
       </motion.div>
     </div>
   );
-}
+});
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export function ViralInspiration() {
-  const { platform, persona } = useAppStore();
+  const platform = useAppStore((s) => s.platform);
+  const persona = useAppStore((s) => s.persona);
   const isXHS = platform === "xiaohongshu";
 
   // Collapsible states
@@ -386,18 +387,21 @@ export function ViralInspiration() {
   const { copied: otherCopied, copy: copyOther } = useCopyToClipboard();
 
   // Category filter
-  const filteredFormulas =
-    activeCategory === "all"
-      ? TITLE_FORMULAS
-      : TITLE_FORMULAS.filter((f) => f.category === activeCategory);
+  const filteredFormulas = useMemo(
+    () =>
+      activeCategory === "all"
+        ? TITLE_FORMULAS
+        : TITLE_FORMULAS.filter((f) => f.category === activeCategory),
+    [activeCategory],
+  );
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
-  const handleCopyFormula = (text: string) => {
+  const handleCopyFormula = useCallback((text: string) => {
     copyFormula(text);
-  };
+  }, [copyFormula]);
 
-  const handleAIRewrite = async (formula: TitleFormula) => {
+  const handleAIRewrite = useCallback(async (formula: TitleFormula) => {
     setRewritingFormula(formula.id);
     setRewriteResult("");
     try {
@@ -422,9 +426,9 @@ export function ViralInspiration() {
     } finally {
       setRewritingFormula(null);
     }
-  };
+  }, [isXHS]);
 
-  const handleGenerateInspiration = async () => {
+  const handleGenerateInspiration = useCallback(async () => {
     if (!inspirationKeyword.trim()) {
       toast.error("请输入关键词或话题");
       return;
@@ -455,18 +459,18 @@ export function ViralInspiration() {
     } finally {
       setIsGeneratingInspiration(false);
     }
-  };
+  }, [inspirationKeyword]);
 
-  const handleCopyHashtag = (tag: string) => {
+  const handleCopyHashtag = useCallback((tag: string) => {
     const text = isXHS ? `#${tag}` : tag;
     copyHashtag(text);
-  };
+  }, [isXHS, copyHashtag]);
 
-  const handleUseTopic = (idea: InspirationIdea) => {
+  const handleUseTopic = useCallback((idea: InspirationIdea) => {
     copyOther(`${idea.title}\n${idea.description}`);
-  };
+  }, [copyOther]);
 
-  const handleAIExpand = async (prompt: WritingPrompt) => {
+  const handleAIExpand = useCallback(async (prompt: WritingPrompt) => {
     setExpandingPrompt(prompt.id);
     setExpandResult("");
     try {
@@ -491,7 +495,7 @@ export function ViralInspiration() {
     } finally {
       setExpandingPrompt(null);
     }
-  };
+  }, [isXHS]);
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 

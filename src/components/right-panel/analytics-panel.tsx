@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   CONTENT_TYPE_LABELS,
@@ -140,7 +140,7 @@ function formatRate(n: number): string {
 
 // ─── Donut Chart Component ───────────────────────────────────────────────────
 
-function DonutChart({
+const DonutChart = React.memo(function DonutChart({
   data,
   isXHS,
 }: {
@@ -287,11 +287,11 @@ function DonutChart({
       </div>
     </div>
   );
-}
+});
 
 // ─── Horizontal Bar Chart Component ──────────────────────────────────────────
 
-function HorizontalBarChart({
+const HorizontalBarChart = React.memo(function HorizontalBarChart({
   posts,
   isXHS,
 }: {
@@ -410,11 +410,11 @@ function HorizontalBarChart({
       })}
     </div>
   );
-}
+});
 
 // ─── Engagement Rate Card ────────────────────────────────────────────────────
 
-function EngagementRateCard({
+const EngagementRateCard = React.memo(function EngagementRateCard({
   likes,
   comments,
   shares,
@@ -545,11 +545,11 @@ function EngagementRateCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 // ─── Status Distribution Ring Component ──────────────────────────────────────
 
-function StatusRing({
+const StatusRing = React.memo(function StatusRing({
   statusDistribution,
 }: {
   statusDistribution: Record<string, number>;
@@ -659,7 +659,7 @@ function StatusRing({
       </div>
     </div>
   );
-}
+});
 
 // ─── Platform Comparison Chart ─────────────────────────────────────────────
 
@@ -670,7 +670,7 @@ interface PlatformMetricGroup {
  format: "number" | "rate";
 }
 
-function PlatformComparisonChart({ posts }: { posts: ContentPost[] }) {
+const PlatformComparisonChart = React.memo(function PlatformComparisonChart({ posts }: { posts: ContentPost[] }) {
   const wechatPosts = posts.filter((p) => !p.platform || p.platform === "wechat");
   const xhsPosts = posts.filter((p) => p.platform === "xiaohongshu");
 
@@ -797,11 +797,11 @@ function PlatformComparisonChart({ posts }: { posts: ContentPost[] }) {
       </svg>
     </div>
   );
-}
+});
 
 // ─── Content Trend Line Chart ──────────────────────────────────────────────
 
-function ContentTrendChart({
+const ContentTrendChart = React.memo(function ContentTrendChart({
   posts,
   days,
 }: {
@@ -937,11 +937,11 @@ function ContentTrendChart({
       ))}
     </svg>
   );
-}
+});
 
 // ─── Enhanced Skeleton ───────────────────────────────────────────────────────
 
-function AnalyticsSkeleton() {
+const AnalyticsSkeleton = React.memo(function AnalyticsSkeleton() {
   return (
     <div className="p-4 space-y-4">
       {/* Export buttons skeleton */}
@@ -1051,7 +1051,7 @@ function AnalyticsSkeleton() {
       </div>
     </div>
   );
-}
+});
 
 // ─── Main Analytics Panel ────────────────────────────────────────────────────
 
@@ -1059,7 +1059,8 @@ type Period = "week" | "month" | "all";
 const PERIOD_LABELS: Record<Period, string> = { week: "本周", month: "本月", all: "全部" };
 
 export function AnalyticsPanel() {
-  const { platform, contentPosts } = useAppStore();
+  const platform = useAppStore((s) => s.platform);
+  const contentPosts = useAppStore((s) => s.contentPosts);
   const isXHS = platform === "xiaohongshu";
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState("");
@@ -1114,7 +1115,7 @@ export function AnalyticsPanel() {
     fetchAnalytics();
   }, []);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/analytics");
@@ -1126,9 +1127,9 @@ export function AnalyticsPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleExport = async (format: "json" | "text" | "csv") => {
+  const handleExport = useCallback(async (format: "json" | "text" | "csv") => {
     try {
       const ext = format === "csv" ? "csv" : format === "json" ? "json" : "txt";
       const res = await fetch(`/api/export?format=${format}`);
@@ -1147,9 +1148,9 @@ export function AnalyticsPanel() {
     } catch {
       toast.error("导出失败");
     }
-  };
+  }, []);
 
-  const handleExportReport = async () => {
+  const handleExportReport = useCallback(async () => {
     try {
       const res = await fetch(`/api/export/report-image?period=${period}`);
       if (res.ok) {
@@ -1167,9 +1168,9 @@ export function AnalyticsPanel() {
     } catch {
       toast.error("报告导出失败");
     }
-  };
+  }, [period]);
 
-  const handleAIAnalysis = async () => {
+  const handleAIAnalysis = useCallback(async () => {
     if (!analytics) return;
     setAnalyzing(true);
     setAiAnalysis("");
@@ -1189,19 +1190,19 @@ export function AnalyticsPanel() {
     } finally {
       setAnalyzing(false);
     }
-  };
+  }, [analytics]);
 
-  const getLabel = (type: string) => {
+  const getLabel = useCallback((type: string) => {
     if (isXHS)
       return XHS_CONTENT_TYPE_LABELS[type as XHSContentType] || type;
     return CONTENT_TYPE_LABELS[type as ContentType] || type;
-  };
+  }, [isXHS]);
 
-  const getColor = (type: string) => {
+  const getColor = useCallback((type: string) => {
     if (isXHS)
       return XHS_CONTENT_TYPE_COLORS[type as XHSContentType] || "";
     return CONTENT_TYPE_COLORS[type as ContentType] || "";
-  };
+  }, [isXHS]);
 
   // Memoize total favorites for XHS from filteredPosts
   const totalFavorites = useMemo(() => {

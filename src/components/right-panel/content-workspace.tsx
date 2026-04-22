@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
@@ -88,7 +88,7 @@ const expandCollapse = {
 // ─── Inline Engagement Bar ──────────────────────────────────────────────────
 // Compact inline stats bar replacing the old full-width EngagementCard section.
 
-function InlineEngagementBar({ post, isXHS }: { post: ReturnType<typeof useAppStore.getState>["contentPosts"][0]; isXHS: boolean }) {
+const InlineEngagementBar = React.memo(function InlineEngagementBar({ post, isXHS }: { post: ReturnType<typeof useAppStore.getState>["contentPosts"][0]; isXHS: boolean }) {
   const updateContentPost = useAppStore((s) => s.updateContentPost);
   const [simulating, setSimulating] = useState(false);
 
@@ -153,7 +153,7 @@ function InlineEngagementBar({ post, isXHS }: { post: ReturnType<typeof useAppSt
       )}
     </div>
   );
-}
+});
 
 // ─── Status Border Color Map ─────────────────────────────────────────────────
 
@@ -180,15 +180,13 @@ const TOOL_TABS = [
 type ToolTab = (typeof TOOL_TABS)[number]["value"];
 
 export function ContentWorkspace() {
-  const {
-    contentPosts,
-    selectedPostId,
-    platform,
-    persona,
-    setAccountPanelOpen,
-    updateContentPost,
-    addNotification,
-  } = useAppStore();
+  const contentPosts = useAppStore((s) => s.contentPosts);
+  const selectedPostId = useAppStore((s) => s.selectedPostId);
+  const platform = useAppStore((s) => s.platform);
+  const persona = useAppStore((s) => s.persona);
+  const setAccountPanelOpen = useAppStore((s) => s.setAccountPanelOpen);
+  const updateContentPost = useAppStore((s) => s.updateContentPost);
+  const addNotification = useAppStore((s) => s.addNotification);
 
   const isXHS = platform === "xiaohongshu";
   const [previewMode, setPreviewMode] = useState(false);
@@ -214,7 +212,7 @@ export function ContentWorkspace() {
 
   const personaName = persona?.name || "我";
 
-  const handlePlatformConnect = () => setAccountPanelOpen(true);
+  const handlePlatformConnect = useCallback(() => setAccountPanelOpen(true), [setAccountPanelOpen]);
 
   // Scroll to quality scorer section when score badge is clicked
   const handleScoreBadgeClick = useCallback(() => {
@@ -227,7 +225,7 @@ export function ContentWorkspace() {
   }, []);
 
   // ── Template quick-start handler ────────────────────────────────────────
-  const handleImportFromClipboard = async () => {
+  const handleImportFromClipboard = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text && selectedPost) {
@@ -247,7 +245,7 @@ export function ContentWorkspace() {
     } catch {
       toast.error("无法读取剪贴板，请手动粘贴");
     }
-  };
+  }, [selectedPost, updateContentPost]);
 
   // ── No post selected ─────────────────────────────────────────────────────
   if (!selectedPost) {
