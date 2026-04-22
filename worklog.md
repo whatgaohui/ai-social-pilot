@@ -4257,3 +4257,91 @@ Stage Summary:
   4. 旧组件清理（不再使用的旧版组件）
   5. 移动端真机测试
   6. 数据看板接入真实数据
+---
+Task ID: 25
+Agent: Cron Review Agent (Round 25)
+Task: 第25轮开发 - Bug修复增强 + Cookie采集引导 + CSS动画 + AI写作助手
+
+Work Log:
+- 读取 worklog.md 了解前24轮开发成果（4260行）
+- 使用 curl 验证 dev server 状态（端口3000，200 OK）
+- 验证8个核心API端点（全部200）
+- ESLint 零错误通过
+- 使用3个并行 Task 代理同时开发
+
+### 项目当前状态
+- Next.js (Turbopack) 运行在端口3000，Scraper mini-service 运行在端口3003
+- ESLint 零错误，8个核心API全部200
+- 页面编译成功
+- 已完成25轮迭代
+
+### Bug修复增强
+
+1. **右上角重复消息提醒图标（进一步增强）**：
+   - 问题：NotificationBell在SSR水合期间useIsMobile()返回undefined导致FOUC（闪烁），用户可能看到短暂双图标
+   - 根因：上轮（第24轮）已修复为useIsMobile条件渲染，但缺少hydration guard导致初始渲染闪烁
+   - 修复：使用useSyncExternalStore检测客户端挂载，未挂载时渲染占位div（h-8 w-[3.25rem]），消除SSR→客户端切换闪烁
+   - 附加：将"AI驱动"Badge改为hidden md:inline-flex，减小视觉干扰，避免与通知图标混淆
+   - 修改文件：src/components/notification-center.tsx, src/app/page.tsx
+
+2. **小红书采集中心数据质量反馈**：
+   - 问题：用户输入小红书链接后，采集显示"已同步"但笔记内容为空，用户无法理解原因
+   - 根因：小红书笔记内容由客户端JavaScript动态渲染，直接HTTP请求只能获取标题，无法获取正文和互动数据
+   - 修复1：sync API新增dataQuality字段（'full'/'partial'/'empty'），评估采集数据质量
+   - 修复2：前端在采集成功但数据为空时，显示toast.warning解释反爬限制并推荐手动导入+AI解析
+   - 修复3：笔记列表为空时显示引导说明和"前往手动导入"按钮
+   - 修复4：笔记存在但内容为空时显示amber警告横幅，解释限制并提供手动导入入口
+   - 修改文件：src/app/api/tracked-accounts/[id]/sync/route.ts, src/components/right-panel/account-collector.tsx
+
+### 新功能
+
+1. **小红书Cookie采集引导**（account-collector.tsx）：
+   - Cookie输入框旁添加Info图标按钮，点击弹出Popover显示6步获取指南
+   - 步骤：打开xiaohongshu.com → F12开发者工具 → Network标签 → 刷新 → 找Cookie请求头 → 复制
+   - Cookie输入框下方添加安全提示（Lock图标 + "Cookie仅在本地使用，安全存储"）
+
+2. **AI写作助手浮动按钮**（ai-writing-assistant.tsx）：
+   - 新建独立组件，固定在页面右下角（移动端bottom-20避开浮动导航，桌面端bottom-6）
+   - 渐变紫色FAB按钮 + 呼吸脉冲光环动画
+   - 点击展开菜单，4个AI写作快捷入口：口水话润色、碎片转文案、批量生成计划、爆款灵感
+   - 每个入口有渐变图标 + 标题 + 描述 + Tooltip
+   - 点击外部自动关闭，spring动画展开/收起
+
+### 样式打磨
+
+- 10个新CSS微动画类（globals.css）：gradient-text-shimmer, breathe, slide-in-bottom, badge-pulse, platform-transition, card-glass-hover, stagger-children, skeleton-shine（含dark模式适配）
+- Header Logo添加animate-breathe呼吸发光效果
+- 采集中心方法选择器添加stagger-children交错入场
+
+### 新增文件
+- `src/components/ai-writing-assistant.tsx` - AI写作助手浮动按钮组件
+
+### 修改文件
+- `src/components/notification-center.tsx` - hydration guard增强
+- `src/app/page.tsx` - AI驱动Badge缩小 + AI写作助手集成 + Logo呼吸动画
+- `src/app/api/tracked-accounts/[id]/sync/route.ts` - dataQuality评估
+- `src/components/right-panel/account-collector.tsx` - 数据质量反馈 + Cookie引导 + 安全提示 + 交错入场
+- `src/app/globals.css` - 10个新CSS动画类
+
+### QA验证结果
+- ✅ ESLint 零错误通过
+- ✅ 页面编译成功（HTTP 200）
+- ✅ 8个核心API全部返回200
+- ✅ Scraper service 运行正常（端口3003）
+
+Stage Summary:
+- 项目状态：稳定可运行，两个关键Bug已修复增强，新功能已集成
+- 本轮新增 1 个文件，修改 5 个文件
+- 核心能力：NotificationBell hydration guard、采集中心数据质量反馈+手动导入引导、Cookie采集引导、AI写作助手FAB、10个CSS动画类
+- 未解决问题或风险：
+  1. 小红书反爬机制仍然存在（需要cookie/登录态才能获取完整笔记内容）
+  2. Scraper service需要手动启动
+  3. AI写作助手FAB在移动端可能与底部浮动导航重叠（已设置bottom-20规避）
+  4. 旧组件清理待执行
+- 建议下一阶段优先事项：
+  1. 添加 scraper service 自动启动/监控机制
+  2. 数据看板接入真实数据分析
+  3. 旧组件清理
+  4. 移动端真机测试
+  5. 运营报告自动生成（PDF/图片格式导出）
+  6. 多账号管理增强

@@ -40,6 +40,11 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
   Globe,
   Plus,
   Trash2,
@@ -72,6 +77,7 @@ import {
   Repeat2,
   TrendingUp,
   Info,
+  Lock,
   Wand2,
   CheckCheck,
 } from "lucide-react";
@@ -553,13 +559,30 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
             const updated = await accountRes.json();
             if (updated.status === "success") {
               clearInterval(pollInterval);
-              setSyncProgress({
-                taskId: "",
-                accountId: account.id,
-                status: "success",
-                progress: 100,
-                message: `采集成功！已获取 ${updated.nickname || "账号"} 的信息`,
-              });
+              const notesCollected = updated.totalCollected || 0;
+              if (notesCollected === 0) {
+                // Account info was scraped but no note content was collected.
+                // This is common for XHS because note content is rendered via client-side JS.
+                setSyncProgress({
+                  taskId: "",
+                  accountId: account.id,
+                  status: "success",
+                  progress: 100,
+                  message: `已获取 ${updated.nickname || "账号"} 的基本信息，但笔记内容为空`,
+                });
+                toast.warning("仅获取到账号基本信息，笔记内容为空", {
+                  description: "小红书的笔记内容由客户端JavaScript动态渲染，直接采集无法获取完整内容。建议使用「手动导入」功能，在小红书APP中复制笔记内容粘贴导入，AI可自动解析结构化。",
+                  duration: 8000,
+                });
+              } else {
+                setSyncProgress({
+                  taskId: "",
+                  accountId: account.id,
+                  status: "success",
+                  progress: 100,
+                  message: `采集成功！已获取 ${updated.nickname || "账号"} 的信息`,
+                });
+              }
               fetchAccounts();
               setTimeout(() => setSyncProgress(null), 3000);
             } else if (updated.status === "error") {
@@ -679,14 +702,28 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
           if (updated.status === "success") {
             clearInterval(pollInterval);
             const totalImported = updated.totalCollected || 0;
-            setSyncProgress({
-              taskId: "",
-              accountId: id,
-              status: "success",
-              progress: 100,
-              message: `完成！成功导入 ${totalImported} 条内容`,
-            });
-            toast.success(`同步完成，成功导入 ${totalImported} 条内容`);
+            if (totalImported === 0) {
+              setSyncProgress({
+                taskId: "",
+                accountId: id,
+                status: "success",
+                progress: 100,
+                message: "同步完成，但未获取到笔记内容",
+              });
+              toast.warning("同步完成，但笔记内容为空", {
+                description: "小红书的笔记内容由客户端JavaScript动态渲染，直接采集无法获取完整内容。建议使用「手动导入」功能粘贴内容，AI可自动解析结构化。",
+                duration: 8000,
+              });
+            } else {
+              setSyncProgress({
+                taskId: "",
+                accountId: id,
+                status: "success",
+                progress: 100,
+                message: `完成！成功导入 ${totalImported} 条内容`,
+              });
+              toast.success(`同步完成，成功导入 ${totalImported} 条内容`);
+            }
             fetchAccounts();
             setTimeout(() => {
               setSyncProgress(null);
@@ -1204,19 +1241,89 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
             </div>
           )}
 
-          {/* Notes list */}
+          {/* Notes list — empty state */}
           {!notesLoading && filteredNotes.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex flex-col items-center py-12 text-center"
+              className="flex flex-col items-center py-10 text-center"
             >
-              <Inbox className="h-8 w-8 text-muted-foreground/40 mb-2" />
-              <p className="text-xs text-muted-foreground">
-                {notesSearch ? "没有找到匹配的笔记" : "暂无采集笔记"}
+              <div className="h-10 w-10 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center mb-3">
+                <Inbox className="h-5 w-5 text-amber-500/60" />
+              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">
+                {notesSearch ? "没有找到匹配的笔记" : "暂无采集笔记内容"}
               </p>
+              {!notesSearch && notesAccount?.platform === "xiaohongshu" && (
+                <div className="mt-2 max-w-[240px]">
+                  <p className="text-[10px] text-muted-foreground/70 leading-relaxed mb-2.5">
+                    小红书的笔记内容由客户端JavaScript动态渲染，直接采集无法获取完整笔记内容。
+                  </p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground/70">
+                      <ClipboardList className="h-3 w-3 text-violet-400 shrink-0 mt-0.5" />
+                      <span>使用「手动导入」：在小红书APP中复制笔记内容，粘贴到手动导入区域</span>
+                    </div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground/70">
+                      <Sparkles className="h-3 w-3 text-violet-400 shrink-0 mt-0.5" />
+                      <span>AI智能解析可自动将粘贴的内容结构化为标准格式</span>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setViewingAccountId(null);
+                      setShowAddDialog(true);
+                      setFormPlatform("xiaohongshu");
+                      setFormMethod("manual");
+                    }}
+                    className="mt-3 h-7 text-[10px] gap-1.5 border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30"
+                  >
+                    <ClipboardList className="h-3 w-3" />
+                    前往手动导入
+                  </Button>
+                </div>
+              )}
             </motion.div>
           )}
+
+          {/* Notes with empty content — show guidance banner */}
+          {!notesLoading && filteredNotes.length > 0 &&
+            notesAccount?.platform === "xiaohongshu" &&
+            filteredNotes.every((n) => !n.content || n.content.trim().length === 0) && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl border border-amber-200/70 dark:border-amber-700/50 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 dark:from-amber-950/30 dark:via-yellow-950/20 dark:to-amber-950/30 p-3"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-amber-800 dark:text-amber-200 mb-1">
+                      笔记内容为空
+                    </p>
+                    <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 leading-relaxed mb-2">
+                      小红书的内容由客户端JavaScript动态渲染，直接采集无法获取完整笔记内容。
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setViewingAccountId(null);
+                        setShowAddDialog(true);
+                        setFormPlatform("xiaohongshu");
+                        setFormMethod("manual");
+                      }}
+                      className="h-6 text-[10px] gap-1 border-amber-300/70 dark:border-amber-600/50 text-amber-700 dark:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-900/30 px-2"
+                    >
+                      <ClipboardList className="h-3 w-3" />
+                      使用手动导入 + AI解析
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
           {!notesLoading && filteredNotes.length > 0 && (
             <motion.div
@@ -2357,7 +2464,7 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
               {/* Collection method selection */}
               <div className="space-y-2">
                 <Label className="text-xs font-medium">采集方式</Label>
-                <div className="space-y-2">
+                <div className="space-y-2 stagger-children">
                   {availableMethods.map((method) => {
                     const Icon = method.icon;
                     const isSelected = formMethod === method.value;
@@ -2556,9 +2663,32 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium">
-                        Cookie 信息
-                      </Label>
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-xs font-medium">
+                          Cookie 信息
+                        </Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5">
+                              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent side="right" className="w-72 p-3">
+                            <h4 className="font-medium text-sm mb-2">如何获取小红书Cookie？</h4>
+                            <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+                              <li>在电脑浏览器中打开 <span className="text-foreground">xiaohongshu.com</span> 并登录</li>
+                              <li>按 <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">F12</kbd> 打开开发者工具</li>
+                              <li>切换到「网络(Network)」标签页</li>
+                              <li>刷新页面，点击任意请求</li>
+                              <li>在请求头中找到 <span className="text-foreground">Cookie</span> 字段</li>
+                              <li>复制完整的Cookie值粘贴到输入框</li>
+                            </ol>
+                            <p className="text-[10px] text-muted-foreground mt-2 pt-2 border-t">
+                              Cookie仅在本地使用，不会上传到第三方服务器。登录态过期后需要重新获取。
+                            </p>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                       <Textarea
                         placeholder="粘贴登录后的Cookie信息..."
                         value={formCookie}
@@ -2571,6 +2701,9 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                         和
                         <code className="text-[10px] bg-muted px-1 py-0.5 rounded mx-0.5">web_session</code>
                         的值，用分号连接。提供Cookie可获取粉丝数、笔记数等完整数据。
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                        <Lock className="h-3 w-3" /> Cookie仅在本地使用，安全存储
                       </p>
                     </div>
                   </motion.div>

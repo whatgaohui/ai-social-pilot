@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -904,9 +904,15 @@ function UnreadBadge({ count }: { count: number }) {
 }
 
 // ─── NotificationBell (exported for header) ─────────────────────────
+// Hydration-safe mounted check using useSyncExternalStore (no setState needed)
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export function NotificationBell() {
   const { notifications } = useAppStore();
   const hydrated = useRef(false);
+  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -939,6 +945,13 @@ export function NotificationBell() {
   const handleAction = useCallback((_notification: AppNotification) => {
     setIsMobileOpen(false);
   }, []);
+
+  // Don't render until mounted to prevent hydration mismatch / FOUC
+  if (!mounted) {
+    return (
+      <div className="h-8 w-[3.25rem] rounded-lg" aria-hidden="true" />
+    );
+  }
 
   // Only render one Bell icon based on viewport to prevent duplicate icons
   // during SSR hydration / FOUC (Flash of Unstyled Content)

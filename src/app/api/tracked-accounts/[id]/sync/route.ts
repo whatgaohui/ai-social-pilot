@@ -42,12 +42,12 @@ export async function POST(
       },
     });
 
-    // 3-6. Run the sync process in the background (fire-and-forget)
+    // 3-8. Run the sync process in the background (fire-and-forget)
     executeSync(account, syncTask.id).catch((err) => {
       console.error(`[Background Sync] Failed for account ${id}:`, err);
     });
 
-    // 7. Return the sync task ID immediately
+    // 9. Return the sync task ID immediately
     return NextResponse.json({
       success: true,
       syncTaskId: syncTask.id,
@@ -122,7 +122,22 @@ async function executeSync(
     // Step 4: Import results to DB via scraper service
     const importResult = await importToDb(account, scrapeResult);
 
-    // Step 5: Update account stats
+    // Step 5: Assess data quality — XHS renders note content client-side via JS,
+    // so scraped notes often have titles but empty content / zero engagement.
+    const hasNotesWithContent = scrapeResult.notes?.some(
+      (n) => n.content && n.content.trim().length > 0,
+    );
+    const hasNotesWithEngagement = scrapeResult.notes?.some(
+      (n) => (n.likes && n.likes > 0) || (n.comments && n.comments > 0),
+    );
+    const dataQuality: 'full' | 'partial' | 'empty' =
+      scrapeResult.notes && scrapeResult.notes.length > 0
+        ? hasNotesWithContent
+          ? 'full'
+          : 'partial'
+        : 'empty';
+
+    // Step 6: Update account stats
     const totalCollected = account.platform === 'xiaohongshu'
       ? (await db.contentPost.count({
           where: {
@@ -131,6 +146,18 @@ async function executeSync(
           },
         }))
       : 0;
+
+    // If data quality is partial, store a hint so the frontend can show guidance.
+    // We use lastSyncMetadata (a JSON-friendly field) via the existing metadata field.
+    const syncMetadata = JSON.stringify({
+      platform: account.platform,
+      homeUrl: account.homeUrl,
+      collectMethod: account.collectMethod,
+      dataQuality,
+      notesFound: scrapeResult.notes?.length || 0,
+      hasNotesWithContent,
+      hasNotesWithEngagement,
+    });
 
     await updateAccount({
       followers: scrapeResult.profile?.followers || 0,
@@ -141,15 +168,27 @@ async function executeSync(
       status: 'success',
     });
 
-    // Step 6: Update sync task
+    // Step 7: Update sync task
     await updateTask({
       status: importResult.failed > 0 ? 'partial' : 'success',
       totalFound: scrapeResult.notes?.length || 0,
       totalImported: importResult.imported,
       totalFailed: importResult.failed,
       errorMessage: importResult.error || '',
+      metadata: syncMetadata,
       finishedAt: new Date(),
     });
+
+    // Step 8: If data quality is partial/empty, log a warning for visibility
+    if (dataQuality !== 'full') {
+      console.warn(
+        `[Sync ${account.id}] Data quality is '${dataQuality}'. ` +
+        `Notes found: ${scrapeResult.notes?.length || 0}, ` +
+        `With content: ${hasNotesWithContent}, ` +
+        `With engagement: ${hasNotesWithEngagement}. ` +
+        `XHS likely renders note content client-side via JavaScript.`,
+      );
+    }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     try {

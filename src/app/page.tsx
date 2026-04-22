@@ -20,6 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { WelcomeOnboarding } from "@/components/welcome-onboarding";
 import { NotificationBell } from "@/components/notification-center";
 import { PlatformAccountPanel } from "@/components/platform-account-panel";
+import { AIWritingAssistant } from "@/components/ai-writing-assistant";
 import { SettingsCenter } from "@/components/settings-center";
 import {
   Sparkles, BookOpen, PenTool, CalendarDays,
@@ -482,7 +483,7 @@ export default function Home() {
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <motion.div
-              className={`h-9 w-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg logo-hover-spin ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-300/50 dark:shadow-violet-900/50' : 'from-red-500 to-rose-600 shadow-red-300/50 dark:shadow-red-900/50'}`}
+              className={`h-9 w-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg logo-hover-spin animate-breathe ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-300/50 dark:shadow-violet-900/50' : 'from-red-500 to-rose-600 shadow-red-300/50 dark:shadow-red-900/50'}`}
               whileHover={{ scale: 1.08, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 20 }}
@@ -583,9 +584,9 @@ export default function Home() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Badge variant="outline" className="text-xs gap-1">
-              <Zap className="h-3 w-3 text-amber-500" />
-              AI驱动
+            <Badge variant="outline" className="hidden md:inline-flex text-[10px] gap-1 px-1.5 py-0">
+              <Zap className="h-2.5 w-2.5 text-amber-500" />
+              <span className="hidden lg:inline">AI驱动</span>
             </Badge>
           </div>
 
@@ -820,6 +821,9 @@ export default function Home() {
         connectedCount={connectedPlatforms}
         totalCount={2}
       />
+
+      {/* AI Writing Assistant FAB */}
+      <AIWritingAssistant />
 
       {/* Footer */}
       <footer className="hidden sm:block footer-gradient-border bg-background/85 backdrop-blur-xl py-2 px-4 mt-auto pb-safe">
