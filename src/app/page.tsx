@@ -8,7 +8,7 @@ import { CompactCalendar } from "@/components/left-panel/compact-calendar";
 import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
 import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templates";
 import { ContentWorkspace } from "@/components/right-panel/content-workspace";
-import { AIOptimizePanel } from "@/components/right-panel/ai-optimize-panel";
+// AIOptimizePanel removed - AI tools have been integrated into ContentWorkspace
 import { DataAndReports } from "@/components/right-panel/data-and-reports";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,7 +29,6 @@ import {
 
 const MAIN_TABS = [
   { value: 'workspace', icon: PenTool, label: '内容工作台' },
-  { value: 'optimize', icon: Sparkles, label: 'AI工具' },
   { value: 'data', icon: BarChart3, label: '数据与报告' },
 ] as const;
 
@@ -156,9 +155,11 @@ function MainContentPanel() {
   const { rightPanelTab, setRightPanelTab, platform, contentPosts } = useAppStore();
 
   // Map old tab values to new ones for backward compatibility
-  const effectiveTab = ['workspace', 'optimize', 'data'].includes(rightPanelTab)
+  const effectiveTab = ['workspace', 'data'].includes(rightPanelTab)
     ? rightPanelTab
-    : 'workspace';
+    : rightPanelTab === 'optimize'
+      ? 'workspace' // redirect old AI tab to workspace
+      : 'workspace';
 
   return (
     <div className="flex flex-col h-full">
@@ -192,9 +193,6 @@ function MainContentPanel() {
       <div className="flex-1 min-h-0">
         {effectiveTab === 'workspace' && (
           <ContentWorkspace />
-        )}
-        {effectiveTab === 'optimize' && (
-          <AIOptimizePanel />
         )}
         {effectiveTab === 'data' && (
           <DataAndReports />

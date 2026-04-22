@@ -1956,3 +1956,63 @@ Work Log:
 ### QA验证结果
 - ✅ lint通过（零错误）
 - ✅ 编译成功（✓ Compiled）
+
+---
+Task ID: 13
+Agent: Main Developer
+Task: 交互优化 - 取消发布标记+修复滚动问题+移除AI工具Tab
+
+Work Log:
+- 分析用户反馈，确定三个优化方向
+- 修复 post-actions.tsx 状态切换撤销机制
+- 修复 content-workspace.tsx 滚动显示不全问题
+- 移除 page.tsx 中的 AI工具 Tab（已整合到内容工作台）
+- 增强 compact-calendar.tsx 日历图例视觉效果
+
+### Bug修复
+1. **状态标记无法撤销**（高优先级）：
+   - 问题：标记为发布状态后无法取消，点错无法改回
+   - 修复：重写 post-actions.tsx 的状态按钮逻辑
+   - 新增撤销机制：
+     - 发布→取消发布（回到optimized）
+     - 优化→取消优化（回到generated）
+     - 生成→取消生成（回到planned）
+   - 按钮根据当前状态动态显示"设置"或"撤销"样式
+   - 撤销按钮使用 RotateCcw 图标，视觉上明确表示"回退"
+   - 已发布状态下，生成和优化按钮禁用，防止误操作
+
+2. **右侧内容工作台滚动显示不全**（高优先级，反复提及）：
+   - 问题：ScrollArea 在 flex 容器中高度计算不正确，导致展开的折叠面板内容被截断
+   - 根因：shadcn/ui ScrollArea 组件的 Viewport 使用 overflow:scroll，在嵌套 flex 布局中无法正确收缩
+   - 修复：用原生 `overflow-y-auto` + `min-h-0` 替代 ScrollArea
+   - 确保 flex 容器链中每层都有 `min-h-0` 允许收缩
+   - 同时修复了无帖子选中状态下的滚动
+
+3. **AI工具Tab残留**：
+   - 问题：AI优化工具已整合到内容工作台，但AI工具Tab仍然存在
+   - 修复：从 MAIN_TABS 中移除 'optimize' Tab
+   - 移除 AIOptimizePanel 组件导入和渲染
+   - 添加向后兼容：旧 'optimize' Tab 值自动重定向到 'workspace'
+
+### 视觉增强
+4. **日历图例增强**：
+   - 图例从单行小标签改为 2x2 网格卡片
+   - 每个状态图例增加：图标前缀（✓★◆○）、状态数量计数
+   - 增大尺寸：圆点 6px→8px，文字 9px→10px
+   - 增加背景色和边框：更明显的视觉区分度
+   - 平台图例也增大了尺寸和对比度
+
+### 修改文件
+- `src/components/right-panel/post-actions.tsx` - 完全重写状态按钮逻辑
+- `src/components/right-panel/content-workspace.tsx` - ScrollArea→原生overflow
+- `src/app/page.tsx` - 移除AI工具Tab
+- `src/components/left-panel/compact-calendar.tsx` - 增强日历图例
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（GET / 200）
+
+Stage Summary:
+- 项目状态：稳定可运行，交互体验优化完成
+- 本轮修改 4 个文件，修复 3 个 bug，1 个视觉增强
+- 核心改进：状态标记可撤销、内容工作台可正常滚动、AI工具Tab已清理

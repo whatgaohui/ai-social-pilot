@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// ScrollArea is intentionally not used — it has known issues with flex sizing.
+// Using native overflow-y-auto for reliable scrolling in flex containers.
 import { Separator } from "@/components/ui/separator";
 import {
   Collapsible,
@@ -193,7 +194,7 @@ export function ContentWorkspace() {
   // ── No post selected: empty state + inspiration + tools ──────────────────
   if (!selectedPost) {
     return (
-      <ScrollArea className="h-full">
+      <div className="flex-1 overflow-y-auto">
         <motion.div
           variants={staggerContainer}
           initial="hidden"
@@ -230,15 +231,15 @@ export function ContentWorkspace() {
             <FragmentTool isXHS={isXHS} mode="standalone" />
           </motion.div>
         </motion.div>
-      </ScrollArea>
+      </div>
     );
   }
 
   // ── Post selected: main workspace ────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full">
-      {/* Scrollable content area */}
-      <ScrollArea className="flex-1">
+    <div className="flex flex-col h-full min-h-0">
+      {/* Scrollable content area - native overflow for reliable flex sizing */}
+      <div className="flex-1 overflow-y-auto min-h-0">
         <motion.div
           key={selectedPost.id}
           initial="hidden"
@@ -476,7 +477,7 @@ export function ContentWorkspace() {
           {/* Bottom spacing for scroll comfort */}
           <div className="h-4" />
         </motion.div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

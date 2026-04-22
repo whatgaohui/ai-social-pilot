@@ -470,37 +470,41 @@ export function CompactCalendar() {
                   })}
                 </div>
 
-                {/* Legend with colored badges */}
+                {/* Legend - more prominent with icons and status counts */}
                 {filteredPosts.length > 0 && (
-                  <div className="mt-2 pt-1.5 border-t space-y-1">
+                  <div className="mt-2 pt-2 border-t space-y-1.5">
                     {/* Platform legend */}
                     {platformFilter === "all" && (
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-green-100 dark:bg-green-900/30">
-                          <span className="h-[6px] w-[6px] rounded-full bg-green-500 ring-1 ring-green-300 dark:ring-green-700" />
-                          <span className="text-[9px] font-medium text-green-700 dark:text-green-300">朋友圈</span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200/60 dark:border-green-800/40">
+                          <span className="h-2 w-2 rounded-full bg-green-500 shadow-sm shadow-green-300 dark:shadow-green-900" />
+                          <span className="text-[10px] font-semibold text-green-700 dark:text-green-300">朋友圈</span>
                         </span>
-                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-red-100 dark:bg-red-900/30">
-                          <span className="h-[6px] w-[6px] rounded-full bg-red-500 ring-1 ring-red-300 dark:ring-red-700" />
-                          <span className="text-[9px] font-medium text-red-700 dark:text-red-300">小红书</span>
+                        <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200/60 dark:border-red-800/40">
+                          <span className="h-2 w-2 rounded-full bg-red-500 shadow-sm shadow-red-300 dark:shadow-red-900" />
+                          <span className="text-[10px] font-semibold text-red-700 dark:text-red-300">小红书</span>
                         </span>
                       </div>
                     )}
-                    {/* Status legend */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Status legend - 2x2 grid with counts */}
+                    <div className="grid grid-cols-2 gap-1">
                       {([
-                        { key: "published" as PostStatus, dot: "bg-violet-500", bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300", ring: "ring-violet-300 dark:ring-violet-700" },
-                        { key: "optimized" as PostStatus, dot: "bg-amber-500", bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300", ring: "ring-amber-300 dark:ring-amber-700" },
-                        { key: "generated" as PostStatus, dot: "bg-sky-500", bg: "bg-sky-100 dark:bg-sky-900/30", text: "text-sky-700 dark:text-sky-300", ring: "ring-sky-300 dark:ring-sky-700" },
-                        { key: "planned" as PostStatus, dot: "bg-gray-400", bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-300", ring: "ring-gray-300 dark:ring-gray-600" },
-                      ]).map((s) => (
-                        <span key={s.key} className={`flex items-center gap-1 px-1.5 py-0.5 rounded-sm ${s.bg}`}>
-                          <span className={`h-[6px] w-[6px] rounded-full ${s.dot} ring-1 ${s.ring}`} />
-                          <span className={`text-[9px] font-medium ${s.text}`}>
-                            {POST_STATUS_LABELS[s.key]}
+                        { key: "published" as PostStatus, dot: "bg-violet-500", bg: "bg-violet-50 dark:bg-violet-900/20", text: "text-violet-700 dark:text-violet-300", border: "border-violet-200/60 dark:border-violet-800/40", icon: "✓" },
+                        { key: "optimized" as PostStatus, dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-700 dark:text-amber-300", border: "border-amber-200/60 dark:border-amber-800/40", icon: "★" },
+                        { key: "generated" as PostStatus, dot: "bg-sky-500", bg: "bg-sky-50 dark:bg-sky-900/20", text: "text-sky-700 dark:text-sky-300", border: "border-sky-200/60 dark:border-sky-800/40", icon: "◆" },
+                        { key: "planned" as PostStatus, dot: "bg-gray-400", bg: "bg-gray-50 dark:bg-gray-800/50", text: "text-gray-600 dark:text-gray-300", border: "border-gray-200/60 dark:border-gray-700/40", icon: "○" },
+                      ]).map((s) => {
+                        const count = filteredPosts.filter(p => p.status === s.key).length;
+                        return (
+                          <span key={s.key} className={`flex items-center gap-1 px-2 py-1 rounded-md ${s.bg} border ${s.border}`}>
+                            <span className={`h-2 w-2 rounded-full ${s.dot} shadow-sm`} />
+                            <span className={`text-[10px] font-semibold ${s.text}`}>
+                              {s.icon}{POST_STATUS_LABELS[s.key]}
+                            </span>
+                            <span className={`ml-auto text-[9px] tabular-nums font-bold ${s.text} opacity-70`}>{count}</span>
                           </span>
-                        </span>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
