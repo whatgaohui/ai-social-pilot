@@ -109,12 +109,12 @@ export const useAppStore = create<AppState>((set) => ({
   isGenerating: false,
   setIsGenerating: (generating) => set({ isGenerating: generating }),
 
-  // Left panel tab
-  leftPanelTab: 'knowledge',
+  // Left panel tab (calendar | knowledge | templates)
+  leftPanelTab: 'calendar',
   setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
 
-  // Right panel tab
-  rightPanelTab: 'content',
+  // Right panel tab (workspace | optimize | data)
+  rightPanelTab: 'workspace',
   setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
 
   // Platform

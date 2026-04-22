@@ -864,6 +864,44 @@ Work Log:
 
 ---
 Task ID: 13
+Agent: Feature Developer
+Task: 创建数据与报告统一视图组件 (DataAndReports)
+
+Work Log:
+- 读取 worklog.md 了解前12轮开发成果
+- 分析现有 OperationReport 和 AnalyticsPanel 组件结构
+- 分析 page.tsx 右侧面板 tab 切换逻辑
+- 分析 shadcn/ui Tabs 组件 API 和布局特性
+
+### 新增文件
+- `src/components/right-panel/data-and-reports.tsx` - 数据与报告统一视图组件
+
+### 组件设计
+1. **"use client" 客户端组件**，导出为 `DataAndReports`
+2. **Tabbed 布局**（使用 shadcn/ui Tabs）：
+   - Tab 1: "📊 运营报告"（默认选中，更突出）
+   - Tab 2: "📈 数据分析"
+3. **高度约束修复**：
+   - 每个 TabsContent 使用 `flex flex-col min-h-0` 布局
+   - 内层包裹 `flex flex-col flex-1 min-h-0` 容器
+   - 确保 OperationReport 和 AnalyticsPanel 内部的 ScrollArea + h-full 正确解析高度
+4. **平台感知**：
+   - Tab 激活颜色按平台切换（微信=violet, 小红书=rose）
+5. **直接复用**：导入并渲染现有的 OperationReport 和 AnalyticsPanel 组件，无重复逻辑
+6. **动画**：framer-motion 入场动画
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（✓ Compiled in 291ms）
+
+Stage Summary:
+- 项目状态：稳定可运行
+- 本轮新增 1 个文件：data-and-reports.tsx
+- 核心能力：将运营报告和数据分析合并为统一视图，报告tab默认选中（更突出），修复了 ScrollArea 高度约束问题
+- 集成方式：导出 `<DataAndReports />` 组件，可在 page.tsx 右侧面板中替换现有的 analytics/report 两个独立 tab
+
+---
+Task ID: 14
 Agent: Main Developer
 Task: Visual QA fixes - calendar spacing, label truncation, button alignment, platform status colors
 
@@ -1641,3 +1679,183 @@ Work Log:
 ### QA验证
 - ✅ lint通过（零错误）
 - ✅ dev server编译成功
+
+Stage Summary:
+- 项目状态：稳定可运行，数据分析面板可视化增强完成
+- 本轮修改 1 个文件
+- 核心能力：5种内联SVG图表（环形图、条形图、进度环、状态分布、骨架屏），无外部图表库依赖
+
+---
+Task ID: 13
+Agent: Feature Developer
+Task: 创建内容工作台 (Content Workspace) 统一组件
+
+Work Log:
+- 读取 worklog.md 了解前12轮开发成果
+- 分析所有现有子组件的接口（共13个组件）和 Zustand store
+- 运行 lint 检查代码质量（零错误通过）
+
+### 新增文件
+- `src/components/right-panel/content-workspace.tsx` - 内容工作台统一组件（~320行）
+
+### 组件架构
+
+ContentWorkspace 是一个 "use client" 组件，将 Content/Inspiration/Publish 三个面板融合为一个统一工作台：
+
+#### 无帖子选中时（Empty State）
+- 空状态引导：日历图标 + "从左侧日历中选择一个日期" 提示
+- 可折叠"灵感库"区域（默认收起）：嵌入 ViralInspiration 组件
+- PolishTool（standalone 模式）：独立润色工具卡片
+- FragmentTool（standalone 模式）：独立碎片转文案卡片
+
+#### 有帖子选中时（Main Workspace）
+- **顶部**：PostDetailHeader（日期、类型Badge、状态Badge、AI标记、评分）+ 编辑/预览切换按钮
+- **中部**：
+  - 编辑模式：ContentEditor + PostActions（AI优化 + 状态切换按钮组）
+  - 预览模式：WeChatPreview 或 XiaohongshuPreview（按平台自动切换）
+- **下部**：6个可折叠分区，全部默认收起
+  1. "发布工具" - PublishingAssistant + CrossPlatformPublish + HashtagRecommender（仅XHS）+ CoverImageGenerator（仅XHS）
+  2. "灵感参考" - ViralInspiration（标题公式、AI话题灵感、热门趋势、写作提示）
+  3. "互动数据" - EngagementCard（浏览/点赞/评论/收藏/转发）
+  4. "润色工具" - PolishTool（collapsible 模式，默认展开）
+  5. "碎片转文案" - FragmentTool（collapsible 模式，默认展开）
+  6. "发布到日历" - PublishToCalendar（collapsible 模式，默认展开）
+
+### 内部子组件
+
+- **WorkspaceSection**：可折叠分区包装器
+  - 统一视觉风格：渐变图标 + 标题 + 副标题 + 旋转箭头
+  - 支持 Badge 显示（如"策略就绪"状态提示）
+  - framer-motion 入场动画 + 高度过渡
+
+- **EmptyState**：空状态展示组件
+  - 渐变背景图标 + 标题 + 描述文字
+
+### 设计特性
+- **framer-motion 动画**：staggerContainer/staggerItem 交错入场、fadeSlideIn 编辑/预览切换、AnimatePresence 视图切换
+- **ScrollArea**：flex-1 撑满可用空间，内部滚动
+- **平台感知**：isXHS 控制预览组件、XHS专属工具显示
+- **暖色渐变配色**：violet/emerald/amber/sky/rose 方案，无 blue/indigo
+- **shadcn/ui 组件**：Card, ScrollArea, Collapsible, Button, Badge, Separator
+- **响应式设计**：p-4 统一内边距，space-y 控制间距
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ TypeScript类型全部正确
+
+Stage Summary:
+- 项目状态：稳定可运行，内容工作台统一组件创建完成
+- 本轮新增 1 个文件：content-workspace.tsx
+- 核心能力：将内容编辑、灵感库、发布管理融合为统一工作环境
+- 集成方式：导出 `<ContentWorkspace />` 组件，可直接替换右侧面板内容
+- 建议下一阶段优先事项：
+  1. 在 page.tsx 中用 ContentWorkspace 替换右侧面板现有 tab 内容
+  2. 添加 ContentHistory（版本历史）到工作台折叠区域
+  3. 添加 QualityScorer（质量评分）到工作台折叠区域
+  4. 添加 TitleABTest 到工作台折叠区域
+  5. 移动端适配优化
+
+---
+Task ID: 14
+Agent: Feature Developer
+Task: 创建紧凑型日历组件 (CompactCalendar) 用于左侧面板
+
+Work Log:
+- 读取 worklog.md 了解前13轮开发成果
+- 分析现有 content-calendar.tsx 结构、类型定义、状态管理模式
+- 分析 types/index.ts 中的类型映射（ContentPost, PostStatus, Platform, 颜色映射等）
+- 分析 useAppStore 状态管理接口
+- 运行 lint 检查代码质量（零错误通过）
+
+### 新增文件
+- `src/components/left-panel/compact-calendar.tsx` - 紧凑型迷你日历组件（~350行）
+
+### 组件功能
+
+1. **紧凑月视图网格**（~28-32px 单元格）：7列网格布局，周一起始，h-7 日期格子，日期数字+状态/平台指示点
+2. **月份导航**（prev/next）：紧凑按钮（h-6 w-6），居中年月文字
+3. **帖子状态指示**（彩色圆点）：planned=gray, generated=sky, optimized=amber, published=violet
+4. **平台指示**（all 视图多平台圆点）：green=wechat, red=xiaohongshu，同日多帖多色点
+5. **今日高亮**：ring-1 ring-primary/40 边框 + 加粗 primary 文字
+6. **选中日期高亮**：ring-1.5 ring-primary + bg-primary/15 背景
+7. **即将发布列表**（next 5 posts）：日期+平台点+状态点+主题截断+状态Badge，staggered动画
+8. **统计摘要**（底部）：总计/优化/发布，text-[10px] 紧凑排版
+9. **平台筛选器**（3按钮）：全部/朋友圈(绿)/小红书(红)，带帖子计数
+10. **一键生成30天按钮**（紧凑版）：全宽紫色渐变 h-7 按钮
+11. **视图切换**（grid ↔ list）：LayoutGrid/List 图标，AnimatePresence 切换动画
+
+### 技术特性
+- "use client" 组件，React hooks + useAppStore 全局状态
+- date-fns 日期操作，framer-motion 动画
+- shadcn/ui（Button, Badge, ScrollArea）+ lucide-react 图标
+- 完整 TypeScript 类型，零外部状态依赖，暗黑模式兼容
+- 紧凑设计：text-[9px]~text-[11px]，h-5~h-7 按钮
+
+### 集成方式
+导出 `<CompactCalendar />` 组件，可在左侧面板 tab 或窄侧栏场景中使用。
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（GET / 200，✓ Compiled）
+---
+Task ID: 13
+Agent: Main Orchestrator
+Task: 整体布局重新设计 - 3栏→2栏布局重构
+
+Work Log:
+- 全面分析当前3栏布局存在的问题（日历占48%太大、右侧6Tab拥挤、报告藏太深、灵感位置尴尬、数据/报告重叠、内容滚动不全）
+- 设计新布局方案并给出设计理由
+- 创建3个新组件：
+  1. CompactCalendar - 左侧边栏紧凑日历（~260px宽，迷你月历+即将到来列表+平台筛选+一键生成30天）
+  2. ContentWorkspace - 内容工作台（合并内容编辑+灵感+发布工具为一体化工作区，6个可折叠工具区块）
+  3. DataAndReports - 数据与报告（合并运营报告+数据分析，报告为默认Tab）
+- 重写 page.tsx：
+  - 3栏布局→2栏布局（左侧边栏24% + 主内容区76%）
+  - 左侧边栏：3个Tab（日历/知识库/模板）
+  - 主内容区：3个Tab（内容工作台/AI工具/数据与报告）
+  - 右侧6Tab→3Tab，减少认知负担
+- 更新 Zustand store 默认tab值
+
+### 布局对比
+旧布局：左侧知识库模板(22%) | 中间日历(48%) | 右侧6Tab文案分析(30%)
+新布局：左侧日历/知识库/模板(24%) | 主内容区(76%)
+  - 内容工作台Tab：合并 内容+灵感+发布
+  - AI工具Tab：保留A/B测试/质量评分/格式优化
+  - 数据与报告Tab：合并 报告(默认显示)+数据分析
+
+### 设计理由
+1. 日历缩小：从48%降到左侧紧凑模式，日历只是排期工具
+2. 内容区最大化：编辑/预览/灵感/发布在同一工作台，70%+屏幕宽度
+3. 报告优先级提升：从第6个Tab提升到「数据与报告」Tab首屏
+4. 灵感融入内容：在内容工作台中作为可折叠工具区块
+5. 数据+报告合并：消除功能重叠
+
+### 修复的Bug
+1. 日历视图切换按钮Bug：重新实现CompactCalendar，视图切换逻辑完全重写
+2. 内容Tab长文本显示不全：ContentWorkspace使用flex-1+ScrollArea确保正确滚动
+
+### 新增文件
+- src/components/left-panel/compact-calendar.tsx - 紧凑日历组件（655行）
+- src/components/right-panel/content-workspace.tsx - 内容工作台（435行）
+- src/components/right-panel/data-and-reports.tsx - 数据与报告合并（83行）
+
+### 修改文件
+- src/app/page.tsx - 完全重写布局
+- src/store/app-store.ts - 更新默认tab值（leftPanelTab→calendar, rightPanelTab→workspace）
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（✓ Compiled in 158ms）
+- ✅ 移动端布局适配完成
+
+Stage Summary:
+- 项目状态：稳定可运行，整体布局重构完成
+- 核心改变：3栏→2栏，6Tab→3Tab，内容创作获得最大空间
+- 未解决问题或风险：
+  1. 旧版 ContentCalendar 组件仍存在但不再在主页使用（可作为独立页面保留）
+  2. 旧版 CopywritingOutput 组件不再直接引用（已集成到 ContentWorkspace）
+- 建议下一阶段优先事项：
+  1. 可视化QA测试（使用agent-browser）
+  2. 旧组件清理
+  3. 内容工作台交互细节打磨
+  4. 数据与报告Tab的视觉优化

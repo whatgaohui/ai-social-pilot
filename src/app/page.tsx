@@ -4,15 +4,12 @@ import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { KnowledgeBase } from "@/components/left-panel/knowledge-base";
-import { ContentCalendar } from "@/components/center-panel/content-calendar";
-import { CopywritingOutput } from "@/components/right-panel/copywriting-output";
-import { AIOptimizePanel } from "@/components/right-panel/ai-optimize-panel";
-import { PublishPanel } from "@/components/right-panel/publish-panel";
-import { AnalyticsPanel } from "@/components/right-panel/analytics-panel";
+import { CompactCalendar } from "@/components/left-panel/compact-calendar";
 import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
 import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templates";
-import { ViralInspiration } from "@/components/right-panel/viral-inspiration";
-import { OperationReport } from "@/components/right-panel/operation-report";
+import { ContentWorkspace } from "@/components/right-panel/content-workspace";
+import { AIOptimizePanel } from "@/components/right-panel/ai-optimize-panel";
+import { DataAndReports } from "@/components/right-panel/data-and-reports";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -23,9 +20,26 @@ import { NotificationBell } from "@/components/notification-center";
 import { PlatformAccountPanel } from "@/components/platform-account-panel";
 import { SettingsCenter } from "@/components/settings-center";
 import {
-  Sparkles, BookOpen, CalendarDays, PenTool,
-  BarChart3, Zap, FileText, MessageCircle, Lightbulb, FileBarChart, ChevronLeft, Settings, Send
+  Sparkles, BookOpen, PenTool, CalendarDays,
+  BarChart3, Zap, FileText, MessageCircle,
+  Settings, Send, ChevronLeft, ChevronRight,
 } from "lucide-react";
+
+// ─── Main tabs for the right content area ──────────────────────────────────────
+
+const MAIN_TABS = [
+  { value: 'workspace', icon: PenTool, label: '内容工作台' },
+  { value: 'optimize', icon: Sparkles, label: 'AI工具' },
+  { value: 'data', icon: BarChart3, label: '数据与报告' },
+] as const;
+
+// ─── Left sidebar tabs ────────────────────────────────────────────────────────
+
+const LEFT_TABS = [
+  { value: 'calendar', icon: CalendarDays, label: '日历' },
+  { value: 'knowledge', icon: BookOpen, label: '知识库' },
+  { value: 'templates', icon: FileText, label: '模板' },
+] as const;
 
 function DataInitializer() {
   const { setPersona, setKnowledgeItems, setCurrentPlan, setContentPosts } = useAppStore();
@@ -86,125 +100,115 @@ function DataInitializer() {
   return null;
 }
 
-function LeftPanel() {
-  const { leftPanelTab, setLeftPanelTab, platform } = useAppStore();
+// ─── Left Sidebar ─────────────────────────────────────────────────────────────
+
+function LeftSidebar() {
+  const { leftPanelTab, setLeftPanelTab, platform, knowledgeItems } = useAppStore();
+  const isXHS = platform === 'xiaohongshu';
 
   return (
     <div className="flex flex-col h-full">
-      {/* Left Panel Header */}
-      <div className="px-4 pt-4 pb-2">
-        <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
-          <div className={`h-6 w-6 rounded-md bg-gradient-to-br flex items-center justify-center ${platform === 'wechat' ? 'from-violet-500 to-purple-600' : 'from-red-500 to-rose-600'}`}>
-            <Sparkles className="h-3.5 w-3.5 text-white" />
-          </div>
-          {platform === 'wechat' ? '知识库与模板' : '小红书运营'}
-        </h2>
+      {/* Left Panel Tab Bar */}
+      <div className="px-3 pt-3 pb-2 border-b">
         <Tabs value={leftPanelTab} onValueChange={setLeftPanelTab}>
           <TabsList className="w-full h-8 bg-muted/50 p-0.5">
-            <TabsTrigger value="knowledge" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
-              <BookOpen className="h-3 w-3" />
-              知识库
-              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] tabular-nums">
-                {useAppStore.getState().knowledgeItems.length || ""}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
-              <FileText className="h-3 w-3" />
-              {platform === 'wechat' ? '模板' : '小红书模板'}
-            </TabsTrigger>
+            {LEFT_TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="flex-1 h-7 text-[11px] gap-1 data-[state=active]:bg-background shadow-sm"
+                >
+                  <Icon className="h-3 w-3" />
+                  {tab.label}
+                  {tab.value === 'knowledge' && knowledgeItems.length > 0 && (
+                    <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] tabular-nums">
+                      {knowledgeItems.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
         </Tabs>
       </div>
 
       {/* Left Panel Content */}
-      <ScrollArea className="flex-1 px-4 pb-4">
-        {leftPanelTab === "knowledge" ? <KnowledgeBase /> : platform === 'wechat' ? <CopywritingTemplates /> : <XiaohongshuTemplates />}
-      </ScrollArea>
+      {leftPanelTab === 'calendar' ? (
+        <CompactCalendar />
+      ) : leftPanelTab === 'knowledge' ? (
+        <ScrollArea className="flex-1 px-3 pb-3">
+          <KnowledgeBase />
+        </ScrollArea>
+      ) : (
+        <ScrollArea className="flex-1 px-3 pb-3">
+          {isXHS ? <XiaohongshuTemplates /> : <CopywritingTemplates />}
+        </ScrollArea>
+      )}
     </div>
   );
 }
 
-function RightPanel({ hideHeader }: { hideHeader?: boolean }) {
-  const { rightPanelTab, setRightPanelTab, contentPosts, platform } = useAppStore();
+// ─── Main Content Panel ───────────────────────────────────────────────────────
 
-  const rightTabs = [
-    { value: 'content', icon: FileText, label: '内容' },
-    { value: 'optimize', icon: Sparkles, label: 'AI优化' },
-    { value: 'publish', icon: Send, label: '发布' },
-    { value: 'analytics', icon: BarChart3, label: '数据分析', badge: contentPosts.length > 0 ? contentPosts.length : undefined },
-    { value: 'inspiration', icon: Lightbulb, label: '灵感' },
-    { value: 'report', icon: FileBarChart, label: '报告' },
-  ];
+function MainContentPanel() {
+  const { rightPanelTab, setRightPanelTab, platform, contentPosts } = useAppStore();
 
-  if (hideHeader) {
-    // Mobile mode: no header, content fills the panel
-    return (
-      <div className="flex flex-col h-full">
-        {rightPanelTab === "content" ? (
-          <CopywritingOutput />
-        ) : rightPanelTab === "optimize" ? (
-          <AIOptimizePanel />
-        ) : rightPanelTab === "publish" ? (
-          <PublishPanel />
-        ) : rightPanelTab === "analytics" ? (
-          <AnalyticsPanel />
-        ) : rightPanelTab === "inspiration" ? (
-          <ViralInspiration />
-        ) : rightPanelTab === "report" ? (
-          <OperationReport />
-        ) : null}
-      </div>
-    );
-  }
+  // Map old tab values to new ones for backward compatibility
+  const effectiveTab = ['workspace', 'optimize', 'data'].includes(rightPanelTab)
+    ? rightPanelTab
+    : 'workspace';
 
   return (
     <div className="flex flex-col h-full">
-      {/* Right Panel Header */}
-      <div className="px-4 pt-4 pb-2">
-        <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
-          <div className={`h-6 w-6 rounded-md bg-gradient-to-br flex items-center justify-center ${platform === 'wechat' ? 'from-emerald-500 to-teal-600' : 'from-red-500 to-rose-600'}`}>
-            <PenTool className="h-3.5 w-3.5 text-white" />
-          </div>
-          {platform === 'wechat' ? '文案与分析' : '笔记与数据'}
-        </h2>
-        <Tabs value={rightPanelTab} onValueChange={setRightPanelTab}>
-          <TabsList className="w-full h-8 bg-muted/50 p-0.5">
-            {rightTabs.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value} className="flex-1 h-7 text-xs gap-1 data-[state=active]:bg-background shadow-sm">
-                <tab.icon className="h-3 w-3" />
-                {tab.label}
-                {tab.badge && (
-                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] tabular-nums">
-                    {tab.badge}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            ))}
+      {/* Main Tab Bar */}
+      <div className="px-4 pt-3 pb-2 border-b flex-shrink-0">
+        <Tabs value={effectiveTab} onValueChange={setRightPanelTab}>
+          <TabsList className="w-full h-9 bg-muted/50 p-0.5">
+            {MAIN_TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="flex-1 h-8 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm"
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                  {tab.value === 'data' && contentPosts.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px] tabular-nums">
+                      {contentPosts.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
         </Tabs>
       </div>
 
-      {/* Right Panel Content */}
-      {rightPanelTab === "content" ? (
-        <CopywritingOutput />
-      ) : rightPanelTab === "optimize" ? (
-        <AIOptimizePanel />
-      ) : rightPanelTab === "publish" ? (
-        <PublishPanel />
-      ) : rightPanelTab === "analytics" ? (
-        <AnalyticsPanel />
-      ) : rightPanelTab === "inspiration" ? (
-        <ViralInspiration />
-      ) : rightPanelTab === "report" ? (
-        <OperationReport />
-      ) : null}
+      {/* Tab Content - each tab gets full remaining height */}
+      <div className="flex-1 min-h-0">
+        {effectiveTab === 'workspace' && (
+          <ContentWorkspace />
+        )}
+        {effectiveTab === 'optimize' && (
+          <AIOptimizePanel />
+        )}
+        {effectiveTab === 'data' && (
+          <DataAndReports />
+        )}
+      </div>
     </div>
   );
 }
 
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function Home() {
-  const { isGenerating, persona, knowledgeItems, platform, setPlatform, rightPanelTab, setRightPanelTab, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted } = useAppStore();
-  const [mobilePanel, setMobilePanel] = useState<"left" | "center" | "right">("center");
+  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted } = useAppStore();
+  const [mobilePanel, setMobilePanel] = useState<"left" | "main">("main");
   const [connectedPlatforms, setConnectedPlatforms] = useState(0);
   const showWelcome = !onboardingCompleted;
 
@@ -223,15 +227,6 @@ export default function Home() {
     const interval = setInterval(checkStatus, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const mobileRightSubTabs = [
-    { value: 'content', icon: FileText, label: '内容' },
-    { value: 'optimize', icon: Sparkles, label: 'AI优化' },
-    { value: 'publish', icon: Send, label: '发布' },
-    { value: 'analytics', icon: BarChart3, label: '数据' },
-    { value: 'inspiration', icon: Lightbulb, label: '灵感' },
-    { value: 'report', icon: FileBarChart, label: '报告' },
-  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-animated">
@@ -302,97 +297,59 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Platform Switcher */}
-        <div className="sm:hidden flex items-center justify-center gap-2 px-4 py-1 border-t border-b">
-          <button
-            onClick={() => setPlatform('wechat')}
-            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'wechat' ? 'bg-green-500 text-white' : 'text-green-600 dark:text-green-400'}`}
-          >
-            <MessageCircle className="h-2.5 w-2.5" />
-            朋友圈
-          </button>
-          <button
-            onClick={() => setPlatform('xiaohongshu')}
-            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'xiaohongshu' ? 'bg-red-500 text-white' : 'text-red-600 dark:text-red-400'}`}
-          >
-            <Zap className="h-2.5 w-2.5" />
-            小红书
-          </button>
-          <button
-            onClick={() => setAccountPanelOpen(true)}
-            className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-colors ${connectedPlatforms > 0 ? 'bg-emerald-500 text-white' : 'text-muted-foreground bg-muted/60'}`}
-          >
-            {connectedPlatforms > 0 ? (
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-              </span>
-            ) : (
-              <Settings className="h-2.5 w-2.5" />
-            )}
-            设置
-          </button>
-        </div>
+        {/* Mobile Platform Switcher + Navigation */}
+        <div className="sm:hidden">
+          <div className="flex items-center justify-center gap-2 px-4 py-1">
+            <button
+              onClick={() => setPlatform('wechat')}
+              className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'wechat' ? 'bg-green-500 text-white' : 'text-green-600 dark:text-green-400'}`}
+            >
+              <MessageCircle className="h-2.5 w-2.5" />
+              朋友圈
+            </button>
+            <button
+              onClick={() => setPlatform('xiaohongshu')}
+              className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'xiaohongshu' ? 'bg-red-500 text-white' : 'text-red-600 dark:text-red-400'}`}
+            >
+              <Zap className="h-2.5 w-2.5" />
+              小红书
+            </button>
+            <button
+              onClick={() => setAccountPanelOpen(true)}
+              className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-colors ${connectedPlatforms > 0 ? 'bg-emerald-500 text-white' : 'text-muted-foreground bg-muted/60'}`}
+            >
+              {connectedPlatforms > 0 ? (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+                </span>
+              ) : (
+                <Settings className="h-2.5 w-2.5" />
+              )}
+              设置
+            </button>
+          </div>
 
-        {/* Mobile Tab Navigation */}
-        {mobilePanel !== "right" ? (
-          <div className="sm:hidden flex border-t">
+          {/* Mobile Main Tabs */}
+          <div className="flex border-t">
             <Button
               variant={mobilePanel === "left" ? "secondary" : "ghost"}
               className="flex-1 h-9 rounded-none text-xs gap-1 active:scale-[0.98] transition-transform"
               onClick={() => setMobilePanel("left")}
             >
-              <BookOpen className="h-3 w-3" />
-              知识模板
-            </Button>
-            <Button
-              variant={mobilePanel === "center" ? "secondary" : "ghost"}
-              className="flex-1 h-9 rounded-none text-xs gap-1 active:scale-[0.98] transition-transform"
-              onClick={() => setMobilePanel("center")}
-            >
               <CalendarDays className="h-3 w-3" />
-              内容日历
+              日历/知识库
             </Button>
             <Button
-              variant={mobilePanel === "right" ? "secondary" : "ghost"}
+              variant={mobilePanel === "main" ? "secondary" : "ghost"}
               className="flex-1 h-9 rounded-none text-xs gap-1 active:scale-[0.98] transition-transform"
-              onClick={() => setMobilePanel("right")}
+              onClick={() => setMobilePanel("main")}
             >
               <PenTool className="h-3 w-3" />
-              文案分析
+              工作台
             </Button>
           </div>
-        ) : (
-          /* Mobile Right Panel Sub-Navigation */
-          <div className="sm:hidden flex items-center border-t">
-            <button
-              onClick={() => setMobilePanel("center")}
-              className="flex items-center justify-center w-10 h-9 border-r text-muted-foreground hover:text-foreground active:scale-95 transition-all"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <div className="flex flex-1 overflow-x-auto scrollbar-none">
-              {mobileRightSubTabs.map((tab) => {
-                const isActive = rightPanelTab === tab.value;
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.value}
-                    onClick={() => setRightPanelTab(tab.value)}
-                    className={`flex items-center gap-1 px-3 h-9 text-xs font-medium whitespace-nowrap transition-all active:scale-[0.96] ${
-                      isActive
-                        ? `${platform === 'wechat' ? 'text-violet-600 dark:text-violet-400 border-b-2 border-violet-500' : 'text-red-600 dark:text-red-400 border-b-2 border-red-500'} bg-muted/50`
-                        : 'text-muted-foreground border-b-2 border-transparent'
-                    }`}
-                  >
-                    <Icon className={`h-3 w-3 ${isActive ? (platform === 'wechat' ? 'text-violet-500' : 'text-red-500') : ''}`} />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        </div>
       </header>
 
       {/* Main Content */}
@@ -403,31 +360,22 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {/* Desktop: Three-panel resizable layout */}
+            {/* Desktop: Two-panel resizable layout */}
             <div className="hidden sm:block h-[calc(100vh-3.5rem)]">
               <ResizablePanelGroup direction="horizontal" className="h-full">
-                {/* Left Panel */}
-                <ResizablePanel defaultSize={22} minSize={18} maxSize={30}>
+                {/* Left Sidebar */}
+                <ResizablePanel defaultSize={24} minSize={20} maxSize={32}>
                   <div className="h-full border-r bg-background/50">
-                    <LeftPanel />
+                    <LeftSidebar />
                   </div>
                 </ResizablePanel>
 
                 <ResizableHandle withHandle className="bg-border/50 hover:bg-primary/20 transition-colors drag-handle" />
 
-                {/* Center Panel */}
-                <ResizablePanel defaultSize={48} minSize={35}>
+                {/* Main Content Area */}
+                <ResizablePanel defaultSize={76} minSize={55}>
                   <div className="h-full bg-background">
-                    <ContentCalendar />
-                  </div>
-                </ResizablePanel>
-
-                <ResizableHandle withHandle className="bg-border/50 hover:bg-primary/20 transition-colors drag-handle" />
-
-                {/* Right Panel */}
-                <ResizablePanel defaultSize={30} minSize={22} maxSize={40}>
-                  <div className="h-full border-l bg-background/50">
-                    <RightPanel />
+                    <MainContentPanel />
                   </div>
                 </ResizablePanel>
               </ResizablePanelGroup>
@@ -437,31 +385,23 @@ export default function Home() {
             <div className="sm:hidden h-[calc(100vh-8rem)] overflow-hidden">
               {mobilePanel === "left" && (
                 <motion.div
+                  key="left-mobile"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   className="h-full"
                 >
-                  <LeftPanel />
+                  <LeftSidebar />
                 </motion.div>
               )}
-              {mobilePanel === "center" && (
+              {mobilePanel === "main" && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="h-full"
-                >
-                  <ContentCalendar />
-                </motion.div>
-              )}
-              {mobilePanel === "right" && (
-                <motion.div
-                  key={rightPanelTab}
+                  key="main-mobile"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.15 }}
                   className="h-full"
                 >
-                  <RightPanel hideHeader />
+                  <MainContentPanel />
                 </motion.div>
               )}
             </div>
