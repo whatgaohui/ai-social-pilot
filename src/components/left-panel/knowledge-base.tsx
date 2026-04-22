@@ -110,7 +110,7 @@ export function KnowledgeBase() {
             placeholder="搜索知识库..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 text-sm pl-8"
+            className="h-9 text-sm pl-8 input-glow"
           />
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -133,6 +133,7 @@ export function KnowledgeBase() {
                   placeholder="如：产品设计的核心原则"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  className="input-glow"
                 />
               </div>
               <div className="space-y-1.5">
@@ -166,6 +167,7 @@ export function KnowledgeBase() {
                     placeholder="如：设计,用户体验"
                     value={form.tags}
                     onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                    className="input-glow"
                   />
                 </div>
               </div>

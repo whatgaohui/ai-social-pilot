@@ -208,7 +208,7 @@ export function ContentSpellcheck({ post }: { post: ContentPost }) {
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className="border-0 shadow-sm">
+      <Card className="border-0 shadow-sm card-glow-border">
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"

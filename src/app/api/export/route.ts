@@ -14,6 +14,45 @@ export async function GET(request: NextRequest) {
 
     const persona = await db.persona.findFirst();
 
+    if (format === "csv") {
+      // CSV export with BOM for Excel Chinese support
+      const BOM = "\uFEFF";
+      const header =
+        "日期,主题,内容类型,状态,AI评分,浏览,点赞,评论,收藏,转发,平台";
+
+      const rows = posts.map((post) => {
+        const esc = (val: string | number) => {
+          const s = String(val);
+          // Wrap in quotes and escape internal double quotes
+          return `"${s.replace(/"/g, '""')}"`;
+        };
+        return [
+          esc(post.scheduledDate),
+          esc(post.topic),
+          esc(post.contentType),
+          esc(post.status),
+          esc(post.aiScore),
+          esc(post.views),
+          esc(post.likes),
+          esc(post.comments),
+          esc(post.favorites),
+          esc(post.shares),
+          esc(post.platform),
+        ].join(",");
+      });
+
+      const csvContent = BOM + header + "\n" + rows.join("\n");
+      const today = new Date().toISOString().slice(0, 10);
+
+      return new NextResponse(csvContent, {
+        headers: {
+          "Content-Type":
+            "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="content_export_${today}.csv"`,
+        },
+      });
+    }
+
     if (format === "text") {
       // Plain text export
       const lines = posts.map((post, index) => {

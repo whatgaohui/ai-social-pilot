@@ -4983,3 +4983,151 @@ Stage Summary:
   6. 搜索功能增强（全文搜索+高亮+排序算法）
   7. 性能优化：React.memo、useMemo、虚拟列表
   8. PWA离线支持
+
+---
+Task ID: 28
+Agent: Main Orchestrator + 4 Parallel full-stack-developer Sub-agents
+Task: 第28轮开发 - 数据导出增强 + 搜索功能增强 + 快捷键系统 + CSS微交互打磨
+
+Work Log:
+- 读取 worklog.md（4985行，27轮迭代记录）了解完整项目历史
+- 硬约束：全程未使用 agent-browser（已知会导致OOM kill Next.js进程），使用 curl API级别测试
+- 验证项目状态：12个核心API全部200，ESLint零错误，Next.js production build编译成功
+- 4个并行 full-stack-developer 子代理同时工作（Task 28-a/b/c/d）
+
+### 项目当前状态
+- 项目极其成熟：102+自定义组件（~38K行）、57+个shadcn/ui组件、38+个API路由
+- 双平台运营：朋友圈 + 小红书
+- 布局：2栏（左侧边栏24% + 主内容区76%），移动端浮动底部导航
+- 零 lint 错误、零 TypeScript 错误、生产构建稳定（9.7s，31个静态页面）
+
+### 新功能 1: 数据导出增强（CSV/PNG报告）
+
+1. **CSV导出 API 增强**（`/api/export?format=csv`）：
+   - 中文 BOM 头（\uFEFF）确保 Excel 正确显示中文
+   - CSV header: 日期,主题,内容类型,状态,AI评分,浏览,点赞,评论,收藏,转发,平台
+   - 双引号包裹 + 内部双引号转义
+   - Content-Disposition: content_export_YYYY-MM-DD.csv
+
+2. **PNG 运营报告 API**（`/api/export/report-image?period=week|month|all`）：
+   - SVG 渲染精美暗色主题运营报告（800×1200px）
+   - 包含：标题+日期范围、4个核心数据卡片、内容类型bar chart、TOP5帖子列表、底部水印
+   - violet/purple/emerald 渐变配色
+   - 使用 sharp 库将 SVG 转 PNG，返回 image/png
+   - 验证: PNG magic bytes (89 50 4E 47) 通过
+
+3. **前端导出按钮增强**：
+   - analytics-panel.tsx: 原有JSON按钮保留 + 新增「更多导出」DropdownMenu（CSV/文本/PNG报告）
+   - content-workspace.tsx: 编辑模式新增导出下拉菜单
+   - 导出成功后 toast 提示
+
+### 新功能 2: 搜索功能增强
+
+1. **搜索结果高亮**：
+   - HighlightText 组件，匹配部分用 `bg-amber-200/60 dark:bg-amber-500/30 rounded px-0.5` 包裹
+   - 应用于 topic、content、title、description、persona bio/title 等字段
+
+2. **分类筛选 Tab**：
+   - 5个Tab：全部/帖子/知识库/人设/模板
+   - 每个带图标 + 实时结果计数 Badge
+   - framer-motion layoutId 动画切换
+
+3. **搜索历史**：
+   - localStorage 存储最近10条
+   - 焦点且空输入时显示历史列表
+   - 每条有 X 删除按钮 + "清除全部"按钮
+
+4. **排序选项**：
+   - 相关度优先 / 最新优先 / 互动最高
+   - 后端 relevanceScore() 函数（匹配次数 + 位置加权）
+
+5. **空状态优化**：
+   - SearchX 图标 + "未找到相关内容" + 平台相关热门关键词标签
+
+### 新功能 3: 快捷键帮助面板 + 键盘导航增强
+
+1. **快捷键帮助 Dialog**（keyboard-shortcuts-dialog.tsx）：
+   - 渐变紫色标题（violet→purple→fuchsia）
+   - 6个分类：通用/内容/视图/平台/导航/日历
+   - 17条快捷键，每行 kbd 元素 + 描述文字
+   - 底部平台提示（macOS用⌘/Windows用Ctrl）
+
+2. **useKeyboardShortcuts Hook 重写**：
+   - 输入框感知（isEditableTarget 避免编辑时误触发）
+   - macOS/Windows 双平台支持（metaKey || ctrlKey）
+   - 新增快捷键：⌘/帮助、⌘,设置、⌘⇧P切换平台、⌘1-4面板切换
+   - 上下文快捷键：⌘S保存、⌘Enter保存并关闭、⌘B加粗
+
+3. **Header "?" 按钮**：
+   - HelpCircle 图标按钮（h-7 w-7）
+   - Tooltip 提示 "快捷键 (⌘/)"
+   - 点击打开快捷键帮助 Dialog
+
+4. **日历键盘导航**：
+   - ←/→ 月视图切月/周视图切周
+   - T 回到今天
+   - G 切换网格/列表视图
+
+### 新功能 4: CSS微交互打磨（16个新CSS类）
+
+1. **Button**: `.btn-press`(增强) · `.btn-shine`(光泽扫过) · `.btn-magnetic`(磁性吸附)
+2. **Card**: `.card-spotlight`(聚光灯) · `.card-tilt`(3D倾斜) · `.card-glow-border`(边框发光)
+3. **Row**: `.row-hover-slide`(背景滑入) · `.row-stagger-enter`(交错入场)
+4. **Input**: `.input-glow`(聚焦发光) · `.input-label-float`(标签上浮) · `.input-character-count`(字数计数)
+5. **Toast**: `.toast-enter-slide`(滑入) · `.toast-exit-slide`(滑出) · `.toast-progress`(进度条)
+6. **Scroll**: `.scroll-indicator`(滚动指示) · `.scroll-fade-top/bottom`(渐隐遮罩, 增强)
+7. **Number**: `.number-roll`(数字滚动)
+8. 所有动画均尊重 `@media (prefers-reduced-motion: reduce)`
+
+### 已有组件动画增强
+- page.tsx Header 按钮 → btn-press + btn-shine
+- compact-calendar.tsx 列表视图 → row-stagger-enter + row-hover-slide
+- persona-form.tsx / knowledge-base.tsx / content-search.tsx 输入框 → input-glow
+- weekly-stats-card.tsx / content-spellcheck.tsx / weekly-report.tsx → card-glow-border
+
+### 新增文件
+- `src/app/api/export/report-image/route.ts` — PNG运营报告API
+- `src/components/keyboard-shortcuts-dialog.tsx` — 快捷键帮助Dialog
+
+### 修改文件
+- `src/app/api/export/route.ts` — CSV导出支持
+- `src/app/api/search/route.ts` — 分类过滤+排序+相关度评分
+- `src/components/command-palette.tsx` — 高亮+分类Tab+搜索历史+排序+空状态
+- `src/components/right-panel/analytics-panel.tsx` — 导出DropdownMenu
+- `src/components/right-panel/content-workspace.tsx` — 快捷导出菜单
+- `src/hooks/use-keyboard-shortcuts.ts` — 完整快捷键系统
+- `src/app/page.tsx` — Header "?"按钮 + Hook集成
+- `src/components/left-panel/compact-calendar.tsx` — 键盘导航
+- `src/app/globals.css` — 16个新CSS微交互类
+- `src/components/left-panel/persona-form.tsx` — input-glow
+- `src/components/left-panel/knowledge-base.tsx` — input-glow
+- `src/components/content-search.tsx` — input-glow
+- `src/components/right-panel/weekly-stats-card.tsx` — card-glow-border
+- `src/components/right-panel/content-spellcheck.tsx` — card-glow-border
+- `src/components/right-panel/weekly-report.tsx` — card-glow-border
+
+### QA验证结果
+- ✅ ESLint 零错误（所有修改/新增文件通过）
+- ✅ Next.js production build 编译成功（9.7s，31个静态页面，0 errors）
+- ✅ 12个核心API端点全部200（/ /api/persona /api/knowledge /api/plan /api/content /api/analytics /api/search /api/export?format=csv /api/export/report-image /api/notifications /api/settings/stats /api/ai-config）
+- ✅ PNG报告magic bytes验证通过 (89 50 4E 47)
+- ✅ 无 agent-browser 使用（遵循OOM约束）
+
+Stage Summary:
+- 项目状态：稳定可运行，28轮迭代完成
+- 本轮新增2个文件，修改14个文件，新增16个CSS动画类
+- 核心能力：CSV/PNG数据导出、搜索高亮+分类+历史+排序、17条键盘快捷键+帮助面板、16个CSS微交互动画
+- 未解决问题或风险：
+  1. agent-browser 在本环境无法使用（OOM限制），使用 curl API 级别测试替代
+  2. PNG报告依赖 sharp 库可用性（当前已验证可用）
+  3. 快捷键在部分移动端浏览器可能不生效
+  4. 搜索历史存储在 localStorage，清除浏览器数据会丢失
+- 建议下一阶段优先事项：
+  1. 运营报告定时自动生成 + 邮件推送
+  2. 内容排期拖拽排序功能
+  3. 多人协作/团队账号管理功能
+  4. 数据导入增强（CSV/Excel文件上传解析）
+  5. 移动端真机测试和适配优化
+  6. 性能优化：React.memo、useMemo、虚拟列表
+  7. PWA离线支持 + Service Worker
+  8. 内容发布到真实社交平台API对接

@@ -25,6 +25,7 @@ import {
   Sparkles, BookOpen, PenTool, CalendarDays,
   BarChart3, Zap, FileText,
   Settings, Globe, User, Check, Search,
+  HelpCircle,
 } from "lucide-react";
 import { CommandPalette } from "@/components/command-palette";
 import { ContentSearch } from "@/components/content-search";
@@ -447,9 +448,11 @@ export default function Home() {
     }
   }, [handleMobileTabChange]);
 
-  // Keyboard shortcuts — Ctrl/Cmd+K opens CommandPalette
+  // Keyboard shortcuts — Ctrl/Cmd+K opens CommandPalette, ⌘/ opens shortcuts help, etc.
   useKeyboardShortcuts({
     onOpenCommandPalette: () => setCommandPaletteOpen(!commandPaletteOpen),
+    onOpenShortcuts: () => setShortcutsOpen(true),
+    onTogglePlatform: () => setPlatform(platform === 'wechat' ? 'xiaohongshu' : 'wechat'),
   });
 
   // Open shortcuts help with ? key (when not in an input)
@@ -537,7 +540,7 @@ export default function Home() {
               </motion.div>
               <button
                 onClick={() => setPlatform('wechat')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover btn-press btn-shine ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
               >
                 <motion.span
                   className="h-2 w-2 rounded-full bg-green-400"
@@ -548,7 +551,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setPlatform('xiaohongshu')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover btn-press btn-shine ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
               >
                 <motion.span
                   className="h-2 w-2 rounded-full bg-red-400"
@@ -566,7 +569,7 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setCommandPaletteOpen(true)}
-              className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-colors btn-ripple press-scale"
+              className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-colors btn-ripple press-scale btn-press btn-shine"
               aria-label="命令面板"
             >
               <Search className="h-3.5 w-3.5" />
@@ -587,6 +590,22 @@ export default function Home() {
               </motion.div>
             )}
             <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => setShortcutsOpen(true)}
+                    className="flex items-center justify-center h-7 w-7 rounded-full border border-border/60 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="快捷键帮助"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </motion.button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p>快捷键 (⌘/)</p>
+                </TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <SettingsCenter connectedPlatforms={connectedPlatforms} />

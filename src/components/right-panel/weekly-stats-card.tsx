@@ -130,7 +130,7 @@ export function WeeklyStatsCard() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <Card className="border-border/50 overflow-hidden">
+      <Card className="border-border/50 overflow-hidden card-glow-border">
         {/* Header */}
         <div className={`px-4 py-2.5 bg-gradient-to-r ${
           platform === 'wechat'

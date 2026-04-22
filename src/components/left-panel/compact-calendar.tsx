@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import type { ContentPost, ContentPlan } from "@/types";
@@ -421,6 +421,7 @@ export function CompactCalendar() {
     setSelectedPostId,
     platform,
     updateContentPost,
+    leftPanelTab,
   } = useAppStore();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -428,6 +429,56 @@ export function CompactCalendar() {
   const [platformFilter, setPlatformFilter] = useState<"all" | "wechat" | "xiaohongshu">("all");
   const [isSavingDate, setIsSavingDate] = useState(false);
   const [weekAnchor, setWeekAnchor] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+
+  // --- Keyboard navigation for calendar (only when calendar tab is active) ---
+  useEffect(() => {
+    function handleCalendarKeys(e: KeyboardEvent) {
+      // Only handle when calendar tab is active and no input is focused
+      if (leftPanelTab !== 'calendar') return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if ((e.target as HTMLElement)?.isContentEditable) return;
+
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod) return; // Don't interfere with global shortcuts
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (viewMode === 'week') {
+            setWeekAnchor(prev => subWeeks(prev, 1));
+          } else {
+            setCurrentMonth(prev => subMonths(prev, 1));
+          }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (viewMode === 'week') {
+            setWeekAnchor(prev => addWeeks(prev, 1));
+          } else {
+            setCurrentMonth(prev => addMonths(prev, 1));
+          }
+          break;
+        case 't':
+        case 'T':
+          e.preventDefault();
+          setCurrentMonth(new Date());
+          setWeekAnchor(startOfWeek(new Date(), { weekStartsOn: 1 }));
+          break;
+        case 'g':
+        case 'G':
+          e.preventDefault();
+          if (viewMode === 'week') {
+            setViewMode('grid');
+          } else {
+            setViewMode(viewMode === 'grid' ? 'list' : 'grid');
+          }
+          break;
+      }
+    }
+    window.addEventListener('keydown', handleCalendarKeys);
+    return () => window.removeEventListener('keydown', handleCalendarKeys);
+  }, [leftPanelTab, viewMode]);
 
   // --- Calendar math ---
   const monthStart = startOfMonth(currentMonth);
@@ -1349,7 +1400,7 @@ export function CompactCalendar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="px-3 space-y-1 pb-2"
+              className="px-3 space-y-1 pb-2 row-stagger-enter"
             >
               {sortedPosts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -1376,6 +1427,7 @@ export function CompactCalendar() {
                       className={`
                         w-full rounded-md border p-1.5 text-left transition-all duration-150
                         hover:border-primary/30 hover:bg-muted/50
+                        row-hover-slide
                         ${isSelected ? "ring-1.5 ring-primary bg-primary/[0.05] border-primary/40" : "border-border"}
                       `}
                     >

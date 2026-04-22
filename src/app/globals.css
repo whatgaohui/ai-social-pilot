@@ -3318,7 +3318,408 @@ textarea {
   30% { opacity: 1; transform: translateY(-5px); }
 }
 
-/* Reduced motion support */
+/* ====== Task 28-d: CSS Micro-Interaction Polish ====== */
+
+/* ─── 1. Button Micro-Interactions ─── */
+
+/* .btn-press enhanced — scale(0.96) + shadow reduction, 100ms recovery */
+.btn-press {
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+  will-change: transform;
+}
+.btn-press:active {
+  transform: scale(0.96);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* .btn-shine — Apple-style light sweep on hover */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.12) 60%,
+    transparent 70%
+  );
+  pointer-events: none;
+  transition: left 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
+}
+.dark .btn-shine::before {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.04) 60%,
+    transparent 70%
+  );
+}
+.btn-shine:hover::before {
+  left: 150%;
+}
+
+/* .btn-magnetic — subtle displacement toward mouse (max 3px via CSS custom props) */
+.btn-magnetic {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+  will-change: transform;
+}
+.btn-magnetic:hover {
+  transform: translate(
+    calc(var(--magnetic-x, 0px) * 1px),
+    calc(var(--magnetic-y, 0px) * 1px)
+  );
+}
+
+/* ─── 2. Card Hover Enhancements ─── */
+
+/* .card-spotlight — mouse-following spotlight on card top via radial-gradient */
+.card-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+.card-spotlight::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 0;
+  right: 0;
+  height: 120%;
+  background: radial-gradient(
+    350px circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+    rgba(139, 92, 246, 0.07),
+    transparent 60%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 0;
+}
+.dark .card-spotlight::before {
+  background: radial-gradient(
+    350px circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+    rgba(139, 92, 246, 0.12),
+    transparent 60%
+  );
+}
+.card-spotlight:hover::before {
+  opacity: 1;
+}
+.card-spotlight > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* .card-tilt — subtle 3D perspective tilt on hover, smooth return on leave */
+.card-tilt {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+  transform-style: preserve-3d;
+  perspective: 800px;
+  will-change: transform;
+}
+.card-tilt:hover {
+  transform: perspective(800px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(1.01);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+.dark .card-tilt:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* .card-glow-border — hover border glow effect */
+.card-glow-border {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid transparent;
+}
+.card-glow-border:hover {
+  border-color: rgba(139, 92, 246, 0.25);
+  box-shadow:
+    0 0 12px rgba(139, 92, 246, 0.08),
+    0 0 24px rgba(139, 92, 246, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.dark .card-glow-border:hover {
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow:
+    0 0 16px rgba(139, 92, 246, 0.12),
+    0 0 32px rgba(139, 92, 246, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* ─── 3. List / Table Row Animations ─── */
+
+/* .row-hover-slide — background slides in from left on hover */
+.row-hover-slide {
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.2s ease;
+}
+.row-hover-slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.06), rgba(139, 92, 246, 0.03));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+.dark .row-hover-slide::before {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.04));
+}
+.row-hover-slide:hover::before {
+  transform: scaleX(1);
+}
+.row-hover-slide > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* .row-stagger-enter — staggered list item entrance with nth-child delay */
+.row-stagger-enter > * {
+  opacity: 0;
+  animation: row-stagger-fade 0.35s ease-out forwards;
+}
+.row-stagger-enter > *:nth-child(1) { animation-delay: 0ms; }
+.row-stagger-enter > *:nth-child(2) { animation-delay: 40ms; }
+.row-stagger-enter > *:nth-child(3) { animation-delay: 80ms; }
+.row-stagger-enter > *:nth-child(4) { animation-delay: 120ms; }
+.row-stagger-enter > *:nth-child(5) { animation-delay: 160ms; }
+.row-stagger-enter > *:nth-child(6) { animation-delay: 200ms; }
+.row-stagger-enter > *:nth-child(7) { animation-delay: 240ms; }
+.row-stagger-enter > *:nth-child(8) { animation-delay: 280ms; }
+.row-stagger-enter > *:nth-child(9) { animation-delay: 320ms; }
+.row-stagger-enter > *:nth-child(10) { animation-delay: 360ms; }
+.row-stagger-enter > *:nth-child(n+11) { animation-delay: 400ms; }
+@keyframes row-stagger-fade {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ─── 4. Input Focus Effects ─── */
+
+/* .input-glow — focus border glow */
+.input-glow {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.input-glow:focus {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(139, 92, 246, 0.1),
+    0 0 12px rgba(139, 92, 246, 0.06);
+}
+.dark .input-glow:focus {
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow:
+    0 0 0 3px rgba(139, 92, 246, 0.15),
+    0 0 16px rgba(139, 92, 246, 0.08);
+}
+
+/* .input-label-float — label floats up and shrinks on focus */
+.input-label-float {
+  position: relative;
+}
+.input-label-float label {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  background: transparent;
+  padding: 0 4px;
+  line-height: 1;
+}
+.input-label-float input:focus ~ label,
+.input-label-float input:not(:placeholder-shown) ~ label,
+.input-label-float textarea:focus ~ label,
+.input-label-float textarea:not(:placeholder-shown) ~ label {
+  top: 0;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 500;
+  color: #8b5cf6;
+  background: var(--background);
+  letter-spacing: 0.02em;
+}
+.dark .input-label-float input:focus ~ label,
+.dark .input-label-float input:not(:placeholder-shown) ~ label,
+.dark .input-label-float textarea:focus ~ label,
+.dark .input-label-float textarea:not(:placeholder-shown) ~ label {
+  color: #a78bfa;
+}
+
+/* .input-character-count — character count indicator at bottom-right */
+.input-character-count {
+  position: relative;
+}
+.input-character-count::after {
+  content: attr(data-char-count);
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.2s ease;
+  pointer-events: none;
+  tabular-nums: true;
+  font-variant-numeric: tabular-nums;
+}
+.input-character-count:focus-within::after {
+  opacity: 0.7;
+}
+.input-character-count.char-warning::after {
+  opacity: 1;
+  color: #f59e0b;
+}
+.input-character-count.char-danger::after {
+  opacity: 1;
+  color: #ef4444;
+}
+
+/* ─── 5. Toast Notification Animations ─── */
+
+/* .toast-enter-slide — slide in from right with slight bounce */
+.toast-enter-slide {
+  animation: toast-slide-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes toast-slide-enter {
+  0% {
+    transform: translateX(100%) scale(0.95);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-4px) scale(1.01);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(2px) scale(0.99);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* .toast-exit-slide — slide out to right + fade */
+.toast-exit-slide {
+  animation: toast-slide-exit 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+}
+@keyframes toast-slide-exit {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* .toast-progress — bottom progress bar countdown indicator */
+.toast-progress {
+  position: relative;
+  overflow: hidden;
+}
+.toast-progress::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #8b5cf6, #a855f7);
+  border-radius: 0 0 var(--radius) var(--radius);
+  animation: toast-progress-shrink var(--toast-duration, 4s) linear forwards;
+  pointer-events: none;
+}
+.dark .toast-progress::after {
+  background: linear-gradient(90deg, #7c3aed, #8b5cf6);
+}
+@keyframes toast-progress-shrink {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}
+
+/* ─── 6. Scroll Indicator Animations ─── */
+
+/* .scroll-indicator — bottom scroll arrow with bounce */
+.scroll-indicator {
+  animation: scroll-indicator-bounce 2s ease-in-out infinite;
+}
+@keyframes scroll-indicator-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}
+
+/* .scroll-fade-top — container top fade mask (enhanced from Round 15) */
+.scroll-fade-top {
+  mask-image: linear-gradient(to bottom, transparent 0, black 28px, black calc(100% - 0px), black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 28px, black calc(100% - 0px), black 100%);
+}
+
+/* .scroll-fade-bottom — container bottom fade mask (enhanced from Round 15) */
+.scroll-fade-bottom {
+  mask-image: linear-gradient(to bottom, black 0, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - 28px), transparent 100%);
+}
+
+/* ─── 7. Number Change Animation ─── */
+
+/* .number-roll — slot-machine-like digit roll effect */
+.number-roll {
+  display: inline-block;
+  overflow: hidden;
+  height: 1.2em;
+  position: relative;
+  vertical-align: bottom;
+}
+.number-roll::after {
+  content: attr(data-value);
+  position: absolute;
+  left: 0;
+  top: 0;
+  animation: number-roll-spin 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes number-roll-spin {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ─── 8. prefers-reduced-motion overrides for new classes ─── */
+
 @media (prefers-reduced-motion: reduce) {
   .shimmer-border::before,
   .pulse-soft,
@@ -3330,7 +3731,15 @@ textarea {
   .scale-in-bounce,
   .gradient-border-animated::before,
   .text-shimmer,
-  .typing-indicator span {
+  .typing-indicator span,
+  /* Task 28-d additions */
+  .btn-shine::before,
+  .scroll-indicator,
+  .number-roll::after,
+  .toast-progress::after,
+  .row-stagger-enter > *,
+  .toast-enter-slide,
+  .toast-exit-slide {
     animation: none !important;
   }
   .pulse-soft {
@@ -3350,5 +3759,43 @@ textarea {
   .scale-in-bounce {
     opacity: 1;
     transform: scale(1);
+  }
+  .btn-shine::before {
+    display: none;
+  }
+  .scroll-indicator {
+    opacity: 0.6;
+    transform: none;
+  }
+  .number-roll::after {
+    transform: none;
+    opacity: 1;
+  }
+  .card-tilt:hover {
+    transform: none;
+  }
+  .btn-magnetic:hover {
+    transform: none;
+  }
+  .row-hover-slide::before {
+    transition: none;
+  }
+  .row-hover-slide:hover::before {
+    transform: scaleX(1);
+  }
+  .row-stagger-enter > * {
+    opacity: 1;
+    transform: none;
+  }
+  .toast-enter-slide {
+    opacity: 1;
+    transform: none;
+  }
+  .toast-exit-slide {
+    opacity: 0;
+    transform: none;
+  }
+  .toast-progress::after {
+    display: none;
   }
 }

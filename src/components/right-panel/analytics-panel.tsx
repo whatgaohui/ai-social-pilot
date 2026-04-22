@@ -37,7 +37,21 @@ import {
   Medal,
   Calendar,
   GitCompareArrows,
+  Table,
+  ImageIcon,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { TimeSuggestions } from "@/components/right-panel/time-suggestions";
 import type { ContentPost } from "@/types";
@@ -1114,15 +1128,16 @@ export function AnalyticsPanel() {
     }
   };
 
-  const handleExport = async (format: "json" | "text") => {
+  const handleExport = async (format: "json" | "text" | "csv") => {
     try {
+      const ext = format === "csv" ? "csv" : format === "json" ? "json" : "txt";
       const res = await fetch(`/api/export?format=${format}`);
       if (res.ok) {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `moments-plan-${new Date().toISOString().slice(0, 10)}.${format === "json" ? "json" : "txt"}`;
+        a.download = `export-${new Date().toISOString().slice(0, 10)}.${ext}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1131,6 +1146,26 @@ export function AnalyticsPanel() {
       }
     } catch {
       toast.error("导出失败");
+    }
+  };
+
+  const handleExportReport = async () => {
+    try {
+      const res = await fetch(`/api/export/report-image?period=${period}`);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `report-${new Date().toISOString().slice(0, 10)}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("图片报告已导出");
+      }
+    } catch {
+      toast.error("报告导出失败");
     }
   };
 
@@ -1231,27 +1266,66 @@ export function AnalyticsPanel() {
             </span>
           </div>
 
-          {/* ── Export Buttons ─────────────────────────────────────── */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 h-8 text-xs gap-1.5"
-              onClick={() => handleExport("json")}
-            >
-              <FileJson className="h-3.5 w-3.5" />
-              导出JSON
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 h-8 text-xs gap-1.5"
-              onClick={() => handleExport("text")}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              导出文本
-            </Button>
-          </div>
+          {/* ── Export Buttons (DropdownMenu) ────────────────────── */}
+          <TooltipProvider delayDuration={300}>
+            <div className="flex gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-8 text-xs gap-1.5"
+                    onClick={() => handleExport("json")}
+                  >
+                    <FileJson className="h-3.5 w-3.5" />
+                    导出JSON
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>导出结构化JSON数据</TooltipContent>
+              </Tooltip>
+
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-8 text-xs gap-1.5"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        更多导出
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>CSV、文本、图片报告等格式</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    onClick={() => handleExport("csv")}
+                    className="gap-2 text-xs cursor-pointer"
+                  >
+                    <Table className="h-3.5 w-3.5 text-emerald-500" />
+                    导出CSV（Excel）
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleExport("text")}
+                    className="gap-2 text-xs cursor-pointer"
+                  >
+                    <FileText className="h-3.5 w-3.5 text-amber-500" />
+                    导出纯文本
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleExportReport}
+                    className="gap-2 text-xs cursor-pointer"
+                  >
+                    <ImageIcon className="h-3.5 w-3.5 text-violet-500" />
+                    导出PNG图片报告
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </TooltipProvider>
 
           {/* ── Overview Stats ─────────────────────────────────────── */}
           <div className="grid grid-cols-2 gap-3">

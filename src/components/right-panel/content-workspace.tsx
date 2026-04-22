@@ -22,7 +22,16 @@ import {
   ClipboardList,
   Link2,
   CalendarClock,
+  Table,
+  ImageIcon,
+  Download,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/app-store";
 import type { PostStatus } from "@/types";
@@ -404,6 +413,90 @@ export function ContentWorkspace() {
 
                   {/* ── Version History (inline collapsible below actions) ── */}
                   <ContentHistory post={selectedPost} />
+
+                  {/* ── Quick Export Row ────────────────────────────────── */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground flex-shrink-0">导出</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors">
+                          <Download className="h-3 w-3" />
+                          选择格式
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-44">
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/export?format=csv');
+                              if (res.ok) {
+                                const blob = await res.blob();
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `export-${new Date().toISOString().slice(0, 10)}.csv`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                toast.success('CSV导出成功');
+                              }
+                            } catch { toast.error('导出失败'); }
+                          }}
+                          className="gap-2 text-xs cursor-pointer"
+                        >
+                          <Table className="h-3.5 w-3.5 text-emerald-500" />
+                          CSV（Excel）
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/export/report-image?period=month');
+                              if (res.ok) {
+                                const blob = await res.blob();
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `report-${new Date().toISOString().slice(0, 10)}.png`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                toast.success('PNG报告已导出');
+                              }
+                            } catch { toast.error('导出失败'); }
+                          }}
+                          className="gap-2 text-xs cursor-pointer"
+                        >
+                          <ImageIcon className="h-3.5 w-3.5 text-violet-500" />
+                          PNG图片报告
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/export?format=json');
+                              if (res.ok) {
+                                const blob = await res.blob();
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `export-${new Date().toISOString().slice(0, 10)}.json`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                toast.success('JSON导出成功');
+                              }
+                            } catch { toast.error('导出失败'); }
+                          }}
+                          className="gap-2 text-xs cursor-pointer"
+                        >
+                          <FileText className="h-3.5 w-3.5 text-amber-500" />
+                          JSON数据
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div
