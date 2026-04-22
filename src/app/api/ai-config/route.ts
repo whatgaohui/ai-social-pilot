@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { invalidateConfigCache } from '@/lib/ai-client';
 
@@ -68,5 +68,31 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Failed to save AI config:', error);
     return NextResponse.json({ error: 'Failed to save config' }, { status: 500 });
+  }
+}
+
+// DELETE - Delete an AI config
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'Config ID is required' }, { status: 400 });
+    }
+
+    const config = await db.aIConfig.findUnique({ where: { id } });
+    if (!config) {
+      return NextResponse.json({ error: 'Config not found' }, { status: 404 });
+    }
+    if (config.isActive) {
+      return NextResponse.json({ error: 'Cannot delete active config' }, { status: 400 });
+    }
+
+    await db.aIConfig.delete({ where: { id } });
+    invalidateConfigCache();
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete AI config:', error);
+    return NextResponse.json({ error: 'Failed to delete config' }, { status: 500 });
   }
 }

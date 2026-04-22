@@ -464,7 +464,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
   );
 
   const renderPersona = () => (
-    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-5 py-2">
+    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-5 py-2 pb-6">
       <div className="text-center space-y-1.5">
         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mx-auto shadow-md">
           <User className="h-6 w-6 text-white" />
@@ -611,7 +611,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
   );
 
   const renderKnowledge = () => (
-    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-5 py-2">
+    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-5 py-2 pb-6">
       <div className="text-center space-y-1.5">
         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mx-auto shadow-md">
           <BookOpen className="h-6 w-6 text-white" />
@@ -733,7 +733,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
   );
 
   const renderAIModel = () => (
-    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-5 py-2">
+    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-5 py-2 pb-6">
       <div className="text-center space-y-1.5">
         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mx-auto shadow-md">
           <Cpu className="h-6 w-6 text-white" />
@@ -1036,12 +1036,12 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-7rem)] flex items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-md">
+    <div className="h-[calc(100vh-3.5rem)] flex flex-col items-center justify-start p-4 sm:p-6 overflow-hidden">
+      <div className="w-full max-w-md flex flex-col min-h-0 flex-1">
         {/* Progress Indicator - show after welcome step */}
         {step > 0 && step < TOTAL_STEPS - 1 && renderProgress()}
         {step > 0 && step < TOTAL_STEPS - 1 && (
-          <div className="mb-4">
+          <div className="mb-4 flex-shrink-0">
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-500"
@@ -1053,8 +1053,8 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
           </div>
         )}
 
-        {/* Animated Step Container */}
-        <div className="relative overflow-hidden" style={{ minHeight: "400px" }}>
+        {/* Animated Step Container - scrollable */}
+        <div className="relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={step}

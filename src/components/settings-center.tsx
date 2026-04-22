@@ -472,7 +472,7 @@ function FullAISettings() {
     if (!confirm(`确定要删除配置「${config.name}」吗？`)) return;
     setDeleting(config.id);
     try {
-      const res = await fetch(`/api/ai-config/test?id=${config.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/ai-config?id=${config.id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("配置已删除");
         fetchConfigs();
