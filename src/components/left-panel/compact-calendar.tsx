@@ -571,6 +571,36 @@ export function CompactCalendar() {
         })}
       </div>
 
+      {/* ====== Compact Stats Summary ====== */}
+      {filteredPosts.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="flex items-center gap-1.5 px-3 pb-2"
+        >
+          <span className="text-[9px] text-muted-foreground/70 mr-0.5">本月</span>
+          <Badge
+            variant="secondary"
+            className="h-4 px-1.5 text-[8px] font-semibold tabular-nums bg-muted/80 text-foreground"
+          >
+            {stats.total}篇
+          </Badge>
+          <span className="text-[9px] text-violet-500 font-medium flex items-center gap-0.5">
+            <span className="h-1 w-1 rounded-full bg-violet-500" />
+            <span className="animate-counter tabular-nums">{stats.published}</span>已发
+          </span>
+          <span className="text-[9px] text-amber-500 font-medium flex items-center gap-0.5">
+            <span className="h-1 w-1 rounded-full bg-amber-500" />
+            <span className="animate-counter tabular-nums">{stats.optimized}</span>已优
+          </span>
+          <span className="text-[9px] text-muted-foreground font-medium flex items-center gap-0.5">
+            <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+            <span className="animate-counter tabular-nums">{stats.total - stats.published - stats.optimized}</span>待办
+          </span>
+        </motion.div>
+      )}
+
       {/* ====== Calendar content ====== */}
       <ScrollArea className="flex-1">
         <AnimatePresence mode="wait">

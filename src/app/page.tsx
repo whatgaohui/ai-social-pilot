@@ -15,7 +15,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WelcomeOnboarding } from "@/components/welcome-onboarding";
 import { NotificationBell } from "@/components/notification-center";
@@ -507,6 +507,15 @@ export default function Home() {
           {/* Platform Switcher - Desktop */}
           <div className="hidden sm:flex items-center">
             <div className="relative flex items-center h-9 rounded-full bg-muted/70 p-0.5 border border-border/50 shadow-sm">
+              {/* Glow backdrop for active platform */}
+              <motion.div
+                className="absolute h-9 w-1/2 rounded-full"
+                layoutId="platform-glow"
+                style={{ left: platform === 'wechat' ? '0' : '50%' }}
+                transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+              >
+                <div className={`h-full w-full rounded-full blur-md ${platform === 'wechat' ? 'bg-green-400/30' : 'bg-red-400/30'}`} />
+              </motion.div>
               <motion.div
                 className="absolute h-7 rounded-full"
                 layoutId="platform-indicator"
@@ -514,22 +523,30 @@ export default function Home() {
                   width: 'calc(50% - 2px)',
                   left: platform === 'wechat' ? '2px' : 'calc(50%)',
                 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 28 }}
               >
-                <div className={`h-full w-full rounded-full shadow-md ${platform === 'wechat' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`} />
+                <div className={`h-full w-full rounded-full shadow-lg ${platform === 'wechat' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`} />
               </motion.div>
               <button
                 onClick={() => setPlatform('wechat')}
                 className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] magnetic-hover ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
               >
-                <span className="h-2 w-2 rounded-full bg-green-400" />
+                <motion.span
+                  className="h-2 w-2 rounded-full bg-green-400"
+                  animate={platform === 'wechat' ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                />
                 朋友圈
               </button>
               <button
                 onClick={() => setPlatform('xiaohongshu')}
                 className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] magnetic-hover ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
               >
-                <span className="h-2 w-2 rounded-full bg-red-400" />
+                <motion.span
+                  className="h-2 w-2 rounded-full bg-red-400"
+                  animate={platform === 'xiaohongshu' ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                />
                 小红书
               </button>
             </div>
@@ -572,12 +589,24 @@ export default function Home() {
                 AI正在生成内容...
               </motion.div>
             )}
-            <SettingsCenter connectedPlatforms={connectedPlatforms} />
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SettingsCenter connectedPlatforms={connectedPlatforms} />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p>设置中心</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Badge variant="outline" className="text-xs gap-1">
               <Zap className="h-3 w-3 text-amber-500" />
               AI驱动
             </Badge>
           </div>
+
+          {/* Visual divider between settings area and notifications */}
+          <div className="hidden sm:block w-px h-5 bg-border/50" />
 
           {/* Notification Bell - always visible (has its own internal tooltips) */}
           <NotificationBell />
@@ -651,7 +680,7 @@ export default function Home() {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring' as const, stiffness: 300, damping: 30, delay: 0.2 }}
-          className="flex items-center gap-0.5 px-1 py-1 rounded-[1.5rem] bg-background/70 backdrop-blur-xl border border-white/10 dark:border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+          className="flex items-center gap-0.5 px-1 py-1 rounded-[1.5rem] bg-background/75 backdrop-blur-2xl saturate-200 border border-white/15 dark:border-white/[0.08] shadow-[0_8px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]"
         >
           {/* Platform switcher dots */}
           <div className="flex items-center gap-1.5 px-2">
@@ -697,13 +726,23 @@ export default function Home() {
                   }`}
                   aria-label={tab.label}
                 >
-                  {/* Animated active indicator pill */}
+                  {/* Animated active indicator pill with glow */}
                   {isActive && (
                     <motion.div
                       layoutId="mobile-tab-pill"
                       className="absolute inset-0 rounded-2xl overflow-hidden"
-                      transition={{ type: 'spring' as const, stiffness: 500, damping: 35 }}
+                      transition={{ type: 'spring' as const, stiffness: 400, damping: 30 }}
                     >
+                      {/* Soft glow behind the pill */}
+                      <motion.div
+                        className="absolute -inset-1 rounded-3xl blur-md"
+                        animate={{
+                          opacity: 0.5,
+                        }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className={`h-full w-full rounded-3xl ${platform === 'wechat' ? 'bg-violet-400/40' : 'bg-rose-400/40'}`} />
+                      </motion.div>
                       {/* Wechat gradient */}
                       <motion.div
                         className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-600"
@@ -720,7 +759,12 @@ export default function Home() {
                   )}
 
                   <span className="relative z-10">
-                    <Icon className="h-[18px] w-[18px] mx-auto" />
+                    <motion.div
+                      animate={isActive ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+                      transition={{ duration: 0.5, ease: "easeInOut", repeat: isActive ? Infinity : 0, repeatDelay: 1.5 }}
+                    >
+                      <Icon className="h-[18px] w-[18px] mx-auto" />
+                    </motion.div>
                   </span>
                   <span className="relative z-10 mt-0.5 leading-none">{tab.label}</span>
 

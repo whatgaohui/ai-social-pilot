@@ -3514,3 +3514,101 @@ Stage Summary:
 - 核心改进：当采集服务不可用时，自动生成逼真的示例数据，让用户可以体验完整的账号追踪和笔记查看功能
 - 示例数据包含：8种人设档案、8种内容类型的真实笔记、合理的互动数据分布
 - 未创建新文件，仅修改2个现有文件
+
+---
+Task ID: 23
+Agent: Main Orchestrator (Cron #112108)
+Task: 第23轮迭代 - Bug修复 + 样式打磨 + 功能增强
+
+Work Log:
+- 读取 worklog.md 了解前22轮开发成果
+- 启动 production build 验证编译成功（Compiled successfully in 7.9s）
+- ESLint 零错误，src/ TypeScript 零错误
+- 环境限制：dev server 因内存限制（OOM）无法稳定运行，使用 build + lint 验证
+- 确认上轮3个并行Task代理执行结果：ViralInspiration、ContentHistory、ContentSearch 均已集成
+
+### Bug修复
+
+1. **右上角重复消息提醒图标**（用户反馈）：
+   - 问题分析：经过 Explore Agent 全面搜索，确认代码层面只有一个 `<NotificationBell />` 组件在 header 中
+   - 根因：Settings 齿轮图标与 Bell 通知铃铛图标相邻且样式相似，在小屏幕上（sm-lg 之间）均无文字标签，容易造成视觉混淆
+   - 修复方案（src/app/page.tsx）：
+     - 在 SettingsCenter 外包 TooltipProvider，悬停时显示"设置中心"提示
+     - 在设置按钮组和通知铃铛之间添加竖向分隔线 `<div className="hidden sm:block w-px h-5 bg-border/50" />`
+     - 视觉上将"设置"和"通知"清晰区分开
+
+2. **小红书采集功能无法采集数据**（用户反馈）：
+   - 问题分析：采集功能依赖 scraper 微服务（端口3003），该服务在当前环境中不可用
+   - 用户输入链接后，`checkScraperService()` 返回 false，静默降级为 demo 数据
+   - 修复方案（src/components/right-panel/account-collector.tsx）：
+     - 账号列表顶部新增渐变色"体验模式"横幅，清晰说明采集服务状态
+     - 横幅包含3个CTA按钮："手动导入"、"重新检测"、"生成示例数据"
+     - 链接导入/Cookie采集失败时不再静默降级，而是显示明确的 toast 提示
+     - 自动切换到手动导入模式，并预填 URL 作为参考
+     - 添加对话框内的采集服务不可用提示横幅
+     - 动态更新采集方式推荐标签（scraper可用时推荐链接导入，不可用时推荐手动导入）
+     - 手动导入区域增强：从简单文本框升级为结构化的 emerald 主题信息卡片
+     - 手动导入对话框新增格式提示区域（BookOpen 图标 + 粘贴格式说明）
+
+### 样式打磨
+
+1. **移动端底部导航栏增强**（src/app/page.tsx）：
+   - 升级玻璃态效果：`backdrop-blur-2xl saturate-200 bg-background/75`
+   - 增强边框和阴影深度，更自然的浮动感
+   - 活跃标签页指示器：柔和弹簧动画 + 平台感知发光背景（violet/rose）
+   - 活跃标签页图标：呼吸脉冲动画（scale 1→1.12→1，1.5s 延迟）
+
+2. **桌面端平台切换器打磨**（src/app/page.tsx）：
+   - 新增发光背景层：`layoutId="platform-glow"` 配合 `blur-md` 柔光效果
+   - 优化弹簧物理参数：`stiffness: 350, damping: 28` 更柔和的弹跳
+   - 增强指示器阴影：`shadow-lg` 更强浮起感
+   - 活跃平台圆点改为 `motion.span`，切换时播放 scale 脉冲动画
+
+3. **内容工作台微交互增强**（src/components/right-panel/content-workspace.tsx）：
+   - 快捷操作区域添加 `card-glow` 悬停发光效果
+   - 头部/互动数据区域添加 `card-glow` 卡片化
+   - 编辑器/预览区域添加 `card-shine` 光扫动画
+   - 操作按钮增加 `hover:shadow-md` 悬停阴影反馈
+
+### 功能增强
+
+1. **日历月度统计摘要**（src/components/left-panel/compact-calendar.tsx）：
+   - 在平台筛选器和日历网格之间新增紧凑统计行
+   - 实时显示："本月 15篇 · 🟣8已发 · 🟡3已优 · ⚫4待办"
+   - 颜色编码状态指示器与日历图例保持一致
+   - 数字使用 `animate-counter` CSS 动画弹入
+   - 仅在有帖子数据时显示
+
+### QA验证结果
+- ✅ ESLint 零错误（所有修改文件通过）
+- ✅ TypeScript src/ 零错误（外部 skills/ 目录有预存错误，非主应用代码）
+- ✅ Next.js production build 编译成功（7.9s）
+- ✅ 所有 29 个静态页面生成成功（617.9ms）
+- ⚠️ dev server 因内存限制无法稳定运行（已知环境限制，使用 build 验证替代）
+
+### 修改文件
+- `src/app/page.tsx` - Bug #1 修复（分隔线+Tooltip）+ 样式打磨（移动导航+平台切换器）
+- `src/components/right-panel/account-collector.tsx` - Bug #2 修复（采集服务UX全面增强）
+- `src/components/right-panel/content-workspace.tsx` - 微交互动画增强
+- `src/components/left-panel/compact-calendar.tsx` - 月度统计摘要功能
+
+### 未创建新文件
+
+Stage Summary:
+- 项目状态：稳定可运行，23轮迭代完成
+- 本轮核心成果：修复2个用户反馈Bug + 4项样式打磨 + 1项功能增强
+- 用户体验改善：采集中心在无服务时提供清晰的引导和手动导入替代方案
+- 视觉质量提升：移动导航栏和平台切换器的动画质感显著增强
+- 未解决问题或风险：
+  1. dev server 因沙箱内存限制无法稳定运行（建议使用 `npx next build && npx next start` 或 standalone 模式验证）
+  2. 小红书采集功能依赖外部 scraper 服务（端口3003），当前环境不可用
+  3. copywriting-output.tsx 体积较大（~1000行），建议拆分为子组件
+  4. AI 功能依赖 z-ai-web-dev-sdk 服务可用性
+- 建议下一阶段优先事项：
+  1. 拆分 copywriting-output.tsx 为多个子组件（提升可维护性）
+  2. 运营报告自动生成（PDF/图片格式导出）
+  3. 内容排期拖拽排序功能
+  4. 定时发布提醒功能（集成到 publish-workflow）
+  5. 话题标签趋势分析（接入实时热搜API）
+  6. 数据分析与报告面板接入更多可视化图表
+  7. 多人协作 / 团队账号管理功能

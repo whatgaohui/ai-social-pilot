@@ -437,12 +437,17 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
       toast.info("正在检查采集服务...");
       const isAvailable = await checkScraperService();
       if (!isAvailable) {
-        // Scraper unavailable — auto-fallback to generateDemo
-        toast.info("采集服务暂不可用，已为您生成示例数据体验功能", {
-          description: "已自动切换为示例数据模式，您可以体验完整的采集和查看功能。",
-          duration: 5000,
+        // Scraper unavailable — inform user clearly and suggest manual import
+        toast.error("采集服务暂不可用，无法通过链接采集", {
+          description: "小红书采集服务未启动。已为您切换到手动导入模式，您可以粘贴内容让AI智能解析。",
+          duration: 6000,
         });
-        await handleGenerateDemo();
+        // Save the URL the user entered as reference, then switch to manual import
+        if (formUrl.trim()) {
+          setFormSourceLabel(`链接导入-${formUrl.trim().slice(0, 30)}...`);
+        }
+        setFormMethod("manual");
+        // Don't close the dialog — let user continue with manual import
         return;
       }
     }
@@ -1129,45 +1134,68 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
         animate="visible"
         className="p-4 space-y-4"
       >
-        {/* ── Scraper service status banner ────────────────────────────── */}
+        {/* ── Scraper service status banner (体验模式) ────────────────── */}
         {scraperAvailable === false && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30"
+            className="relative overflow-hidden rounded-xl border border-violet-200/60 dark:border-violet-700/40"
           >
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                  采集服务未启动
-                </p>
-                <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
-                  小红书采集服务不可用，您可以生成示例数据来体验完整功能。
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => checkScraperService()}
-                    className="h-6 text-[10px] gap-1 border-amber-200 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 px-2"
-                  >
-                    <RefreshCw className="h-2.5 w-2.5" />
-                    重试检测
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => handleGenerateDemo()}
-                    disabled={isSubmitting}
-                    className="h-6 text-[10px] gap-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-sm hover:from-violet-600 hover:to-purple-700 px-2"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-2.5 w-2.5" />
-                    )}
-                    生成示例数据
-                  </Button>
+            {/* Gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-50 via-amber-50 to-violet-50 dark:from-violet-950/40 dark:via-amber-950/30 dark:to-violet-950/40" />
+            <div className="relative p-3.5">
+              <div className="flex items-start gap-2.5">
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500 to-amber-500 flex items-center justify-center shrink-0 shadow-sm">
+                  <AlertCircle className="h-3.5 w-3.5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-bold text-violet-800 dark:text-violet-200">
+                      采集服务暂未连接，当前为体验模式
+                    </p>
+                  </div>
+                  <p className="text-[10px] text-violet-600/80 dark:text-violet-300/70 mt-1 leading-relaxed">
+                    小红书采集服务未启动，链接导入和Cookie采集暂不可用。您可以使用手动导入模式粘贴内容，或生成示例数据体验完整功能。
+                  </p>
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <motion.div whileTap={{ scale: 0.95 }}>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setShowAddDialog(true);
+                          // Pre-select manual import mode
+                          setFormPlatform("xiaohongshu");
+                          setFormMethod("manual");
+                        }}
+                        className="h-7 text-[11px] gap-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-sm hover:from-violet-600 hover:to-purple-700 px-3"
+                      >
+                        <ClipboardList className="h-3 w-3" />
+                        手动导入
+                      </Button>
+                    </motion.div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => checkScraperService()}
+                      className="h-7 text-[11px] gap-1.5 border-violet-200/60 dark:border-violet-700/40 text-violet-600 dark:text-violet-300 hover:bg-violet-100/50 dark:hover:bg-violet-900/20 px-3"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      重新检测
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleGenerateDemo()}
+                      disabled={isSubmitting}
+                      className="h-7 text-[11px] gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm hover:from-amber-600 hover:to-orange-600 px-3"
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      生成示例数据
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2083,6 +2111,32 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
 
               <Separator />
 
+              {/* Scraper unavailable notice in dialog */}
+              {scraperAvailable === false && formPlatform === "xiaohongshu" && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="relative overflow-hidden rounded-xl border border-violet-200/60 dark:border-violet-700/40"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-violet-50 via-amber-50 to-violet-50 dark:from-violet-950/40 dark:via-amber-950/30 dark:to-violet-950/40" />
+                  <div className="relative p-3">
+                    <div className="flex items-start gap-2">
+                      <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-violet-500 to-amber-500 flex items-center justify-center shrink-0">
+                        <AlertCircle className="h-3 w-3 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-bold text-violet-800 dark:text-violet-200">
+                          采集服务未连接 · 体验模式
+                        </p>
+                        <p className="text-[10px] text-violet-600/80 dark:text-violet-300/70 mt-0.5">
+                          链接导入和Cookie采集暂不可用，推荐使用「手动导入」粘贴内容体验功能。
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Collection method selection */}
               <div className="space-y-2">
                 <Label className="text-xs font-medium">采集方式</Label>
@@ -2122,14 +2176,26 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                               <p className="text-xs font-semibold">
                                 {method.emoji} {method.label}
                               </p>
-                              {method.value === "link" && (
+                              {method.value === "link" && scraperAvailable !== false && (
                                 <Badge className="text-[9px] px-1.5 py-0 border-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                                   推荐
                                 </Badge>
                               )}
+                              {method.value === "manual" && scraperAvailable === false && (
+                                <Badge className="text-[9px] px-1.5 py-0 border-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                  推荐
+                                </Badge>
+                              )}
+                              {(method.value === "link" || method.value === "cookie") && scraperAvailable === false && (
+                                <Badge className="text-[9px] px-1.5 py-0 border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                                  暂不可用
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-[10px] text-muted-foreground mt-0.5">
-                              {method.desc}
+                              {(method.value === "link" || method.value === "cookie") && scraperAvailable === false
+                                ? "采集服务未启动，请使用手动导入"
+                                : method.desc}
                             </p>
                           </div>
                           <ChevronRight
@@ -2230,10 +2296,25 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                         className="h-9 text-xs"
                       />
                     </div>
-                    <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 p-3">
-                      <p className="text-[10px] text-amber-700 dark:text-amber-300">
-                        点击提交后，将打开手动导入面板，你可以粘贴内容并让AI智能解析
-                      </p>
+                    <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30 p-3">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
+                            手动导入说明
+                          </p>
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 leading-relaxed">
+                            点击提交后，将打开手动导入面板。你可以粘贴内容并让AI智能解析。
+                          </p>
+                          <div className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 leading-relaxed">
+                            <p className="font-medium mt-1">支持的格式示例：</p>
+                            <p className="mt-0.5">【美食探店】今天去了新开的咖啡馆…</p>
+                            <p>发布时间：2025-04-20</p>
+                            <p>点赞：23 评论：5 分享：2</p>
+                            <p className="mt-1 text-emerald-500/60">（每条内容之间用空行分隔）</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -2375,6 +2456,21 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                 <span className="text-xs text-muted-foreground">
                   来源：{manualSourceLabel}
                 </span>
+              </div>
+
+              {/* Format hints for manual import */}
+              <div className="rounded-lg bg-muted/50 border border-border/50 p-3">
+                <div className="flex items-start gap-2">
+                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-medium text-muted-foreground">
+                      格式提示
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                      从小红书或朋友圈复制帖子内容，每条帖子用空行分隔。AI会自动识别标题、正文、互动数据等信息。也可以包含话题标签（#）。
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Textarea for pasting content */}

@@ -259,24 +259,24 @@ export function ContentWorkspace() {
           className="p-4 space-y-3"
         >
           {/* ── Quick Actions Bar ───────────────────────────────────────── */}
-          <motion.div variants={staggerItem}>
+          <motion.div variants={staggerItem} className="card-glow rounded-lg">
             <ContentQuickActions />
           </motion.div>
 
           {/* ── Header + engagement bar ─────────────────────────────────── */}
-          <motion.div variants={staggerItem} className="space-y-2">
+          <motion.div variants={staggerItem} className="space-y-2 card-glow rounded-lg p-3 -mx-3">
             <PostDetailHeader post={selectedPost} isXHS={isXHS} />
             <InlineEngagementBar post={selectedPost} isXHS={isXHS} />
           </motion.div>
 
           {/* ── Editor / Preview ─────────────────────────────────────────── */}
-          <motion.div variants={staggerItem}>
+          <motion.div variants={staggerItem} className="card-shine rounded-lg">
             <div className="flex items-center justify-center mb-2">
               <div className="inline-flex items-center rounded-full bg-muted/60 p-0.5">
                 <Button
                   size="sm"
                   variant={!previewMode ? "secondary" : "ghost"}
-                  className={`h-7 text-xs gap-1.5 rounded-full px-3 transition-all ${!previewMode ? "shadow-sm" : "text-muted-foreground"}`}
+                  className={`h-7 text-xs gap-1.5 rounded-full px-3 transition-all duration-200 hover:shadow-md ${!previewMode ? "shadow-sm" : "text-muted-foreground"}`}
                   onClick={() => setPreviewMode(false)}
                 >
                   <Pencil className="h-3 w-3" />
@@ -285,7 +285,7 @@ export function ContentWorkspace() {
                 <Button
                   size="sm"
                   variant={previewMode ? "secondary" : "ghost"}
-                  className={`h-7 text-xs gap-1.5 rounded-full px-3 transition-all ${previewMode ? "shadow-sm" : "text-muted-foreground"}`}
+                  className={`h-7 text-xs gap-1.5 rounded-full px-3 transition-all duration-200 hover:shadow-md ${previewMode ? "shadow-sm" : "text-muted-foreground"}`}
                   onClick={() => setPreviewMode(true)}
                 >
                   <Eye className="h-3 w-3" />
@@ -374,7 +374,9 @@ export function ContentWorkspace() {
                     )}
                   </AnimatePresence>
 
-                  <PostActions post={selectedPost} isXHS={isXHS} />
+                  <div className="card-shine rounded-lg">
+                    <PostActions post={selectedPost} isXHS={isXHS} />
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div
