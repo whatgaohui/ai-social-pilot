@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { CommandPalette } from "@/components/command-palette";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 // ─── Main tabs for the right content area ──────────────────────────────────────
 
@@ -282,11 +283,11 @@ function LeftSidebar() {
       {leftPanelTab === 'calendar' ? (
         <CompactCalendar />
       ) : leftPanelTab === 'knowledge' ? (
-        <ScrollArea className="flex-1 px-3 pb-3">
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
           <KnowledgeBase />
         </ScrollArea>
       ) : (
-        <ScrollArea className="flex-1 px-3 pb-3">
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
           {isXHS ? <XiaohongshuTemplates /> : <CopywritingTemplates />}
         </ScrollArea>
       )}
@@ -586,7 +587,9 @@ export default function Home() {
                 {/* Left Sidebar */}
                 <ResizablePanel defaultSize={24} minSize={20} maxSize={32}>
                   <div className="h-full border-r bg-background/50">
-                    <LeftSidebar />
+                    <ErrorBoundary lightweight sectionName="左侧面板">
+                      <LeftSidebar />
+                    </ErrorBoundary>
                   </div>
                 </ResizablePanel>
 
@@ -595,7 +598,9 @@ export default function Home() {
                 {/* Main Content Area */}
                 <ResizablePanel defaultSize={76} minSize={55}>
                   <div className="h-full bg-background">
-                    <MainContentPanel />
+                    <ErrorBoundary lightweight sectionName="内容工作台">
+                      <MainContentPanel />
+                    </ErrorBoundary>
                   </div>
                 </ResizablePanel>
               </ResizablePanelGroup>

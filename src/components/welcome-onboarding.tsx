@@ -42,8 +42,8 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
 };
 const staggerItem = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35 } },
+  hidden: { opacity: 0, y: 16, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 260, damping: 22 } },
 };
 
 // --- Constants ---
@@ -270,6 +270,11 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
     goNext();
   };
 
+  const handleSkipOnboarding = () => {
+    setOnboardingCompleted(true);
+    onComplete();
+  };
+
   // --- Render Progress Bar ---
   const renderProgress = () => (
     <div className="flex items-center justify-center gap-1.5 mb-6">
@@ -363,12 +368,21 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
       <motion.div variants={staggerItem}>
         <Button
           onClick={goNext}
-          className="w-full max-w-xs h-11 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 dark:shadow-violet-900/40"
+          className="w-full max-w-xs h-11 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 dark:shadow-violet-900/40 btn-ripple"
         >
           开始设置
           <ArrowRight className="h-4 w-4 ml-1" />
         </Button>
-        <p className="text-[11px] text-muted-foreground mt-3">只需 3 分钟，完成基础配置</p>
+        <div className="mt-3 space-y-1.5">
+          <p className="text-[11px] text-muted-foreground">只需 3 分钟，完成基础配置</p>
+          <button
+            onClick={handleSkipOnboarding}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+          >
+            跳过引导，直接体验
+          </button>
+          <p className="text-[10px] text-muted-foreground/60">稍后可在设置中重新完成引导</p>
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -956,7 +970,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
 
         {/* Summary */}
         <motion.div variants={staggerItem} className="max-w-xs mx-auto">
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm card-glow">
             <CardContent className="p-4 space-y-3">
               {[
                 { icon: User, label: "人设", value: persona?.name || personaForm.name || "未设置", color: "text-amber-500" },

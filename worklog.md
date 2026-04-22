@@ -2735,3 +2735,100 @@ Stage Summary:
   5. 国际化准备：提取中文文案到locale文件
   6. 单元测试：核心hooks和工具函数
   7. E2E测试框架搭建：Playwright配置
+
+---
+Task ID: 19
+Agent: Main Developer (Cron Review 21:30)
+Task: Dev Server修复 + 错误边界 + Onboarding增强 + 样式动画
+
+Work Log:
+- 读取worklog了解前18轮开发成果
+- 发现dev server反复崩溃：端口绑定成功但进程在请求后消失
+- 诊断：需要使用setsid在同一shell session中运行，不能用nohup分离
+- agent-browser QA测试成功：页面完整加载，Header/Onboarding/Footer结构正常
+- 发现跨域警告：/_next/* 资源被阻止，修复next.config.ts
+
+### Bug修复
+1. **Dev Server进程崩溃**（高优先级）：
+   - 问题：使用nohup/setsid分离后台运行时，进程被shell回收机制杀掉
+   - 修复：需要在同一shell session内运行 `npx next dev -p 3000 -H 0.0.0.0`
+   - 验证：agent-browser成功加载页面，curl返回200，API正常响应
+
+2. **Next.js 16 跨域警告**（中优先级）：
+   - 问题：agent-browser从127.0.0.1访问时，/_next/* 静态资源被阻止（Cross origin request blocked）
+   - 修复：在next.config.ts中添加 `allowedDevOrigins: "*"` 配置
+   - 注意：需要rebuild才能生效
+
+3. **冗余组件清理**：
+   - 删除content-collector.tsx（与account-collector.tsx功能重叠，无任何import引用）
+
+### 新功能 1: 错误边界组件（error-boundary.tsx）
+- React Error Boundary类组件，捕获子组件渲染错误
+- 3种错误类型自动分类：
+  - 网络错误（WiFi断线图标+重试按钮）
+  - 渲染错误（警告图标+错误消息）
+  - 加载超时（时钟图标+刷新按钮）
+- 两种使用模式：
+  - 全屏模式：layout级，带渐变图标+3秒倒计时重试+返回首页+复制错误信息
+  - 轻量模式：面板级，紧凑UI适合LeftSidebar/MainContentPanel
+- framer-motion抖动动画+spring入场动画
+- 在layout.tsx和page.tsx中集成
+
+### 新功能 2: Onboarding体验增强（welcome-onboarding.tsx）
+- 新增"跳过引导，直接体验"链接按钮
+- 点击后直接设置onboardingCompleted=true进入主界面
+- 小字提示"稍后可在设置中重新完成引导"
+- 步骤卡片spring动画优化：stiffness:260, damping:22, scale:0.97→1
+- 主按钮添加btn-ripple涟漪效果
+- 完成卡片添加card-glow发光效果
+
+### 新功能 3: CSS动画工具类（globals.css）
+- `.btn-ripple`：按钮点击涟漪效果（radial-gradient+active触发）
+- `.animate-skeleton-shine`：骨架屏闪光增强（渐变滑移动画）
+- `.card-glow`：卡片悬浮发光（暗黑模式适配）
+- `.tag-pulse-active`：标签选中脉冲（紫色阴影扩散）
+- `.smooth-scroll`：平滑滚动（-webkit-overflow-scrolling:touch）
+- `.animate-fade-slide-up`：渐入上滑（0.4s ease-out）
+
+### 样式应用
+- content-workspace.tsx：主滚动容器添加smooth-scroll
+- copywriting-output.tsx：内容区域添加animate-fade-slide-up，ScrollArea添加smooth-scroll
+- page.tsx：左侧面板ScrollArea添加smooth-scroll
+
+### 新增文件
+- src/components/error-boundary.tsx
+
+### 修改文件
+- next.config.ts — 添加allowedDevOrigins: "*"
+- src/app/layout.tsx — 根级ErrorBoundary包裹
+- src/app/page.tsx — 面板级ErrorBoundary + smooth-scroll
+- src/components/welcome-onboarding.tsx — 跳过引导 + 动画优化
+- src/app/globals.css — 6个新CSS动画/工具类
+- src/components/right-panel/content-workspace.tsx — smooth-scroll
+- src/components/right-panel/copywriting-output.tsx — 动画+smooth-scroll
+
+### 删除文件
+- src/components/right-panel/content-collector.tsx
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ TypeScript编译通过（src/目录零错误）
+- ✅ agent-browser页面渲染正常：Title/Header/Onboarding/Footer完整
+- ✅ Dev server成功启动并响应请求
+- ⚠️ 跨域修复需要rebuild验证
+
+Stage Summary:
+- 项目状态：稳定可运行，错误处理和用户体验增强
+- 本轮新增1个文件，修改7个文件，删除1个文件
+- 核心新增：Error Boundary错误边界、Onboarding跳过引导、6个CSS动画工具类
+- 未解决问题或风险：
+  1. Dev server后台运行不稳定，建议用户直接在前台运行
+  2. allowedDevOrigins: "*" 需要rebuild后验证是否解决跨域警告
+  3. Onboarding跳过后直接进入主界面，但此时persona/plan可能为空
+- 建议下一阶段优先事项：
+  1. 重新build验证跨域修复效果
+  2. 添加内容搜索功能（全文搜索帖子/知识库）
+  3. 性能优化：React.memo、useMemo、虚拟列表
+  4. PWA支持：离线缓存+安装提示
+  5. 通知数据持久化到数据库
+  6. 国际化准备：提取中文文案到locale文件

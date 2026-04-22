@@ -31,7 +31,7 @@ export function CopywritingOutput() {
   if (!selectedPost) {
     return (
       <div className="flex flex-col h-full">
-        <ScrollArea className="flex-1 px-4 py-4">
+        <ScrollArea className="flex-1 px-4 py-4 smooth-scroll">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -62,13 +62,13 @@ export function CopywritingOutput() {
 
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1 px-4 py-4">
+      <ScrollArea className="flex-1 px-4 py-4 smooth-scroll">
         <motion.div
           key={selectedPost.id}
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.2 }}
-          className={`space-y-4 card-accent-left card-shine rounded-r-lg p-1 pl-4 ${
+          className={`space-y-4 card-accent-left card-shine rounded-r-lg p-1 pl-4 animate-fade-slide-up ${
             selectedPost.status === 'planned' ? 'border-l-gray-300 dark:border-l-gray-600' :
             selectedPost.status === 'generated' ? 'border-l-violet-500' :
             selectedPost.status === 'optimized' ? 'border-l-emerald-500' :
