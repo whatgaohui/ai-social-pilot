@@ -169,8 +169,19 @@ export function ContentWorkspace() {
   const isXHS = platform === "xiaohongshu";
   const [previewMode, setPreviewMode] = useState(false);
   const [toolTab, setToolTab] = useState<ToolTab>("ai");
+  const [tabTransitioning, setTabTransitioning] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const qualityScorerRef = useRef<HTMLDivElement>(null);
+
+  // Brief skeleton flash on tab change
+  const handleToolTabChange = useCallback((newTab: ToolTab) => {
+    if (newTab !== toolTab) {
+      setTabTransitioning(true);
+      setToolTab(newTab);
+      setShowHistory(false);
+      setTimeout(() => setTabTransitioning(false), 150);
+    }
+  }, [toolTab]);
 
   const selectedPost = useMemo(
     () => contentPosts.find((p) => p.id === selectedPostId) ?? null,
@@ -369,7 +380,7 @@ export function ContentWorkspace() {
 
           {/* ── Tool Tabs (underline style, distinct from action buttons) ──── */}
           <motion.div variants={staggerItem}>
-            <Tabs value={toolTab} onValueChange={(v) => { setToolTab(v as ToolTab); setShowHistory(false); }}>
+            <Tabs value={toolTab} onValueChange={(v) => { handleToolTabChange(v as ToolTab); }}>
               {/* Underline-style tab bar — visually distinct from the pill buttons above */}
               <div className="relative flex items-center border-b border-border">
                 {TOOL_TABS.map((tab) => {
@@ -400,7 +411,20 @@ export function ContentWorkspace() {
               </div>
 
               {/* ── AI Tools Tab ──────────────────────────────────────────── */}
-              <div className="mt-3 space-y-3">
+              <div className="mt-3 space-y-3 relative">
+                {/* Tab transition skeleton flash */}
+                <AnimatePresence>
+                  {tabTransitioning && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.1 }}
+                      className="absolute inset-0 z-10 bg-muted/30 backdrop-blur-[1px] rounded-lg"
+                    />
+                  )}
+                </AnimatePresence>
+
                 {toolTab === "ai" && (
                   <motion.div
                     key="ai-panel"

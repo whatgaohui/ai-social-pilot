@@ -64,6 +64,7 @@ export function PostActions({ post }: PostActionsProps) {
   const addNotification = useAppStore((s) => s.addNotification);
 
   const [optimizing, setOptimizing] = useState(false);
+  const [statusLoading, setStatusLoading] = useState<PostStatus | null>(null);
   const currentStatus = post.status as PostStatus;
 
   const handleOptimize = async () => {
@@ -132,6 +133,7 @@ export function PostActions({ post }: PostActionsProps) {
   };
 
   const handleStatusChange = async (newStatus: PostStatus) => {
+    setStatusLoading(newStatus);
     try {
       const res = await fetch(`/api/content/${post.id}`, {
         method: "PUT",
@@ -157,6 +159,8 @@ export function PostActions({ post }: PostActionsProps) {
       }
     } catch {
       toast.error("更新失败");
+    } finally {
+      setStatusLoading(null);
     }
   };
 
@@ -192,6 +196,7 @@ export function PostActions({ post }: PostActionsProps) {
           if (isActive) {
             // Show undo button
             const prevStatus = PREV_STATUS[btn.target];
+            const isLoading = statusLoading === btn.target;
             return (
               <Button
                 key={btn.target}
@@ -199,14 +204,19 @@ export function PostActions({ post }: PostActionsProps) {
                 variant="outline"
                 className={`btn-tooltip btn-press h-8 text-xs ${btn.undoColorClass}`}
                 onClick={() => prevStatus && handleStatusChange(prevStatus)}
-                disabled={!prevStatus}
+                disabled={!prevStatus || isLoading}
               >
-                <RotateCcw className="h-3 w-3 mr-1" />
-                {btn.undoLabel}
+                {isLoading ? (
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                )}
+                {isLoading ? "处理中..." : btn.undoLabel}
               </Button>
             );
           }
 
+          const isLoading = statusLoading === btn.target;
           return (
             <Button
               key={btn.target}
@@ -214,10 +224,14 @@ export function PostActions({ post }: PostActionsProps) {
               variant="outline"
               className={`btn-tooltip btn-press h-8 text-xs ${btn.colorClass}`}
               onClick={() => handleStatusChange(btn.target)}
-              disabled={isDisabled}
+              disabled={isDisabled || isLoading}
             >
-              <Send className="h-3 w-3 mr-1" />
-              {btn.label}
+              {isLoading ? (
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              ) : (
+                <Send className="h-3 w-3 mr-1" />
+              )}
+              {isLoading ? "处理中..." : btn.label}
             </Button>
           );
         })}

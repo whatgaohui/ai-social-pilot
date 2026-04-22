@@ -2561,3 +2561,177 @@ Stage Summary:
   4. 性能优化：大列表虚拟滚动
   5. 添加数据导入向导（从其他平台迁移）
   6. 移动端手势冲突处理优化
+
+---
+Task ID: 17
+Agent: Main Developer (Cron Review 20:30)
+Task: 设置中心重构 + 移动端底部导航增强 + 通知中心增强 + 内容编辑器增强
+
+Work Log:
+- 上一轮(Task 16)完成了17个TS类型错误修复、采集中心集成、运营看板创建、视觉增强
+- 本轮lint零错误、TS零错误通过
+- 4个并行开发任务完成
+
+### 新功能 1: 设置中心重构（settings-center.tsx）
+- 完全重写为侧边栏+内容区布局（桌面端侧边栏w-52，移动端水平滚动）
+- 6大设置模块：
+  - AI模型配置（当前模型展示+快速管理按钮+统计）
+  - 平台账号管理（微信/小红书连接状态卡片）
+  - 通知设置（4个Toggle开关，localStorage持久化）
+  - 数据管理（数据库统计+导出+清除缓存）
+  - 显示偏好（主题/平台/视图模式/紧凑模式）
+  - 关于（版本信息+功能列表+技术栈）
+- 新增API: /api/settings/stats（数据库统计）
+
+### 新功能 2: 移动端浮动底部导航
+- 静态底部栏 → 浮动胶囊导航（fixed定位+rounded-[1.5rem]）
+- Glassmorphism设计（backdrop-blur-xl+半透明背景）
+- layoutId滑动指示器（平台感知渐变色）
+- 4个Tab：人设/日历/工作台/数据
+- 平台切换器集成到浮动栏（绿/红圆形点+发光效果）
+- 通知徽章（未发布帖子数量）
+- 滑动手势支持（左右滑动切换面板，50px阈值）
+- Safe area适配
+
+### 新功能 3: 通知中心增强（notification-center.tsx）
+- 5种通知类型（系统/发布/互动/AI/灵感）各有专属图标和颜色
+- 自动生成5条演示通知
+- 水平滚动过滤标签页（带计数Badge）
+- 未读指示器（加粗+蓝色圆点+蓝色背景）
+- 快捷操作按钮（查看详情等）
+- 响应式：桌面Popover/移动Sheet
+- Toast CSS动画增强（成功弹跳+错误抖动+加载进度条+彩屑粒子）
+
+### 新功能 4: 内容编辑器增强（content-editor.tsx）
+- 实时字数统计+阅读时间估算（平台感知阈值）
+- 快捷工具栏（加粗/表情选择器/换行/话题标签/清空）
+- 自动保存机制（2秒防抖，已保存/保存中/未保存状态指示）
+- AI评分预览Badge（可点击跳转到评分详情）
+- 空内容时快速启动模板卡片（空白开始/AI生成/使用模板/导入内容）
+
+### 新增文件
+- src/app/api/settings/stats/route.ts
+- src/components/ui/empty-state.tsx（可复用空状态组件）
+- src/components/ui/loading-state.tsx（可复用加载状态组件）
+
+### 修改文件
+- src/store/app-store.ts（settingsCenterOpen状态）
+- src/components/settings-center.tsx（完全重写）
+- src/components/notification-center.tsx（增强）
+- src/components/right-panel/content-editor.tsx（增强）
+- src/components/right-panel/content-workspace.tsx（空状态+Tab切换）
+- src/components/left-panel/knowledge-base.tsx（空状态）
+- src/components/left-panel/persona-form.tsx（空状态）
+- src/components/right-panel/copywriting-output.tsx（空状态）
+- src/components/right-panel/post-actions.tsx（按钮加载状态）
+- src/app/page.tsx（浮动导航+设置按钮+加载屏幕+通知铃铛）
+- src/app/globals.css（Toast动画CSS）
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ TypeScript编译通过（src/目录零错误）
+- ✅ agent-browser页面渲染正常，UI结构完整
+
+Stage Summary:
+- 项目状态：稳定可运行，功能持续扩展
+- 本轮新增3个文件，修改12个文件
+- 核心新增：设置中心重构、浮动底部导航、通知中心增强、内容编辑器增强、可复用空状态/加载状态组件
+
+---
+Task ID: 18
+Agent: Main Developer (Cron Review 21:00)
+Task: 拖拽排序 + 空状态优化 + 命令面板 + 快捷键系统
+
+Work Log:
+- 上一轮完成4大功能增强
+- 本轮lint零错误、TS零错误通过
+- agent-browser QA测试通过（页面渲染正常、onboarding流程正常）
+
+### Bug修复
+1. **WrapText图标不存在**（上一轮已自动修复为WrapText，但TS仍报错）：
+   - 确认文件中已使用WrapText（非TextWrap），node验证WrapText存在于lucide-react
+   - 实际为TS缓存问题，重新编译通过
+
+### 新功能 1: 内容拖拽排序（drag-sort-calendar.tsx + compact-calendar.tsx）
+- 新增 `useCalendarDragSort` hook：HTML5 Drag and Drop API
+  - 跨日期拖拽：将内容从一天拖到另一天
+  - 视觉反馈：拖拽项半透明+缩小，目标日期高亮边框+缩放
+  - 放置提示："放置到此处"动画文字
+  - API持久化：PUT /api/content/:id 更新scheduledDate
+- 新增 `CalendarDateDropZone` 组件：包裹日期组作为放置目标
+- compact-calendar.tsx集成：
+  - viewMode新增"drag"模式（ArrowUpDown图标切换）
+  - 拖拽模式横幅提示
+  - DragPostCard组件（可拖拽内容卡片+拖拽手柄）
+  - 平台感知颜色（绿色朋友圈/红色小红书）
+
+### 新功能 2: 可复用空状态组件（ui/empty-state.tsx）
+- 3种变体：default/muted/gradient
+- 3种尺寸：sm/md/lg
+- 可自定义图标、标题、描述、操作按钮、渐变色
+- framer-motion入场动画
+- 已应用到：content-workspace、knowledge-base、persona-form、copywriting-output
+
+### 新功能 3: 可复用加载状态组件（ui/loading-state.tsx）
+- 4种变体：spinner/dots/shimmer/pulse
+- framer-motion动画
+- 已集成到各组件
+
+### 新功能 4: 加载屏幕增强（page.tsx DataInitializer）
+- 3步加载文字动画：加载配置→获取数据→准备就绪
+- 进度条动画（30%→70%→100%）
+- 步骤指示器点（已完成/活跃/待处理）
+
+### 新功能 5: 全局命令面板（command-palette.tsx）
+- Cmd/Ctrl+K 快捷键触发（macOS Spotlight风格）
+- 搜索框+Command组件+Dialog覆盖层
+- 5个搜索分类：
+  - 快速操作（生成/批量/数据/采集/设置/平台切换）
+  - 内容搜索（topic+content模糊匹配，点击选中帖子）
+  - 知识库搜索（title+content匹配，点击跳转知识Tab）
+  - 面板导航（⌘1/⌘2/⌘3快捷方式）
+  - 快捷键帮助
+- 键盘导航支持（↑↓选择，Enter确认，Esc关闭）
+- 无搜索词时显示最近内容
+- Header搜索按钮（Search图标+⌘K徽章）
+
+### 新功能 6: 键盘快捷键系统（use-keyboard-shortcuts.ts）
+- useKeyboardShortcuts hook全局监听keydown
+- 跨平台Meta键检测（metaKey||ctrlKey）
+- 快捷键列表：
+  - ⌘K 命令面板 / ⌘/ 暗黑模式 / ⌘1 知识Tab / ⌘2 工作台 / ⌘3 数据Tab
+  - ⌘S 保存 / ⌘Enter 保存并关闭 / ⌘B 加粗
+- 首次访问提示（localStorage记录）
+- 导出SHORTCUT_LIST供帮助面板使用
+
+### 新增文件
+- src/components/command-palette.tsx
+- src/hooks/use-keyboard-shortcuts.ts
+
+### 修改文件
+- src/components/center-panel/drag-sort-calendar.tsx（新增hook+DropZone+平台感知）
+- src/components/left-panel/compact-calendar.tsx（拖拽模式集成）
+- src/app/page.tsx（命令面板+搜索按钮+快捷键+加载屏幕增强）
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ TypeScript编译通过（src/目录零错误）
+- ✅ agent-browser端到端测试：页面加载正常、onboarding流程正常、Header结构完整、通知铃铛存在
+
+Stage Summary:
+- 项目状态：稳定可运行，交互体验大幅提升
+- 本轮新增2个文件，修改4个文件
+- 核心新增：拖拽排序、命令面板(Cmd+K)、快捷键系统、可复用空状态/加载组件
+- 未解决问题或风险：
+  1. 沙箱OOM限制影响API调用（服务器在多次API请求后会被OOM杀掉）
+  2. agent-browser无法连接localhost（沙箱网络限制），需通过Caddy或直接访问
+  3. 移动端布局未在真机测试
+  4. content-collector.tsx仍存在（与account-collector功能重叠）
+- 建议下一阶段优先事项：
+  1. 清理冗余组件（content-collector.tsx、死代码content-calendar.tsx）
+  2. 性能优化：React.memo、useMemo、虚拟列表
+  3. 错误边界组件：防止子组件崩溃影响整个应用
+  4. PWA支持：离线缓存+安装提示
+  5. 国际化准备：提取中文文案到locale文件
+  6. 单元测试：核心hooks和工具函数
+  7. E2E测试框架搭建：Playwright配置

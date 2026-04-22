@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import type { ContentPost, ContentPlan } from "@/types";
@@ -28,6 +28,9 @@ import {
   FileText,
   Zap,
   CheckCircle2,
+  GripVertical,
+  ArrowUpDown,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -44,6 +47,10 @@ import {
   startOfDay,
 } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import {
+  useCalendarDragSort,
+  CalendarDateDropZone,
+} from "@/components/center-panel/drag-sort-calendar";
 
 // --- Color maps (mirrors content-calendar.tsx) ---
 
@@ -96,7 +103,122 @@ function getContentTypeColorForPost(post: ContentPost) {
   return CONTENT_TYPE_COLORS[post.contentType as ContentType] || "";
 }
 
-// --- Component ---
+// --- Drag post card used in drag mode ---
+
+interface DragPostCardProps {
+  post: ContentPost;
+  isDragged: boolean;
+  onDragStart: (e: React.DragEvent<HTMLElement>, post: ContentPost) => void;
+  onDragEnd: () => void;
+  onClick: () => void;
+}
+
+function DragPostCard({ post, isDragged, onDragStart, onDragEnd, onClick }: DragPostCardProps) {
+  const didDragRef = useRef(false);
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      didDragRef.current = true;
+      onDragStart(e, post);
+    },
+    [post, onDragStart],
+  );
+
+  const handleClick = useCallback(() => {
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return;
+    }
+    onClick();
+  }, [onClick]);
+
+  const handleDragEnd = useCallback(() => {
+    // Use a timeout to let the click event fire first and get suppressed
+    setTimeout(() => {
+      didDragRef.current = false;
+    }, 0);
+    onDragEnd();
+  }, [onDragEnd]);
+
+  const platformColor = post.platform === "xiaohongshu"
+    ? "border-l-rose-400 dark:border-l-rose-500"
+    : "border-l-green-400 dark:border-l-green-500";
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 4 }}
+      animate={{
+        opacity: isDragged ? 0.5 : 1,
+        y: 0,
+        scale: isDragged ? 0.95 : 1,
+      }}
+      transition={{
+        type: "spring" as const,
+        stiffness: 350,
+        damping: 28,
+      }}
+    >
+      <div
+        draggable
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onClick={handleClick}
+        className={`
+          group relative flex items-center gap-1.5 rounded-md border border-l-[3px]
+          ${platformColor}
+          bg-card hover:bg-muted/50 p-1.5 cursor-grab active:cursor-grabbing
+          transition-all duration-200 hover:shadow-sm select-none
+          ${isDragged ? "z-50 shadow-lg" : ""}
+        `}
+      >
+        {/* Drag handle */}
+        <div
+          className={`
+            flex-shrink-0 flex items-center justify-center w-4 h-4
+            opacity-0 group-hover:opacity-100 transition-opacity duration-200
+            text-muted-foreground hover:text-foreground
+          `}
+        >
+          <GripVertical className="h-3 w-3" />
+        </div>
+
+        {/* Platform + status dots */}
+        <div className="flex items-center gap-[2px] flex-shrink-0">
+          <span
+            className={`h-[4px] w-[4px] rounded-full ${PLATFORM_DOT_COLORS[post.platform || "wechat"]}`}
+          />
+          <span
+            className={`h-[4px] w-[4px] rounded-full ${STATUS_DOT_COLORS[post.status as PostStatus]}`}
+          />
+        </div>
+
+        {/* Content type */}
+        <Badge
+          className={`text-[7px] px-1 py-0 h-3 leading-3 flex-shrink-0 ${getContentTypeColorForPost(post)}`}
+          variant="secondary"
+        >
+          {getContentTypeLabelForPost(post)}
+        </Badge>
+
+        {/* Topic */}
+        <span className="text-[10px] font-medium truncate flex-1 leading-tight">
+          {post.topic}
+        </span>
+
+        {/* Status */}
+        <Badge
+          className={`text-[7px] px-1 py-0 h-3 leading-3 flex-shrink-0 ${STATUS_BADGE_COLORS[post.status as PostStatus]}`}
+          variant="secondary"
+        >
+          {POST_STATUS_LABELS[post.status as PostStatus]}
+        </Badge>
+      </div>
+    </motion.div>
+  );
+}
+
+// --- Main Component ---
 
 export function CompactCalendar() {
   const {
@@ -112,11 +234,13 @@ export function CompactCalendar() {
     setIsGenerating,
     setSelectedPostId,
     platform,
+    updateContentPost,
   } = useAppStore();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "drag">("grid");
   const [platformFilter, setPlatformFilter] = useState<"all" | "wechat" | "xiaohongshu">("all");
+  const [isSavingDate, setIsSavingDate] = useState(false);
 
   // --- Calendar math ---
   const monthStart = startOfMonth(currentMonth);
@@ -143,6 +267,57 @@ export function CompactCalendar() {
     });
     return map;
   }, [filteredPosts]);
+
+  // --- Drag mode: posts grouped by date for the current month ---
+  const dragGroupedPosts = useMemo(() => {
+    const groups: { dateStr: string; label: string; posts: ContentPost[] }[] = [];
+    for (const day of daysInMonth) {
+      const dateStr = format(day, "yyyy-MM-dd");
+      const posts = postsByDate[dateStr];
+      if (posts && posts.length > 0) {
+        let label = "";
+        try {
+          label = format(day, "M月d日 EEEE", { locale: zhCN });
+        } catch {
+          label = dateStr;
+        }
+        groups.push({ dateStr, label, posts });
+      }
+    }
+    return groups;
+  }, [daysInMonth, postsByDate]);
+
+  // --- Cross-date drag handler ---
+  const handleDateChange = useCallback(
+    async (postId: string, newScheduledDate: string) => {
+      setIsSavingDate(true);
+      try {
+        const res = await fetch(`/api/content/${postId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scheduledDate: newScheduledDate }),
+        });
+        if (!res.ok) throw new Error("更新排期失败");
+        const updatedPost = await res.json();
+
+        // Optimistic update in store
+        updateContentPost(postId, { scheduledDate: newScheduledDate });
+
+        toast.success("排期已更新");
+      } catch (error) {
+        console.error("Failed to update scheduled date:", error);
+        toast.error("排期更新失败，请重试");
+      } finally {
+        setIsSavingDate(false);
+      }
+    },
+    [updateContentPost],
+  );
+
+  const { dragState: calDragState, handlers: calDragHandlers } = useCalendarDragSort(
+    filteredPosts,
+    handleDateChange,
+  );
 
   // --- Upcoming posts (next 5 from today) ---
   const upcomingPosts = useMemo(() => {
@@ -172,27 +347,30 @@ export function CompactCalendar() {
   const handlePrevMonth = () => setCurrentMonth((prev) => subMonths(prev, 1));
   const handleNextMonth = () => setCurrentMonth((prev) => addMonths(prev, 1));
 
+  const isDragMode = viewMode === "drag";
+
   const handleDayClick = useCallback(
     (dateStr: string) => {
+      if (isDragMode) return; // In drag mode, clicking dates does nothing special
       setSelectedDate(dateStr);
       const posts = postsByDate[dateStr];
       if (posts && posts.length > 0) {
         const match = posts.find((p) => !p.platform || p.platform === platform);
         setSelectedPostId((match || posts[0]).id);
       } else {
-        // Clear selection when clicking an empty date
         setSelectedPostId(null);
       }
     },
-    [postsByDate, platform, setSelectedDate, setSelectedPostId]
+    [postsByDate, platform, setSelectedDate, setSelectedPostId, isDragMode],
   );
 
   const handleListItemClick = useCallback(
     (post: ContentPost) => {
+      if (isDragMode) return; // In drag mode, clicking selects the post but doesn't navigate
       setSelectedDate(post.scheduledDate);
       setSelectedPostId(post.id);
     },
-    [setSelectedDate, setSelectedPostId]
+    [setSelectedDate, setSelectedPostId, isDragMode],
   );
 
   const createPlanAndGenerate = async () => {
@@ -315,9 +493,46 @@ export function CompactCalendar() {
             >
               <List className="h-3 w-3" />
             </Button>
+            <Button
+              variant={viewMode === "drag" ? "secondary" : "ghost"}
+              size="sm"
+              className={`h-5 w-5 p-0 ${viewMode === "drag" ? "text-emerald-600 dark:text-emerald-400" : ""}`}
+              onClick={() => setViewMode(viewMode === "drag" ? "grid" : "drag")}
+              title="拖拽排序"
+            >
+              <ArrowUpDown className="h-3 w-3" />
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* ====== Drag mode banner ====== */}
+      <AnimatePresence>
+        {isDragMode && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="mx-3 mb-2 px-2.5 py-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 flex items-center gap-2">
+              <div className="flex-shrink-0 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                <GripVertical className="h-2.5 w-2.5 text-white" />
+              </div>
+              <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300 flex-1">
+                拖拽内容到目标日期重新排期
+              </span>
+              <button
+                onClick={() => setViewMode("grid")}
+                className="flex-shrink-0 p-0.5 rounded hover:bg-emerald-100 dark:hover:bg-emerald-800/40 transition-colors"
+              >
+                <X className="h-3 w-3 text-emerald-500" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ====== Platform filter ====== */}
       <div className="flex items-center gap-1 px-3 pb-2">
@@ -359,7 +574,138 @@ export function CompactCalendar() {
       {/* ====== Calendar content ====== */}
       <ScrollArea className="flex-1">
         <AnimatePresence mode="wait">
-          {viewMode === "grid" ? (
+          {isDragMode ? (
+            /* ====== DRAG MODE VIEW ====== */
+            <motion.div
+              key="drag"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="px-3 space-y-3 pb-2"
+            >
+              {dragGroupedPosts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <CalendarDays className="h-8 w-8 mb-2 opacity-30" />
+                  <p className="text-xs">本月暂无内容</p>
+                </div>
+              ) : (
+                dragGroupedPosts.map((group) => {
+                  const isOverThisDate = calDragState.isDragging && calDragState.overDate === group.dateStr;
+                  const isDraggedPostInThisDate = group.posts.some(
+                    (p) => p.id === calDragState.draggedPostId,
+                  );
+                  const primaryPlatform = group.posts[0]?.platform || "wechat";
+
+                  const borderHighlight =
+                    primaryPlatform === "xiaohongshu"
+                      ? "border-rose-400 dark:border-rose-500 ring-rose-200 dark:ring-rose-800"
+                      : "border-green-400 dark:border-green-500 ring-green-200 dark:ring-green-800";
+
+                  return (
+                    <CalendarDateDropZone
+                      key={group.dateStr}
+                      dateStr={group.dateStr}
+                      posts={group.posts}
+                      overDate={calDragState.overDate}
+                      draggedPostId={calDragState.draggedPostId}
+                      isDragging={calDragState.isDragging}
+                    >
+                      <motion.div
+                        layout
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                          borderColor: isOverThisDate && !isDraggedPostInThisDate
+                            ? (primaryPlatform === "xiaohongshu" ? "rgb(251 113 133)" : "rgb(74 222 128)")
+                            : undefined,
+                          backgroundColor: isOverThisDate && !isDraggedPostInThisDate
+                            ? "var(--color-primary-alpha-04)"
+                            : undefined,
+                        }}
+                        transition={{
+                          type: "spring" as const,
+                          stiffness: 300,
+                          damping: 25,
+                        }}
+                        className={`
+                          rounded-lg border-2 overflow-hidden
+                          ${isOverThisDate && !isDraggedPostInThisDate
+                            ? `${borderHighlight} ring-2 bg-primary/[0.04] dark:bg-primary/[0.08] scale-[1.01]`
+                            : "border-border bg-card/50"
+                          }
+                          transition-all duration-200
+                        `}
+                      >
+                        {/* Date header row (acts as drop zone) */}
+                        <div
+                          onDragOver={(e) => calDragHandlers.onDateDragOver(e, group.dateStr)}
+                          onDragEnter={(e) => calDragHandlers.onDateDragEnter(e, group.dateStr)}
+                          onDragLeave={(e) => calDragHandlers.onDateDragLeave(e, group.dateStr)}
+                          onDrop={(e) => calDragHandlers.onDateDrop(e, group.dateStr)}
+                          className={`
+                            flex items-center gap-2 px-2 py-1 cursor-default
+                            ${isOverThisDate && !isDraggedPostInThisDate ? "bg-primary/[0.06] dark:bg-primary/[0.10]" : "bg-muted/40"}
+                            transition-colors duration-150
+                          `}
+                        >
+                          <span className="text-[10px] font-semibold text-muted-foreground tabular-nums">
+                            {group.label}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground/60">
+                            {group.posts.length} 条
+                          </span>
+                          {/* Drop hint when hovering */}
+                          {isOverThisDate && !isDraggedPostInThisDate && (
+                            <motion.span
+                              initial={{ opacity: 0, x: -4 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="text-[9px] font-medium text-emerald-600 dark:text-emerald-400 ml-auto"
+                            >
+                              放置到此处 ↑
+                            </motion.span>
+                          )}
+                        </div>
+
+                        {/* Posts in this date group */}
+                        <div className="px-1.5 pb-1.5 space-y-1">
+                          {group.posts.map((post) => (
+                            <DragPostCard
+                              key={post.id}
+                              post={post}
+                              isDragged={calDragState.draggedPostId === post.id}
+                              onDragStart={calDragHandlers.onPostDragStart}
+                              onDragEnd={calDragHandlers.onPostDragEnd}
+                              onClick={() => {
+                                setSelectedDate(post.scheduledDate);
+                                setSelectedPostId(post.id);
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </motion.div>
+                    </CalendarDateDropZone>
+                  );
+                })
+              )}
+
+              {/* Saving indicator */}
+              <AnimatePresence>
+                {isSavingDate && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="flex items-center justify-center gap-1.5 py-2 text-muted-foreground"
+                  >
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span className="text-[10px]">保存排期中…</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ) : viewMode === "grid" ? (
             <motion.div
               key="grid"
               initial={{ opacity: 0 }}
@@ -435,11 +781,10 @@ export function CompactCalendar() {
                           {format(day, "d")}
                         </span>
 
-                        {/* Bottom indicator: platform dots for multi-platform, or status label for single */}
+                        {/* Bottom indicator */}
                         {posts && posts.length > 0 && (
                           <div className="flex items-center gap-[2px] mt-[1px]">
                             {isMultiPlatform ? (
-                              // Multi-platform: show colored platform dots
                               posts
                                 .reduce((acc, p) => {
                                   const plat = p.platform || "wechat";
@@ -453,7 +798,6 @@ export function CompactCalendar() {
                                   />
                                 ))
                             ) : (
-                              // Single platform: show a short status text label
                               <span className={`text-[7px] font-semibold leading-none px-1 rounded-sm ${
                                 postStatus === 'published'
                                   ? 'bg-violet-200/80 dark:bg-violet-800/60 text-violet-700 dark:text-violet-200'
@@ -653,7 +997,7 @@ export function CompactCalendar() {
         </AnimatePresence>
 
         {/* ====== Stats summary ====== */}
-        {filteredPosts.length > 0 && (
+        {filteredPosts.length > 0 && !isDragMode && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

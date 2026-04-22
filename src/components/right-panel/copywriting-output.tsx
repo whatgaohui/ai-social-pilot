@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Eye, Pencil, ClipboardList } from "lucide-react";
+import { FileText, Eye, Pencil } from "lucide-react";
 import { PostDetailHeader } from "@/components/right-panel/post-detail-header";
 import { ContentEditor } from "@/components/right-panel/content-editor";
 import { PostActions } from "@/components/right-panel/post-actions";
