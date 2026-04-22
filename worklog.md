@@ -1546,3 +1546,56 @@ Stage Summary:
   1. agent-browser 可视化QA验证修复效果
   2. 内容版本历史集成到现有AI操作流程
   3. 拆分 copywriting-output.tsx 为多个子组件
+---
+Task ID: 14
+Agent: Main Developer
+Task: 小红书个人号AI辅助模式 - 新增个人用户对接引导
+
+Work Log:
+- 读取 worklog.md 了解前13轮开发成果
+- 分析现有 platform-account-panel.tsx 架构（WeChat已有个人模式+创作者模式）
+- 在 PlatformSection 组件中新增 xhsMode 状态支持
+
+### 新增功能
+
+1. **XiaohongshuPersonalGuide 组件**（~360行）：
+   - 红色渐变头部（from-red-500 to-rose-600），BookOpen图标
+   - 信息说明：个人小红书账号无法直接使用官方API（open.xiaohongshu.com面向企业/品牌），推荐AI辅助工作流
+   - 4步操作引导动画卡片：
+     - Step1: AI生成笔记内容（rose→red渐变）
+     - Step2: 一键复制内容（red→orange渐变）
+     - Step3: AI生成封面图（orange→amber渐变）
+     - Step4: 手动发布到小红书APP（amber→yellow渐变）
+   - 快速复制最近小红书笔记文案（按platform="xiaohongshu"筛选）
+   - 小红书爆款笔记技巧（2×2网格）：封面是灵魂/标签要精准/标题决定点击/种草语气
+   - 进阶方案折叠区域：小红书开放平台/Mediago新榜/浏览器Cookie方式 + Cookie提取教程
+
+2. **小红书模式切换**：
+   - 平台区域新增"个人号"/"创作者/企业"模式切换按钮
+   - 个人模式：显示AI辅助引导（XiaohongshuPersonalGuide）
+   - 创作者模式：显示API连接表单（原有功能）
+   - 微信也增加了对应的"个人朋友圈"/"微信公众号"模式切换按钮
+
+3. **平台头部状态更新**：
+   - 小红书个人模式显示"个人号 · AI辅助发布"+ AiAssistBadge
+   - 小红书创作者模式显示"创作者 · 配置API以启用平台功能"
+
+### 修改文件
+- `src/components/platform-account-panel.tsx` - 新增XiaohongshuPersonalGuide组件 + xhsMode状态 + 模式切换按钮
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ dev server编译成功
+- ✅ 所有API路由正常返回200
+
+### 关于小红书个人号对接的说明
+作为普通个人用户，小红书**没有提供**面向个人的公开API，无法实现自动发布。推荐使用AI辅助工作流：
+1. AI生成笔记内容（标题+正文+话题标签）
+2. AI生成封面图
+3. 一键复制内容
+4. 打开小红书APP手动发布
+
+Stage Summary:
+- 项目状态：稳定可运行，小红书个人号AI辅助模式完整
+- 本轮修改 1 个文件，新增 1 个组件
+- 核心能力：小红书个人号/创作者模式切换，4步操作引导，爆款技巧提示，快速复制文案

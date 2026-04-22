@@ -61,6 +61,14 @@ import {
   Check,
   Sparkles,
   AlertOctagon,
+  Camera,
+  Hash,
+  Star,
+  Heart,
+  TrendingUp,
+  ImagePlus,
+  Clock3,
+  Flame,
 } from "lucide-react";
 
 const containerVariants = {
@@ -465,6 +473,367 @@ function WechatPersonalGuide() {
   );
 }
 
+// 小红书个人号引导卡片组件
+function XiaohongshuPersonalGuide() {
+  // 最近AI文案相关状态
+  const [recentPosts, setRecentPosts] = useState<Array<{ id: string; topic: string; content: string; scheduledDate: string }>>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [showRecentPosts, setShowRecentPosts] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // 获取最近的已优化帖子
+  const fetchRecentPosts = useCallback(async () => {
+    setLoadingPosts(true);
+    setShowRecentPosts(true);
+    try {
+      const res = await fetch("/api/content");
+      if (res.ok) {
+        const data = await res.json();
+        // 筛选小红书已优化的帖子
+        const optimized = data
+          .filter((p: any) => p.platform === "xiaohongshu" && (p.status === "optimized" || p.status === "generated"))
+          .sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+          .slice(0, 5);
+        setRecentPosts(optimized);
+      }
+    } catch (error) {
+      console.error("获取最近文案失败:", error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  }, []);
+
+  // 复制文案到剪贴板
+  const copyContent = async (id: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      const textArea = document.createElement("textarea");
+      textArea.value = content;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* 友好引导卡片 */}
+      <div className="rounded-xl border border-red-200 dark:border-red-800/40 overflow-hidden">
+        {/* 引导卡片头部 */}
+        <div className="bg-gradient-to-r from-red-500 to-rose-600 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <BookOpen className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h4 className="text-white font-semibold text-sm">小红书个人号使用指南</h4>
+              <p className="text-white/70 text-[10px]">AI辅助模式 · 无需API连接</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {/* 说明文字 */}
+          <div className="rounded-lg p-3 bg-red-50 dark:bg-red-950/20">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                小红书个人号<strong className="text-foreground">无法直接使用官方API</strong>（open.xiaohongshu.com 仅面向企业/品牌开放）。
+                推荐使用安全的<strong className="text-foreground">「AI生成 → 一键复制 → 手动发布」</strong>工作流。
+              </p>
+            </div>
+          </div>
+
+          {/* 四步操作引导 */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+              操作流程
+            </p>
+            <div className="space-y-2.5">
+              {[
+                {
+                  step: 1,
+                  title: "AI生成笔记内容",
+                  desc: "在内容日历中选择日期，使用AI生成小红书风格的笔记（含标题+正文+话题标签）",
+                  gradient: "from-rose-500 to-red-500",
+                },
+                {
+                  step: 2,
+                  title: "一键复制内容",
+                  desc: "点击文案卡片上的「复制」按钮，将标题和正文复制到剪贴板",
+                  gradient: "from-red-500 to-orange-500",
+                },
+                {
+                  step: 3,
+                  title: "AI生成封面图",
+                  desc: "使用封面图生成器，为笔记生成精美封面图并保存到手机",
+                  gradient: "from-orange-500 to-amber-500",
+                },
+                {
+                  step: 4,
+                  title: "手动发布到小红书",
+                  desc: "打开小红书APP → 点击底部「+」号 → 选择图文 → 粘贴标题和正文 → 添加封面 → 发布",
+                  gradient: "from-amber-500 to-yellow-500",
+                },
+              ].map((item, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1, duration: 0.3 }}
+                  className="flex gap-3"
+                >
+                  <div className={`flex-shrink-0 h-7 w-7 rounded-full bg-gradient-to-br ${item.gradient} flex items-center justify-center text-white text-[11px] font-bold shadow-sm`}>
+                    {item.step}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground">{item.title}</p>
+                    <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5">{item.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* 快速复制最近的小红书笔记文案 */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <Copy className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+              快速复制小红书文案
+            </p>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full h-9 text-xs border-red-200 dark:border-red-800/40 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+              onClick={fetchRecentPosts}
+              disabled={loadingPosts}
+            >
+              {loadingPosts ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                  正在获取最近笔记...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3 w-3 mr-1.5 text-red-600 dark:text-red-400" />
+                  加载最近的小红书笔记文案
+                </>
+              )}
+            </Button>
+
+            {/* 最近文案列表 */}
+            <AnimatePresence>
+              {showRecentPosts && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  {recentPosts.length > 0 ? (
+                    <ScrollArea className="max-h-60">
+                      <div className="space-y-2 pt-1">
+                        {recentPosts.map((post, idx) => (
+                          <motion.div
+                            key={post.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.06 }}
+                            className="rounded-lg border border-border/60 p-3 bg-background hover:bg-accent/30 transition-colors group"
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                              <p className="text-xs font-medium text-foreground truncate flex-1">{post.topic}</p>
+                              <Badge variant="outline" className="text-[9px] flex-shrink-0">
+                                {post.scheduledDate ? new Date(post.scheduledDate).toLocaleDateString("zh-CN", { month: "short", day: "numeric" }) : ""}
+                              </Badge>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-3 mb-2">
+                              {post.content}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] text-muted-foreground">
+                                {post.content.length} 字
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 text-[10px] px-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                onClick={() => copyContent(post.id, post.content)}
+                              >
+                                {copiedId === post.id ? (
+                                  <>
+                                    <Check className="h-3 w-3 mr-0.5" />
+                                    已复制
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3 w-3 mr-0.5" />
+                                    复制
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    !loadingPosts && (
+                      <div className="rounded-lg border border-dashed p-4 text-center">
+                        <FileText className="h-6 w-6 text-muted-foreground/40 mx-auto mb-1.5" />
+                        <p className="text-[11px] text-muted-foreground">暂无小红书笔记文案</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">请先切换到小红书平台模式，使用AI生成内容</p>
+                      </div>
+                    )
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <Separator />
+
+          {/* 小红书爆款笔记技巧 */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <Flame className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+              小红书爆款笔记技巧
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg border border-border/60 p-3 bg-background">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Camera className="h-3.5 w-3.5 text-red-500" />
+                  <span className="text-[11px] font-semibold text-foreground">封面是灵魂</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">小红书80%的流量来自封面，使用AI封面图生成器制作吸睛封面</p>
+              </div>
+              <div className="rounded-lg border border-border/60 p-3 bg-background">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Hash className="h-3.5 w-3.5 text-orange-500" />
+                  <span className="text-[11px] font-semibold text-foreground">标签要精准</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">添加3-5个话题标签，混合热门标签(#好物推荐)和精准标签(#XX测评)</p>
+              </div>
+              <div className="rounded-lg border border-border/60 p-3 bg-background">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Star className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="text-[11px] font-semibold text-foreground">标题决定点击</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">15-25字标题最佳，善用数字、悬念和情绪词吸引点击</p>
+              </div>
+              <div className="rounded-lg border border-border/60 p-3 bg-background">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Heart className="h-3.5 w-3.5 text-rose-500" />
+                  <span className="text-[11px] font-semibold text-foreground">种草语气</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">第一人称分享体验感，用「真的」「绝了」「按头安利」增加真实感</p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* 进阶方案折叠区域 */}
+          <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors py-1 group">
+                <span className="flex items-center gap-1.5">
+                  <Zap className="h-3 w-3 text-amber-500" />
+                  <span className="font-medium">进阶方案：API对接（需要开发者权限）</span>
+                </span>
+                <motion.div
+                  animate={{ rotate: showAdvanced ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </motion.div>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="pt-3 space-y-3"
+              >
+                {/* 风险警告 */}
+                <Alert variant="destructive" className="py-2 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40">
+                  <AlertOctagon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
+                    ⚠️ 使用非官方API存在<strong>违反小红书服务协议</strong>的风险，可能导致账号被封禁或限流。请谨慎评估后使用。
+                  </AlertDescription>
+                </Alert>
+
+                {/* 工具列表 */}
+                <div className="space-y-2.5">
+                  <div className="rounded-lg border border-border/60 p-3 bg-background">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-xs font-semibold text-foreground">小红书开放平台</span>
+                      <Badge variant="outline" className="text-[9px] text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40">
+                        官方
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      访问 open.xiaohongshu.com 申请开发者权限，获取官方API。需要企业资质或创作者认证。
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-border/60 p-3 bg-background">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-xs font-semibold text-foreground">Mediago / 新榜</span>
+                      <Badge variant="outline" className="text-[9px] text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/40">
+                        第三方
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      第三方数据分析工具，提供笔记数据监控、竞品分析、KOL合作等功能。
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-border/60 p-3 bg-background">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-xs font-semibold text-foreground">浏览器Cookie方式</span>
+                      <Badge variant="outline" className="text-[9px] text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-800/40">
+                        技术方案
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      从浏览器F12开发者工具中复制Cookie，可以读取公开数据。Cookie会过期，需要定期更新。
+                    </p>
+                  </div>
+                </div>
+
+                {/* 使用说明 */}
+                <div className="rounded-lg p-3 bg-muted/50">
+                  <p className="text-[11px] font-medium text-foreground mb-1.5">如何对接本系统？</p>
+                  <ol className="text-[10px] text-muted-foreground leading-relaxed space-y-1 list-decimal list-inside">
+                    <li>在浏览器中登录小红书网页版 (xiaohongshu.com)</li>
+                    <li>按F12打开开发者工具 → Application → Cookies</li>
+                    <li>复制 a1 和 web_session 的值</li>
+                    <li>在上方「Cookie」标签页中粘贴并连接</li>
+                  </ol>
+                </div>
+              </motion.div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 平台区域组件
 function PlatformSection({
   platform,
@@ -491,6 +860,9 @@ function PlatformSection({
 
   // 微信账号类型状态：personal(个人朋友圈) | official(微信公众号)
   const [wechatMode, setWechatMode] = useState<"personal" | "official">("personal");
+
+  // 小红书账号类型状态：personal(个人号) | creator(创作者/企业)
+  const [xhsMode, setXhsMode] = useState<"personal" | "creator">("personal");
 
   const [formData, setFormData] = useState<ConnectFormData>({
     platform,
@@ -613,16 +985,18 @@ function PlatformSection({
             <p className="text-white/70 text-[10px] mt-0.5">
               {isWechat && wechatMode === "personal"
                 ? "个人朋友圈 · AI辅助发布"
+                : !isWechat && xhsMode === "personal"
+                ? "个人号 · AI辅助发布"
                 : isConnected
                 ? "已连接 · 可以发布内容和管理数据"
                 : isWechat
                 ? "公众号 · 配置API以启用平台功能"
-                : "未连接 · 配置账号以启用平台功能"}
+                : "创作者 · 配置API以启用平台功能"}
             </p>
           </div>
         </div>
         {/* 状态指示 */}
-        {isWechat && wechatMode === "personal" ? (
+        {(isWechat && wechatMode === "personal") || (!isWechat && xhsMode === "personal") ? (
           <AiAssistBadge />
         ) : account ? (
           <StatusBadge status={account.status} />
@@ -630,17 +1004,73 @@ function PlatformSection({
       </div>
 
       <div className="p-5">
+        {/* 微信模式切换 */}
+        {isWechat && (
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setWechatMode("personal")}
+              className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-medium transition-all ${
+                wechatMode === "personal"
+                  ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              个人朋友圈
+            </button>
+            <button
+              onClick={() => setWechatMode("official")}
+              className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-medium transition-all ${
+                wechatMode === "official"
+                  ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
+            >
+              <Megaphone className="h-3.5 w-3.5" />
+              微信公众号
+            </button>
+          </div>
+        )}
+
+        {/* 小红书模式切换 */}
+        {!isWechat && (
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setXhsMode("personal")}
+              className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-medium transition-all ${
+                xhsMode === "personal"
+                  ? "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              个人号
+            </button>
+            <button
+              onClick={() => setXhsMode("creator")}
+              className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-medium transition-all ${
+                xhsMode === "creator"
+                  ? "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
+            >
+              <Megaphone className="h-3.5 w-3.5" />
+              创作者/企业
+            </button>
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
-          {/* 微信个人朋友圈模式 — 始终显示引导卡片 */}
-          {isWechat && wechatMode === "personal" ? (
+          {/* 个人模式 — 始终显示引导卡片 */}
+          {(isWechat && wechatMode === "personal") || (!isWechat && xhsMode === "personal") ? (
             <motion.div
-              key="wechat-personal"
+              key={isWechat ? "wechat-personal" : "xhs-personal"}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <WechatPersonalGuide />
+              {isWechat ? <WechatPersonalGuide /> : <XiaohongshuPersonalGuide />}
             </motion.div>
           ) : isConnected ? (
             /* === 已连接账号信息 === */
@@ -1122,6 +1552,85 @@ function PlatformSection({
                   </div>
                   <p className={`text-[10px] leading-relaxed ${wechatMode === "official" ? "text-green-600/80 dark:text-green-400/80" : "text-muted-foreground"}`}>
                     官方API接入，AppID/AppSecret认证
+                  </p>
+                </motion.button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 小红书账号类型切换器 */}
+        {!isWechat && (
+          <>
+            <Separator className="my-4" />
+
+            {/* 账号类型切换选择器 */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-foreground">账号类型</p>
+              <div className="grid grid-cols-2 gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setXhsMode("personal")}
+                  className={`relative rounded-lg border-2 p-3 text-left transition-all duration-200 ${
+                    xhsMode === "personal"
+                      ? "border-red-500 bg-red-50 dark:bg-red-950/20 shadow-sm"
+                      : "border-border hover:border-red-300 dark:hover:border-red-700 bg-background"
+                  }`}
+                >
+                  {/* 选中指示 */}
+                  {xhsMode === "personal" && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute top-1.5 right-1.5"
+                    >
+                      <CheckCircle2 className="h-4 w-4 text-red-500" />
+                    </motion.div>
+                  )}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className={`h-7 w-7 rounded-lg ${xhsMode === "personal" ? "bg-red-100 dark:bg-red-900/30" : "bg-muted"} flex items-center justify-center`}>
+                      <Smartphone className={`h-3.5 w-3.5 ${xhsMode === "personal" ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`} />
+                    </div>
+                    <span className={`text-xs font-semibold ${xhsMode === "personal" ? "text-red-700 dark:text-red-300" : "text-foreground"}`}>
+                      📕 个人号
+                    </span>
+                  </div>
+                  <p className={`text-[10px] leading-relaxed ${xhsMode === "personal" ? "text-red-600/80 dark:text-red-400/80" : "text-muted-foreground"}`}>
+                    AI辅助模式，复制粘贴工作流，安全无风险
+                  </p>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setXhsMode("creator")}
+                  className={`relative rounded-lg border-2 p-3 text-left transition-all duration-200 ${
+                    xhsMode === "creator"
+                      ? "border-red-500 bg-red-50 dark:bg-red-950/20 shadow-sm"
+                      : "border-border hover:border-red-300 dark:hover:border-red-700 bg-background"
+                  }`}
+                >
+                  {/* 选中指示 */}
+                  {xhsMode === "creator" && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute top-1.5 right-1.5"
+                    >
+                      <CheckCircle2 className="h-4 w-4 text-red-500" />
+                    </motion.div>
+                  )}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className={`h-7 w-7 rounded-lg ${xhsMode === "creator" ? "bg-red-100 dark:bg-red-900/30" : "bg-muted"} flex items-center justify-center`}>
+                      <Megaphone className={`h-3.5 w-3.5 ${xhsMode === "creator" ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`} />
+                    </div>
+                    <span className={`text-xs font-semibold ${xhsMode === "creator" ? "text-red-700 dark:text-red-300" : "text-foreground"}`}>
+                      🔴 创作者/企业
+                    </span>
+                  </div>
+                  <p className={`text-[10px] leading-relaxed ${xhsMode === "creator" ? "text-red-600/80 dark:text-red-400/80" : "text-muted-foreground"}`}>
+                    API对接，自动发布笔记和数据管理
                   </p>
                 </motion.button>
               </div>
