@@ -2,10 +2,145 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAIClient } from '@/lib/ai-client';
 import { db } from '@/lib/db';
 
+// ── Content Rewrite Modes ───────────────────────────────────────────────────
+
+const STYLE_PRESET_PROMPTS: Record<string, string> = {
+  professional: '专业正式：使用严谨的书面语，避免口语化表达，用词精准，逻辑清晰。适合职场、行业分享类内容。',
+  humorous: '轻松幽默：使用网络流行语和俏皮表达，适当加入梗和段子，让读者会心一笑。保持轻松愉快的氛围。',
+  emotional: '温情走心：用温暖细腻的语言表达情感，注重画面感和故事性。让读者产生共鸣和感动。',
+  sharp: '犀利毒舌：使用犀利尖锐的表达，有态度有观点，敢于说真话。适当使用反讽和对比手法，语言简洁有力。',
+};
+
+const EXPAND_MODE_PROMPTS: Record<string, string> = {
+  details: '补充细节：在原文基础上，补充具体的数据、场景描述、时间地点等细节信息，让内容更加丰富具体。',
+  examples: '增加案例：在原文基础上，增加1-2个真实案例或故事来支撑观点，让内容更有说服力。',
+  deepen: '深化观点：在原文基础上，深入分析背后的原因、影响和趋势，提出更深层次的思考和洞察。',
+};
+
+const CONDENSE_MODE_PROMPTS: Record<string, string> = {
+  essential: '精简提炼：保留核心信息和关键观点，去除冗余修饰和重复内容，使表达更加精炼清晰。',
+  oneline: '一句话总结：将所有内容压缩为一句精炼的话，不超过30字，要包含最核心的信息。',
+};
+
+interface RewriteParams {
+  mode: 'style_rewrite' | 'expand' | 'condense';
+  content: string;
+  platform: string;
+  persona?: Record<string, string> | null;
+  stylePreset?: string;
+  expandMode?: string;
+  condenseMode?: string;
+}
+
+async function handleContentRewrite(params: RewriteParams): Promise<NextResponse> {
+  try {
+    const { mode, content, platform, persona, stylePreset, expandMode, condenseMode } = params;
+    const isXHS = platform === 'xiaohongshu';
+
+    if (!content || content.trim().length === 0) {
+      return NextResponse.json({ error: 'Content is empty' }, { status: 400 });
+    }
+
+    const ai = await createAIClient();
+
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    const platformHint = isXHS
+      ? '这是小红书平台的内容，保持小红书风格（适当emoji、话题标签等）。'
+      : '这是朋友圈的内容，保持朋友圈的自然亲切风格。';
+
+    const personaHint = persona ? `\n人设参考：${persona.name}，${persona.title || ''}，风格偏好：${persona.style || '均衡'}。` : '';
+
+    if (mode === 'style_rewrite') {
+      const presetPrompt = STYLE_PRESET_PROMPTS[stylePreset || 'professional'] || STYLE_PRESET_PROMPTS.professional;
+      systemPrompt = `你是一位资深的文案风格改写专家。${platformHint}${personaHint}
+
+你的任务是将用户提供的文案改写为指定风格。
+
+改写要求：
+1. 完全保留原文的核心含义和信息
+2. 严格按照指定风格进行改写
+3. 不要增加或删除原文的核心观点
+4. 改写后的内容要自然流畅
+
+风格要求：${presetPrompt}
+
+请直接输出改写后的文案，不需要任何解释或标注。`;
+
+      userPrompt = `请将以下文案改写：
+
+原文：
+${content}`;
+
+    } else if (mode === 'expand') {
+      const modePrompt = EXPAND_MODE_PROMPTS[expandMode || 'details'] || EXPAND_MODE_PROMPTS.details;
+      systemPrompt = `你是一位资深的内容扩写专家。${platformHint}${personaHint}
+
+你的任务是将用户提供的短内容扩写为更丰富、更完整的文案。
+
+扩写要求：
+1. 保留原文的核心信息和观点
+2. ${modePrompt}
+3. 扩写后的内容要自然连贯，不能有拼凑感
+4. ${isXHS ? '扩写后控制在400-600字。' : '扩写后控制在200-400字。'}
+
+请直接输出扩写后的文案，不需要任何解释或标注。`;
+
+      userPrompt = `请将以下文案扩写：
+
+原文（${content.length}字）：
+${content}`;
+
+    } else if (mode === 'condense') {
+      const modePrompt = CONDENSE_MODE_PROMPTS[condenseMode || 'essential'] || CONDENSE_MODE_PROMPTS.essential;
+      systemPrompt = `你是一位资深的内容提炼专家。${platformHint}${personaHint}
+
+你的任务是将用户提供的较长文案压缩为更精炼的版本。
+
+缩写要求：
+1. 保留原文最核心的信息和观点
+2. ${modePrompt}
+3. 缩写后的内容要仍然完整可读
+4. 不要丢失关键信息
+
+请直接输出缩写后的文案，不需要任何解释或标注。`;
+
+      userPrompt = `请将以下文案缩写：
+
+原文（${content.length}字）：
+${content}`;
+    }
+
+    const result = await ai.chatCompletion([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ]);
+
+    return NextResponse.json({
+      content: result,
+      mode,
+      originalLength: content.length,
+      resultLength: result.length,
+      model: ai.config?.name || ai.config?.provider || 'default',
+    });
+  } catch (error) {
+    console.error('Content rewrite error:', error);
+    return NextResponse.json({ error: 'Failed to rewrite content', details: String(error) }, { status: 500 });
+  }
+}
+
+// ── Main POST Handler ───────────────────────────────────────────────────────
+
 export async function POST(request: NextRequest) {
   try {
-    const { type, persona, knowledgeItems, material, topic, tone, style, existingContent, platform = 'wechat', postId } = await request.json();
+    const { type, mode, persona, knowledgeItems, material, topic, tone, style, existingContent, platform = 'wechat', postId, stylePreset, expandMode, condenseMode } = await request.json();
     const isXHS = platform === 'xiaohongshu';
+
+    // ── New mode handling: style_rewrite, expand, condense ─────
+    if (mode === 'style_rewrite' || mode === 'expand' || mode === 'condense') {
+      return handleContentRewrite({ mode, content: existingContent, platform, persona, stylePreset, expandMode, condenseMode });
+    }
     
     const ai = await createAIClient();
     
@@ -149,6 +284,10 @@ ${knowledgeContext}
 
 请直接输出润色后的文案，不需要额外解释。`;
       }
+
+    // ── Fallback for unsupported type ────────────────────────────
+    } else {
+      return NextResponse.json({ error: 'Unsupported type', details: `Type "${type}" is not supported` }, { status: 400 });
     }
 
     const generatedContent = await ai.chatCompletion([

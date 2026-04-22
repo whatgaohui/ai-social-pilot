@@ -3093,3 +3093,262 @@ textarea {
   from { opacity: 0; transform: translateY(4px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ====== Micro-Interaction Animation Enhancements ====== */
+
+/* 1. .shimmer-border — Animated gradient border effect */
+.shimmer-border {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.shimmer-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    #8b5cf6, #ec4899, #f59e0b, #10b981, #8b5cf6, #ec4899
+  );
+  background-size: 300% 300%;
+  animation: shimmer-border-rotate 3s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.dark .shimmer-border::before {
+  background: linear-gradient(
+    135deg,
+    #7c3aed, #db2777, #d97706, #059669, #7c3aed, #db2777
+  );
+  background-size: 300% 300%;
+  animation: shimmer-border-rotate 3s linear infinite;
+}
+@keyframes shimmer-border-rotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 2. .glass-card — already defined in Round 15 above, kept for reference */
+/* See .glass-card definition at line ~776 */
+
+/* 3. .pulse-soft — Soft pulse for attention-grabbing elements */
+.pulse-soft {
+  animation: pulse-soft-keyframe 2.5s ease-in-out infinite;
+}
+@keyframes pulse-soft-keyframe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.05); }
+}
+
+/* 4. .float-subtle — Subtle floating animation (2s, small Y) */
+.float-subtle {
+  animation: float-subtle-keyframe 2s ease-in-out infinite;
+}
+@keyframes float-subtle-keyframe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* 5. .slide-in-stagger-1 through .slide-in-stagger-4 */
+.slide-in-stagger-1 {
+  opacity: 0;
+  animation: slide-in-stagger 0.4s ease-out 0s forwards;
+}
+.slide-in-stagger-2 {
+  opacity: 0;
+  animation: slide-in-stagger 0.4s ease-out 0.08s forwards;
+}
+.slide-in-stagger-3 {
+  opacity: 0;
+  animation: slide-in-stagger 0.4s ease-out 0.16s forwards;
+}
+.slide-in-stagger-4 {
+  opacity: 0;
+  animation: slide-in-stagger 0.4s ease-out 0.24s forwards;
+}
+@keyframes slide-in-stagger {
+  0% { opacity: 0; transform: translateY(16px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 6. .scale-in-bounce — Scale in with bounce */
+.scale-in-bounce {
+  animation: scale-in-bounce-keyframe 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes scale-in-bounce-keyframe {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 7. .gradient-border-animated — Animated gradient border via background-clip */
+.gradient-border-animated {
+  position: relative;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899, #f59e0b, #10b981) border-box;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+}
+.gradient-border-animated::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899, #f59e0b, #10b981, #8b5cf6);
+  background-size: 400% 400%;
+  animation: gradient-border-animate-rotate 4s ease infinite;
+  z-index: -1;
+}
+.dark .gradient-border-animated::before {
+  background: linear-gradient(135deg, #7c3aed, #db2777, #d97706, #059669, #7c3aed);
+  background-size: 400% 400%;
+}
+@keyframes gradient-border-animate-rotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 8. .text-shimmer — Text shimmer/loading effect */
+.text-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--foreground) 0%,
+    rgba(139, 92, 246, 0.6) 25%,
+    rgba(236, 72, 153, 0.4) 50%,
+    rgba(139, 92, 246, 0.6) 75%,
+    var(--foreground) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: text-shimmer-move 2s linear infinite;
+}
+@keyframes text-shimmer-move {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* 9. .ripple-effect — Material Design ripple on click */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  left: var(--ripple-x, 50%);
+  top: var(--ripple-y, 50%);
+  width: var(--ripple-size, 0px);
+  height: var(--ripple-size, 0px);
+  margin-left: calc(var(--ripple-size, 0px) / -2);
+  margin-top: calc(var(--ripple-size, 0px) / -2);
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.2);
+  transform: scale(0);
+  opacity: 1;
+  pointer-events: none;
+  transition: none;
+}
+.ripple-effect.ripple-active::after {
+  animation: ripple-effect-expand 0.6s ease-out forwards;
+}
+@keyframes ripple-effect-expand {
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* 10. .hover-lift — already defined in Round 15 above */
+/* See .hover-lift definition at line ~805 */
+
+/* 11. .spotlight-glow — Mouse-following glow via CSS custom properties */
+.spotlight-glow {
+  position: relative;
+  overflow: hidden;
+}
+.spotlight-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    600px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+    rgba(139, 92, 246, 0.06),
+    transparent 40%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.spotlight-glow:hover::before {
+  opacity: 1;
+}
+.dark .spotlight-glow::before {
+  background: radial-gradient(
+    600px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+    rgba(139, 92, 246, 0.1),
+    transparent 40%
+  );
+}
+
+/* 12. .typing-indicator — Three-dot typing indicator */
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.typing-indicator span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+  animation: typing-indicator-bounce 1.4s ease-in-out infinite;
+}
+.typing-indicator span:nth-child(1) { animation-delay: 0s; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-indicator-bounce {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-5px); }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-border::before,
+  .pulse-soft,
+  .float-subtle,
+  .slide-in-stagger-1,
+  .slide-in-stagger-2,
+  .slide-in-stagger-3,
+  .slide-in-stagger-4,
+  .scale-in-bounce,
+  .gradient-border-animated::before,
+  .text-shimmer,
+  .typing-indicator span {
+    animation: none !important;
+  }
+  .pulse-soft {
+    opacity: 1;
+    transform: none;
+  }
+  .float-subtle {
+    transform: none;
+  }
+  .slide-in-stagger-1,
+  .slide-in-stagger-2,
+  .slide-in-stagger-3,
+  .slide-in-stagger-4 {
+    opacity: 1;
+    transform: none;
+  }
+  .scale-in-bounce {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

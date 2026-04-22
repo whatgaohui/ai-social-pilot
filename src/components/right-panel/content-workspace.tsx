@@ -47,6 +47,9 @@ import { WorkspaceQuickBar } from "@/components/right-panel/workspace-quick-bar"
 import { WorkspaceEmptyState } from "@/components/right-panel/workspace-empty-state";
 import { WordCountIndicator } from "@/components/right-panel/word-count-indicator";
 import { AISchedulingAssistant } from "@/components/right-panel/ai-scheduling-assistant";
+import { AIContentRewriter } from "@/components/right-panel/ai-content-rewriter";
+import { EmojiPicker } from "@/components/right-panel/emoji-picker";
+import { PublishChecklist } from "@/components/right-panel/publish-checklist";
 
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
@@ -317,6 +320,16 @@ export function ContentWorkspace() {
                 >
                   <ContentEditor post={selectedPost} isXHS={isXHS} onScoreBadgeClick={handleScoreBadgeClick} />
 
+                  {/* ── Quick Emoji Picker Row ─────────────────────────── */}
+                  <div className="flex items-center gap-1">
+                    <EmojiPicker
+                      onSelect={(emoji) => {
+                        toast.success("表情已复制", { duration: 800, description: emoji });
+                      }}
+                    />
+                    <span className="text-[10px] text-muted-foreground ml-1">点击选择表情</span>
+                  </div>
+
                   {/* ── Template Quick Start (shown when content is empty) ── */}
                   <AnimatePresence>
                     {!selectedPost.content && (
@@ -469,6 +482,7 @@ export function ContentWorkspace() {
                     className="space-y-3"
                   >
                     {isXHS && <TitleABTest post={selectedPost} />}
+                    <AIContentRewriter post={selectedPost} />
                     <div ref={qualityScorerRef}>
                       <QualityScorer post={selectedPost} />
                     </div>
@@ -499,6 +513,7 @@ export function ContentWorkspace() {
                     exit="exit"
                     className="space-y-3"
                   >
+                    <PublishChecklist post={selectedPost} />
                     <PublishingAssistant
                       post={selectedPost}
                       onPlatformConnect={handlePlatformConnect}

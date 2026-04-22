@@ -79,7 +79,7 @@ function AnimatedIllustration() {
 
       {/* Main document icon */}
       <motion.div
-        className="relative"
+        className="relative float-subtle"
         animate={{ y: [0, -6, 0] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
@@ -160,6 +160,7 @@ interface QuickCardProps {
   shadowColor: string;
   onClick: () => void;
   delay: number;
+  extraClass?: string;
 }
 
 function QuickCard({
@@ -170,6 +171,7 @@ function QuickCard({
   shadowColor,
   onClick,
   delay,
+  extraClass,
 }: QuickCardProps) {
   return (
     <motion.button
@@ -183,7 +185,7 @@ function QuickCard({
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="flex items-center gap-3 p-3.5 rounded-xl bg-background border border-border/60 hover:border-border transition-colors cursor-pointer text-left group w-full"
+      className={`flex items-center gap-3 p-3.5 rounded-xl bg-background border border-border/60 hover:border-border transition-colors cursor-pointer text-left group w-full ${extraClass || ''}`}
     >
       <div
         className={`flex-shrink-0 h-10 w-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-sm group-hover:shadow-md ${shadowColor} transition-shadow duration-200`}
@@ -221,6 +223,7 @@ export function WorkspaceEmptyState() {
         toast.info("请在左侧日历中选择或创建内容");
       },
       delay: 0.3,
+      extraClass: "scale-in-bounce",
     },
     {
       icon: BarChart3,

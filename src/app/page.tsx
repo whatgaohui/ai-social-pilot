@@ -596,7 +596,7 @@ export default function Home() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Badge variant="outline" className="hidden md:inline-flex text-[10px] gap-1 px-1.5 py-0">
+            <Badge variant="outline" className="hidden md:inline-flex text-[10px] gap-1 px-1.5 py-0 pulse-soft">
               <Zap className="h-2.5 w-2.5 text-amber-500" />
               <span className="hidden lg:inline">AI驱动</span>
             </Badge>

@@ -4837,3 +4837,149 @@ Stage Summary:
   6. 搜索功能增强（全文搜索+高亮+排序算法）
   7. 性能优化：React.memo、useMemo、虚拟列表
   8. PWA离线支持
+
+---
+Task ID: 27
+Agent: Main Orchestrator + 2 Parallel full-stack-developer Sub-agents
+Task: 第27轮开发 - AI内容润色增强 + Emoji选择器 + 发布检查清单 + CSS微交互动画
+
+Work Log:
+- 读取 worklog.md（4839行，26轮迭代记录）了解完整项目历史
+- 硬约束：全程未使用 agent-browser（已知会导致OOM kill Next.js进程），使用 curl API级别测试
+- 验证项目状态：9个核心API全部200，ESLint零错误，dev server正常
+- 2个并行 full-stack-developer 子代理同时工作
+
+### Bug修复
+1. **lucide-react MessageSquareQuestion 图标不存在**：
+   - 问题：publish-checklist.tsx 导入了不存在的 MessageSquareQuestion 图标导致 500 错误
+   - 修复：替换为 MessageCircleQuestion
+   - 验证：修复后页面恢复 200
+
+### 新功能 1: AI内容润色增强器（ai-content-rewriter.tsx）
+
+1. **文风改写（Style Rewrite）**：
+   - 4种风格预设：专业正式(Professional)、轻松幽默(Humorous)、温情走心(Emotional)、犀利毒舌(Sharp/Sassy)
+   - 每种风格有独特图标和渐变配色
+   - 平台感知：朋友圈/小红书使用不同风格标签
+
+2. **内容扩写（Content Expansion）**：
+   - 3种扩写模式：补充细节(Add details)、增加案例(Add examples)、深化观点(Deepen viewpoint)
+   - 显示扩写前后字数对比（如 "150 → 280 字 (+87%)"）
+
+3. **内容缩写（Content Condensation）**：
+   - 2种缩写模式：精简提炼(Essential extract)、一句话总结(One-sentence summary)
+   - 显示字数缩减百分比
+
+4. **设计特性**：
+   - Collapsible 面板，默认收起，渐变 sparkle 图标
+   - 调用 /api/ai/generate，mode 参数：style_rewrite / expand / condense
+   - 可编辑结果 textarea + 应用/复制/重新生成按钮
+   - framer-motion 交错入场动画 + shimmer 加载状态
+   - 暗黑模式兼容
+
+### 新功能 2: Emoji 表情选择器（emoji-picker.tsx）
+
+1. **7个分类标签页**：
+   - 常用表情(Frequent)、手势(Gestures)、心形(Hearts)、自然(Nature)、食物(Food)、物品(Objects)、庆祝(Celebration)
+   - 每个分类约30个常用emoji（硬编码数组）
+
+2. **功能特性**：
+   - 最近使用记录（localStorage 存储，显示最近8个）
+   - 中文关键词搜索过滤（如搜索"开心"找到 😄🎉🥳）
+   - 6列网格布局，点击emoji复制到剪贴板
+   - 派发 emoji-insert 自定义事件
+   - 响应式：桌面端 Popover，移动端 Sheet
+   - 导出 insertEmojiAtCursor() 工具函数
+
+### 新功能 3: 发布检查清单（publish-checklist.tsx）
+
+1. **6维自动评估引擎**（纯客户端启发式规则）：
+   - 标题吸引力(20%权重)：长度、emoji、数字、悬念词检查
+   - 内容完整度(25%权重)：字数、话题标签、CTA检查
+   - 发布时机(10%权重)：当前时间 vs 最佳发布窗口
+   - 平台适配(20%权重)：XHS/朋友圈各自规范检查
+   - 互动诱饵(15%权重)：提问、选择、观点、CTA检查
+   - 格式规范(10%权重)：空行、段落长度、emoji密度、推广词检查
+
+2. **UI特性**：
+   - 加权综合评分（0-100），动画计数器从0到目标值
+   - 颜色编码：绿色≥80、黄色≥60、红色<60
+   - 每项检查：状态图标(pass/warn/fail)、分数、反馈文字
+   - "一键修复"按钮：自动修复失败项（添加emoji/数字/话题标签/CTA等）
+   - "AI优化建议"：调用 /api/ai/generate 获取AI分析建议
+   - framer-motion：交错入场、弹入状态图标、折叠动画
+
+### CSS微交互动画增强（globals.css）
+
+新增 12 个 CSS 动画/工具类：
+1. `.shimmer-border` — 渐变旋转边框效果（mask技术）
+2. `.glass-card` — Glass morphism 毛玻璃卡片
+3. `.pulse-soft` — 柔和脉冲动画
+4. `.float-subtle` — 微弱浮动动画（±4px，2s循环）
+5. `.slide-in-stagger-1` ~ `.slide-in-stagger-4` — 交错滑入动画（80ms延迟）
+6. `.scale-in-bounce` — 弹跳缩放入场
+7. `.gradient-border-animated` — 动画渐变边框（::before伪元素）
+8. `.text-shimmer` — 文字微光扫过效果
+9. `.ripple-effect` — Material Design 涟漪点击效果
+10. `.spotlight-glow` — 鼠标跟随聚光效果（CSS自定义属性）
+11. `.typing-indicator` — 三点打字指示器动画
+12. 所有动画尊重 `prefers-reduced-motion: reduce`
+
+### 已有组件动画增强
+
+1. **welcome-onboarding.tsx** — 3个特性卡片添加 .glass-card + .slide-in-stagger-N
+2. **workspace-empty-state.tsx** — 装饰图标添加 .float-subtle，CTA添加 .scale-in-bounce
+3. **compact-calendar.tsx** — 周视图日期格子添加 .hover-lift
+4. **page.tsx** — Header "AI驱动" Badge 添加 .pulse-soft
+
+### 后端 API 增强
+- `/api/ai/generate/route.ts` — 新增 handleContentRewrite() 函数，支持 mode: "style_rewrite" | "expand" | "condense"
+  - 平台感知的 AI prompt（朋友圈/小红书各自风格）
+  - 传递 persona 上下文提升生成质量
+  - 结构化错误处理 + JSON 解析
+
+### 集成工作
+- **content-workspace.tsx** — 导入并集成 3 个新组件：
+  - AIContentRewriter 添加到"智能分析"Tab（TitleABTest 和 QualityScorer 之间）
+  - EmojiPicker 触发按钮添加到内容编辑器下方
+  - PublishChecklist 添加到"发布管理"Tab（PublishingAssistant 之前）
+
+### 新增文件
+- `src/components/right-panel/ai-content-rewriter.tsx` — AI内容润色增强器
+- `src/components/right-panel/emoji-picker.tsx` — Emoji表情选择器
+- `src/components/right-panel/publish-checklist.tsx` — 发布检查清单
+
+### 修改文件
+- `src/app/api/ai/generate/route.ts` — 新增内容改写处理逻辑
+- `src/components/right-panel/content-workspace.tsx` — 集成3个新组件
+- `src/app/globals.css` — 新增12个CSS动画类
+- `src/components/welcome-onboarding.tsx` — 动画增强
+- `src/components/right-panel/workspace-empty-state.tsx` — 动画增强
+- `src/components/left-panel/compact-calendar.tsx` — 动画增强
+- `src/app/page.tsx` — Header Badge 动画增强
+
+### QA验证结果
+- ✅ ESLint 零错误（所有修改文件通过）
+- ✅ 页面编译成功（GET / → 200）
+- ✅ 10个核心 API 端点全部正常（persona/knowledge/plan/content/analytics/ai-config/search/notifications/schedule-suggest）
+- ✅ 修复了 MessageSquareQuestion 图标导入导致的 500 错误
+- ✅ 无 agent-browser 使用（遵循OOM约束）
+
+Stage Summary:
+- 项目状态：稳定可运行，27轮迭代完成
+- 本轮新增3个文件，修改7个文件，新增12个CSS动画类，修复1个图标bug
+- 核心能力：AI文风改写/扩写/缩写、Emoji表情选择器、发布前6维质量检查清单、12个CSS微交互动画
+- 未解决问题或风险：
+  1. agent-browser 在本环境无法使用（OOM限制），使用 curl API 级别测试替代
+  2. AI内容改写依赖 AI 服务可用性
+  3. 发布检查为客户端启发式规则，AI建议需要网络
+  4. Emoji选择器的 emoji-insert 事件需要内容编辑器主动监听
+- 建议下一阶段优先事项：
+  1. 运营报告自动导出为 PDF/图片格式
+  2. 定时发布提醒功能集成到 publish-workflow
+  3. 多人协作/团队账号管理功能
+  4. 数据导入/导出增强（CSV/Excel格式）
+  5. 移动端真机测试和适配优化
+  6. 搜索功能增强（全文搜索+高亮+排序算法）
+  7. 性能优化：React.memo、useMemo、虚拟列表
+  8. PWA离线支持

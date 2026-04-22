@@ -309,7 +309,7 @@ function WeekDayColumn({ day, dayIndex, posts, isSelected, isToday: today, platf
           : today
             ? "ring-1 ring-primary/40 bg-primary/10 border-primary/20"
             : posts.length > 0
-              ? "bg-card border-border hover:border-primary/30 hover:bg-muted/50"
+              ? "bg-card border-border hover:border-primary/30 hover:bg-muted/50 hover-lift"
               : "bg-muted/30 border-transparent hover:bg-muted/50"
         }
       `}
