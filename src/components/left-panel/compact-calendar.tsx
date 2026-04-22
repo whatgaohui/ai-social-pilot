@@ -88,6 +88,11 @@ import {
 import { CalendarHeatmap } from "@/components/left-panel/calendar-heatmap";
 import { CalendarQuickActions } from "@/components/left-panel/calendar-quick-actions";
 import { WeeklyMiniStats } from "@/components/left-panel/weekly-mini-stats";
+import {
+  ContentHoverPreview,
+  useContentHover,
+} from "@/components/left-panel/content-hover-preview";
+import { CalendarDndReorder } from "@/components/left-panel/calendar-dnd-reorder";
 
 // --- Color maps ---
 
@@ -913,6 +918,19 @@ export function CompactCalendar() {
   const [droppedDate, setDroppedDate] = useState<string | null>(null);
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // --- DnD Reorder mode (dnd-kit) ---
+  const [isDndReorderActive, setIsDndReorderActive] = useState(false);
+
+  // --- Content Hover Preview ---
+  const {
+    hoveredPost,
+    anchorRect,
+    containerRect,
+    handleMouseEnter,
+    handleMouseMove,
+    handleMouseLeave,
+  } = useContentHover();
+
   // --- Keyboard navigation for calendar ---
   useEffect(() => {
     function handleCalendarKeys(e: KeyboardEvent) {
@@ -1083,6 +1101,50 @@ export function CompactCalendar() {
   const handleTodayWeek = useCallback(() => { setWeekSlideDir(0); setWeekAnchor(startOfWeek(new Date(), { weekStartsOn: 1 })); }, []);
 
   const isDragMode = viewMode === "drag";
+
+  // --- Hover preview action handlers ---
+  const handlePreviewEdit = useCallback(
+    (post: ContentPost) => {
+      setSelectedDate(post.scheduledDate);
+      setSelectedPostId(post.id);
+    },
+    [setSelectedDate, setSelectedPostId],
+  );
+
+  const handlePreviewAnalytics = useCallback(
+    (post: ContentPost) => {
+      setSelectedDate(post.scheduledDate);
+      setSelectedPostId(post.id);
+      const { setRightPanelTab } = useAppStore.getState();
+      setRightPanelTab("data");
+      toast.info("已切换到数据分析面板");
+    },
+    [],
+  );
+
+  const handlePreviewCopy = useCallback(
+    (post: ContentPost) => {
+      const duplicated: ContentPost = {
+        ...post,
+        id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      addContentPost(duplicated);
+      toast.success("已复制", { description: post.topic });
+    },
+    [addContentPost],
+  );
+
+  // --- DnD reorder handler ---
+  const handleDndReorder = useCallback(
+    (updates: { id: string; scheduledDate: string; sortOrder: number }[]) => {
+      for (const u of updates) {
+        updateContentPost(u.id, { scheduledDate: u.scheduledDate });
+      }
+    },
+    [updateContentPost],
+  );
 
   const handleDayClick = useCallback(
     (dateStr: string) => {
@@ -1288,12 +1350,19 @@ export function CompactCalendar() {
         </div>
 
         <div className="flex items-center gap-1">
+          <CalendarDndReorder
+            groupedPosts={dragGroupedPosts}
+            isActive={isDndReorderActive}
+            onActivate={() => { setIsDndReorderActive(true); setViewMode('grid'); }}
+            onDeactivate={() => setIsDndReorderActive(false)}
+            onReorder={handleDndReorder}
+          />
           <div className="flex items-center bg-muted rounded-md p-0.5">
             <Button
               variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="sm"
               className="h-5 w-5 p-0"
-              onClick={() => setViewMode("grid")}
+              onClick={() => { setViewMode("grid"); setIsDndReorderActive(false); }}
             >
               <LayoutGrid className="h-3 w-3" />
             </Button>
@@ -1301,7 +1370,7 @@ export function CompactCalendar() {
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="sm"
               className="h-5 w-5 p-0"
-              onClick={() => setViewMode("list")}
+              onClick={() => { setViewMode("list"); setIsDndReorderActive(false); }}
             >
               <List className="h-3 w-3" />
             </Button>
@@ -1309,7 +1378,7 @@ export function CompactCalendar() {
               variant={viewMode === "week" ? "secondary" : "ghost"}
               size="sm"
               className="h-5 w-5 p-0"
-              onClick={() => setViewMode(viewMode === "week" ? "grid" : "week")}
+              onClick={() => { setViewMode(viewMode === "week" ? "grid" : "week"); setIsDndReorderActive(false); }}
               title="周视图"
             >
               <CalendarRange className="h-3 w-3" />
@@ -1318,7 +1387,7 @@ export function CompactCalendar() {
               variant={viewMode === "drag" ? "secondary" : "ghost"}
               size="sm"
               className={`h-5 w-5 p-0 ${viewMode === "drag" ? "text-violet-600 dark:text-violet-400" : ""}`}
-              onClick={() => setViewMode(viewMode === "drag" ? "grid" : "drag")}
+              onClick={() => { setViewMode(viewMode === "drag" ? "grid" : "drag"); setIsDndReorderActive(false); }}
               title="拖拽排序"
             >
               <ArrowUpDown className="h-3 w-3" />
@@ -1623,12 +1692,13 @@ export function CompactCalendar() {
                       const hasContent = posts && posts.length > 0;
                       const isOverThisCell = calDragState.isDragging && calDragState.overDate === dateStr;
                       const isFlashCell = droppedDate === dateStr;
+                      const isReorderActive = isDndReorderActive;
 
                       return (
                         <motion.button
                           key={dateStr}
                           variants={staggerChild}
-                          whileHover={hasContent && !calDragState.isDragging ? { scale: 1.05, transition: { type: "spring", stiffness: 400, damping: 20 } } : {}}
+                          whileHover={hasContent && !calDragState.isDragging && !isReorderActive ? { scale: 1.05, transition: { type: "spring", stiffness: 400, damping: 20 } } : {}}
                           whileTap={{ scale: 0.92 }}
                           onClick={() => handleDayClick(dateStr)}
                           onDoubleClick={() => handleGridDayDoubleClick(dateStr)}
@@ -1636,6 +1706,9 @@ export function CompactCalendar() {
                           onDragEnter={(e) => calDragHandlers.onDateDragEnter(e, dateStr)}
                           onDragLeave={(e) => calDragHandlers.onDateDragLeave(e, dateStr)}
                           onDrop={(e) => calDragHandlers.onDateDrop(e, dateStr)}
+                          onMouseEnter={hasContent && !isReorderActive && !calDragState.isDragging ? (e) => handleMouseEnter(e, primaryPost!) : undefined}
+                          onMouseMove={hasContent && !isReorderActive && !calDragState.isDragging ? (e) => handleMouseMove(e, primaryPost!) : undefined}
+                          onMouseLeave={hasContent ? handleMouseLeave : undefined}
                           className={`
                             relative h-8 w-full rounded flex flex-col items-center justify-center cursor-pointer
                             transition-all duration-150 overflow-hidden
@@ -2017,6 +2090,17 @@ export function CompactCalendar() {
         open={moveToDateOpen}
         onOpenChange={setMoveToDateOpen}
         post={movePost}
+      />
+
+      {/* ====== Content Hover Preview ====== */}
+      <ContentHoverPreview
+        post={hoveredPost}
+        anchorRect={anchorRect}
+        containerRect={containerRect}
+        visible={!!hoveredPost && !isDndReorderActive && !isDragMode}
+        onEdit={handlePreviewEdit}
+        onViewAnalytics={handlePreviewAnalytics}
+        onCopy={handlePreviewCopy}
       />
     </div>
   );

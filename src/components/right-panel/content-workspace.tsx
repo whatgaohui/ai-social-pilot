@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useSuccessToast, useErrorToast } from "@/hooks/use-toast-operations";
 import { useAutoSave, formatRelativeTime } from "@/hooks/use-auto-save";
 import { useAppStore } from "@/store/app-store";
 import type { PostStatus } from "@/types";
@@ -127,7 +128,7 @@ const InlineEngagementBar = React.memo(function InlineEngagementBar({ post, isXH
       if (res.ok) {
         const updated = await res.json();
         updateContentPost(post.id, updated);
-        toast.success("已生成模拟互动数据");
+        toast.success("已生成模拟互动数据", { description: "浏览量、点赞、评论、转发数据已更新" });
       }
     } finally {
       setSimulating(false);
@@ -525,9 +526,9 @@ export function ContentWorkspace() {
                                 a.click();
                                 document.body.removeChild(a);
                                 URL.revokeObjectURL(url);
-                                toast.success('CSV导出成功');
+                                toast.success('CSV导出成功', { description: '数据已下载到本地' });
                               }
-                            } catch { toast.error('导出失败'); }
+                            } catch { toast.error('导出失败', { description: '请检查网络后重试' }); }
                           }}
                           className="gap-2 text-xs cursor-pointer"
                         >
@@ -548,9 +549,9 @@ export function ContentWorkspace() {
                                 a.click();
                                 document.body.removeChild(a);
                                 URL.revokeObjectURL(url);
-                                toast.success('PNG报告已导出');
+                                toast.success('PNG报告已导出', { description: '运营报告图片已下载' });
                               }
-                            } catch { toast.error('导出失败'); }
+                            } catch { toast.error('导出失败', { description: '请检查网络后重试' }); }
                           }}
                           className="gap-2 text-xs cursor-pointer"
                         >
@@ -571,9 +572,9 @@ export function ContentWorkspace() {
                                 a.click();
                                 document.body.removeChild(a);
                                 URL.revokeObjectURL(url);
-                                toast.success('JSON导出成功');
+                                toast.success('JSON导出成功', { description: '完整数据已下载到本地' });
                               }
-                            } catch { toast.error('导出失败'); }
+                            } catch { toast.error('导出失败', { description: '请检查网络后重试' }); }
                           }}
                           className="gap-2 text-xs cursor-pointer"
                         >

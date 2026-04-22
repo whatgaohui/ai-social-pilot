@@ -63,6 +63,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/store/app-store";
 import { toast } from "sonner";
+import { useSuccessToast, useErrorToast, useInfoToast } from "@/hooks/use-toast-operations";
 import { PRESET_PROVIDERS } from "@/lib/ai-providers";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PersonaForm } from "@/components/left-panel/persona-form";
@@ -462,7 +463,7 @@ function DataManagementSection() {
         a.download = `ai-export-${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        toast.success("数据导出成功");
+        toast.success("数据导出成功", { description: "已导出为 JSON 格式" });
       } else {
         toast.error("导出失败");
       }
@@ -495,9 +496,9 @@ function DataManagementSection() {
         }
       }
       keysToRemove.forEach((key) => localStorage.removeItem(key));
-      toast.success(`已清除 ${keysToRemove.length} 项缓存数据`);
+      toast.success(`已清除 ${keysToRemove.length} 项缓存数据`, { description: "本地缓存已清理完成" });
     } catch {
-      toast.error("清除缓存失败");
+      toast.error("清除缓存失败", { description: "请稍后重试" });
     } finally {
       setClearing(false);
     }
@@ -846,7 +847,7 @@ function FullAISettings() {
         body: JSON.stringify(editingConfig),
       });
       if (res.ok) {
-        toast.success(editingConfig.id ? "配置已更新" : "配置已保存");
+        toast.success(editingConfig.id ? "配置已更新" : "配置已保存", { description: editingConfig.name });
         setEditingConfig(null);
         setSelectedPreset("");
         setShowForm(false);
@@ -931,7 +932,7 @@ function FullAISettings() {
         body: JSON.stringify({ ...config, isActive: true }),
       });
       if (res.ok) {
-        toast.success(`已切换到 ${config.name}`);
+        toast.success(`已切换到 ${config.name}`, { description: `${config.modelId} 已设为当前模型` });
         fetchConfigs();
       }
     } catch {

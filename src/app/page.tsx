@@ -38,6 +38,7 @@ import { NotificationPing } from "@/components/notification-ping";
 import { EnhancedNotificationBell } from "@/components/notification-center-enhanced";
 import { useSmartReminders } from "@/hooks/use-smart-reminders";
 import { useAchievements } from "@/components/achievement-toast";
+import { QuickStatsFloat } from "@/components/quick-stats-float";
 
 // ─── Notification Enhancement Hooks ──────────────────────────────────────
 function NotificationHooks() {
@@ -884,6 +885,9 @@ export default function Home() {
         connectedCount={connectedPlatforms}
         totalCount={2}
       />
+
+      {/* Floating Quick Stats Widget */}
+      <QuickStatsFloat />
 
       {/* AI Writing Assistant FAB */}
       <AIWritingAssistant />

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { ToastProvider } from "@/components/toast-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 const geistSans = Geist({
@@ -34,11 +35,27 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <ErrorBoundary sectionName="应用根节点">
-          {children}
-        </ErrorBoundary>
+        <ToastProvider>
+          <ErrorBoundary sectionName="应用根节点">
+            {children}
+          </ErrorBoundary>
+        </ToastProvider>
         <Toaster />
-        <SonnerToaster position="top-center" richColors closeButton />
+        <SonnerToaster
+          position="top-right"
+          richColors
+          closeButton
+          duration={3000}
+          toastOptions={{
+            classNames: {
+              toast: "sonner-toast",
+              success: "sonner-toast-success",
+              error: "sonner-toast-error",
+              warning: "sonner-toast-warning",
+              info: "sonner-toast-info",
+            },
+          }}
+        />
       </body>
     </html>
   );

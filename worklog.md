@@ -6210,3 +6210,208 @@ Work Log:
 8. 单元测试 + E2E测试覆盖
 9. 国际化(i18n)支持
 10. API Key加密存储方案
+
+---
+Task ID: 33-a
+Agent: Track A Developer
+Task: Sonner Toast Notification System
+
+Work Log:
+- Installed sonner package (already partially present in project via shadcn/ui)
+- Enhanced SonnerToaster in layout.tsx: changed position from top-center to top-right, added richColors, closeButton, duration=3000, custom classNames for toast variants
+- Created `/src/hooks/use-toast-operations.ts`: utility hook with useSuccessToast, useErrorToast, useInfoToast, useWarningToast, and usePromiseToast functions
+- Created `/src/components/toast-provider.tsx`: React context provider wrapping sonner toast functions, exported useToast() hook for app-wide access
+- Wrapped root layout children with ToastProvider for consistent toast access
+- Integrated toast operations into knowledge-base.tsx: replaced raw toast.error/success with useSuccessToast/useErrorToast, added descriptions, removed console.error in fetchItems
+- Integrated toast operations into content-workspace.tsx: added description fields to export success toasts, added descriptions to error toasts
+- Integrated toast operations into settings-center.tsx: added descriptions to data export, cache clear, AI config save/switch toasts
+- Added comprehensive sonner CSS theme overrides to globals.css:
+  - Glassmorphism backdrop-blur-2xl toast styling matching project design
+  - 12px border-radius for rounded modern look
+  - Color-coded gradient backgrounds for success (emerald), error (red), warning (amber), info (blue), loading (violet)
+  - Colored left accent bars for each toast type
+  - Dark mode variants with adjusted opacity and borders
+  - Custom action button with violet gradient matching project theme
+  - Custom cancel button styling
+  - Content/description typography adjustments
+  - Container gap optimization
+- Verified all modified files pass ESLint with zero errors (3 pre-existing errors in unrelated files)
+
+Stage Summary:
+- Sonner toast system fully integrated with project theme (violet/purple gradient glassmorphism)
+- Created reusable utility hooks and context provider for easy toast access
+- Enhanced existing toast calls in 3 key components with richer descriptions
+- CSS theme provides consistent visual identity across light/dark modes
+- Zero new ESLint errors introduced
+
+
+---
+Task ID: 33
+Agent: Main Orchestrator + 4 Parallel full-stack-developer Sub-agents (33-a/b/c/d)
+Task: 第33轮开发 - Toast系统+日历拖拽+Quick Stats浮动组件+动画组件库
+
+Work Log:
+- 读取 worklog.md 了解第32轮完整状态（32轮迭代，115+组件，43+API）
+- 硬约束：全程未使用 agent-browser（OOM限制），使用 curl + standalone server 测试
+- 验证项目状态：ESLint零错误，clean build成功
+- 4个并行 full-stack-developer 子代理
+
+### 项目当前状态
+- 项目极其成熟稳定，33轮迭代完成
+- 120+自定义组件（~45K行代码），44+API路由
+- 双平台运营：朋友圈 + 小红书
+- 零 lint 错误、零 TypeScript 错误、生产构建稳定
+
+### Track A: Sonner Toast 通知系统
+
+1. **Toaster 增强**（layout.tsx 修改）：
+   - 位置改为 top-right
+   - richColors + closeButton + duration=3000
+   - 自定义 toast 变体 classNames（success/error/warning/info）
+
+2. **useToastOperations Hook**（`/src/hooks/use-toast-operations.ts`）：
+   - useSuccessToast / useErrorToast / useInfoToast / useWarningToast
+   - usePromiseToast - 自动 loading/success/error 异步 toast
+
+3. **ToastProvider 上下文**（`/src/components/toast-provider.tsx`）：
+   - React Context 提供 success/error/info/warning/dismiss/raw 方法
+   - 导出 useToast() hook 全局访问
+
+4. **组件集成**：
+   - knowledge-base.tsx — 知识库 CRUD 操作 toast
+   - content-workspace.tsx — 内容导出成功/错误 toast
+   - settings-center.tsx — 设置变更、缓存清除、AI配置 toast
+
+5. **CSS 主题**（globals.css 追加）：
+   - Glassmorphism backdrop-blur toast 样式
+   - 各类型渐变背景 + 左侧彩色竖条
+   - 暗黑模式完整适配
+
+### Track B: 内容日历拖拽排序 + Hover 预览
+
+1. **内容 Hover 预览卡片**（`content-hover-preview.tsx`, 489行）：
+   - 浮动 glassmorphism 卡片，hover 日历日期时显示
+   - 显示：主题、内容前100字、类型Badge、状态Badge、AI评分、平台指示器
+   - 智能边缘检测定位
+   - framer-motion 淡入/缩放动画
+   - 快捷操作按钮：编辑/数据/复制
+
+2. **日历拖拽排序**（`calendar-dnd-reorder.tsx`, 561行）：
+   - 使用 @dnd-kit/core + @dnd-kit/sortable
+   - "排序模式"切换按钮
+   - 拖拽覆盖层 + 投放指示器
+   - 支持跨日期重新排期
+   - 撤销 toast 通知
+   - ESC 键退出排序模式
+
+3. **CompactCalendar 集成**：
+   - 网格视图 hover 预览
+   - 排序按钮（视图切换旁）
+   - 操作回调处理
+
+### Track C: 浮动 Quick Stats 组件 + 内容连续天追踪
+
+1. **Quick Stats API**（`/api/quick-stats/route.ts`）：
+   - GET 返回今日待发布、周完成率、平均AI评分、当前/最长连续天
+   - 7天热力图数据 + 最近3次评分
+   - 单次高效查询
+
+2. **内容连续天追踪器**（`content-streak-tracker.tsx`）：
+   - 7天热力图网格（GitHub风格）
+   - 动画连续天计数器
+   - 5级激励文案（0-2天到30+天）
+   - 火焰徽章（3天+）、动画火焰（7天+）
+   - 紧凑模式 prop
+
+3. **浮动 Quick Stats 组件**（`quick-stats-float.tsx`）：
+   - 折叠态：48px FAB + 渐变环指示器 + 动画计数
+   - 展开态：300px glassmorphism 卡片
+     - 4个迷你统计行（今日待发布/周完成率/AI评分/连续天）
+     - 每行带 SVG 进度环 + 趋势箭头 + sparkline
+   - Spring 物理展开/折叠动画
+   - 自动折叠（10秒无操作）
+   - localStorage 状态持久化
+   - 30秒 API 轮询
+
+4. **页面集成**（page.tsx 修改）：
+   - QuickStatsFloat 放置在 AI Writing Assistant FAB 之前
+
+### Track D: 可复用动画组件库 + CSS 动画增强
+
+1. **animated-components.tsx**（708行，8个组件）：
+   - AnimatedCounter — 数字计数动画（useMotionValue + spring 物理）
+   - AnimatedGradientBorder — 旋转 conic-gradient 边框（CSS @property）
+   - MagneticButton — 光标跟随磁吸效果 + 涟漪点击
+   - ShimmerText — 渐变文字闪光动画
+   - StaggerContainer / StaggerItem — 交错入场动画（4种变体）
+   - TooltipOnHover — 增强悬浮提示（延迟/动画/箭头）
+   - SkeletonPulse — 增强骨架屏（波浪闪光）
+   - CountUpBadge — 动画徽章（阈值着色/弹跳）
+
+2. **CSS 动画类**（globals.css 追加 ~200行）：
+   - .animated-gradient-border（旋转渐变边框）
+   - .magnetic-hover-zone / .shimmer-text
+   - .stagger-0 到 .stagger-11（交错延迟）
+   - .counter-transition / .card-3d-tilt / .click-ripple
+   - .glow-pulse / .scrollbar-thumb-animated
+   - .focus-ring-animated
+   - .skeleton-wave / .skeleton-shimmer
+   - .badge-pop（含 --low/--mid/--high 变体）
+   - .progress-fill-animated（含光泽叠加）
+   - 全部支持 prefers-reduced-motion: reduce
+
+3. **page-transition.tsx 增强**：
+   - 方向感知滑动动画（前进/后退）
+   - 过渡进度条指示器
+   - 淡入淡出内容切换
+
+### 新增文件 (7个)
+- `src/hooks/use-toast-operations.ts` — Toast 操作 Hook
+- `src/components/toast-provider.tsx` — Toast 上下文 Provider
+- `src/components/left-panel/content-hover-preview.tsx` — 内容 Hover 预览
+- `src/components/left-panel/calendar-dnd-reorder.tsx` — 日历拖拽排序
+- `src/app/api/quick-stats/route.ts` — Quick Stats API
+- `src/components/quick-stats-float.tsx` — 浮动 Quick Stats 组件
+- `src/components/content-streak-tracker.tsx` — 内容连续天追踪器
+- `src/components/animated-components.tsx` — 可复用动画组件库
+
+### 修改文件
+- `src/app/globals.css` — Toast 主题 + 15+新CSS动画类
+- `src/app/layout.tsx` — Toaster 配置增强
+- `src/app/page.tsx` — QuickStatsFloat 集成
+- `src/components/left-panel/compact-calendar.tsx` — Hover预览+拖拽排序集成
+- `src/components/left-panel/knowledge-base.tsx` — Toast 集成
+- `src/components/right-panel/content-workspace.tsx` — Toast 集成
+- `src/components/settings-center.tsx` — Toast 集成
+- `src/components/page-transition.tsx` — 方向感知过渡+进度条
+
+### 新增依赖
+- @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities（拖拽排序）
+- sonner（已在 shadcn/ui 中预装）
+
+### QA验证结果
+- ✅ ESLint 零错误、零警告
+- ✅ Next.js clean build 成功
+- ✅ 44+ API 路由全部正确注册（含新增 /api/quick-stats）
+- ✅ 无 agent-browser 使用（遵循 OOM 约束）
+- ✅ 修复了 animated-components.tsx 中 2 个 eslint-disable 警告
+- ✅ 修复了 page-transition.tsx 中 setState-in-effect / refs-during-render 错误
+
+### 未解决问题或风险
+1. Dev server (turbopack) 在并发请求时可能不稳定，standalone server 稳定
+2. agent-browser 不可用（OOM限制），使用 curl 测试
+3. @dnd-kit 拖拽排序在移动端触摸设备上需进一步测试
+4. Toast 系统依赖 sonner 库的长期维护
+5. Quick Stats 30秒轮询在低活跃度时可考虑改为 WebSocket
+
+### 建议下一阶段优先事项
+1. WebSocket 实时数据推送（替代轮询）
+2. PWA 离线支持 + Service Worker
+3. 内容发布到真实社交平台 API 对接
+4. 单元测试 + E2E 测试覆盖（Vitest + Playwright）
+5. 国际化 (i18n) 支持
+6. 多人协作/团队账号管理
+7. 性能优化：虚拟列表、代码分割、React.memo
+8. API Key 加密存储方案
+9. 运营报告定时自动生成 + 邮件/消息推送
+10. 移动端真机测试和适配优化

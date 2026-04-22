@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookOpen, Plus, Search, Trash2, Tag, FileText } from "lucide-react";
-import { toast } from "sonner";
+import { useSuccessToast, useErrorToast } from "@/hooks/use-toast-operations";
 import { EmptyState } from "@/components/ui/empty-state";
 
 const CATEGORIES: KnowledgeCategory[] = ["expertise", "experience", "opinion", "story", "resource"];
@@ -26,6 +26,8 @@ export function KnowledgeBase() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ title: "", content: "", category: "expertise" as KnowledgeCategory, tags: "" });
+  const showSuccess = useSuccessToast();
+  const showError = useErrorToast();
 
   const fetchItems = useCallback(async () => {
     try {
@@ -34,8 +36,8 @@ export function KnowledgeBase() {
         const data = await res.json();
         setKnowledgeItems(data);
       }
-    } catch (e) {
-      console.error("Failed to fetch knowledge items:", e);
+    } catch {
+      /* silent — data will remain empty */
     }
   }, [setKnowledgeItems]);
 
@@ -43,7 +45,7 @@ export function KnowledgeBase() {
 
   const handleAdd = async () => {
     if (!form.title.trim() || !form.content.trim()) {
-      toast.error("请填写标题和内容");
+      showError("请填写标题和内容");
       return;
     }
     try {
@@ -57,10 +59,10 @@ export function KnowledgeBase() {
         addKnowledgeItem(data);
         setForm({ title: "", content: "", category: "expertise", tags: "" });
         setDialogOpen(false);
-        toast.success("知识已添加");
+        showSuccess("知识已添加", { description: `${form.title} 已保存到知识库` });
       }
     } catch {
-      toast.error("添加失败");
+      showError("添加失败", { description: "网络错误，请稍后重试" });
     }
   };
 
@@ -69,10 +71,10 @@ export function KnowledgeBase() {
       const res = await fetch(`/api/knowledge/${id}`, { method: "DELETE" });
       if (res.ok) {
         removeKnowledgeItem(id);
-        toast.success("知识已删除");
+        showSuccess("知识已删除");
       }
     } catch {
-      toast.error("删除失败");
+      showError("删除失败", { description: "无法删除，请稍后重试" });
     }
   };
 
