@@ -33,7 +33,7 @@ import {
   Share2,
   CalendarDays,
   CalendarRange,
-  Inbox,
+  History,
 } from "lucide-react";
 import {
   POST_STATUS_LABELS,
@@ -44,32 +44,24 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Period = "week" | "month" | "all";
+type Period = "week" | "month" | "days30";
 
 const PERIOD_OPTIONS: { value: Period; label: string; icon: typeof CalendarDays }[] = [
   { value: "week", label: "本周", icon: CalendarDays },
   { value: "month", label: "本月", icon: CalendarRange },
-  { value: "all", label: "全部", icon: Inbox },
+  { value: "days30", label: "近30天", icon: History },
 ];
 
 const PERIOD_LABELS: Record<Period, string> = {
   week: "本周",
   month: "本月",
-  all: "全部",
+  days30: "近30天",
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DAY_LABELS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 const TIME_LABELS = ["凌晨", "早晨", "上午", "下午", "傍晚", "夜间"];
-const TIME_RANGES: [number, number][] = [
-  [0, 4],
-  [4, 8],
-  [8, 12],
-  [12, 16],
-  [16, 20],
-  [20, 24],
-];
 
 const FUNNEL_STEPS = [
   { status: "planned", label: "计划中", color: "#94a3b8" },
@@ -96,18 +88,34 @@ function getStartOfMonth(date: Date): Date {
   return d;
 }
 
+function getStartOfDays30(date: Date): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() - 30);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 function parseDate(dateStr: string): Date {
-  // scheduledDate is "2025-01-15" format
   const d = new Date(dateStr);
   if (!isNaN(d.getTime())) return d;
   return new Date(0);
 }
 
+function formatDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function filterPostsByPeriod(posts: ContentPost[], period: Period): ContentPost[] {
-  if (period === "all") return posts;
   const now = new Date();
   const start =
-    period === "week" ? getStartOfWeek(now) : getStartOfMonth(now);
+    period === "week"
+      ? getStartOfWeek(now)
+      : period === "month"
+        ? getStartOfMonth(now)
+        : getStartOfDays30(now);
   return posts.filter((p) => {
     const d = p.scheduledDate
       ? parseDate(p.scheduledDate)
@@ -119,7 +127,6 @@ function filterPostsByPeriod(posts: ContentPost[], period: Period): ContentPost[
 }
 
 function getWeekLabel(weekIndex: number, period: Period): string {
-  if (period === "all") return `第${weekIndex + 1}周`;
   return `第${weekIndex + 1}周`;
 }
 
@@ -176,7 +183,7 @@ function PeriodToggle({
           >
             {isActive && (
               <motion.div
-                className="absolute inset-0 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500"
+                className="absolute inset-0 rounded-lg bg-gradient-to-r from-violet-500 to-emerald-500"
                 layoutId="period-toggle-bg"
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               />
@@ -216,14 +223,41 @@ function AnimatedCounter({
   );
 }
 
+// ─── Trend Badge ─────────────────────────────────────────────────────────────
+
+function TrendBadge({
+  current,
+  previous,
+}: {
+  current: number;
+  previous: number;
+}) {
+  if (previous === 0 && current === 0) return null;
+  if (previous === 0) {
+    return (
+      <span className="flex items-center gap-0.5 text-[9px] text-emerald-500">
+        <ArrowUpRight className="h-3 w-3" />
+        NEW
+      </span>
+    );
+  }
+  const diff = current - previous;
+  const pct = Math.round((diff / previous) * 100);
+  const isUp = diff >= 0;
+  return (
+    <span className={`flex items-center gap-0.5 text-[9px] ${isUp ? "text-emerald-500" : "text-rose-500"}`}>
+      {isUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+      {Math.abs(pct)}%
+    </span>
+  );
+}
+
 // ─── 1. Engagement Heatmap ───────────────────────────────────────────────────
 
 function EngagementHeatmap({
   data,
-  isXHS,
 }: {
   data: number[][];
-  max: number;
   isXHS: boolean;
 }) {
   const flatMax = Math.max(...data.flat(), 1);
@@ -294,7 +328,6 @@ function EngagementHeatmap({
 function ContentFunnel({
   counts,
   total,
-  isXHS,
   onStepClick,
   activeFilter,
 }: {
@@ -457,7 +490,7 @@ function WeeklySparkline({
   return (
     <div className="space-y-2">
       <h4 className="text-xs font-semibold text-muted-foreground">
-        {period === "all" ? "历史趋势" : "周活跃趋势"}
+        {period === "days30" ? "月度趋势" : "周活跃趋势"}
       </h4>
       <div className="flex justify-center">
         <svg
@@ -547,7 +580,213 @@ function WeeklySparkline({
   );
 }
 
-// ─── 5. Quick Stats Row ──────────────────────────────────────────────────────
+// ─── 5. Engagement Trend Line Chart ──────────────────────────────────────────
+
+function EngagementTrendChart({
+  dailyData,
+  isXHS,
+}: {
+  dailyData: { date: string; value: number }[];
+  isXHS: boolean;
+}) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  const svgW = 300;
+  const svgH = 110;
+  const pad = { top: 16, right: 8, bottom: 24, left: 4 };
+  const cw = svgW - pad.left - pad.right;
+  const ch = svgH - pad.top - pad.bottom;
+
+  const values = dailyData.map((d) => d.value);
+  const maxVal = Math.max(...values, 1);
+
+  const points = values.map((v, i) => ({
+    x: pad.left + (i / Math.max(values.length - 1, 1)) * cw,
+    y: pad.top + ch - (v / maxVal) * ch,
+  }));
+
+  const linePath =
+    points.length > 1
+      ? points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ")
+      : "";
+  const areaPath =
+    points.length > 1
+      ? `${linePath} L ${points[points.length - 1].x} ${pad.top + ch} L ${points[0].x} ${pad.top + ch} Z`
+      : "";
+
+  const gradientId = `engTrendGrad${isXHS ? "X" : "W"}`;
+  const strokeColor = isXHS ? "#f43f5e" : "#8b5cf6";
+
+  // Determine label step to avoid crowding
+  const labelStep = values.length > 20 ? 5 : values.length > 10 ? 3 : values.length > 6 ? 2 : 1;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-semibold text-muted-foreground">每日互动趋势</h4>
+        <span className="text-[9px] text-muted-foreground">
+          点赞+评论+转发
+        </span>
+      </div>
+      <div className="relative">
+        <svg
+          width="100%"
+          viewBox={`0 0 ${svgW} ${svgH}`}
+          className="overflow-visible"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={strokeColor} stopOpacity="0.35" />
+              <stop offset="100%" stopColor={strokeColor} stopOpacity="0.02" />
+            </linearGradient>
+            <filter id="glowDot">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Grid lines */}
+          {[0.25, 0.5, 0.75].map((ratio) => (
+            <line
+              key={ratio}
+              x1={pad.left}
+              y1={pad.top + ch * (1 - ratio)}
+              x2={svgW - pad.right}
+              y2={pad.top + ch * (1 - ratio)}
+              stroke="currentColor"
+              className="text-muted/15"
+              strokeWidth={0.5}
+            />
+          ))}
+
+          {points.length > 1 && (
+            <>
+              {/* Area fill */}
+              <motion.path
+                d={areaPath}
+                fill={`url(#${gradientId})`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              />
+
+              {/* Line */}
+              <motion.path
+                d={linePath}
+                fill="none"
+                stroke={strokeColor}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1.2, ease: "easeOut" as const }}
+              />
+            </>
+          )}
+
+          {/* Data points */}
+          {points.map((p, i) => (
+            <g key={i}>
+              {/* Invisible hit area */}
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={12}
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+              />
+              {/* Default dot */}
+              <motion.circle
+                cx={p.x}
+                cy={p.y}
+                r={values[i] > 0 ? 2 : 1}
+                fill={values[i] > 0 ? strokeColor : "currentColor"}
+                className={values[i] > 0 ? "" : "text-muted/30"}
+                initial={{ r: 0, opacity: 0 }}
+                animate={{ r: values[i] > 0 ? 2 : 1, opacity: 1 }}
+                transition={{ duration: 0.2, delay: 0.6 + i * 0.02 }}
+              />
+              {/* Hovered state */}
+              {hoveredIdx === i && (
+                <g>
+                  <motion.circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={6}
+                    fill={strokeColor}
+                    opacity={0.15}
+                    initial={{ r: 2, opacity: 0 }}
+                    animate={{ r: 6, opacity: 0.15 }}
+                    transition={{ duration: 0.15 }}
+                  />
+                  <motion.circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={4}
+                    fill={strokeColor}
+                    stroke="hsl(var(--background))"
+                    strokeWidth={2}
+                    filter="url(#glowDot)"
+                    initial={{ r: 2 }}
+                    animate={{ r: 4 }}
+                    transition={{ duration: 0.15 }}
+                  />
+                  {/* Tooltip box */}
+                  <g>
+                    <rect
+                      x={p.x - 24}
+                      y={p.y - 26}
+                      width={48}
+                      height={18}
+                      rx={4}
+                      className="fill-popover stroke-border"
+                      strokeWidth={0.5}
+                    />
+                    <text
+                      x={p.x}
+                      y={p.y - 14}
+                      textAnchor="middle"
+                      className="fill-foreground text-[9px] font-medium"
+                    >
+                      {formatNum(values[i])}
+                    </text>
+                  </g>
+                </g>
+              )}
+            </g>
+          ))}
+
+          {/* Date labels */}
+          {points.map((p, i) => {
+            if (i % labelStep !== 0 && i !== values.length - 1) return null;
+            const day = dailyData[i].date.split("-")[2];
+            const month = dailyData[i].date.split("-")[1];
+            return (
+              <text
+                key={`dl-${i}`}
+                x={p.x}
+                y={svgH - 6}
+                textAnchor="middle"
+                className="fill-muted-foreground text-[7px]"
+              >
+                {`${month}/${day}`}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ─── 6. Quick Stats Row (Enhanced) ───────────────────────────────────────────
 
 function QuickStats({
   stats,
@@ -558,16 +797,15 @@ function QuickStats({
     periodPosts: number;
     prevPeriodPosts: number;
     totalEngagement: number;
+    prevTotalEngagement: number;
     peakTime: string;
     publishRate: number;
+    prevPublishRate: number;
     avgScore: number;
   };
   isXHS: boolean;
   period: Period;
 }) {
-  const trend = stats.periodPosts - stats.prevPeriodPosts;
-  const trendUp = trend >= 0;
-
   const periodLabel = PERIOD_LABELS[period];
 
   const accentClass = isXHS ? "text-rose-500" : "text-violet-500";
@@ -575,26 +813,34 @@ function QuickStats({
     ? "bg-rose-50 dark:bg-rose-950/30"
     : "bg-violet-50 dark:bg-violet-950/30";
 
-  const cards = [
+  const cards: {
+    icon: typeof Send;
+    value: number | null;
+    prevValue?: number;
+    label: string;
+    accent: string;
+    bg: string;
+    textValue?: string;
+    isPercent?: boolean;
+    showTrend?: boolean;
+  }[] = [
     {
       icon: Send,
       value: stats.periodPosts,
+      prevValue: stats.prevPeriodPosts,
       label: `${periodLabel}发布`,
       accent: accentClass,
       bg: accentBg,
-      extra: period !== "all" ? (
-        <span className={`flex items-center gap-0.5 text-[9px] ${trendUp ? "text-emerald-500" : "text-rose-500"}`}>
-          {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-          {Math.abs(trend)}
-        </span>
-      ) : null,
+      showTrend: true,
     },
     {
       icon: Heart,
       value: stats.totalEngagement,
+      prevValue: stats.prevTotalEngagement,
       label: "互动总量",
       accent: "text-rose-500",
       bg: "bg-rose-50 dark:bg-rose-950/30",
+      showTrend: true,
     },
     {
       icon: Clock,
@@ -607,53 +853,193 @@ function QuickStats({
     {
       icon: TrendingUp,
       value: stats.publishRate,
+      prevValue: stats.prevPublishRate,
       label: "发布率",
       accent: "text-emerald-500",
       bg: "bg-emerald-50 dark:bg-emerald-950/30",
       isPercent: true,
+      showTrend: true,
     },
   ];
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      {cards.map((card, i) => (
-        <motion.div
-          key={card.label}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{ y: -2, transition: { duration: 0.2 } }}
-          transition={{ duration: 0.3, delay: i * 0.08 }}
-        >
-          <Card className="border-0 shadow-sm stat-card-hover">
-            <CardContent className="p-2.5 flex items-center gap-2">
-              <div
-                className={`h-7 w-7 rounded-lg ${card.bg} flex items-center justify-center flex-shrink-0`}
-              >
-                <card.icon className={`h-3.5 w-3.5 ${card.accent}`} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold truncate leading-tight">
-                  {card.textValue || (
-                    <>
-                      <AnimatedCounter value={card.value ?? 0} />
-                      {card.isPercent && <span className="text-[10px]">%</span>}
-                    </>
-                  )}
+      {cards.map((card, i) => {
+        const isPositive =
+          card.showTrend && card.prevValue !== undefined
+            ? (card.value ?? 0) >= (card.prevValue ?? 0)
+            : false;
+
+        return (
+          <motion.div
+            key={card.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -2, transition: { duration: 0.2 } }}
+            transition={{ duration: 0.3, delay: i * 0.08 }}
+          >
+            <Card className="border-0 shadow-sm stat-card-hover">
+              <CardContent className="p-2.5 flex items-center gap-2">
+                <div
+                  className={`h-7 w-7 rounded-lg ${card.bg} flex items-center justify-center flex-shrink-0`}
+                >
+                  <card.icon className={`h-3.5 w-3.5 ${card.accent}`} />
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] text-muted-foreground">{card.label}</span>
-                  {card.extra}
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold truncate leading-tight">
+                    {card.textValue ? (
+                      <span>{card.textValue}</span>
+                    ) : (
+                      <motion.span
+                        className="tabular-nums inline-block"
+                        animate={
+                          isPositive
+                            ? { scale: [1, 1.06, 1] }
+                            : { scale: 1 }
+                        }
+                        transition={
+                          isPositive
+                            ? { duration: 2, repeat: Infinity, ease: "easeInOut" as const }
+                            : { duration: 0 }
+                        }
+                      >
+                        {formatNum(card.value ?? 0)}
+                        {card.isPercent && (
+                          <span className="text-[10px]">%</span>
+                        )}
+                      </motion.span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground">
+                      {card.label}
+                    </span>
+                    {card.showTrend && card.prevValue !== undefined && (
+                      <TrendBadge
+                        current={card.value ?? 0}
+                        previous={card.prevValue ?? 0}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
 
-// ─── 6. AI Quick Insights ────────────────────────────────────────────────────
+// ─── 7. Best Content Type Card ───────────────────────────────────────────────
+
+function BestContentTypeCard({
+  bestType,
+  bestStats,
+  isXHS,
+}: {
+  bestType: string;
+  bestStats: {
+    count: number;
+    avgEngagement: number;
+    avgLikes: number;
+    avgComments: number;
+    avgShares: number;
+  } | null;
+  isXHS: boolean;
+}) {
+  const gradientBg = isXHS
+    ? "from-rose-500/10 via-background to-violet-500/10 dark:from-rose-950/20 dark:via-background dark:to-violet-950/10"
+    : "from-violet-500/10 via-background to-emerald-500/10 dark:from-violet-950/20 dark:via-background dark:to-emerald-950/10";
+
+  const iconColor = isXHS ? "text-rose-500" : "text-violet-500";
+  const iconBg = isXHS ? "bg-rose-500/10" : "bg-violet-500/10";
+
+  if (!bestType || !bestStats) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.2 }}
+    >
+      <Card className="border-0 shadow-sm overflow-hidden relative">
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradientBg}`} />
+        <CardContent className="p-3 relative">
+          {/* Header */}
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <div className={`h-5 w-5 rounded ${iconBg} flex items-center justify-center`}>
+              <BarChart3 className={`h-3 w-3 ${iconColor}`} />
+            </div>
+            <span className="text-xs font-semibold">最佳内容类型推荐</span>
+            <Badge
+              variant="secondary"
+              className="text-[8px] h-4 px-1.5 ml-auto bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+            >
+              AI 推荐
+            </Badge>
+          </div>
+
+          {/* Type name */}
+          <motion.div
+            className="mb-3"
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <p className="text-base font-bold">{bestType}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              共 {bestStats.count} 条内容，平均互动最高
+            </p>
+          </motion.div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {[
+              {
+                label: "平均互动",
+                value: bestStats.avgEngagement,
+                color: "text-violet-500",
+              },
+              {
+                label: "平均点赞",
+                value: bestStats.avgLikes,
+                color: "text-rose-500",
+              },
+              {
+                label: "平均评论",
+                value: bestStats.avgComments,
+                color: "text-amber-500",
+              },
+              {
+                label: "平均转发",
+                value: bestStats.avgShares,
+                color: "text-emerald-500",
+              },
+            ].map((stat) => (
+              <motion.div
+                key={stat.label}
+                className="text-center rounded-lg bg-muted/30 py-1.5 px-1"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
+              >
+                <p className={`text-xs font-bold ${stat.color}`}>
+                  {formatNum(stat.value)}
+                </p>
+                <p className="text-[8px] text-muted-foreground mt-0.5">
+                  {stat.label}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+// ─── 8. AI Quick Insights ────────────────────────────────────────────────────
 
 function AIQuickInsights({
   bestType,
@@ -810,7 +1196,7 @@ export function OperationsDashboard() {
     () => ({
       week: filterPostsByPeriod(contentPosts, "week").length,
       month: filterPostsByPeriod(contentPosts, "month").length,
-      all: contentPosts.length,
+      days30: filterPostsByPeriod(contentPosts, "days30").length,
     }),
     [contentPosts]
   );
@@ -827,9 +1213,6 @@ export function OperationsDashboard() {
       const date = parseDate(dateStr);
       if (isNaN(date.getTime())) return;
       const dayOfWeek = (date.getDay() + 6) % 7; // Mon=0
-      // Use scheduledDate to pick a representative hour for the heatmap
-      // Since scheduledDate is just a date, we assign a time based on the post's engagement score
-      // to simulate the publishing time heatmap
       const engagement = post.likes + post.comments + post.shares;
       const timeIdx = engagement > 10 ? 4 : engagement > 5 ? 3 : engagement > 0 ? 2 : 1;
       heatmap[dayOfWeek][timeIdx] += engagement || 1;
@@ -841,46 +1224,48 @@ export function OperationsDashboard() {
       if (funnelCounts[p.status] !== undefined) funnelCounts[p.status]++;
     });
 
-    // === Quick stats ===
+    // === Quick stats with prev period comparison ===
     const now = new Date();
-    let periodPosts: number;
-    let prevPeriodPosts: number;
+    let currentStart: Date;
+    let prevStart: Date;
 
     if (period === "week") {
-      const startOfWeek = getStartOfWeek(now);
-      const prevStartOfWeek = new Date(startOfWeek);
-      prevStartOfWeek.setDate(prevStartOfWeek.getDate() - 7);
-
-      periodPosts = posts.filter((p) => {
-        const d = parseDate(p.scheduledDate || p.createdAt || "");
-        return d >= startOfWeek && d <= now;
-      }).length;
-      prevPeriodPosts = contentPosts.filter((p) => {
-        const d = parseDate(p.scheduledDate || p.createdAt || "");
-        return d >= prevStartOfWeek && d < startOfWeek;
-      }).length;
+      currentStart = getStartOfWeek(now);
+      prevStart = new Date(currentStart);
+      prevStart.setDate(prevStart.getDate() - 7);
     } else if (period === "month") {
-      const startOfMonth = getStartOfMonth(now);
-      const prevStartOfMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const prevEndOfMonth = startOfMonth;
-
-      periodPosts = posts.filter((p) => {
-        const d = parseDate(p.scheduledDate || p.createdAt || "");
-        return d >= startOfMonth && d <= now;
-      }).length;
-      prevPeriodPosts = contentPosts.filter((p) => {
-        const d = parseDate(p.scheduledDate || p.createdAt || "");
-        return d >= prevStartOfMonth && d < prevEndOfMonth;
-      }).length;
+      currentStart = getStartOfMonth(now);
+      prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     } else {
-      periodPosts = posts.length;
-      prevPeriodPosts = 0;
+      currentStart = getStartOfDays30(now);
+      prevStart = getStartOfDays30(currentStart);
     }
+
+    const periodPostsList = posts.filter((p) => {
+      const d = parseDate(p.scheduledDate || p.createdAt || "");
+      return d >= currentStart && d <= now;
+    });
+    const prevPostsList = contentPosts.filter((p) => {
+      const d = parseDate(p.scheduledDate || p.createdAt || "");
+      return d >= prevStart && d < currentStart;
+    });
+
+    const periodPosts = periodPostsList.length;
+    const prevPeriodPosts = prevPostsList.length;
 
     const totalEngagement = posts.reduce(
       (acc, p) => acc + p.likes + p.comments + p.shares + (p.favorites || 0),
       0
     );
+    const prevTotalEngagement = prevPostsList.reduce(
+      (acc, p) => acc + p.likes + p.comments + p.shares + (p.favorites || 0),
+      0
+    );
+
+    const publishedCount = posts.filter((p) => p.status === "published").length;
+    const publishRate = posts.length > 0 ? Math.round((publishedCount / posts.length) * 100) : 0;
+    const prevPublished = prevPostsList.filter((p) => p.status === "published").length;
+    const prevPublishRate = prevPostsList.length > 0 ? Math.round((prevPublished / prevPostsList.length) * 100) : 0;
 
     // Peak time from heatmap
     let maxHeat = 0;
@@ -897,16 +1282,12 @@ export function OperationsDashboard() {
     );
     const peakTimeStr = maxHeat > 0 ? `${DAY_LABELS[peakDay]} ${TIME_LABELS[peakTime]}` : "";
 
-    const publishedCount = posts.filter((p) => p.status === "published").length;
-    const publishRate = posts.length > 0 ? Math.round((publishedCount / posts.length) * 100) : 0;
-
     // === Weekly activity ===
     let weeklyData: number[];
     let weekCount: number;
 
-    if (period === "all") {
-      // Show up to 12 weeks of history
-      weekCount = 12;
+    if (period === "days30") {
+      weekCount = 4;
       weeklyData = Array(weekCount).fill(0);
       posts.forEach((p) => {
         const d = parseDate(p.scheduledDate || p.createdAt || "");
@@ -918,7 +1299,6 @@ export function OperationsDashboard() {
         }
       });
     } else {
-      // Show last 4 weeks
       weekCount = 4;
       weeklyData = Array(weekCount).fill(0);
       posts.forEach((p) => {
@@ -931,6 +1311,26 @@ export function OperationsDashboard() {
         }
       });
     }
+
+    // === Daily engagement data for trend chart ===
+    const numDays = period === "week" ? 7 : 30;
+    const dailyEngagementData: { date: string; value: number }[] = [];
+    for (let i = numDays - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const dateStr = formatDateKey(d);
+      dailyEngagementData.push({ date: dateStr, value: 0 });
+    }
+    posts.forEach((p) => {
+      const d = parseDate(p.scheduledDate || p.createdAt || "");
+      if (isNaN(d.getTime())) return;
+      const key = formatDateKey(d);
+      const entry = dailyEngagementData.find((item) => item.date === key);
+      if (entry) {
+        entry.value += p.likes + p.comments + p.shares + (p.favorites || 0);
+      }
+    });
 
     // === Platform comparison ===
     const wechatPosts = posts.filter((p) => !p.platform || p.platform === "wechat");
@@ -945,14 +1345,18 @@ export function OperationsDashboard() {
       return Math.round(sum / list.length);
     };
 
-    // === AI Insights ===
-    // Best content type by avg engagement
-    const typeEngagement: Record<string, { total: number; count: number }> = {};
+    // === Best content type analysis ===
+    const typeEngagement: Record<string, { total: number; count: number; likes: number; comments: number; shares: number }> = {};
     posts.forEach((p) => {
-      if (!typeEngagement[p.contentType]) typeEngagement[p.contentType] = { total: 0, count: 0 };
-      typeEngagement[p.contentType].total += p.likes + p.comments + p.shares + (p.favorites || 0);
+      if (!typeEngagement[p.contentType]) typeEngagement[p.contentType] = { total: 0, count: 0, likes: 0, comments: 0, shares: 0 };
+      const eng = p.likes + p.comments + p.shares + (p.favorites || 0);
+      typeEngagement[p.contentType].total += eng;
       typeEngagement[p.contentType].count++;
+      typeEngagement[p.contentType].likes += p.likes;
+      typeEngagement[p.contentType].comments += p.comments;
+      typeEngagement[p.contentType].shares += p.shares;
     });
+
     let bestType = "";
     let bestAvg = 0;
     Object.entries(typeEngagement).forEach(([type, data]) => {
@@ -965,6 +1369,17 @@ export function OperationsDashboard() {
     const bestTypeLabel = isXHS
       ? (XHS_CONTENT_TYPE_LABELS[bestType as keyof typeof XHS_CONTENT_TYPE_LABELS] || bestType)
       : (CONTENT_TYPE_LABELS[bestType as keyof typeof CONTENT_TYPE_LABELS] || bestType);
+
+    const bestTypeData = typeEngagement[bestType];
+    const bestTypeStats = bestTypeData
+      ? {
+          count: bestTypeData.count,
+          avgEngagement: Math.round(bestAvg),
+          avgLikes: Math.round(bestTypeData.likes / bestTypeData.count),
+          avgComments: Math.round(bestTypeData.comments / bestTypeData.count),
+          avgShares: Math.round(bestTypeData.shares / bestTypeData.count),
+        }
+      : null;
 
     // Low score count (score < 60)
     const lowScoreCount = posts.filter((p) => p.aiScore > 0 && p.aiScore < 60).length;
@@ -982,13 +1397,16 @@ export function OperationsDashboard() {
         periodPosts,
         prevPeriodPosts,
         totalEngagement,
+        prevTotalEngagement,
         peakTime: peakTimeStr,
         publishRate,
+        prevPublishRate,
         avgScore: posts.length > 0
           ? Math.round(posts.reduce((acc, p) => acc + (p.aiScore || 0), 0) / posts.length)
           : 0,
       },
       weeklyData,
+      dailyEngagementData,
       platformMetrics: {
         wechat: {
           total: wechatPosts.length,
@@ -1008,6 +1426,7 @@ export function OperationsDashboard() {
         },
       },
       bestTypeLabel,
+      bestTypeStats,
       lowScoreCount,
       publishSuggestion,
       totalPosts: posts.length,
@@ -1116,7 +1535,7 @@ export function OperationsDashboard() {
             <span className="text-[10px] text-muted-foreground">
               {PERIOD_LABELS[period]}共 {metrics.totalPosts} 条内容
             </span>
-            {period !== "all" && metrics.totalPosts === 0 && (
+            {metrics.totalPosts === 0 && (
               <span className="text-[10px] text-amber-500">（该时段暂无内容，显示全部数据）</span>
             )}
           </motion.div>
@@ -1134,6 +1553,43 @@ export function OperationsDashboard() {
             </motion.div>
           </AnimatePresence>
 
+          {/* ── Engagement Trend Line Chart ──────────────────────────────── */}
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-3">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={period}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <EngagementTrendChart
+                    dailyData={metrics.dailyEngagementData}
+                    isXHS={isXHS}
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+
+          {/* ── Best Content Type Card ────────────────────────────────────── */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={period}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <BestContentTypeCard
+                bestType={metrics.bestTypeLabel}
+                bestStats={metrics.bestTypeStats}
+                isXHS={isXHS}
+              />
+            </motion.div>
+          </AnimatePresence>
+
           {/* ── Engagement Heatmap ─────────────────────────────────────── */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-3">
@@ -1145,7 +1601,7 @@ export function OperationsDashboard() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <EngagementHeatmap data={metrics.heatmap} max={metrics.heatmapMax} isXHS={isXHS} />
+                  <EngagementHeatmap data={metrics.heatmap} isXHS={isXHS} />
                 </motion.div>
               </AnimatePresence>
             </CardContent>

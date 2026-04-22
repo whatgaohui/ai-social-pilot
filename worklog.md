@@ -4709,3 +4709,131 @@ Work Log:
 5. 移动端真机测试和适配
 6. 搜索功能增强（全文搜索+高亮+排序算法）
 7. PWA离线支持
+
+---
+Task ID: 26
+Agent: Main Orchestrator
+Task: 第26轮开发 - 运营看板增强 + AI智能排期助手 + 日历周视图 + CSS动画
+
+Work Log:
+- 读取 worklog.md 了解前25轮开发成果（4711行，25+轮迭代）
+- 硬约束：全程未使用 agent-browser（已知会导致OOM kill Next.js进程），使用 curl API级别测试
+- 验证项目状态：9个核心API全部200，ESLint零错误，Next.js build编译成功（9.8s，31个静态页面）
+- 3个并行 full-stack-developer 子代理同时工作
+
+### 项目当前状态
+- 项目极其成熟：102个自定义组件（~37K行）、57个shadcn/ui组件、38个API路由
+- 双平台运营：朋友圈 + 小红书
+- 布局：2栏（左侧边栏24% + 主内容区76%），移动端浮动底部导航
+- 零 lint 错误、零 TypeScript 错误、生产构建稳定
+
+### 新功能 1: 运营看板增强（operations-dashboard.tsx）
+
+1. **周/月/近30天数据切换**：
+   - Period 类型从 "week"|"month"|"all" 改为 "week"|"month"|"days30"
+   - 新增 History 图标切换按钮，渐变从 violet→purple 升级为 violet→emerald
+   - 所有统计数据根据选中时段实时过滤
+   - 新增 getStartOfDays30() 日期辅助函数
+
+2. **互动趋势折线图（SVG inline）**：
+   - 新增 EngagementTrendChart 组件
+   - 根据时段显示 7天(本周) 或 30天(本月/近30天) 的互动数据
+   - SVG path 绘制折线，motion.path 实现 pathLength 0→1 的绘制动画
+   - 渐变填充（violet→transparent 朋友圈 / rose→transparent 小红书）
+   - 悬停交互：大透明命中区域 → 发光圆点 + 浮动tooltip 显示具体数值
+   - 日期标签自动间距避免重叠
+
+3. **QuickStats 趋势对比**：
+   - 新增 TrendBadge 组件（▲/▼ 箭头 + 百分比变化，如 +23%）
+   - 绿色=正趋势、红色=负趋势、"NEW"=上期为0本期有数据
+   - 正趋势时数字有微弱脉冲动画（scale 1→1.06→1）
+   - 所有数值统计（帖子数、互动总量、发布率）均有趋势对比
+
+4. **最佳内容类型推荐卡片**：
+   - 新增 BestContentTypeCard 组件（violet↔emerald 渐变背景）
+   - 分析所有内容类型中平均互动率最高的类型
+   - 4列统计网格：平均互动、点赞、评论、转发
+   - BarChart3 图标 + "AI 推荐" Badge
+   - 交错入场动画，无数据时优雅返回 null
+
+### 新功能 2: AI智能排期助手（ai-scheduling-assistant.tsx + API）
+
+1. **后端 API**（`/api/ai/schedule-suggest/route.ts`）：
+   - POST 端点，接收 `{ platform, days, contentPosts }`
+   - 使用 createAIClient() 调用 AI 分析历史数据
+   - AI prompt 基于互动数据分析、内容类型分布平衡、平台最佳实践
+   - 返回 `{ schedule: [{ day, time, contentType, reasoning, topic }] }`
+   - JSON 解析失败时生成基于平台惯例的默认排期
+
+2. **前端组件**（`ai-scheduling-assistant.tsx`，~440行）：
+   - **发布频率分析器**：当前 posts/week vs 平台推荐范围（朋友圈3-5/周，小红书4-7/周），动画进度条+颜色编码
+   - **内容空白检测器**：识别无排期内容的日期，amber警告badge，"AI补充空白日"按钮
+   - **智能排期建议**：调用API生成7天排期建议，时间线展示（日期/时间/类型/主题/推理），可滚动列表
+   - **批量快速排期**："Auto-fill下7天"一键生成7条建议，可上下重排序，"应用排期"保存到日历
+   - amber/orange 配色主题（排期/规划），framer-motion 交错动画
+
+3. **集成到内容工作台**：
+   - content-workspace.tsx 新增第6个 TOOL_TAB："智能排期"（CalendarClock图标，cyan配色）
+   - 位于"智能分析"和"发布管理"之间
+
+### 新功能 3: 日历周视图（compact-calendar.tsx）
+
+1. **第三视图模式**：viewMode 扩展为 "grid"|"list"|"week"|"drag"
+2. **WeekViewHeader**：前/后周导航箭头 + 日期范围显示（M月d日 - M月d日）+ "今天"按钮
+3. **WeekDayColumn**：7列（周一-周日），每列显示：
+   - 日期数字 + 星期名称
+   - 平台颜色指示点（绿色=朋友圈、红色=小红书）
+   - 帖子数量 Badge
+   - 前3个帖子主题（截断15字）
+   - 每个帖子的状态圆点（planned/ generated/optimized/published）
+   - 今日列 ring + bg-primary/10 高亮
+4. **WeekStatsBar**：紧凑统计行 "本周N篇 · 🟣N已发 · 🟡N已优 · 🔵N已生 · ⚫N待办"
+5. **Week navigation**：weekAnchor state + prevWeek/nextWeek/today handlers
+6. **与现有功能集成**：支持 platformFilter 筛选、点击日期选中帖子、一键生成按钮保持可见
+
+### CSS动画增强（globals.css）
+新增 7 个 CSS 动画/工具类：
+1. `.gradient-text-animated` — 5色渐变文字动画（violet→pink→amber→emerald 循环）
+2. `.schedule-item-glow` — 排期条目悬停发光效果（cyan→amber 渐变叠加）
+3. `.number-bounce` — 数字弹跳动画（scale 0.8→1.1→1）
+4. `.card-enter-up` — 卡片入场上浮动画
+5. `.week-day-hover` — 周视图日期列悬停效果
+6. `.progress-shimmer` — 进度条微光扫过动画
+7. `.trend-positive` — 正趋势文字发光脉冲
+
+### 新增文件
+- `src/app/api/ai/schedule-suggest/route.ts` — AI排期建议 API（~90行）
+- `src/components/right-panel/ai-scheduling-assistant.tsx` — AI智能排期助手（~440行）
+
+### 修改文件
+- `src/components/right-panel/operations-dashboard.tsx` — 周月切换 + 趋势图 + 趋势对比 + 最佳类型卡
+- `src/components/left-panel/compact-calendar.tsx` — 周视图（WeekViewHeader/WeekDayColumn/WeekStatsBar）
+- `src/components/right-panel/content-workspace.tsx` — 新增"智能排期"Tab + AISchedulingAssistant集成
+- `src/app/globals.css` — 7个新CSS动画/工具类
+
+### QA验证结果
+- ✅ ESLint 零错误（所有修改文件通过）
+- ✅ Next.js production build 编译成功（9.8s，31个静态页面）
+- ✅ 所有核心 API 200 通过（/ /api/persona /api/knowledge /api/plan /api/content /api/analytics /api/search /api/notifications /api/settings/stats）
+- ✅ /api/ai/schedule-suggest POST 返回正确排期数据
+- ✅ 无 agent-browser 使用（遵循OOM约束）
+
+Stage Summary:
+- 项目状态：稳定可运行，26轮迭代完成
+- 本轮新增2个文件，修改4个文件，新增7个CSS动画类
+- 核心能力：运营看板周/月切换+趋势图+趋势对比、AI智能排期助手（频率分析+空白检测+排期建议+批量应用）、日历周视图
+- 未解决问题或风险：
+  1. agent-browser 在本环境无法使用（OOM限制），使用 curl API 级别测试替代
+  2. AI排期建议依赖 AI 服务可用性，JSON解析失败时回退到默认排期
+  3. 日历周视图在极窄侧栏（<20%）时可能显示拥挤
+  4. 运营看板趋势图数据基于 contentPosts，需有足够互动数据才有意义
+  5. 小红书采集功能依赖外部 scraper 服务（端口3003），当前环境不可用
+- 建议下一阶段优先事项：
+  1. 运营报告自动导出为 PDF/图片格式
+  2. 定时发布提醒功能集成到 publish-workflow
+  3. 多人协作/团队账号管理功能
+  4. 数据导入/导出增强（CSV/Excel格式）
+  5. 移动端真机测试和适配优化
+  6. 搜索功能增强（全文搜索+高亮+排序算法）
+  7. 性能优化：React.memo、useMemo、虚拟列表
+  8. PWA离线支持

@@ -32,6 +32,7 @@ import {
   ArrowUpDown,
   X,
   Activity,
+  CalendarRange,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -46,6 +47,10 @@ import {
   subMonths,
   parseISO,
   startOfDay,
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  subWeeks,
 } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import {
@@ -89,6 +94,8 @@ const PLATFORM_DOT_COLORS: Record<string, string> = {
 };
 
 const WEEKDAYS_SHORT = ["一", "二", "三", "四", "五", "六", "日"];
+
+const WEEKDAY_NAMES = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 
 // --- Helpers ---
 
@@ -219,6 +226,184 @@ function DragPostCard({ post, isDragged, onDragStart, onDragEnd, onClick }: Drag
   );
 }
 
+// --- Week View Sub-components ---
+
+interface WeekViewHeaderProps {
+  weekStart: Date;
+  weekEnd: Date;
+  onPrevWeek: () => void;
+  onNextWeek: () => void;
+  onToday: () => void;
+}
+
+function WeekViewHeader({ weekStart, weekEnd, onPrevWeek, onNextWeek, onToday }: WeekViewHeaderProps) {
+  const isCurrentWeek = isToday(weekStart) || isToday(weekEnd) ||
+    (weekStart <= new Date() && weekEnd >= new Date());
+  const startLabel = format(weekStart, "M月d日");
+  const endLabel = format(weekEnd, "M月d日");
+
+  return (
+    <div className="flex items-center justify-between px-3 pb-1.5">
+      <div className="flex items-center gap-0.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={onPrevWeek}
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </Button>
+        <span className="text-[10px] font-semibold min-w-[90px] text-center tabular-nums">
+          {startLabel} - {endLabel}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={onNextWeek}
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={`h-5 px-2 text-[9px] font-medium ${isCurrentWeek ? "text-primary" : "text-muted-foreground"}`}
+        onClick={onToday}
+      >
+        今天
+      </Button>
+    </div>
+  );
+}
+
+interface WeekDayColumnProps {
+  day: Date;
+  dayIndex: number;
+  posts: ContentPost[];
+  isSelected: boolean;
+  isToday: boolean;
+  platformFilter: "all" | "wechat" | "xiaohongshu";
+  onClick: (dateStr: string) => void;
+}
+
+function WeekDayColumn({ day, dayIndex, posts, isSelected, isToday: today, platformFilter, onClick }: WeekDayColumnProps) {
+  const dateStr = format(day, "yyyy-MM-dd");
+  const truncatedPosts = posts.slice(0, 3);
+
+  // Unique platforms in this day's posts
+  const platforms = posts.reduce<string[]>((acc, p) => {
+    const plat = p.platform || "wechat";
+    if (!acc.includes(plat)) acc.push(plat);
+    return acc;
+  }, []);
+
+  return (
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      onClick={() => onClick(dateStr)}
+      className={`
+        flex-1 min-w-0 rounded-md border text-left transition-all duration-150 overflow-hidden
+        ${isSelected
+          ? "ring-2 ring-primary bg-primary/[0.06] border-primary/40"
+          : today
+            ? "ring-1 ring-primary/40 bg-primary/10 border-primary/20"
+            : posts.length > 0
+              ? "bg-card border-border hover:border-primary/30 hover:bg-muted/50"
+              : "bg-muted/30 border-transparent hover:bg-muted/50"
+        }
+      `}
+    >
+      {/* Day header */}
+      <div className={`px-1.5 py-1 border-b ${isSelected ? "border-primary/20" : "border-border/50"}`}>
+        <div className="flex items-center justify-between">
+          <span className={`text-[10px] font-bold tabular-nums ${today ? "text-primary" : "text-foreground"}`}>
+            {format(day, "d")}
+          </span>
+          <span className={`text-[8px] font-medium ${today ? "text-primary" : "text-muted-foreground"}`}>
+            {WEEKDAY_NAMES[dayIndex]}
+          </span>
+        </div>
+        {/* Platform indicators + count */}
+        <div className="flex items-center gap-0.5 mt-0.5">
+          {platformFilter === "all" && platforms.map((plat) => (
+            <span
+              key={plat}
+              className={`h-[5px] w-[5px] rounded-full ${PLATFORM_DOT_COLORS[plat]}`}
+            />
+          ))}
+          {posts.length > 0 && (
+            <span className="text-[8px] font-semibold text-muted-foreground ml-auto tabular-nums">
+              {posts.length}篇
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Posts list */}
+      <div className="px-1 py-1 space-y-0.5 min-h-[24px]">
+        {truncatedPosts.map((post) => (
+          <div key={post.id} className="flex items-center gap-[3px] leading-tight">
+            <span className={`h-[4px] w-[4px] rounded-full flex-shrink-0 ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
+            <span className="text-[8px] font-medium text-foreground/80 truncate max-w-[60px]">
+              {post.topic.length > 15 ? post.topic.slice(0, 15) + "…" : post.topic}
+            </span>
+          </div>
+        ))}
+        {posts.length > 3 && (
+          <span className="text-[7px] text-muted-foreground">+{posts.length - 3}更多</span>
+        )}
+      </div>
+    </motion.button>
+  );
+}
+
+interface WeekStatsBarProps {
+  weekPosts: ContentPost[];
+}
+
+function WeekStatsBar({ weekPosts }: WeekStatsBarProps) {
+  const published = weekPosts.filter((p) => p.status === "published").length;
+  const optimized = weekPosts.filter((p) => p.status === "optimized").length;
+  const generated = weekPosts.filter((p) => p.status === "generated").length;
+  const planned = weekPosts.filter((p) => p.status === "planned").length;
+  const total = weekPosts.length;
+
+  if (total === 0) return null;
+
+  return (
+    <div className="mx-3 mb-2 px-2 py-1 rounded-md bg-muted/40 border border-border/30">
+      <div className="flex items-center gap-1.5 text-[9px] flex-wrap">
+        <span className="font-semibold text-foreground/80 tabular-nums">本周 {total}篇</span>
+        {published > 0 && (
+          <span className="text-violet-500 font-medium flex items-center gap-0.5 tabular-nums">
+            <span className="h-1 w-1 rounded-full bg-violet-500" />
+            {published}已发
+          </span>
+        )}
+        {optimized > 0 && (
+          <span className="text-amber-500 font-medium flex items-center gap-0.5 tabular-nums">
+            <span className="h-1 w-1 rounded-full bg-amber-500" />
+            {optimized}已优
+          </span>
+        )}
+        {generated > 0 && (
+          <span className="text-sky-500 font-medium flex items-center gap-0.5 tabular-nums">
+            <span className="h-1 w-1 rounded-full bg-sky-500" />
+            {generated}已生
+          </span>
+        )}
+        {planned > 0 && (
+          <span className="text-gray-400 font-medium flex items-center gap-0.5 tabular-nums">
+            <span className="h-1 w-1 rounded-full bg-gray-400" />
+            {planned}待办
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // --- Main Component ---
 
 export function CompactCalendar() {
@@ -239,9 +424,10 @@ export function CompactCalendar() {
   } = useAppStore();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [viewMode, setViewMode] = useState<"grid" | "list" | "drag">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "week" | "drag">("grid");
   const [platformFilter, setPlatformFilter] = useState<"all" | "wechat" | "xiaohongshu">("all");
   const [isSavingDate, setIsSavingDate] = useState(false);
+  const [weekAnchor, setWeekAnchor] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   // --- Calendar math ---
   const monthStart = startOfMonth(currentMonth);
@@ -353,6 +539,25 @@ export function CompactCalendar() {
   // --- Handlers ---
   const handlePrevMonth = () => setCurrentMonth((prev) => subMonths(prev, 1));
   const handleNextMonth = () => setCurrentMonth((prev) => addMonths(prev, 1));
+
+  // --- Week view math ---
+  const weekDays = useMemo(() => {
+    return eachDayOfInterval({
+      start: startOfWeek(weekAnchor, { weekStartsOn: 1 }),
+      end: endOfWeek(weekAnchor, { weekStartsOn: 1 }),
+    });
+  }, [weekAnchor]);
+
+  const weekPosts = useMemo(() => {
+    return weekDays.flatMap((day) => {
+      const dateStr = format(day, "yyyy-MM-dd");
+      return postsByDate[dateStr] || [];
+    });
+  }, [weekDays, postsByDate]);
+
+  const handlePrevWeek = useCallback(() => setWeekAnchor((prev) => subWeeks(prev, 1)), []);
+  const handleNextWeek = useCallback(() => setWeekAnchor((prev) => addWeeks(prev, 1)), []);
+  const handleTodayWeek = useCallback(() => setWeekAnchor(startOfWeek(new Date(), { weekStartsOn: 1 })), []);
 
   const isDragMode = viewMode === "drag";
 
@@ -499,6 +704,15 @@ export function CompactCalendar() {
               onClick={() => setViewMode("list")}
             >
               <List className="h-3 w-3" />
+            </Button>
+            <Button
+              variant={viewMode === "week" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-5 w-5 p-0"
+              onClick={() => setViewMode(viewMode === "week" ? "grid" : "week")}
+              title="周视图"
+            >
+              <CalendarRange className="h-3 w-3" />
             </Button>
             <Button
               variant={viewMode === "drag" ? "secondary" : "ghost"}
@@ -1052,6 +1266,75 @@ export function CompactCalendar() {
                             {POST_STATUS_LABELS[post.status as PostStatus]}
                           </Badge>
                         </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ) : viewMode === "week" ? (
+            /* ====== WEEK VIEW ====== */
+            <motion.div
+              key="week"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="px-3 pb-2"
+            >
+              <WeekViewHeader
+                weekStart={weekDays[0]}
+                weekEnd={weekDays[6]}
+                onPrevWeek={handlePrevWeek}
+                onNextWeek={handleNextWeek}
+                onToday={handleTodayWeek}
+              />
+              <WeekStatsBar weekPosts={weekPosts} />
+              <div className="grid grid-cols-7 gap-1">
+                {weekDays.map((day, idx) => {
+                  const dateStr = format(day, "yyyy-MM-dd");
+                  return (
+                    <WeekDayColumn
+                      key={dateStr}
+                      day={day}
+                      dayIndex={idx}
+                      posts={postsByDate[dateStr] || []}
+                      isSelected={selectedDate === dateStr}
+                      isToday={isToday(day)}
+                      platformFilter={platformFilter}
+                      onClick={handleDayClick}
+                    />
+                  );
+                })}
+              </div>
+              {/* Legend for week view */}
+              {filteredPosts.length > 0 && (
+                <div className="mt-2 pt-1.5 border-t space-y-1">
+                  {platformFilter === "all" && (
+                    <div className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 text-[8px] text-muted-foreground">
+                        <span className="h-[5px] w-[5px] rounded-full bg-green-500" />朋友圈
+                      </span>
+                      <span className="flex items-center gap-1 text-[8px] text-muted-foreground">
+                        <span className="h-[5px] w-[5px] rounded-full bg-red-500" />小红书
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(["published", "optimized", "generated", "planned"] as PostStatus[]).map((s) => {
+                      if (weekPosts.filter((p) => p.status === s).length === 0) return null;
+                      return (
+                        <span key={s} className="flex items-center gap-[3px] text-[8px] font-medium">
+                          <span className={`h-[5px] w-[5px] rounded-full ${STATUS_DOT_COLORS[s]}`} />
+                          <span className={
+                            s === "published" ? "text-violet-500"
+                              : s === "optimized" ? "text-amber-500"
+                                : s === "generated" ? "text-sky-500"
+                                  : "text-gray-400"
+                          }>
+                            {POST_STATUS_LABELS[s]}
+                          </span>
+                        </span>
                       );
                     })}
                   </div>
