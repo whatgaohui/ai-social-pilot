@@ -37,6 +37,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AISpellCheck, type SpellCheckResult } from "@/components/right-panel/ai-spellcheck";
 
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
@@ -284,6 +285,28 @@ function OneClickFormat({ post }: { post: ContentPost | null }) {
         </div>
       </CollapsibleContent>
     </Collapsible>
+  );
+}
+
+// ─── AI Spell Check Section ──────────────────────────────────────────
+
+function AISpellCheckSection({ post }: { post: ContentPost | null }) {
+  const { updateContentPost } = useAppStore();
+
+  const handleSpellCheckResult = useCallback(
+    (result: SpellCheckResult) => {
+      // If the result has fixes applied, update the post content
+      // The onResult callback already handles "一键修复" which replaces text
+      // We just need to track whether spellcheck was done for the checklist
+    },
+    []
+  );
+
+  return (
+    <AISpellCheck
+      content={post?.content || ""}
+      onResult={handleSpellCheckResult}
+    />
   );
 }
 
@@ -780,6 +803,9 @@ export function PublishWorkflow({ selectedPost }: PublishWorkflowProps) {
     >
       <motion.div variants={itemVariants}>
         <OneClickFormat post={selectedPost} />
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        <AISpellCheckSection post={selectedPost} />
       </motion.div>
       <motion.div variants={itemVariants}>
         <PublishChecklist post={selectedPost} />

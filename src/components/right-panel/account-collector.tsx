@@ -68,10 +68,12 @@ import {
   ChevronRight,
   Bookmark,
   Repeat2,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { TrackedAccount, Platform, ContentPost, ContentComment, ContentInteraction } from "@/types";
 import { PLATFORM_LABELS } from "@/types";
+import { CompetitorTrends } from "@/components/right-panel/competitor-trends";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -743,6 +745,20 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
     (m.platforms as readonly string[]).includes(formPlatform)
   );
 
+  // ── Trends view state ─────────────────────────────────────────────
+  const [showTrends, setShowTrends] = useState(false);
+
+  // ── Render: Trends View ───────────────────────────────────────────────
+  if (showTrends && viewingAccountId) {
+    return (
+      <CompetitorTrends
+        accountId={viewingAccountId}
+        accountName={notesAccount?.nickname}
+        onClose={() => setShowTrends(false)}
+      />
+    );
+  }
+
   // ── Render: Notes View ────────────────────────────────────────────────
   if (viewingAccountId) {
     return (
@@ -784,9 +800,9 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
             </div>
           </motion.div>
 
-          {/* Search */}
-          <motion.div variants={itemVariants}>
-            <div className="relative">
+          {/* Search + Trends button */}
+          <motion.div variants={itemVariants} className="flex items-center gap-2">
+            <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="搜索笔记..."
@@ -795,6 +811,15 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                 className="h-8 text-xs pl-8"
               />
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowTrends(true)}
+              className="h-8 px-2 text-[10px] gap-1 border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 shrink-0"
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              趋势
+            </Button>
           </motion.div>
 
           {/* Notes loading */}

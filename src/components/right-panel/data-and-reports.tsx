@@ -1,12 +1,15 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { AnalyticsPanel } from "@/components/right-panel/analytics-panel";
 import { OperationReport } from "@/components/right-panel/operation-report";
 import { CompetitorAnalysis } from "@/components/right-panel/competitor-analysis";
-import { FileBarChart, BarChart3, LayoutDashboard, Users } from "lucide-react";
+import { ReportGenerator } from "@/components/right-panel/report-generator";
+import { FileBarChart, BarChart3, LayoutDashboard, Users, FileText, Sparkles, ArrowLeft } from "lucide-react";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
 
 /**
@@ -19,6 +22,7 @@ import { OperationsDashboard } from "@/components/right-panel/operations-dashboa
  */
 export function DataAndReports() {
   const { platform } = useAppStore();
+  const [showReportGenerator, setShowReportGenerator] = useState(false);
 
   const isWeChat = platform === "wechat";
 
@@ -84,9 +88,45 @@ export function DataAndReports() {
               value="report"
               className="flex flex-col min-h-0 mt-1"
             >
-              <div className="flex flex-col flex-1 min-h-0">
-                <OperationReport />
-              </div>
+              <AnimatePresence mode="wait">
+                {showReportGenerator ? (
+                  <motion.div
+                    key="report-generator"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="flex flex-col flex-1 min-h-0"
+                  >
+                    <ReportGenerator onClose={() => setShowReportGenerator(false)} />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="operation-report"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col flex-1 min-h-0"
+                  >
+                    <OperationReport />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Report generator trigger - floating button */}
+              {!showReportGenerator && (
+                <div className="absolute bottom-4 right-4 print:hidden z-10">
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      onClick={() => setShowReportGenerator(true)}
+                      className="gap-1.5 shadow-lg bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white"
+                      size="sm"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      生成报告
+                    </Button>
+                  </motion.div>
+                </div>
+              )}
             </TabsContent>
 
             {/* ── Analytics Tab ────────────────────────────────────── */}
