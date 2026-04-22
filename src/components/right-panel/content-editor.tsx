@@ -18,7 +18,7 @@ import {
   Check,
   Bold,
   Smile,
-  TextWrap,
+  WrapText,
   Hash,
   Eraser,
   Loader2,
@@ -447,7 +447,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
                     className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/80"
                     onClick={handleLineBreak}
                   >
-                    <TextWrap className="h-3.5 w-3.5" />
+                    <WrapText className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" sideOffset={4}>换行</TooltipContent>
