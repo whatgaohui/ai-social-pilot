@@ -8,7 +8,6 @@ import { CompactCalendar } from "@/components/left-panel/compact-calendar";
 import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
 import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templates";
 import { ContentWorkspace } from "@/components/right-panel/content-workspace";
-// AIOptimizePanel removed - AI tools have been integrated into ContentWorkspace
 import { DataAndReports } from "@/components/right-panel/data-and-reports";
 import { AccountCollector } from "@/components/right-panel/account-collector";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
@@ -24,9 +23,8 @@ import { AIWritingAssistant } from "@/components/ai-writing-assistant";
 import { SettingsCenter } from "@/components/settings-center";
 import {
   Sparkles, BookOpen, PenTool, CalendarDays,
-  BarChart3, Zap, FileText, MessageCircle,
-  Settings, Send, ChevronLeft, ChevronRight,
-  Globe, User, Check, Search,
+  BarChart3, Zap, FileText,
+  Settings, Globe, User, Check, Search,
 } from "lucide-react";
 import { CommandPalette } from "@/components/command-palette";
 import { ContentSearch } from "@/components/content-search";
@@ -451,7 +449,7 @@ export default function Home() {
 
   // Keyboard shortcuts — Ctrl/Cmd+K opens CommandPalette
   useKeyboardShortcuts({
-    onOpenCommandPalette: () => setCommandPaletteOpen((v) => !v),
+    onOpenCommandPalette: () => setCommandPaletteOpen(!commandPaletteOpen),
   });
 
   // Open shortcuts help with ? key (when not in an input)

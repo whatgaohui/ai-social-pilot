@@ -123,7 +123,7 @@ ${knowledgeItems && knowledgeItems.length > 0 ? `可参考的知识库素材：$
   }
 }
 
-async function handleFormatMode(post: { content: string; contentType: string; topic: string }, platform: string) {
+async function handleFormatMode(post: { content: string; contentType: string; topic: string; id?: string }, platform: string) {
   const isXHS = platform === 'xiaohongshu';
   const ai = await createAIClient();
 

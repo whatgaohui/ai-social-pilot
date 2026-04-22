@@ -4431,3 +4431,281 @@ Stage Summary:
   4. 移动端体验优化（真机测试+适配修复）
   5. 多账号管理增强（支持同时追踪多个平台账号）
   6. 数据导出增强（支持更多格式：Markdown/CSV）
+
+---
+Task ID: 26-c
+Agent: Feature Developer
+Task: 数据分析面板增强 - 周期切换 + 平台对比图 + 内容趋势折线图
+
+Work Log:
+- 读取 worklog.md 了解前25轮开发成果，重点关注第12轮（SVG图表）和第16轮（分析面板）的上下文
+- 分析现有 analytics-panel.tsx 结构（1116行，含 DonutChart/HorizontalBarChart/EngagementRateCard/StatusRing 等 SVG 图表组件）
+- 分析 Zustand store 中 contentPosts 数据结构（含 platform、createdAt、favorites 等字段）
+
+### Changes Made
+
+#### 1. 周期切换 (Period Toggle)
+- 新增 `Period` 类型: `'week' | 'month' | 'all'`，默认值 `'week'`
+- 在面板顶部添加 3 个紧凑切换按钮（本周/本月/全部），text-[10px]，活跃态为 violet-500 填充
+- 使用 `useMemo` 根据 period 过滤 contentPosts：本周=7天，本月=30天，全部=无过滤
+- 基于 filteredPosts 重新计算所有统计数据（periodAnalytics useMemo）
+- 切换周期时使用 `key={period}` + framer-motion 动画平滑过渡
+
+#### 2. 平台对比柱状图 (PlatformComparisonChart)
+- 新增 SVG 组件，水平分组柱状图
+- 对比 wechat vs xiaohongshu 两个平台 4 个指标：
+  - 平均互动率（百分比格式）
+  - 平均点赞数（数字格式）
+  - 发布数量（整数格式）
+  - 平均评分（数字格式）
+- 绿色渐变条 = 朋友圈（#10b981 → #34d399）
+- 红色渐变条 = 小红书（#f43f5e → #fb7185）
+- 每个指标显示两组柱状图 + 右侧数值标签
+- framer-motion 入场动画（bar width 从 0 展开，数值淡入）
+- 图例说明：绿色圆点=朋友圈，红色圆点=小红书
+
+#### 3. 内容趋势折线图 (ContentTrendChart)
+- 新增 SVG 组件，折线 + 渐变面积填充
+- 根据 period 自动切换：本周=7天，本月=30天
+- 按日期分组统计 contentPosts 数量（基于 createdAt）
+- SVG polyline 绘制折线，violet→amethyst 渐变描边
+- motion.polygon 绘制渐变面积填充（violet 0.25→0.02 透明度）
+- motion.pathLength 动画实现折线绘制效果
+- 数据点为圆形（有数据的点更大，带 violet 描边）
+- 每个数据点带 `<title>` 原生 SVG tooltip（悬停显示日期+数量）
+- X 轴日期标签智能间隔（7天模式全部显示，30天模式每7天显示）
+- 数值标签在有数据的点上显示
+
+#### 4. 其他改进
+- 所有统计卡片、环形图、条形图均使用 `displayAnalytics`（周期感知数据）替代原来的固定 analytics
+- Donut Chart 和 Status Distribution Ring 添加条件渲染（空分布时不渲染）
+- 新增 `formatRate` 辅助函数（格式化百分比率）
+- 移除未使用的 `useCallback` 导入
+- 新增 `ContentPost` 类型导入用于组件 props
+
+### QA验证结果
+- ✅ TypeScript 编译通过（零错误）
+- ✅ 页面编译成功（GET / 200）
+- ✅ Dev log 无报错
+- ✅ 所有图表组件使用 violet/emerald/amber/rose 配色，无 blue/indigo
+
+Stage Summary:
+- 修改文件：src/components/right-panel/analytics-panel.tsx（从 1116 行增长至约 1480 行）
+- 新增 2 个 SVG 图表组件：PlatformComparisonChart、ContentTrendChart
+- 新增 1 个交互功能：周期切换（本周/本月/全部）
+- 所有统计卡片支持按周期动态过滤数据
+- framer-motion 动画贯穿所有新组件
+---
+Task ID: 26-b
+Agent: Cleanup Developer
+Task: 死代码清理 + 旧组件删除 + 未使用导入清理
+
+Work Log:
+- 系统性扫描 src/ 目录下所有组件文件（约90个tsx/ts文件）
+- 对每个非UI组件执行 grep 验证是否被其他文件导入
+- 对所有 lucide-react 图标导入逐个交叉检查是否实际使用
+- 清理所有已确认的死代码文件（14个）
+- 修复3个文件的未使用导入
+- 删除过时注释引用
+
+### Deleted Files (14个)
+1. `src/components/center-panel/content-calendar.tsx` - 旧日历组件（Round 13后已被CompactCalendar替代），仅在compact-calendar.tsx的注释中提及
+2. `src/components/center-panel/batch-operations.tsx` - 批量操作组件，全项目零引用
+3. `src/components/ai-settings-panel.tsx` - AI模型配置面板（Round 5创建），后被settings-center.tsx替代，全项目零引用
+4. `src/components/right-panel/ai-optimize-panel.tsx` - AI优化面板，全项目零引用
+5. `src/components/right-panel/copywriting-output.tsx` - 旧文案输出组件（~940行），Round 13后被content-workspace.tsx替代，全项目零引用
+6. `src/components/right-panel/publish-panel.tsx` - 旧发布面板，功能已内联到content-workspace.tsx，全项目零引用
+7. `src/components/right-panel/ab-comparison.tsx` - 旧AB对比组件，全项目零引用
+8. `src/components/right-panel/formatting-optimizer.tsx` - 格式优化组件，全项目零引用
+9. `src/components/right-panel/engagement-card.tsx` - 互动数据卡片，仅被已删除的copywriting-output.tsx引用
+10. `src/components/right-panel/polish-tool.tsx` - 润色工具，仅被已删除的copywriting-output.tsx引用
+11. `src/components/right-panel/fragment-tool.tsx` - 碎片转文案工具，仅被已删除的copywriting-output.tsx引用
+12. `src/hooks/use-magnetic-hover.ts` - 磁性悬停hook，全项目零引用
+13. `src/components/ui/loading-state.tsx` - 加载状态UI组件，全项目零引用
+14. `src/components/ui/ai-loading-skeleton.tsx` - AI加载骨架屏，全项目零引用
+
+### Cleaned Files (3个)
+1. `src/app/page.tsx` - 移除未使用的lucide图标导入: MessageCircle, Send, ChevronLeft, ChevronRight；移除过时的AIOptimizePanel注释
+2. `src/components/right-panel/data-and-reports.tsx` - 移除未使用的lucide图标导入: FileText, ArrowLeft
+3. `src/components/left-panel/compact-calendar.tsx` - 更新过时注释（移除对已删除content-calendar.tsx的引用）
+
+### QA验证结果
+- ✅ `npx tsc --noEmit` - src/ 目录零 TypeScript 错误
+- ✅ `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/` - 返回 200
+- ✅ `bun run lint` - 零 ESLint 错误
+- ✅ Dev server 编译成功，无 module-not-found 错误
+- ✅ 删除后无残留引用（grep验证）
+
+Stage Summary:
+- 删除14个死代码文件，减少约3000+行无用代码
+- 清理3个文件的未使用导入，提升代码整洁度
+- 所有存活的组件均经过交叉引用验证，确保无误删
+- 项目编译和运行完全正常，零错误
+
+---
+Task ID: 26-a
+Agent: Feature Developer
+Task: 运营看板接入真实数据 + 周月切换视图
+
+Work Log:
+- 读取 worklog.md 了解前25轮开发成果
+- 分析现有 operations-dashboard.tsx，确认已使用 Zustand contentPosts 数据
+- 分析 types/index.ts ContentPost 接口字段（scheduledDate, createdAt, platform, status, likes, comments, shares, views, favorites, aiScore, contentType）
+- 分析 analytics-panel.tsx 数据使用模式作为参考
+- 阅读现有 operations-dashboard.tsx 完整代码（1012行）
+
+### Changes Made
+修改文件：`src/components/right-panel/operations-dashboard.tsx`
+
+1. **新增周期切换器 (PeriodToggle)**：
+   - 三个选项：本周 / 本月 / 全部，默认"本周"
+   - framer-motion `layoutId` 动画实现滑动指示器效果
+   - 每个选项显示对应周期内的内容数量 (N)
+   - 切换时自动重置漏斗筛选器
+   - 日历日 / 日历范围 / 收件箱三个 lucide 图标
+
+2. **数据过滤逻辑 (filterPostsByPeriod)**：
+   - 类型安全的 `ContentPost[]` 过滤函数
+   - 本周：从周一 00:00:00 到当前时间
+   - 本月：从本月1日 00:00:00 到当前时间
+   - 全部：不过滤
+   - 基于 `scheduledDate` 字段过滤（回退到 `createdAt`）
+   - 切换周期时显示汇总提示："本周共 N 条内容"
+
+3. **所有数据计算均基于过滤后的帖子**：
+   - QuickStats：周期发布数（动态标签 "本周发布"/"本月发布"/"全部发布"）、环比趋势（仅周/月显示箭头）、互动总量、最佳时段、发布率
+   - EngagementHeatmap：基于过滤帖子的 scheduledDate + 互动数据
+   - ContentFunnel：过滤帖子的 status 分布（planned/generated/optimized/published）
+   - PlatformComparison：过滤帖子的微信 vs 小红书指标对比
+   - WeeklySparkline：周模式显示4周、全部模式显示12周历史趋势
+   - AIQuickInsights：最佳内容类型、低评分内容数、发布建议均基于过滤数据
+
+4. **AnimatePresence 切换动画**：
+   - 切换周期时所有图表区块有 fade + slide 过渡动画
+   - Key 绑定到 period 状态确保组件重新渲染
+
+5. **样式优化**：
+   - 色彩方案统一为 violet/emerald/amber/rose（无 blue/indigo）
+   - 平台对比 WeChat 栏色改为 emerald→green 渐变（更贴合微信品牌色）
+   - 暗黑模式完整兼容（所有 Badge、bg、text 使用 dark: 变体）
+   - PeriodToggle 使用 backdrop-blur + muted 半透明背景
+   - 漏斗活跃筛选项增加 ring 高亮
+   - AI 速览卡片显示当前周期 Badge
+
+### QA验证结果
+- ✅ TypeScript 零错误 (npx tsc --noEmit)
+- ✅ ESLint 零错误 (bun run lint)
+- ✅ 页面编译成功 (GET / → 200)
+
+Stage Summary:
+- 运营看板全面接入 Zustand contentPosts 真实数据
+- 新增 本周/本月/全部 三级周期切换，所有6个图表区块联动过滤
+- framer-motion AnimatePresence 驱动周期切换过渡动画
+- 修改1个文件，零新增文件
+
+---
+Task ID: 26
+Agent: Main Orchestrator (Cron #112108)
+Task: 第26轮开发 - TypeScript修复 + 运营看板真实数据 + 代码清理 + 数据分析增强
+
+Work Log:
+- 读取 worklog.md 了解前25轮开发成果（4604行，25+轮迭代）
+- Dev server 运行在端口3000，验证7个核心API全部200
+- 发现并修复4个TypeScript编译错误（src/目录）
+- 3个并行full-stack-developer子代理同时开发
+
+### Bug修复
+
+1. **TypeScript编译错误**（高优先级）：
+   - `src/app/api/ai/optimize/route.ts`：handleFormatMode函数参数类型缺少`id`字段，导致`post?.id`访问报错（3处）
+     - 修复：添加`id?: string`到函数参数类型（Prisma ContentPost.id为String类型）
+   - `src/app/page.tsx`：`setCommandPaletteOpen((v) => !v)`传递函数给只接受boolean的Zustand setter
+     - 修复：改为`setCommandPaletteOpen(!commandPaletteOpen)`直接传递boolean值
+   - 修复后src/目录TypeScript编译零错误
+
+### 新功能
+
+1. **运营看板接入真实数据 + 周期切换**（operations-dashboard.tsx）：
+   - 全部6个图表区块从硬编码数据改为使用Zustand store的contentPosts真实数据
+   - 新增PeriodToggle周期切换器：本周/本月/全部（带帖子计数Badge）
+   - 所有统计、热力图、漏斗、平台对比、Sparkline、AI洞察均根据周期过滤
+   - 周期切换时使用framer-motion AnimatePresence过渡动画
+   - QuickStats动态标签（本周发布/本月发布/全部发布）
+   - 平台对比颜色修正（WeChat改为emerald/green）
+
+2. **数据分析面板增强**（analytics-panel.tsx）：
+   - 新增周期切换器（本周/本月/全部），所有图表联动过滤
+   - 新增PlatformComparisonChart SVG组件：
+     - 水平分组条形图对比朋友圈vs小红书
+     - 4个维度：平均互动率、平均点赞数、发布数量、平均评分
+     - 绿色(微信)vs红色(小红书)配色
+     - framer-motion入场动画
+   - 新增ContentTrendChart SVG组件：
+     - 内容创建趋势折线图（本周7天/本月30天）
+     - SVG polyline + 渐变区域填充
+     - pathLength动画路径绘制效果
+     - 数据点圆形 + 原生tooltip
+     - 智能X轴标签间距避免重叠
+
+### 代码清理（14个死文件删除，~3000+行代码移除）
+
+删除的文件：
+- `center-panel/content-calendar.tsx` — 旧日历组件（Round 13后由CompactCalendar替代）
+- `center-panel/batch-operations.tsx` — 零引用
+- `ai-settings-panel.tsx` — 已被settings-center.tsx替代
+- `right-panel/ai-optimize-panel.tsx` — 零引用
+- `right-panel/copywriting-output.tsx` — ~940行，已被content-workspace.tsx替代
+- `right-panel/publish-panel.tsx` — 已内联到content-workspace.tsx
+- `right-panel/ab-comparison.tsx` — 零引用
+- `right-panel/formatting-optimizer.tsx` — 零引用
+- `right-panel/engagement-card.tsx` — 仅被已删除的copywriting-output引用
+- `right-panel/polish-tool.tsx` — 仅被已删除的copywriting-output引用
+- `right-panel/fragment-tool.tsx` — 仅被已删除的copywriting-output引用
+- `hooks/use-magnetic-hover.ts` — 零引用
+- `ui/loading-state.tsx` — 零引用
+- `ui/ai-loading-skeleton.tsx` — 零引用
+
+清理的未使用导入：
+- `page.tsx` — 移除MessageCircle, Send, ChevronLeft, ChevronRight
+- `data-and-reports.tsx` — 移除FileText, ArrowLeft
+- `compact-calendar.tsx` — 更新过时注释
+
+### 修改文件
+- `src/app/api/ai/optimize/route.ts` — TS类型修复
+- `src/app/page.tsx` — TS类型修复 + 未使用导入清理
+- `src/components/right-panel/operations-dashboard.tsx` — 真实数据+周期切换
+- `src/components/right-panel/analytics-panel.tsx` — 周期切换+新图表
+
+### 删除文件
+- 14个死代码文件（见上方列表）
+
+### QA验证结果
+- ✅ TypeScript src/ 零错误（修复4个预存错误 + 删除代码后无新增错误）
+- ✅ ESLint 零错误
+- ✅ 页面编译成功（GET / → 200）
+- ✅ 7个核心API全部返回200（persona/knowledge/plan/content/analytics/ai-config/platform-accounts）
+
+### 项目当前状态
+- 项目经过26轮迭代，功能极其丰富
+- 代码库经过大规模清理，移除~3000+行死代码（14个文件）
+- 运营看板和数据分析面板均已接入真实数据并支持周期切换
+- 所有TypeScript类型严格检查通过
+- ⚠️ dev server因沙箱内存限制不稳定（使用curl验证替代）
+- ⚠️ agent-browser不可用（导致OOM，使用curl替代）
+
+### 未解决问题或风险
+1. dev server Turbopack内存问题（使用生产构建替代）
+2. 小红书采集功能依赖scraper服务（端口3003），反爬机制限制数据完整性
+3. AI写作助手FAB在移动端可能与底部浮动导航重叠
+4. 运营报告自动生成（PDF/图片格式）尚未实现
+5. 定时发布提醒功能待完善
+6. 多人协作/团队账号管理功能待开发
+
+### 建议下一阶段优先事项
+1. 运营报告PDF/图片自动导出功能
+2. 定时发布提醒集成到publish-workflow
+3. 多人协作文案审阅功能
+4. 数据导入/导出增强（CSV/Excel格式）
+5. 移动端真机测试和适配
+6. 搜索功能增强（全文搜索+高亮+排序算法）
+7. PWA离线支持

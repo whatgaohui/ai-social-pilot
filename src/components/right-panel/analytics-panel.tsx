@@ -35,9 +35,12 @@ import {
   FileJson,
   FileText,
   Medal,
+  Calendar,
+  GitCompareArrows,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TimeSuggestions } from "@/components/right-panel/time-suggestions";
+import type { ContentPost } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -112,6 +115,13 @@ function formatNum(n: number): string {
   if (n >= 10000) return (n / 10000).toFixed(1) + "w";
   if (n >= 1000) return (n / 1000).toFixed(1) + "k";
   return String(n);
+}
+
+function formatRate(n: number): string {
+  if (n >= 10) return n.toFixed(1);
+  if (n >= 1) return n.toFixed(2);
+  if (n > 0) return n.toFixed(3);
+  return "0";
 }
 
 // ─── Donut Chart Component ───────────────────────────────────────────────────
@@ -637,6 +647,284 @@ function StatusRing({
   );
 }
 
+// ─── Platform Comparison Chart ─────────────────────────────────────────────
+
+interface PlatformMetricGroup {
+ label: string;
+ wechatVal: number;
+ xhsVal: number;
+ format: "number" | "rate";
+}
+
+function PlatformComparisonChart({ posts }: { posts: ContentPost[] }) {
+  const wechatPosts = posts.filter((p) => !p.platform || p.platform === "wechat");
+  const xhsPosts = posts.filter((p) => p.platform === "xiaohongshu");
+
+  const calcEngagementRate = (arr: ContentPost[]) => {
+    if (arr.length === 0) return 0;
+    const totalViews = arr.reduce((s, p) => s + p.views, 0);
+    if (totalViews === 0) return 0;
+    const totalInteractions = arr.reduce((s, p) => s + p.likes + p.comments + p.shares, 0);
+    return (totalInteractions / totalViews) * 100;
+  };
+
+  const calcAvgLikes = (arr: ContentPost[]) => {
+    if (arr.length === 0) return 0;
+    return arr.reduce((s, p) => s + p.likes, 0) / arr.length;
+  };
+
+  const calcAvgScore = (arr: ContentPost[]) => {
+    if (arr.length === 0) return 0;
+    return arr.reduce((s, p) => s + p.aiScore, 0) / arr.length;
+  };
+
+  const metrics: PlatformMetricGroup[] = [
+    { label: "平均互动率", wechatVal: calcEngagementRate(wechatPosts), xhsVal: calcEngagementRate(xhsPosts), format: "rate" },
+    { label: "平均点赞数", wechatVal: calcAvgLikes(wechatPosts), xhsVal: calcAvgLikes(xhsPosts), format: "number" },
+    { label: "发布数量", wechatVal: wechatPosts.length, xhsVal: xhsPosts.length, format: "number" },
+    { label: "平均评分", wechatVal: calcAvgScore(wechatPosts), xhsVal: calcAvgScore(xhsPosts), format: "number" },
+  ];
+
+  const maxVal = Math.max(
+    ...metrics.map((m) => Math.max(m.wechatVal, m.xhsVal)),
+    1
+  );
+
+  const barH = 10;
+  const groupGap = 12;
+  const labelW = 62;
+  const valueW = 44;
+  const chartW = 200;
+  const svgH = metrics.length * (barH * 2 + groupGap) + metrics.length * 16;
+
+  return (
+    <div className="space-y-2">
+      {/* Legend */}
+      <div className="flex items-center gap-4 px-1">
+        <div className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "#10b981" }} />
+          <span className="text-[10px] text-muted-foreground">朋友圈</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "#f43f5e" }} />
+          <span className="text-[10px] text-muted-foreground">小红书</span>
+        </div>
+      </div>
+      {/* Chart */}
+      <svg width="100%" viewBox={`0 0 ${labelW + chartW + valueW + 10} ${svgH}`} className="overflow-visible">
+        <defs>
+          <linearGradient id="plat-wc-bar" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#34d399" stopOpacity="1" />
+          </linearGradient>
+          <linearGradient id="plat-xhs-bar" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#fb7185" stopOpacity="1" />
+          </linearGradient>
+        </defs>
+        {metrics.map((m, i) => {
+          const yBase = i * (barH * 2 + groupGap + 16) + 10;
+          const wcW = Math.max((m.wechatVal / maxVal) * chartW, 2);
+          const xhsW = Math.max((m.xhsVal / maxVal) * chartW, 2);
+          const fmt = (v: number) => (m.format === "rate" ? formatRate(v) + "%" : formatNum(Math.round(v)));
+          return (
+            <g key={m.label}>
+              <text x={0} y={yBase + barH + 2} className="fill-muted-foreground" fontSize={10} textAnchor="start">
+                {m.label}
+              </text>
+              {/* WeChat bar */}
+              <motion.rect
+                x={labelW} y={yBase}
+                width={0}
+                height={barH}
+                rx={3}
+                fill="url(#plat-wc-bar)"
+                initial={{ width: 0 }}
+                animate={{ width: wcW }}
+                transition={{ duration: 0.6, delay: 0.1 * i, ease: "easeOut" }}
+              />
+              {/* XHS bar */}
+              <motion.rect
+                x={labelW} y={yBase + barH + 3}
+                width={0}
+                height={barH}
+                rx={3}
+                fill="url(#plat-xhs-bar)"
+                initial={{ width: 0 }}
+                animate={{ width: xhsW }}
+                transition={{ duration: 0.6, delay: 0.1 * i + 0.08, ease: "easeOut" }}
+              />
+              {/* Values */}
+              <motion.text
+                x={labelW + chartW + 6} y={yBase + barH + 1}
+                className="fill-emerald-600 dark:fill-emerald-400"
+                fontSize={9}
+                fontFamily="monospace"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 + 0.1 * i }}
+              >
+                {fmt(m.wechatVal)}
+              </motion.text>
+              <motion.text
+                x={labelW + chartW + 6} y={yBase + barH + barH + 4}
+                className="fill-rose-500 dark:fill-rose-400"
+                fontSize={9}
+                fontFamily="monospace"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.35 + 0.1 * i }}
+              >
+                {fmt(m.xhsVal)}
+              </motion.text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// ─── Content Trend Line Chart ──────────────────────────────────────────────
+
+function ContentTrendChart({
+  posts,
+  days,
+}: {
+  posts: ContentPost[];
+  days: number;
+}) {
+  const data = useMemo(() => {
+    const now = new Date();
+    const result: Array<{ date: string; count: number; label: string }> = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const count = posts.filter((p) => {
+        const cd = new Date(p.createdAt);
+        return cd.toISOString().slice(0, 10) === dateStr;
+      }).length;
+      const label = `${d.getMonth() + 1}/${d.getDate()}`;
+      result.push({ date: dateStr, count, label });
+    }
+    return result;
+  }, [posts, days]);
+
+  const maxCount = Math.max(...data.map((d) => d.count), 1);
+  const svgW = 300;
+  const svgH = 100;
+  const padL = 4;
+  const padR = 4;
+  const padT = 8;
+  const padB = 20;
+  const innerW = svgW - padL - padR;
+  const innerH = svgH - padT - padB;
+
+  const points = data.map((d, i) => ({
+    x: padL + (i / Math.max(data.length - 1, 1)) * innerW,
+    y: padT + innerH - (d.count / maxCount) * innerH,
+    ...d,
+  }));
+
+  const lineStr = points.map((p) => `${p.x},${p.y}`).join(" ");
+  const areaStr = `${padL},${svgH - padB} ${lineStr} ${padL + innerW},${svgH - padB}`;
+
+  return (
+    <svg
+      width="100%"
+      viewBox={`0 0 ${svgW} ${svgH}`}
+      className="overflow-visible"
+    >
+      <defs>
+        <linearGradient id="trend-area-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#a855f7" stopOpacity="0.02" />
+        </linearGradient>
+        <linearGradient id="trend-line-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#8b5cf6" />
+          <stop offset="100%" stopColor="#a855f7" />
+        </linearGradient>
+      </defs>
+      {/* X-axis line */}
+      <line
+        x1={padL}
+        y1={svgH - padB}
+        x2={padL + innerW}
+        y2={svgH - padB}
+        className="stroke-muted/30"
+        strokeWidth={1}
+      />
+      {/* Area fill */}
+      <motion.polygon
+        points={areaStr}
+        fill="url(#trend-area-fill)"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.3 }}
+      />
+      {/* Line */}
+      <motion.polyline
+        points={lineStr}
+        fill="none"
+        stroke="url(#trend-line-grad)"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 1.2, delay: 0.2, ease: "easeInOut" }}
+      />
+      {/* Data points */}
+      {points.map((p, i) => (
+        <g key={p.date}>
+          {/* Only show labels for some points to avoid crowding */}
+          {(days <= 7 || i % Math.ceil(days / 7) === 0 || i === data.length - 1) && (
+            <text
+              x={p.x}
+              y={svgH - 4}
+              className="fill-muted-foreground"
+              fontSize={8}
+              textAnchor="middle"
+            >
+              {p.label}
+            </text>
+          )}
+          <motion.circle
+            cx={p.x}
+            cy={p.y}
+            r={p.count > 0 ? 3 : 2}
+            fill={p.count > 0 ? "#8b5cf6" : "currentColor"}
+            className={p.count > 0 ? "" : "fill-muted-foreground/30"}
+            stroke={p.count > 0 ? "#8b5cf6" : "transparent"}
+            strokeWidth={1.5}
+            initial={{ r: 0, opacity: 0 }}
+            animate={{ r: p.count > 0 ? 3 : 2, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.5 + i * 0.04 }}
+          >
+            <title>{`${p.label}: ${p.count}篇内容`}</title>
+          </motion.circle>
+          {/* Count label on top for notable points */}
+          {p.count > 0 && (days <= 7 || i % Math.ceil(days / 4) === 0) && (
+            <motion.text
+              x={p.x}
+              y={p.y - 8}
+              className="fill-foreground font-medium"
+              fontSize={9}
+              textAnchor="middle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 + i * 0.04 }}
+            >
+              {p.count}
+            </motion.text>
+          )}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 // ─── Enhanced Skeleton ───────────────────────────────────────────────────────
 
 function AnalyticsSkeleton() {
@@ -753,13 +1041,60 @@ function AnalyticsSkeleton() {
 
 // ─── Main Analytics Panel ────────────────────────────────────────────────────
 
+type Period = "week" | "month" | "all";
+const PERIOD_LABELS: Record<Period, string> = { week: "本周", month: "本月", all: "全部" };
+
 export function AnalyticsPanel() {
-  const { platform } = useAppStore();
+  const { platform, contentPosts } = useAppStore();
   const isXHS = platform === "xiaohongshu";
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<Period>("week");
+
+  // Filter contentPosts by period
+  const filteredPosts = useMemo(() => {
+    if (period === "all") return contentPosts;
+    const now = new Date();
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - (period === "week" ? 7 : 30));
+    cutoff.setHours(0, 0, 0, 0);
+    return contentPosts.filter((p) => new Date(p.createdAt) >= cutoff);
+  }, [contentPosts, period]);
+
+  const trendDays = period === "week" ? 7 : 30;
+
+  // Recalculate period-aware analytics from filteredPosts
+  const periodAnalytics = useMemo(() => {
+    const posts = filteredPosts;
+    const totalLikes = posts.reduce((s, p) => s + p.likes, 0);
+    const totalComments = posts.reduce((s, p) => s + p.comments, 0);
+    const totalShares = posts.reduce((s, p) => s + p.shares, 0);
+    const totalViews = posts.reduce((s, p) => s + p.views, 0);
+    const avgScore = posts.length > 0
+      ? posts.reduce((s, p) => s + p.aiScore, 0) / posts.length
+      : 0;
+    const typeDistribution: Record<string, number> = {};
+    posts.forEach((p) => { typeDistribution[p.contentType] = (typeDistribution[p.contentType] || 0) + 1; });
+    const statusDistribution: Record<string, number> = {};
+    posts.forEach((p) => { statusDistribution[p.status] = (statusDistribution[p.status] || 0) + 1; });
+    const topPosts = [...posts]
+      .sort((a, b) => (b.likes + b.comments * 2 + b.shares * 3) - (a.likes + a.comments * 2 + a.shares * 3))
+      .slice(0, 5);
+    return {
+      totalPosts: posts.length,
+      publishedCount: posts.filter((p) => p.status === "published").length,
+      totalLikes,
+      totalComments,
+      totalShares,
+      totalViews,
+      avgScore: Math.round(avgScore * 10) / 10,
+      typeDistribution,
+      statusDistribution,
+      topPosts,
+    };
+  }, [filteredPosts]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -833,14 +1168,16 @@ export function AnalyticsPanel() {
     return CONTENT_TYPE_COLORS[type as ContentType] || "";
   };
 
-  // Memoize total favorites for XHS
+  // Memoize total favorites for XHS from filteredPosts
   const totalFavorites = useMemo(() => {
-    if (!analytics) return 0;
-    return analytics.topPosts.reduce(
-      (acc, p) => acc + ((p as Record<string, unknown>).favorites as number) || 0,
+    return filteredPosts.reduce(
+      (acc, p) => acc + (p.favorites || 0),
       0
     );
-  }, [analytics]);
+  }, [filteredPosts]);
+
+  // Use period-aware data when filteredPosts differ from full analytics
+  const displayAnalytics = contentPosts.length > 0 ? periodAnalytics : analytics;
 
   // ─── Loading State ─────────────────────────────────────────────────────
   if (loading) {
@@ -848,7 +1185,7 @@ export function AnalyticsPanel() {
   }
 
   // ─── Empty State ───────────────────────────────────────────────────────
-  if (!analytics || analytics.totalPosts === 0) {
+  if (!displayAnalytics || displayAnalytics.totalPosts === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
         <BarChart3 className="h-10 w-10 mb-3 opacity-30" />
@@ -865,10 +1202,35 @@ export function AnalyticsPanel() {
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 px-4 py-4">
         <motion.div
+          key={period}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
           className="space-y-4"
         >
+          {/* ── Period Toggle ──────────────────────────────────────── */}
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <div className="flex gap-1 flex-1">
+              {(["week", "month", "all"] as Period[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`text-[10px] px-2.5 py-1 rounded-md transition-all duration-200 font-medium flex-1 text-center ${
+                    period === p
+                      ? "bg-violet-500 text-white shadow-sm shadow-violet-500/20"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {PERIOD_LABELS[p]}
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-muted-foreground tabular-nums flex-shrink-0">
+              {displayAnalytics?.totalPosts || 0}条
+            </span>
+          </div>
+
           {/* ── Export Buttons ─────────────────────────────────────── */}
           <div className="flex gap-2">
             <Button
@@ -896,21 +1258,21 @@ export function AnalyticsPanel() {
             {[
               {
                 label: "总内容",
-                value: analytics.totalPosts,
+                value: displayAnalytics.totalPosts,
                 icon: BarChart3,
                 color: "text-violet-500",
                 bg: "bg-violet-50 dark:bg-violet-950/30",
               },
               {
                 label: "总点赞",
-                value: analytics.totalLikes,
+                value: displayAnalytics.totalLikes,
                 icon: Heart,
                 color: "text-rose-500",
                 bg: "bg-rose-50 dark:bg-rose-950/30",
               },
               {
                 label: "总评论",
-                value: analytics.totalComments,
+                value: displayAnalytics.totalComments,
                 icon: MessageSquare,
                 color: "text-amber-500",
                 bg: "bg-amber-50 dark:bg-amber-950/30",
@@ -928,14 +1290,14 @@ export function AnalyticsPanel() {
                 : []),
               {
                 label: "总转发",
-                value: analytics.totalShares,
+                value: displayAnalytics.totalShares,
                 icon: Share2,
                 color: "text-emerald-500",
                 bg: "bg-emerald-50 dark:bg-emerald-950/30",
               },
               {
                 label: "总浏览",
-                value: analytics.totalViews,
+                value: displayAnalytics.totalViews,
                 icon: Eye,
                 color: "text-cyan-500",
                 bg: "bg-cyan-50 dark:bg-cyan-950/30",
@@ -977,12 +1339,13 @@ export function AnalyticsPanel() {
                 <span className="text-sm font-medium">平均AI质量评分</span>
               </div>
               <motion.span
+                key={displayAnalytics.avgScore}
                 className="text-2xl font-bold text-amber-600"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
               >
-                {analytics.avgScore}
+                {displayAnalytics.avgScore}
               </motion.span>
             </CardContent>
           </Card>
@@ -994,14 +1357,15 @@ export function AnalyticsPanel() {
             transition={{ delay: 0.15 }}
           >
             <EngagementRateCard
-              likes={analytics.totalLikes}
-              comments={analytics.totalComments}
-              shares={analytics.totalShares}
-              views={analytics.totalViews}
+              likes={displayAnalytics.totalLikes}
+              comments={displayAnalytics.totalComments}
+              shares={displayAnalytics.totalShares}
+              views={displayAnalytics.totalViews}
             />
           </motion.div>
 
           {/* ── Content Type Distribution (Donut Chart) ────────────── */}
+          {Object.keys(displayAnalytics.typeDistribution).length > 0 && (
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-2 px-4 pt-4">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -1013,14 +1377,15 @@ export function AnalyticsPanel() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <DonutChart
-                data={analytics.typeDistribution}
+                data={displayAnalytics.typeDistribution}
                 isXHS={isXHS}
               />
             </CardContent>
           </Card>
+          )}
 
           {/* ── Status Distribution Ring ────────────────────────────── */}
-          {Object.keys(analytics.statusDistribution).length > 0 && (
+          {Object.keys(displayAnalytics.statusDistribution).length > 0 && (
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-2 px-4 pt-4">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -1032,14 +1397,14 @@ export function AnalyticsPanel() {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <StatusRing
-                  statusDistribution={analytics.statusDistribution}
+                  statusDistribution={displayAnalytics.statusDistribution}
                 />
               </CardContent>
             </Card>
           )}
 
           {/* ── Top Posts (Horizontal Bar Chart) ────────────────────── */}
-          {analytics.topPosts.length > 0 && (
+          {displayAnalytics.topPosts.length > 0 && (
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-2 px-4 pt-4">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -1054,12 +1419,45 @@ export function AnalyticsPanel() {
                   综合评分 = 点赞 ×1 + 评论 ×2 + 转发 ×3
                 </p>
                 <HorizontalBarChart
-                  posts={analytics.topPosts.slice(0, 5)}
+                  posts={displayAnalytics.topPosts.slice(0, 5)}
                   isXHS={isXHS}
                 />
               </CardContent>
             </Card>
           )}
+
+          {/* ── Platform Comparison Chart ───────────────────────────── */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-2 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <div className="h-6 w-6 rounded bg-emerald-500/10 flex items-center justify-center">
+                  <GitCompareArrows className="h-3.5 w-3.5 text-emerald-500" />
+                </div>
+                平台对比
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <PlatformComparisonChart posts={filteredPosts} />
+            </CardContent>
+          </Card>
+
+          {/* ── Content Trend Line Chart ────────────────────────────── */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-2 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <div className="h-6 w-6 rounded bg-violet-500/10 flex items-center justify-center">
+                  <TrendingUp className="h-3.5 w-3.5 text-violet-500" />
+                </div>
+                内容趋势
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <p className="text-[10px] text-muted-foreground mb-2">
+                近{trendDays}天内容创建趋势
+              </p>
+              <ContentTrendChart posts={filteredPosts} days={trendDays} />
+            </CardContent>
+          </Card>
 
           {/* ── Best Publishing Time Suggestions ───────────────────── */}
           <TimeSuggestions />

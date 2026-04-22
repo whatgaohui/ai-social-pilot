@@ -53,7 +53,7 @@ import {
   CalendarDateDropZone,
 } from "@/components/center-panel/drag-sort-calendar";
 
-// --- Color maps (mirrors content-calendar.tsx) ---
+// --- Color maps ---
 
 const STATUS_DOT_COLORS: Record<PostStatus, string> = {
   planned: "bg-gray-400",

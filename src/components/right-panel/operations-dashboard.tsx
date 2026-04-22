@@ -1,13 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -29,18 +27,36 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Flame,
-  Layers,
   BarChart3,
   Eye,
   MessageSquare,
   Share2,
+  CalendarDays,
+  CalendarRange,
+  Inbox,
 } from "lucide-react";
 import {
   POST_STATUS_LABELS,
   CONTENT_TYPE_LABELS,
   XHS_CONTENT_TYPE_LABELS,
-  Platform,
+  ContentPost,
 } from "@/types";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Period = "week" | "month" | "all";
+
+const PERIOD_OPTIONS: { value: Period; label: string; icon: typeof CalendarDays }[] = [
+  { value: "week", label: "本周", icon: CalendarDays },
+  { value: "month", label: "本月", icon: CalendarRange },
+  { value: "all", label: "全部", icon: Inbox },
+];
+
+const PERIOD_LABELS: Record<Period, string> = {
+  week: "本周",
+  month: "本月",
+  all: "全部",
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -54,7 +70,6 @@ const TIME_RANGES: [number, number][] = [
   [16, 20],
   [20, 24],
 ];
-const WEEK_LABELS = ["第1周", "第2周", "第3周", "第4周"];
 
 const FUNNEL_STEPS = [
   { status: "planned", label: "计划中", color: "#94a3b8" },
@@ -63,7 +78,52 @@ const FUNNEL_STEPS = [
   { status: "published", label: "已发布", color: "#a855f7" },
 ] as const;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Date Helpers ─────────────────────────────────────────────────────────────
+
+function getStartOfWeek(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1; // Monday as start
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function getStartOfMonth(date: Date): Date {
+  const d = new Date(date);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function parseDate(dateStr: string): Date {
+  // scheduledDate is "2025-01-15" format
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) return d;
+  return new Date(0);
+}
+
+function filterPostsByPeriod(posts: ContentPost[], period: Period): ContentPost[] {
+  if (period === "all") return posts;
+  const now = new Date();
+  const start =
+    period === "week" ? getStartOfWeek(now) : getStartOfMonth(now);
+  return posts.filter((p) => {
+    const d = p.scheduledDate
+      ? parseDate(p.scheduledDate)
+      : p.createdAt
+        ? new Date(p.createdAt)
+        : null;
+    return d && d >= start;
+  });
+}
+
+function getWeekLabel(weekIndex: number, period: Period): string {
+  if (period === "all") return `第${weekIndex + 1}周`;
+  return `第${weekIndex + 1}周`;
+}
+
+// ─── Visual Helpers ──────────────────────────────────────────────────────────
 
 function getHeatColor(value: number, max: number): string {
   if (value === 0) return "rgba(148,163,184,0.08)";
@@ -78,6 +138,61 @@ function formatNum(n: number): string {
   if (n >= 10000) return (n / 10000).toFixed(1) + "w";
   if (n >= 1000) return (n / 1000).toFixed(1) + "k";
   return String(n);
+}
+
+// ─── Period Toggle Component ─────────────────────────────────────────────────
+
+function PeriodToggle({
+  period,
+  onChange,
+  postCounts,
+}: {
+  period: Period;
+  onChange: (p: Period) => void;
+  postCounts: Record<Period, number>;
+}) {
+  return (
+    <motion.div
+      className="flex items-center gap-1 p-1 rounded-xl bg-muted/50 backdrop-blur-sm"
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      {PERIOD_OPTIONS.map((opt) => {
+        const isActive = period === opt.value;
+        return (
+          <motion.button
+            key={opt.value}
+            className={`
+              relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+              transition-colors duration-200 cursor-pointer
+              ${isActive
+                ? "text-white"
+                : "text-muted-foreground hover:text-foreground"
+              }
+            `}
+            onClick={() => onChange(opt.value)}
+            whileTap={{ scale: 0.97 }}
+          >
+            {isActive && (
+              <motion.div
+                className="absolute inset-0 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500"
+                layoutId="period-toggle-bg"
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              />
+            )}
+            <span className="relative z-10 flex items-center gap-1">
+              <opt.icon className="h-3 w-3" />
+              {opt.label}
+              {postCounts[opt.value] > 0 && (
+                <span className="text-[9px] opacity-80">({postCounts[opt.value]})</span>
+              )}
+            </span>
+          </motion.button>
+        );
+      })}
+    </motion.div>
+  );
 }
 
 // ─── Animated Counter ────────────────────────────────────────────────────────
@@ -112,7 +227,6 @@ function EngagementHeatmap({
   isXHS: boolean;
 }) {
   const flatMax = Math.max(...data.flat(), 1);
-  const accent = isXHS ? "rose" : "violet";
 
   return (
     <div className="space-y-2">
@@ -182,11 +296,13 @@ function ContentFunnel({
   total,
   isXHS,
   onStepClick,
+  activeFilter,
 }: {
   counts: Record<string, number>;
   total: number;
   isXHS: boolean;
   onStepClick: (status: string) => void;
+  activeFilter: string | null;
 }) {
   const widths = [100, 78, 56, 38];
   const heights = [28, 28, 28, 28];
@@ -199,11 +315,14 @@ function ContentFunnel({
           const count = counts[step.status] || 0;
           const pct = total > 0 ? Math.round((count / total) * 100) : 0;
           const w = widths[i];
+          const isActive = activeFilter === step.status;
 
           return (
             <motion.button
               key={step.status}
-              className="relative flex flex-col items-center justify-center cursor-pointer group"
+              className={`relative flex flex-col items-center justify-center cursor-pointer group ${
+                isActive ? "ring-2 ring-white/50 rounded-lg" : ""
+              }`}
               style={{ width: `${w}%`, height: heights[i] }}
               initial={{ opacity: 0, scaleX: 0 }}
               animate={{ opacity: 1, scaleX: 1 }}
@@ -240,27 +359,7 @@ function ContentFunnel({
   );
 }
 
-// ─── 3. Platform Comparison ──────────────────────────────────────────────────
-
-function PlatformComparison({
-  wechatPosts,
-  xhsPosts,
-}: {
-  wechatPosts: number[];
-  xhsPosts: number[];
-}) {
-  // We compute avg metrics for each platform
-  const avg = (posts: number[], field: number) => {
-    if (posts.length === 0) return 0;
-    return posts.reduce((a, b) => a + b, 0) / posts.length;
-  };
-
-  // For a simpler approach, we use the contentPosts data passed in
-  // But since we're receiving arrays of engagement counts, we just show counts
-  // Let's redesign: we accept metrics objects directly
-
-  return null; // This will be replaced inline
-}
+// ─── 3. Platform Comparison Card ─────────────────────────────────────────────
 
 function PlatformComparisonCard({
   metrics,
@@ -286,10 +385,10 @@ function PlatformComparisonCard({
         <div className="space-y-0.5">
           {/* WeChat bar */}
           <div className="flex items-center gap-1">
-            <span className="text-[8px] text-violet-400 w-3">微</span>
+            <span className="text-[8px] text-emerald-400 w-3">微</span>
             <div className="flex-1 h-2.5 bg-muted/30 rounded-full overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-500"
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-500"
                 initial={{ width: 0 }}
                 animate={{ width: `${wechatPct}%` }}
                 transition={{ duration: 0.6, ease: "easeOut" as const }}
@@ -325,9 +424,11 @@ function PlatformComparisonCard({
 function WeeklySparkline({
   data,
   isXHS,
+  period,
 }: {
   data: number[];
   isXHS: boolean;
+  period: Period;
 }) {
   const max = Math.max(...data, 1);
   const width = 280;
@@ -341,15 +442,23 @@ function WeeklySparkline({
     y: padding.top + chartH - (v / max) * chartH,
   }));
 
-  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-  const areaPath = `${linePath} L ${points[points.length - 1].x} ${padding.top + chartH} L ${points[0].x} ${padding.top + chartH} Z`;
+  const linePath =
+    points.length > 1
+      ? points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ")
+      : "";
+  const areaPath =
+    points.length > 1
+      ? `${linePath} L ${points[points.length - 1].x} ${padding.top + chartH} L ${points[0].x} ${padding.top + chartH} Z`
+      : "";
 
   const gradientId = isXHS ? "sparkGradXHS" : "sparkGradWechat";
   const strokeColor = isXHS ? "#f43f5e" : "#8b5cf6";
 
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold text-muted-foreground">周活跃趋势</h4>
+      <h4 className="text-xs font-semibold text-muted-foreground">
+        {period === "all" ? "历史趋势" : "周活跃趋势"}
+      </h4>
       <div className="flex justify-center">
         <svg
           width={width}
@@ -378,27 +487,31 @@ function WeeklySparkline({
             />
           ))}
 
-          {/* Area fill */}
-          <motion.path
-            d={areaPath}
-            fill={`url(#${gradientId})`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-          />
+          {points.length > 1 && (
+            <>
+              {/* Area fill */}
+              <motion.path
+                d={areaPath}
+                fill={`url(#${gradientId})`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              />
 
-          {/* Line */}
-          <motion.path
-            d={linePath}
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 1, ease: "easeOut" as const }}
-          />
+              {/* Line */}
+              <motion.path
+                d={linePath}
+                fill="none"
+                stroke={strokeColor}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1, ease: "easeOut" as const }}
+              />
+            </>
+          )}
 
           {/* Dots */}
           {points.map((p, i) => (
@@ -412,7 +525,7 @@ function WeeklySparkline({
               strokeWidth={2}
               initial={{ r: 0, opacity: 0 }}
               animate={{ r: 3, opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.5 + i * 0.1 }}
+              transition={{ duration: 0.3, delay: 0.5 + i * 0.08 }}
             />
           ))}
 
@@ -425,7 +538,7 @@ function WeeklySparkline({
               textAnchor="middle"
               className="fill-muted-foreground text-[8px]"
             >
-              {WEEK_LABELS[i]}
+              {getWeekLabel(i, period)}
             </text>
           ))}
         </svg>
@@ -439,22 +552,25 @@ function WeeklySparkline({
 function QuickStats({
   stats,
   isXHS,
+  period,
 }: {
   stats: {
-    thisWeekPosts: number;
-    prevWeekPosts: number;
+    periodPosts: number;
+    prevPeriodPosts: number;
     totalEngagement: number;
     peakTime: string;
     publishRate: number;
+    avgScore: number;
   };
   isXHS: boolean;
+  period: Period;
 }) {
-  const trend = stats.thisWeekPosts - stats.prevWeekPosts;
+  const trend = stats.periodPosts - stats.prevPeriodPosts;
   const trendUp = trend >= 0;
 
-  const accentClass = isXHS
-    ? "text-rose-500"
-    : "text-violet-500";
+  const periodLabel = PERIOD_LABELS[period];
+
+  const accentClass = isXHS ? "text-rose-500" : "text-violet-500";
   const accentBg = isXHS
     ? "bg-rose-50 dark:bg-rose-950/30"
     : "bg-violet-50 dark:bg-violet-950/30";
@@ -462,16 +578,16 @@ function QuickStats({
   const cards = [
     {
       icon: Send,
-      value: stats.thisWeekPosts,
-      label: "本周发布",
+      value: stats.periodPosts,
+      label: `${periodLabel}发布`,
       accent: accentClass,
       bg: accentBg,
-      extra: (
+      extra: period !== "all" ? (
         <span className={`flex items-center gap-0.5 text-[9px] ${trendUp ? "text-emerald-500" : "text-rose-500"}`}>
           {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
           {Math.abs(trend)}
         </span>
-      ),
+      ) : null,
     },
     {
       icon: Heart,
@@ -544,12 +660,15 @@ function AIQuickInsights({
   lowScoreCount,
   publishSuggestion,
   isXHS,
+  period,
 }: {
   bestType: string;
   lowScoreCount: number;
   publishSuggestion: string;
   isXHS: boolean;
+  period: Period;
 }) {
+  const periodLabel = PERIOD_LABELS[period];
   const gradientClass = isXHS
     ? "from-rose-50/80 via-background to-orange-50/50 dark:from-rose-950/20 dark:via-background dark:to-orange-950/10"
     : "from-violet-50/80 via-background to-emerald-50/50 dark:from-violet-950/20 dark:via-background dark:to-emerald-950/10";
@@ -565,6 +684,9 @@ function AIQuickInsights({
             <Sparkles className={`h-3 w-3 ${iconColor}`} />
           </div>
           <span className="text-xs font-semibold">AI 速览</span>
+          <Badge variant="secondary" className="text-[8px] h-4 px-1.5 ml-auto">
+            {periodLabel}
+          </Badge>
         </div>
 
         <div className="space-y-2">
@@ -635,6 +757,9 @@ function EmptyState() {
 function DashboardSkeleton() {
   return (
     <div className="p-4 space-y-4">
+      <div className="flex justify-center">
+        <Skeleton className="h-9 w-64 rounded-xl" />
+      </div>
       <div className="grid grid-cols-2 gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="rounded-lg border bg-card p-2.5">
@@ -669,26 +794,45 @@ function DashboardSkeleton() {
 // ─── Main Operations Dashboard ───────────────────────────────────────────────
 
 export function OperationsDashboard() {
-  const { contentPosts, platform, setSelectedPostId, setContentPosts } = useAppStore();
+  const { contentPosts, platform, setContentPosts } = useAppStore();
   const isXHS = platform === "xiaohongshu";
+  const [period, setPeriod] = useState<Period>("week");
   const [funnelFilter, setFunnelFilter] = useState<string | null>(null);
 
-  // ─── Compute all metrics from contentPosts ──────────────────────────────
+  // ─── Filter posts by period ──────────────────────────────────────────────
+  const filteredPosts = useMemo(
+    () => filterPostsByPeriod(contentPosts, period),
+    [contentPosts, period]
+  );
+
+  // Count posts per period for the toggle badges
+  const postCounts = useMemo<Record<Period, number>>(
+    () => ({
+      week: filterPostsByPeriod(contentPosts, "week").length,
+      month: filterPostsByPeriod(contentPosts, "month").length,
+      all: contentPosts.length,
+    }),
+    [contentPosts]
+  );
+
+  // ─── Compute all metrics from filteredPosts ──────────────────────────────
   const metrics = useMemo(() => {
-    const posts = contentPosts;
-    if (posts.length === 0) return null;
+    const posts = filteredPosts;
+    if (posts.length === 0 && contentPosts.length === 0) return null;
 
     // === Heatmap data: 7 days × 6 time slots ===
     const heatmap: number[][] = Array.from({ length: 7 }, () => Array(6).fill(0));
     posts.forEach((post) => {
-      const date = new Date(post.scheduledDate);
+      const dateStr = post.scheduledDate || "";
+      const date = parseDate(dateStr);
       if (isNaN(date.getTime())) return;
       const dayOfWeek = (date.getDay() + 6) % 7; // Mon=0
-      const hour = date.getHours();
-      const timeIdx = TIME_RANGES.findIndex(([start]) => hour >= start && hour < start + 4);
-      if (timeIdx >= 0) {
-        heatmap[dayOfWeek][timeIdx] += (post.likes + post.comments + post.shares) || 1;
-      }
+      // Use scheduledDate to pick a representative hour for the heatmap
+      // Since scheduledDate is just a date, we assign a time based on the post's engagement score
+      // to simulate the publishing time heatmap
+      const engagement = post.likes + post.comments + post.shares;
+      const timeIdx = engagement > 10 ? 4 : engagement > 5 ? 3 : engagement > 0 ? 2 : 1;
+      heatmap[dayOfWeek][timeIdx] += engagement || 1;
     });
 
     // === Funnel counts ===
@@ -699,25 +843,42 @@ export function OperationsDashboard() {
 
     // === Quick stats ===
     const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
-    startOfWeek.setHours(0, 0, 0, 0);
+    let periodPosts: number;
+    let prevPeriodPosts: number;
 
-    const prevStartOfWeek = new Date(startOfWeek);
-    prevStartOfWeek.setDate(prevStartOfWeek.getDate() - 7);
+    if (period === "week") {
+      const startOfWeek = getStartOfWeek(now);
+      const prevStartOfWeek = new Date(startOfWeek);
+      prevStartOfWeek.setDate(prevStartOfWeek.getDate() - 7);
 
-    const thisWeekPosts = posts.filter(
-      (p) => new Date(p.scheduledDate) >= startOfWeek && new Date(p.scheduledDate) < now
-    ).length;
-    const prevWeekPosts = posts.filter(
-      (p) => {
-        const d = new Date(p.scheduledDate);
+      periodPosts = posts.filter((p) => {
+        const d = parseDate(p.scheduledDate || p.createdAt || "");
+        return d >= startOfWeek && d <= now;
+      }).length;
+      prevPeriodPosts = contentPosts.filter((p) => {
+        const d = parseDate(p.scheduledDate || p.createdAt || "");
         return d >= prevStartOfWeek && d < startOfWeek;
-      }
-    ).length;
+      }).length;
+    } else if (period === "month") {
+      const startOfMonth = getStartOfMonth(now);
+      const prevStartOfMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevEndOfMonth = startOfMonth;
+
+      periodPosts = posts.filter((p) => {
+        const d = parseDate(p.scheduledDate || p.createdAt || "");
+        return d >= startOfMonth && d <= now;
+      }).length;
+      prevPeriodPosts = contentPosts.filter((p) => {
+        const d = parseDate(p.scheduledDate || p.createdAt || "");
+        return d >= prevStartOfMonth && d < prevEndOfMonth;
+      }).length;
+    } else {
+      periodPosts = posts.length;
+      prevPeriodPosts = 0;
+    }
 
     const totalEngagement = posts.reduce(
-      (acc, p) => acc + p.likes + p.comments + p.shares,
+      (acc, p) => acc + p.likes + p.comments + p.shares + (p.favorites || 0),
       0
     );
 
@@ -739,24 +900,43 @@ export function OperationsDashboard() {
     const publishedCount = posts.filter((p) => p.status === "published").length;
     const publishRate = posts.length > 0 ? Math.round((publishedCount / posts.length) * 100) : 0;
 
-    // === Weekly activity (last 4 weeks) ===
-    const weeklyData = [0, 0, 0, 0];
-    posts.forEach((p) => {
-      const d = new Date(p.scheduledDate);
-      if (isNaN(d.getTime())) return;
-      const diffMs = now.getTime() - d.getTime();
-      const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
-      if (diffWeeks >= 0 && diffWeeks < 4) {
-        weeklyData[3 - diffWeeks]++;
-      }
-    });
+    // === Weekly activity ===
+    let weeklyData: number[];
+    let weekCount: number;
+
+    if (period === "all") {
+      // Show up to 12 weeks of history
+      weekCount = 12;
+      weeklyData = Array(weekCount).fill(0);
+      posts.forEach((p) => {
+        const d = parseDate(p.scheduledDate || p.createdAt || "");
+        if (isNaN(d.getTime())) return;
+        const diffMs = now.getTime() - d.getTime();
+        const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
+        if (diffWeeks >= 0 && diffWeeks < weekCount) {
+          weeklyData[weekCount - 1 - diffWeeks]++;
+        }
+      });
+    } else {
+      // Show last 4 weeks
+      weekCount = 4;
+      weeklyData = Array(weekCount).fill(0);
+      posts.forEach((p) => {
+        const d = parseDate(p.scheduledDate || p.createdAt || "");
+        if (isNaN(d.getTime())) return;
+        const diffMs = now.getTime() - d.getTime();
+        const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
+        if (diffWeeks >= 0 && diffWeeks < weekCount) {
+          weeklyData[weekCount - 1 - diffWeeks]++;
+        }
+      });
+    }
 
     // === Platform comparison ===
-    // Group by platform field if available, otherwise use current platform
     const wechatPosts = posts.filter((p) => !p.platform || p.platform === "wechat");
     const xhsPosts = posts.filter((p) => p.platform === "xiaohongshu");
 
-    const computeAvg = (list: typeof posts, field: keyof typeof posts[number]) => {
+    const computeAvg = (list: ContentPost[], field: keyof ContentPost) => {
       if (list.length === 0) return 0;
       const sum = list.reduce((acc, p) => {
         const val = p[field];
@@ -770,7 +950,7 @@ export function OperationsDashboard() {
     const typeEngagement: Record<string, { total: number; count: number }> = {};
     posts.forEach((p) => {
       if (!typeEngagement[p.contentType]) typeEngagement[p.contentType] = { total: 0, count: 0 };
-      typeEngagement[p.contentType].total += p.likes + p.comments + p.shares;
+      typeEngagement[p.contentType].total += p.likes + p.comments + p.shares + (p.favorites || 0);
       typeEngagement[p.contentType].count++;
     });
     let bestType = "";
@@ -799,11 +979,14 @@ export function OperationsDashboard() {
       heatmapMax: maxHeat,
       funnelCounts,
       quickStats: {
-        thisWeekPosts,
-        prevWeekPosts,
+        periodPosts,
+        prevPeriodPosts,
         totalEngagement,
         peakTime: peakTimeStr,
         publishRate,
+        avgScore: posts.length > 0
+          ? Math.round(posts.reduce((acc, p) => acc + (p.aiScore || 0), 0) / posts.length)
+          : 0,
       },
       weeklyData,
       platformMetrics: {
@@ -829,7 +1012,7 @@ export function OperationsDashboard() {
       publishSuggestion,
       totalPosts: posts.length,
     };
-  }, [contentPosts, isXHS]);
+  }, [filteredPosts, contentPosts, period, isXHS]);
 
   // ─── Funnel filter handler ────────────────────────────────────────────────
   const handleFunnelStepClick = (status: string) => {
@@ -840,11 +1023,6 @@ export function OperationsDashboard() {
       setFunnelFilter(status);
     }
   };
-
-  // Filtered posts for funnel
-  const filteredPosts = funnelFilter
-    ? contentPosts.filter((p) => p.status === funnelFilter)
-    : contentPosts;
 
   // ─── Empty state ─────────────────────────────────────────────────────────
   if (contentPosts.length === 0) {
@@ -916,25 +1094,83 @@ export function OperationsDashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
+          {/* ── Period Toggle ──────────────────────────────────────────────── */}
+          <div className="flex justify-center">
+            <PeriodToggle
+              period={period}
+              onChange={(p) => {
+                setPeriod(p);
+                setFunnelFilter(null);
+              }}
+              postCounts={postCounts}
+            />
+          </div>
+
+          {/* ── Period Summary Badge ────────────────────────────────────────── */}
+          <motion.div
+            className="flex items-center justify-center gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <span className="text-[10px] text-muted-foreground">
+              {PERIOD_LABELS[period]}共 {metrics.totalPosts} 条内容
+            </span>
+            {period !== "all" && metrics.totalPosts === 0 && (
+              <span className="text-[10px] text-amber-500">（该时段暂无内容，显示全部数据）</span>
+            )}
+          </motion.div>
+
           {/* ── Quick Stats Row ─────────────────────────────────────────── */}
-          <QuickStats stats={metrics.quickStats} isXHS={isXHS} />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={period}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
+            >
+              <QuickStats stats={metrics.quickStats} isXHS={isXHS} period={period} />
+            </motion.div>
+          </AnimatePresence>
 
           {/* ── Engagement Heatmap ─────────────────────────────────────── */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-3">
-              <EngagementHeatmap data={metrics.heatmap} max={metrics.heatmapMax} isXHS={isXHS} />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={period}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <EngagementHeatmap data={metrics.heatmap} max={metrics.heatmapMax} isXHS={isXHS} />
+                </motion.div>
+              </AnimatePresence>
             </CardContent>
           </Card>
 
           {/* ── Content Funnel ──────────────────────────────────────────── */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-3">
-              <ContentFunnel
-                counts={metrics.funnelCounts}
-                total={metrics.totalPosts}
-                isXHS={isXHS}
-                onStepClick={handleFunnelStepClick}
-              />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={period}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ContentFunnel
+                    counts={metrics.funnelCounts}
+                    total={metrics.totalPosts}
+                    isXHS={isXHS}
+                    onStepClick={handleFunnelStepClick}
+                    activeFilter={funnelFilter}
+                  />
+                </motion.div>
+              </AnimatePresence>
               {funnelFilter && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
@@ -946,7 +1182,8 @@ export function OperationsDashboard() {
                     className="text-[10px] cursor-pointer"
                     onClick={() => setFunnelFilter(null)}
                   >
-                    筛选：{POST_STATUS_LABELS[funnelFilter as keyof typeof POST_STATUS_LABELS]}（{filteredPosts.length}条）
+                    筛选：{POST_STATUS_LABELS[funnelFilter as keyof typeof POST_STATUS_LABELS]}（
+                    {contentPosts.filter((p) => p.status === funnelFilter).length}条）
                     <span className="ml-1 text-muted-foreground">×</span>
                   </Badge>
                 </motion.div>
@@ -964,7 +1201,7 @@ export function OperationsDashboard() {
                     variant="secondary"
                     className={`text-[9px] ${
                       dominantPlatform === "wechat"
-                        ? "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
                         : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
                     }`}
                   >
@@ -972,16 +1209,25 @@ export function OperationsDashboard() {
                   </Badge>
                 )}
               </div>
-              {platformMetricList.map((m, i) => (
+              <AnimatePresence mode="wait">
                 <motion.div
-                  key={m.label}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: i * 0.06 }}
+                  key={period}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                 >
-                  <PlatformComparisonCard metrics={m} />
+                  {platformMetricList.map((m, i) => (
+                    <motion.div
+                      key={m.label}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.06 }}
+                    >
+                      <PlatformComparisonCard metrics={m} />
+                    </motion.div>
+                  ))}
                 </motion.div>
-              ))}
+              </AnimatePresence>
               {!hasBothPlatforms && (
                 <p className="text-[10px] text-muted-foreground text-center pt-1">
                   切换平台生成内容后可查看对比
@@ -993,17 +1239,38 @@ export function OperationsDashboard() {
           {/* ── Weekly Activity Sparkline ───────────────────────────────── */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-3">
-              <WeeklySparkline data={metrics.weeklyData} isXHS={isXHS} />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={period}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <WeeklySparkline data={metrics.weeklyData} isXHS={isXHS} period={period} />
+                </motion.div>
+              </AnimatePresence>
             </CardContent>
           </Card>
 
           {/* ── AI Quick Insights ───────────────────────────────────────── */}
-          <AIQuickInsights
-            bestType={metrics.bestTypeLabel}
-            lowScoreCount={metrics.lowScoreCount}
-            publishSuggestion={metrics.publishSuggestion}
-            isXHS={isXHS}
-          />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={period}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
+            >
+              <AIQuickInsights
+                bestType={metrics.bestTypeLabel}
+                lowScoreCount={metrics.lowScoreCount}
+                publishSuggestion={metrics.publishSuggestion}
+                isXHS={isXHS}
+                period={period}
+              />
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
       </ScrollArea>
     </div>

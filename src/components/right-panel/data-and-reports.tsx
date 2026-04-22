@@ -11,7 +11,7 @@ import { CompetitorAnalysis } from "@/components/right-panel/competitor-analysis
 import { ReportGenerator } from "@/components/right-panel/report-generator";
 import { WeeklyReport } from "@/components/right-panel/weekly-report";
 import { WeeklyStatsCard } from "@/components/right-panel/weekly-stats-card";
-import { FileBarChart, BarChart3, LayoutDashboard, Users, FileText, Sparkles, ArrowLeft } from "lucide-react";
+import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles } from "lucide-react";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
 
 /**
