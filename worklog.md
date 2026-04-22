@@ -2268,3 +2268,69 @@ Stage Summary:
 - 修复了4个bug，涉及3个文件
 - 核心修复：`selectedPostId` 未从 store 解构导致日历列表视图 ReferenceError
 - TypeScript 编译和 ESLint 均通过
+
+---
+Task ID: 15
+Agent: Main Developer (Cron Review)
+Task: 端到端QA测试 + Bug修复（日历点击报错 + 智能分析崩溃 + 水合错误）
+
+Work Log:
+- 读取 worklog.md（Task 1-14）了解前14轮开发成果和当前项目状态
+- 启动 Next.js dev server（端口3000），确认编译成功（GET / 200）
+- 使用 agent-browser 进行端到端测试，发现多个严重bug
+
+### Bug修复
+
+1. **日历点击崩溃（Critical - 最高优先级）**：
+   - 问题：点击日历任意日期后页面崩溃，显示 "Runtime TypeError: object is not iterable (cannot read property Symbol(Symbol.iterator))"
+   - 根因：`quality-scorer.tsx` 中两处使用了 `const [, copy] = useCopyToClipboard()` 进行数组解构，但 hook 返回的是对象 `{ copied, copy }`，不是数组
+   - 影响：任何选中帖子的操作都会触发 QualityScorer 组件渲染，导致整个页面崩溃
+   - 修复：将 `const [, copy] = useCopyToClipboard()` 改为 `const { copy } = useCopyToClipboard()`（两处：OptimizationPreview 和 QualityScorer）
+   - 验证：agent-browser 端到端测试，点击日历日期正常显示内容工作台
+
+2. **React Hydration 不匹配错误**：
+   - 问题：首次加载时出现 "Hydration failed because the server rendered HTML didn't match the client" 错误
+   - 根因：Zustand store 中 `onboardingCompleted` 初始化使用了 `typeof window !== 'undefined' ? localStorage.getItem(...) : false`，导致 SSR（false）和客户端 hydration（可能为 true）不匹配
+   - 修复：
+     - Store 初始化改为 `onboardingCompleted: false`（始终为 false，SSR 和客户端一致）
+     - 新增 `onboardingInit()` 方法，在客户端 useEffect 中调用读取 localStorage
+     - 在 `page.tsx` 中添加 `useEffect(() => { onboardingInit(); }, [onboardingInit])` 
+   - 验证：agent-browser 刷新页面无 hydration 错误
+
+3. **日历空日期点击未清除选中帖子**：
+   - 问题：点击没有内容的日历日期时，`selectedPostId` 未被清除，导致右侧面板仍显示旧帖子
+   - 根因：`compact-calendar.tsx` 的 `handleDayClick` 函数缺少 `else` 分支
+   - 修复：添加 `else { setSelectedPostId(null); }`
+   - 验证：点击空日期后右侧面板显示空状态
+
+4. **清理未使用的导入**：
+   - 移除 `content-workspace.tsx` 中未使用的 `import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"`
+
+### 修改文件
+- `src/store/app-store.ts` - 修复 hydration 问题（onboardingCompleted 初始化 + onboardingInit 方法）
+- `src/app/page.tsx` - 添加 onboardingInit useEffect 调用
+- `src/components/right-panel/quality-scorer.tsx` - 修复 useCopyToClipboard 解构（2处）
+- `src/components/left-panel/compact-calendar.tsx` - 修复空日期点击清除选中
+- `src/components/right-panel/content-workspace.tsx` - 移除未使用导入
+
+### QA验证结果
+- ✅ agent-browser 端到端测试通过
+- ✅ 页面无 hydration 错误
+- ✅ 日历点击正常（有内容/无内容均正常）
+- ✅ 内容工作台正常显示（编辑/预览切换、工具标签页）
+- ✅ 智能分析tab正常渲染（AI质量评分面板）
+- ✅ 多次切换日期无崩溃
+
+Stage Summary:
+- 项目状态：稳定可运行，关键崩溃bug已修复
+- 本轮修改 5 个文件，修复 4 个bug（1个Critical + 1个High + 1个Medium + 1个Low）
+- 核心修复：日历点击不再崩溃、无hydration错误、空日期正确处理
+- 未解决问题或风险：
+  1. content-calendar.tsx（center-panel）为死代码，建议删除
+  2. 部分TS类型错误（framer-motion ease 类型不兼容）为预存问题，不影响运行
+  3. platform-account-panel.tsx 有多个 Promise<void | undefined> 类型错误
+- 建议下一阶段优先事项：
+  1. 删除死代码 content-calendar.tsx
+  2. 修复 platform-account-panel.tsx 类型错误
+  3. 修复 framer-motion Variants ease 类型兼容性问题
+  4. 继续推进新功能开发

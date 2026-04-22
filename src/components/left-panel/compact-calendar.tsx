@@ -179,6 +179,9 @@ export function CompactCalendar() {
       if (posts && posts.length > 0) {
         const match = posts.find((p) => !p.platform || p.platform === platform);
         setSelectedPostId((match || posts[0]).id);
+      } else {
+        // Clear selection when clicking an empty date
+        setSelectedPostId(null);
       }
     },
     [postsByDate, platform, setSelectedDate, setSelectedPostId]

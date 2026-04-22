@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/app-store";
-import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 import { PostDetailHeader } from "@/components/right-panel/post-detail-header";
 import { ContentEditor } from "@/components/right-panel/content-editor";

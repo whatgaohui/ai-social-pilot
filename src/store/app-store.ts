@@ -58,6 +58,7 @@ interface AppState {
   // Onboarding
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
+  onboardingInit: () => void;
 
   // Notifications
   notifications: AppNotification[];
@@ -125,13 +126,20 @@ export const useAppStore = create<AppState>((set) => ({
   accountPanelOpen: false,
   setAccountPanelOpen: (open) => set({ accountPanelOpen: open }),
 
-  // Onboarding
-  onboardingCompleted: typeof window !== 'undefined' ? (localStorage.getItem('onboarding-completed') === 'true') : false,
+  // Onboarding (always start false on SSR to avoid hydration mismatch;
+  //   client-side init reads from localStorage via useAppStore.onboardingInit())
+  onboardingCompleted: false,
   setOnboardingCompleted: (completed) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('onboarding-completed', String(completed));
     }
     set({ onboardingCompleted: completed });
+  },
+  onboardingInit: () => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('onboarding-completed') === 'true';
+      if (saved) set({ onboardingCompleted: true });
+    }
   },
 
   // Notifications

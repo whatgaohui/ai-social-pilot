@@ -197,7 +197,7 @@ function OptimizationPreview({
   onDiscard: () => void;
   applying: boolean;
 }) {
-  const [, copy] = useCopyToClipboard();
+  const { copy } = useCopyToClipboard();
 
   return (
     <motion.div
@@ -313,7 +313,7 @@ function OptimizationPreview({
 
 export function QualityScorer({ post }: { post: ContentPost }) {
   const { platform, updateContentPost } = useAppStore();
-  const [, copy] = useCopyToClipboard();
+  const { copy } = useCopyToClipboard();
   const [isOpen, setIsOpen] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<QualityScoreResult | null>(null);

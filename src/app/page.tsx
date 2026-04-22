@@ -205,7 +205,7 @@ function MainContentPanel() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted } = useAppStore();
+  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted, onboardingInit } = useAppStore();
   const [mobilePanel, setMobilePanel] = useState<"left" | "main">("main");
   const [connectedPlatforms, setConnectedPlatforms] = useState(0);
   const showWelcome = !onboardingCompleted;
@@ -225,6 +225,11 @@ export default function Home() {
     const interval = setInterval(checkStatus, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Initialize onboarding state from localStorage (client-side only to avoid hydration mismatch)
+  useEffect(() => {
+    onboardingInit();
+  }, [onboardingInit]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-animated">
