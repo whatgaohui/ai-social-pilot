@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +10,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -30,56 +37,150 @@ import {
   ChevronUp,
   BarChart3,
   Megaphone,
+  Info,
+  Heart,
+  Lightbulb,
 } from "lucide-react";
-import type { AppNotification } from "@/types";
+import type { AppNotification, NotificationType } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
 // ─── Notification type config ───────────────────────────────────────
 const NOTIFICATION_CONFIG: Record<
-  AppNotification["type"],
-  { icon: typeof CheckCircle; color: string; bgColor: string; label: string }
+  NotificationType,
+  {
+    icon: typeof Info;
+    color: string;
+    bgColor: string;
+    label: string;
+    dotColor: string;
+  }
 > = {
+  system: {
+    icon: Info,
+    color: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-100 dark:bg-blue-900/30",
+    label: "系统",
+    dotColor: "bg-blue-500",
+  },
+  publish: {
+    icon: Clock,
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-100 dark:bg-amber-900/30",
+    label: "发布",
+    dotColor: "bg-amber-500",
+  },
+  interaction: {
+    icon: Heart,
+    color: "text-rose-600 dark:text-rose-400",
+    bgColor: "bg-rose-100 dark:bg-rose-900/30",
+    label: "互动",
+    dotColor: "bg-rose-500",
+  },
+  ai: {
+    icon: Sparkles,
+    color: "text-violet-600 dark:text-violet-400",
+    bgColor: "bg-violet-100 dark:bg-violet-900/30",
+    label: "AI",
+    dotColor: "bg-violet-500",
+  },
+  inspiration: {
+    icon: Lightbulb,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    label: "灵感",
+    dotColor: "bg-emerald-500",
+  },
   optimize: {
     icon: Wand2,
     color: "text-violet-600 dark:text-violet-400",
     bgColor: "bg-violet-100 dark:bg-violet-900/30",
     label: "优化",
+    dotColor: "bg-violet-500",
   },
   polish: {
     icon: Sparkles,
     color: "text-amber-600 dark:text-amber-400",
     bgColor: "bg-amber-100 dark:bg-amber-900/30",
     label: "润色",
+    dotColor: "bg-amber-500",
   },
   generate: {
     icon: FileText,
     color: "text-emerald-600 dark:text-emerald-400",
     bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
     label: "生成",
-  },
-  publish: {
-    icon: Send,
-    color: "text-rose-600 dark:text-rose-400",
-    bgColor: "bg-rose-100 dark:bg-rose-900/30",
-    label: "发布",
+    dotColor: "bg-emerald-500",
   },
   reminder: {
     icon: Clock,
     color: "text-sky-600 dark:text-sky-400",
     bgColor: "bg-sky-100 dark:bg-sky-900/30",
     label: "提醒",
+    dotColor: "bg-sky-500",
   },
   error: {
     icon: XCircle,
     color: "text-red-600 dark:text-red-400",
     bgColor: "bg-red-100 dark:bg-red-900/30",
     label: "错误",
+    dotColor: "bg-red-500",
   },
 };
 
+// ─── Demo notifications ─────────────────────────────────────────────
+function generateDemoNotifications(): Omit<AppNotification, "id" | "timestamp" | "read">[] {
+  return [
+    {
+      type: "system",
+      title: "欢迎使用AI运营助手",
+      description: "为您打造个性化内容策略，自动规划、生成、优化朋友圈内容。点击了解更多功能。",
+    },
+    {
+      type: "publish",
+      title: "你有3篇内容待发布",
+      description: "本周计划中有3篇内容尚未发布，建议尽快安排发布时间。",
+      actionLabel: "查看详情",
+      actionType: "viewPost",
+    },
+    {
+      type: "interaction",
+      title: "「美食探店」获得12个新点赞",
+      description: "你发布的内容「周末探店记录」在过去1小时内收到了12个新点赞和3条评论。",
+      actionLabel: "查看详情",
+      actionType: "viewPost",
+    },
+    {
+      type: "ai",
+      title: "AI质量评分完成：85分",
+      description: "「职场心得分享」的AI质量评估已完成，得分85分（优秀）。点击查看优化建议。",
+      actionLabel: "查看详情",
+      actionType: "viewPost",
+    },
+    {
+      type: "inspiration",
+      title: "今日热门话题：AI工具效率提升",
+      description: "当前热议话题「如何用AI工具提升工作效率」热度持续上升，建议创作相关内容获取流量。",
+      actionLabel: "查看详情",
+      actionType: "viewData",
+    },
+  ];
+}
+
 // ─── Helper: format relative time ───────────────────────────────────
 function formatTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return "刚刚";
+  if (minutes < 60) return `${minutes}分钟前`;
+  if (hours < 24) return `${hours}小时前`;
+  if (days < 7) return `${days}天前`;
+
   try {
     return formatDistanceToNow(new Date(timestamp), {
       addSuffix: true,
@@ -94,9 +195,11 @@ function formatTime(timestamp: number): string {
 function NotificationCard({
   notification,
   onRead,
+  onAction,
 }: {
   notification: AppNotification;
   onRead: (id: string) => void;
+  onAction: (notification: AppNotification) => void;
 }) {
   const config = NOTIFICATION_CONFIG[notification.type];
   const Icon = config.icon;
@@ -108,7 +211,9 @@ function NotificationCard({
       exit={{ opacity: 0, x: 12, height: 0, marginBottom: 0 }}
       transition={{ duration: 0.2 }}
       className={`group flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors hover:bg-muted/50 ${
-        !notification.read ? "bg-violet-50/50 dark:bg-violet-950/10" : ""
+        !notification.read
+          ? "bg-blue-50/50 dark:bg-blue-950/10"
+          : ""
       }`}
       onClick={() => {
         if (!notification.read) onRead(notification.id);
@@ -121,17 +226,23 @@ function NotificationCard({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-xs font-semibold truncate">
+          <span
+            className={`text-xs truncate ${
+              !notification.read ? "font-bold" : "font-medium"
+            }`}
+          >
             {notification.title}
           </span>
           {!notification.read && (
-            <span className="flex-shrink-0 h-2 w-2 rounded-full bg-violet-500" />
+            <span
+              className={`flex-shrink-0 h-2 w-2 rounded-full ${config.dotColor}`}
+            />
           )}
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
           {notification.description}
         </p>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-1.5">
           <span className="text-[10px] text-muted-foreground/70">
             {formatTime(notification.timestamp)}
           </span>
@@ -141,6 +252,20 @@ function NotificationCard({
           >
             {config.label}
           </Badge>
+          {notification.actionLabel && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-2 text-[10px] text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/30"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!notification.read) onRead(notification.id);
+                onAction(notification);
+              }}
+            >
+              {notification.actionLabel}
+            </Button>
+          )}
         </div>
       </div>
     </motion.div>
@@ -247,8 +372,49 @@ function QuickStats() {
   );
 }
 
+// ─── Empty state ────────────────────────────────────────────────────
+function EmptyState() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col items-center py-10 text-muted-foreground"
+    >
+      <div className="relative mb-3">
+        <Bell className="h-10 w-10 opacity-20" />
+        <motion.div
+          className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-muted-foreground/20"
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      </div>
+      <span className="text-sm font-medium">暂无新通知</span>
+      <span className="text-[11px] mt-1 text-muted-foreground/70">
+        新消息和操作提醒将在这里显示
+      </span>
+    </motion.div>
+  );
+}
+
+// ─── Notification type filter tabs ──────────────────────────────────
+const FILTER_TABS = [
+  { value: "all", label: "全部" },
+  { value: "system", label: "系统" },
+  { value: "publish", label: "发布" },
+  { value: "interaction", label: "互动" },
+  { value: "ai", label: "AI" },
+  { value: "inspiration", label: "灵感" },
+] as const;
+
+type FilterValue = (typeof FILTER_TABS)[number]["value"];
+
 // ─── Main Notification Center Panel ─────────────────────────────────
-function NotificationCenterPanel() {
+function NotificationCenterPanel({
+  onAction,
+}: {
+  onAction?: (notification: AppNotification) => void;
+}) {
   const {
     notifications,
     markNotificationRead,
@@ -257,13 +423,48 @@ function NotificationCenterPanel() {
     contentPosts,
     setSelectedPostId,
     setRightPanelTab,
+    addNotification,
   } = useAppStore();
   const [showReminders, setShowReminders] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
+  const initialized = useRef(false);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications]
   );
+
+  // Generate demo notifications on first render if none exist
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    const current = useAppStore.getState().notifications;
+    if (current.length === 0) {
+      // Also check localStorage
+      try {
+        const stored = localStorage.getItem("app-notifications");
+        if (stored) {
+          const parsed = JSON.parse(stored) as AppNotification[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            useAppStore.setState({ notifications: parsed });
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      // Generate demo notifications with staggered timestamps
+      const demos = generateDemoNotifications();
+      const now = Date.now();
+      demos.forEach((demo, index) => {
+        setTimeout(() => {
+          addNotification(demo);
+        }, 0);
+      });
+    }
+  }, [addNotification]);
 
   // Smart reminders computed from contentPosts
   const reminders = useMemo(() => {
@@ -314,17 +515,48 @@ function NotificationCenterPanel() {
     [contentPosts, setSelectedPostId, setRightPanelTab]
   );
 
-  return (
+  const handleNotificationAction = useCallback(
+    (notification: AppNotification) => {
+      if (notification.actionType === "viewPost" && notification.postId) {
+        setSelectedPostId(notification.postId);
+        setRightPanelTab("copywriting");
+      } else if (notification.actionType === "viewData") {
+        setRightPanelTab("data");
+      }
+      onAction?.(notification);
+    },
+    [setSelectedPostId, setRightPanelTab, onAction]
+  );
+
+  // Filter notifications (max 20)
+  const filteredNotifications = useMemo(() => {
+    let filtered = notifications;
+    if (activeFilter !== "all") {
+      filtered = filtered.filter((n) => n.type === activeFilter);
+    }
+    return filtered.slice(0, 20);
+  }, [notifications, activeFilter]);
+
+  // Count per type for filter tabs
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const n of notifications) {
+      counts[n.type] = (counts[n.type] || 0) + 1;
+    }
+    return counts;
+  }, [notifications]);
+
+  const panelContent = (
     <div className="w-80 sm:w-96 max-h-[70vh] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-violet-500" />
+          <Bell className="h-4 w-4 text-blue-500" />
           <span className="text-sm font-semibold">通知中心</span>
           {unreadCount > 0 && (
             <Badge
               variant="secondary"
-              className="h-5 px-1.5 text-[10px] bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+              className="h-5 px-1.5 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
             >
               {unreadCount} 未读
             </Badge>
@@ -443,7 +675,53 @@ function NotificationCenterPanel() {
 
           <Separator />
 
-          {/* Operation History */}
+          {/* Notification filter tabs */}
+          <div className="flex gap-1 overflow-x-auto scrollbar-none pb-1">
+            {FILTER_TABS.map((tab) => {
+              const isActive = activeFilter === tab.value;
+              const count =
+                tab.value === "all"
+                  ? notifications.length
+                  : typeCounts[tab.value] || 0;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setActiveFilter(tab.value)}
+                  className={`relative flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors ${
+                    isActive
+                      ? "text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="notif-filter-pill"
+                      className="absolute inset-0 rounded-full bg-foreground"
+                      transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 35,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10">{tab.label}</span>
+                  {count > 0 && (
+                    <span
+                      className={`relative z-10 h-3.5 min-w-3.5 flex items-center justify-center rounded-full px-1 text-[8px] font-bold leading-none ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {count > 99 ? "99+" : count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Notification List */}
           <div>
             <div className="flex items-center gap-2 py-1">
               <BarChart3 className="h-3.5 w-3.5 text-emerald-500" />
@@ -453,22 +731,17 @@ function NotificationCenterPanel() {
               </span>
             </div>
 
-            {notifications.length === 0 ? (
-              <div className="flex flex-col items-center py-8 text-muted-foreground">
-                <Bell className="h-8 w-8 mb-2 opacity-20" />
-                <span className="text-xs">暂无通知</span>
-                <span className="text-[10px] mt-1">
-                  操作AI优化、润色、发布后这里会显示记录
-                </span>
-              </div>
+            {filteredNotifications.length === 0 ? (
+              <EmptyState />
             ) : (
               <div className="space-y-1 pt-1">
                 <AnimatePresence mode="popLayout">
-                  {notifications.map((notification) => (
+                  {filteredNotifications.map((notification) => (
                     <NotificationCard
                       key={notification.id}
                       notification={notification}
                       onRead={markNotificationRead}
+                      onAction={handleNotificationAction}
                     />
                   ))}
                 </AnimatePresence>
@@ -479,12 +752,15 @@ function NotificationCenterPanel() {
       </ScrollArea>
     </div>
   );
+
+  return panelContent;
 }
 
 // ─── NotificationBell (exported for header) ─────────────────────────
 export function NotificationBell() {
   const { notifications } = useAppStore();
   const hydrated = useRef(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Hydrate notifications from localStorage on mount
   useEffect(() => {
@@ -512,35 +788,116 @@ export function NotificationBell() {
     [notifications]
   );
 
+  // Use unreadCount directly as key for bounce animation
+
+  const handleAction = useCallback((_notification: AppNotification) => {
+    setIsMobileOpen(false);
+  }, []);
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
-          aria-label="通知中心"
-        >
-          <Bell className="h-4 w-4 text-muted-foreground" />
-          {unreadCount > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 25 }}
-              className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
+    <>
+      {/* Desktop: Popover */}
+      <div className="hidden sm:block">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
+              aria-label="通知中心"
             >
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </motion.span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-auto p-0 border-border/50 shadow-xl"
-        align="end"
-        sideOffset={8}
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              {unreadCount > 0 && (
+                <motion.span
+                  key={unreadCount}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 15,
+                    duration: 0.4,
+                  }}
+                  className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </motion.span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-auto p-0 border-border/50 shadow-xl"
+            align="end"
+            sideOffset={8}
+          >
+            <NotificationCenterPanel onAction={handleAction} />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Mobile: Sheet */}
+      <div className="sm:block hidden">
+        <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
+              aria-label="通知中心"
+            >
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              {unreadCount > 0 && (
+                <motion.span
+                  key={unreadCount}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 15,
+                    duration: 0.4,
+                  }}
+                  className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </motion.span>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:max-w-md p-0">
+            <SheetHeader className="sr-only">
+              <SheetTitle>通知中心</SheetTitle>
+              <SheetDescription>查看所有通知消息</SheetDescription>
+            </SheetHeader>
+            <NotificationCenterPanel onAction={handleAction} />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Mobile notification bell in the floating nav area */}
+      <button
+        onClick={() => setIsMobileOpen(true)}
+        className="sm:hidden flex items-center justify-center w-10 h-12 rounded-2xl text-muted-foreground transition-colors hover:text-foreground relative"
+        aria-label="通知中心"
       >
-        <NotificationCenterPanel />
-      </PopoverContent>
-    </Popover>
+        <Bell className="h-[18px] w-[18px]" />
+        {unreadCount > 0 && (
+          <motion.span
+            key={unreadCount}
+            initial={{ scale: 0 }}
+            animate={{ scale: [1, 1.3, 1] }}
+            transition={{
+              type: "spring",
+              stiffness: 500,
+              damping: 15,
+              duration: 0.4,
+            }}
+            className="absolute top-0.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white px-1"
+          >
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </motion.span>
+        )}
+      </button>
+    </>
   );
 }

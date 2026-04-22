@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { KnowledgeBase } from "@/components/left-panel/knowledge-base";
@@ -24,7 +24,7 @@ import {
   Sparkles, BookOpen, PenTool, CalendarDays,
   BarChart3, Zap, FileText, MessageCircle,
   Settings, Send, ChevronLeft, ChevronRight,
-  Globe,
+  Globe, User,
 } from "lucide-react";
 
 // ─── Main tabs for the right content area ──────────────────────────────────────
@@ -42,6 +42,23 @@ const LEFT_TABS = [
   { value: 'knowledge', icon: BookOpen, label: '知识库' },
   { value: 'templates', icon: FileText, label: '模板' },
 ] as const;
+
+// ─── Mobile bottom navigation tabs ───────────────────────────────────────────
+
+interface MobileTabConfig {
+  key: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  panel: 'left' | 'main';
+  subTab: string;
+}
+
+const MOBILE_TABS: MobileTabConfig[] = [
+  { key: 'persona', label: '人设', icon: User, panel: 'left', subTab: 'knowledge' },
+  { key: 'calendar', label: '日历', icon: CalendarDays, panel: 'left', subTab: 'calendar' },
+  { key: 'workspace', label: '工作台', icon: FileText, panel: 'main', subTab: 'workspace' },
+  { key: 'data', label: '数据', icon: BarChart3, panel: 'main', subTab: 'data' },
+];
 
 function DataInitializer() {
   const { setPersona, setKnowledgeItems, setCurrentPlan, setContentPosts } = useAppStore();
@@ -247,9 +264,66 @@ function MainContentPanel() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted, onboardingInit } = useAppStore();
-  const [mobilePanel, setMobilePanel] = useState<"left" | "main">("main");
+  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, leftPanelTab, setLeftPanelTab, contentPosts, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted, onboardingInit, setSettingsCenterOpen } = useAppStore();
   const [connectedPlatforms, setConnectedPlatforms] = useState(0);
+  const [mobileTabIndex, setMobileTabIndex] = useState(1); // default: 日历
+  const [swipeDirection, setSwipeDirection] = useState(0);
+  const mobileTabIndexRef = useRef(mobileTabIndex);
+
+  // Keep ref in sync for stable drag handler
+  useEffect(() => { mobileTabIndexRef.current = mobileTabIndex; }, [mobileTabIndex]);
+
+  // Derive effective mobile panel from tab index
+  const currentMobileTab = MOBILE_TABS[mobileTabIndex];
+  const effectiveMobilePanel = currentMobileTab.panel;
+  const unpublishedCount = contentPosts.filter((p) => p.status !== 'published').length;
+
+  // Sync sub-tabs when mobile tab index changes
+  useEffect(() => {
+    const tab = MOBILE_TABS[mobileTabIndex];
+    if (tab.panel === 'left') {
+      setLeftPanelTab(tab.subTab as 'calendar' | 'knowledge' | 'templates');
+    } else {
+      setRightPanelTab(tab.subTab as 'workspace' | 'data' | 'collect');
+    }
+  }, [mobileTabIndex, setLeftPanelTab, setRightPanelTab]);
+
+  const handleMobileTabChange = useCallback((newIndex: number) => {
+    const newTab = MOBILE_TABS[newIndex];
+    const currentIndex = mobileTabIndexRef.current;
+    setSwipeDirection(newIndex > currentIndex ? 1 : -1);
+
+    // Set sub-tabs immediately for correct rendering
+    if (newTab.panel === 'left') {
+      setLeftPanelTab(newTab.subTab as 'calendar' | 'knowledge' | 'templates');
+    } else {
+      setRightPanelTab(newTab.subTab as 'workspace' | 'data' | 'collect');
+    }
+
+    setMobileTabIndex(newIndex);
+  }, [setLeftPanelTab, setRightPanelTab]);
+
+  const handleMobileDragEnd = useCallback((
+    _: MouseEvent | TouchEvent | PointerEvent,
+    info: { offset: { x: number }; velocity: { x: number } }
+  ) => {
+    const currentIndex = mobileTabIndexRef.current;
+    const swipeThreshold = 50;
+    const velocityThreshold = 500;
+
+    if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
+      // Swiped left → next tab
+      if (currentIndex < MOBILE_TABS.length - 1) {
+        handleMobileTabChange(currentIndex + 1);
+      }
+    } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
+      // Swiped right → previous tab
+      if (currentIndex > 0) {
+        handleMobileTabChange(currentIndex - 1);
+      }
+    }
+  }, [handleMobileTabChange]);
+
   const showWelcome = !onboardingCompleted;
 
   // Poll platform account status periodically
@@ -348,59 +422,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Platform Switcher + Navigation */}
-        <div className="sm:hidden">
-          <div className="flex items-center justify-center gap-2 px-4 py-1">
-            <button
-              onClick={() => setPlatform('wechat')}
-              className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'wechat' ? 'bg-green-500 text-white' : 'text-green-600 dark:text-green-400'}`}
-            >
-              <MessageCircle className="h-2.5 w-2.5" />
-              朋友圈
-            </button>
-            <button
-              onClick={() => setPlatform('xiaohongshu')}
-              className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${platform === 'xiaohongshu' ? 'bg-red-500 text-white' : 'text-red-600 dark:text-red-400'}`}
-            >
-              <Zap className="h-2.5 w-2.5" />
-              小红书
-            </button>
-            <button
-              onClick={() => setAccountPanelOpen(true)}
-              className={`flex items-center gap-1 px-3 h-7 rounded-full text-[10px] font-medium transition-colors ${connectedPlatforms > 0 ? 'bg-emerald-500 text-white' : 'text-muted-foreground bg-muted/60'}`}
-            >
-              {connectedPlatforms > 0 ? (
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-                </span>
-              ) : (
-                <Settings className="h-2.5 w-2.5" />
-              )}
-              设置
-            </button>
-          </div>
-
-          {/* Mobile Main Tabs */}
-          <div className="flex border-t">
-            <Button
-              variant={mobilePanel === "left" ? "secondary" : "ghost"}
-              className="flex-1 h-9 rounded-none text-xs gap-1 active:scale-[0.98] transition-transform"
-              onClick={() => setMobilePanel("left")}
-            >
-              <CalendarDays className="h-3 w-3" />
-              日历/知识库
-            </Button>
-            <Button
-              variant={mobilePanel === "main" ? "secondary" : "ghost"}
-              className="flex-1 h-9 rounded-none text-xs gap-1 active:scale-[0.98] transition-transform"
-              onClick={() => setMobilePanel("main")}
-            >
-              <PenTool className="h-3 w-3" />
-              工作台
-            </Button>
-          </div>
-        </div>
+        {/* Mobile: compact header - platform switcher moved to floating nav */}
       </header>
 
       {/* Main Content */}
@@ -432,33 +454,150 @@ export default function Home() {
               </ResizablePanelGroup>
             </div>
 
-            {/* Mobile: Single panel view */}
-            <div className="sm:hidden h-[calc(100vh-8rem)] overflow-hidden">
-              {mobilePanel === "left" && (
+            {/* Mobile: Swipeable single panel view */}
+            <div className="sm:hidden h-[calc(100vh-3.5rem)] overflow-hidden">
+              <div className="relative h-full">
                 <motion.div
-                  key="left-mobile"
-                  initial={{ opacity: 0, x: -20 }}
+                  key={mobileTabIndex}
+                  initial={{ opacity: 0, x: swipeDirection * 200 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="h-full"
+                  transition={{ type: 'spring' as const, stiffness: 400, damping: 35 }}
+                  className="absolute inset-0 pb-24"
                 >
-                  <LeftSidebar />
+                  <motion.div
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.15}
+                    onDragEnd={handleMobileDragEnd}
+                    className="h-full"
+                  >
+                    {effectiveMobilePanel === 'left' ? <LeftSidebar /> : <MainContentPanel />}
+                  </motion.div>
                 </motion.div>
-              )}
-              {mobilePanel === "main" && (
-                <motion.div
-                  key="main-mobile"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="h-full"
-                >
-                  <MainContentPanel />
-                </motion.div>
-              )}
+              </div>
             </div>
           </>
         )}
       </main>
+
+      {/* ─── Floating Bottom Navigation (Mobile Only) ────────────────────── */}
+      <div className="sm:hidden fixed z-50 left-1/2 -translate-x-1/2 bottom-[max(env(safe-area-inset-bottom,0px)+0.75rem,0.75rem)]">
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring' as const, stiffness: 300, damping: 30, delay: 0.2 }}
+          className="flex items-center gap-0.5 px-1 py-1 rounded-[1.5rem] bg-background/70 backdrop-blur-xl border border-white/10 dark:border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+        >
+          {/* Platform switcher dots */}
+          <div className="flex items-center gap-1.5 px-2">
+            <button
+              onClick={() => setPlatform('wechat')}
+              className="relative flex items-center justify-center"
+              aria-label="切换到朋友圈"
+            >
+              <span className={`h-3 w-3 rounded-full transition-all duration-200 ${
+                platform === 'wechat'
+                  ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] ring-2 ring-green-500/30'
+                  : 'bg-green-400/40'
+              }`} />
+            </button>
+            <button
+              onClick={() => setPlatform('xiaohongshu')}
+              className="relative flex items-center justify-center"
+              aria-label="切换到小红书"
+            >
+              <span className={`h-3 w-3 rounded-full transition-all duration-200 ${
+                platform === 'xiaohongshu'
+                  ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] ring-2 ring-red-500/30'
+                  : 'bg-red-400/40'
+              }`} />
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-border/40" />
+
+          {/* Tab buttons */}
+          <div className="flex items-center relative">
+            {MOBILE_TABS.map((tab, index) => {
+              const Icon = tab.icon;
+              const isActive = mobileTabIndex === index;
+              return (
+                <motion.button
+                  key={tab.key}
+                  onClick={() => handleMobileTabChange(index)}
+                  whileTap={{ scale: 0.9 }}
+                  className={`relative flex flex-col items-center justify-center w-[3.25rem] h-12 rounded-2xl text-[10px] font-medium transition-colors duration-200 ${
+                    isActive ? 'text-white' : 'text-muted-foreground'
+                  }`}
+                  aria-label={tab.label}
+                >
+                  {/* Animated active indicator pill */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobile-tab-pill"
+                      className="absolute inset-0 rounded-2xl overflow-hidden"
+                      transition={{ type: 'spring' as const, stiffness: 500, damping: 35 }}
+                    >
+                      {/* Wechat gradient */}
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-600"
+                        animate={{ opacity: platform === 'wechat' ? 1 : 0 }}
+                        transition={{ duration: 0.25 }}
+                      />
+                      {/* Xiaohongshu gradient */}
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-br from-rose-500 to-red-600"
+                        animate={{ opacity: platform === 'xiaohongshu' ? 1 : 0 }}
+                        transition={{ duration: 0.25 }}
+                      />
+                    </motion.div>
+                  )}
+
+                  <span className="relative z-10">
+                    <Icon className="h-[18px] w-[18px] mx-auto" />
+                  </span>
+                  <span className="relative z-10 mt-0.5 leading-none">{tab.label}</span>
+
+                  {/* Notification badge on 数据 tab */}
+                  {tab.key === 'data' && unpublishedCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring' as const, stiffness: 500, damping: 25 }}
+                      className="absolute top-0.5 right-1.5 z-20 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white px-1"
+                    >
+                      {unpublishedCount > 9 ? '9+' : unpublishedCount}
+                    </motion.span>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-border/40" />
+
+          {/* Notification bell (mobile) */}
+          <NotificationBell />
+
+          {/* Settings button */}
+          <button
+            onClick={() => setSettingsCenterOpen(true)}
+            className="flex items-center justify-center w-10 h-12 rounded-2xl text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="设置"
+          >
+            {connectedPlatforms > 0 ? (
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+              </span>
+            ) : (
+              <Settings className="h-4 w-4" />
+            )}
+          </button>
+        </motion.div>
+      </div>
 
       {/* Platform Account Panel Dialog */}
       <PlatformAccountPanel
@@ -469,7 +608,7 @@ export default function Home() {
       />
 
       {/* Footer */}
-      <footer className="footer-gradient-border bg-background/80 backdrop-blur-md py-2 px-4 mt-auto pb-safe">
+      <footer className="hidden sm:block footer-gradient-border bg-background/80 backdrop-blur-md py-2 px-4 mt-auto pb-safe">
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
           <span>{platform === 'wechat' ? '朋友圈AI运营助手 · 让每条朋友圈都有价值' : '小红书AI运营助手 · 让每篇笔记都成爆款'}</span>
           <span className="flex items-center gap-2">

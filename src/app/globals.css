@@ -1222,3 +1222,80 @@ textarea {
   box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15), 0 2px 8px rgba(0, 0, 0, 0.3);
   border-color: rgba(139, 92, 246, 0.25);
 }
+
+/* ====== Toast Animation Enhancements ====== */
+
+/* Toast success animation - subtle scale bounce */
+@keyframes toast-success {
+  0% { transform: scale(0.95); opacity: 0; }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-toast-success {
+  animation: toast-success 0.3s ease-out;
+}
+
+/* Toast error shake animation */
+@keyframes toast-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+.animate-toast-shake {
+  animation: toast-shake 0.4s ease-out;
+}
+
+/* Toast loading progress bar animation */
+@keyframes toast-loading-bar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+.animate-toast-loading {
+  position: relative;
+  overflow: hidden;
+}
+.animate-toast-loading::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.6), transparent);
+  animation: toast-loading-bar 1.5s ease-in-out infinite;
+}
+
+/* Toast confetti-like success particles */
+@keyframes toast-confetti {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translateY(-20px) rotate(180deg) scale(0); }
+}
+.toast-confetti-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: toast-confetti 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Sonner toast style overrides for animation classes */
+[data-sonner-toast][data-type="success"] {
+  animation: toast-success 0.3s ease-out;
+}
+[data-sonner-toast][data-type="error"] {
+  animation: toast-shake 0.4s ease-out;
+}
+[data-sonner-toast][data-type="loading"]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.6), transparent);
+  animation: toast-loading-bar 1.5s ease-in-out infinite;
+}

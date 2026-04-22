@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ComponentType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -30,13 +29,14 @@ import {
   Cpu,
   Link2,
   User,
-  BookOpen,
-  Sparkles,
+  Bell,
+  Database,
+  Palette,
+  Info,
   ArrowRight,
   RotateCcw,
-  Palette,
   Shield,
-  Info,
+  Sparkles,
   Plus,
   CheckCircle2,
   XCircle,
@@ -48,14 +48,28 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
-  Zap,
   Thermometer,
+  Download,
+  RefreshCw,
+  LayoutGrid,
+  List,
+  Minimize2,
+  MessageCircle,
+  BookOpen,
+  WifiOff,
+  Check,
+  ChevronRight,
 } from "lucide-react";
 import { useAppStore } from "@/store/app-store";
 import { toast } from "sonner";
 import { PRESET_PROVIDERS } from "@/lib/ai-providers";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PersonaForm } from "@/components/left-panel/persona-form";
+import type { Platform } from "@/types";
+
+/* ================================================================
+   Types
+   ================================================================ */
 
 interface SettingsCenterProps {
   connectedPlatforms: number;
@@ -75,278 +89,687 @@ interface ConfigRecord {
   createdAt: string;
 }
 
-export function SettingsCenter({ connectedPlatforms }: SettingsCenterProps) {
-  const [open, setOpen] = useState(false);
-  const [subPanel, setSubPanel] = useState<"main" | "ai" | "persona">("main");
-  const [resetting, setResetting] = useState(false);
-  const { persona, setOnboardingCompleted, setAccountPanelOpen } = useAppStore();
+type SectionId = "ai" | "accounts" | "notifications" | "data" | "display" | "about";
 
-  // Reset sub-panel when dialog opens/closes
-  useEffect(() => {
-    if (!open) setSubPanel("main");
-  }, [open]);
+interface NotificationSettings {
+  publishReminder: boolean;
+  interactionNotification: boolean;
+  dailyReport: boolean;
+  contentInspiration: boolean;
+}
 
-  const handleResetOnboarding = async () => {
-    if (!confirm("确定要重新进行引导设置吗？当前设置不会被删除，但会重新走一遍引导流程。")) return;
-    setResetting(true);
+interface DisplayPreferences {
+  defaultPlatform: Platform;
+  viewMode: "grid" | "list";
+  compactMode: boolean;
+}
+
+/* ================================================================
+   Constants
+   ================================================================ */
+
+const SECTIONS: Array<{
+  id: SectionId;
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  gradient: string;
+  description: string;
+}> = [
+  { id: "ai", icon: Cpu, label: "AI模型配置", gradient: "from-violet-500 to-purple-600", description: "管理AI大模型配置和连接" },
+  { id: "accounts", icon: Link2, label: "平台账号管理", gradient: "from-emerald-500 to-teal-600", description: "管理微信和小红书账号" },
+  { id: "notifications", icon: Bell, label: "通知设置", gradient: "from-amber-500 to-orange-500", description: "配置通知和提醒偏好" },
+  { id: "data", icon: Database, label: "数据管理", gradient: "from-cyan-500 to-blue-600", description: "导出数据和管理缓存" },
+  { id: "display", icon: Palette, label: "显示偏好", gradient: "from-pink-500 to-rose-500", description: "主题和界面设置" },
+  { id: "about", icon: Info, label: "关于", gradient: "from-slate-400 to-slate-600", description: "应用信息和版本" },
+];
+
+const DEFAULT_NOTIFICATIONS: NotificationSettings = {
+  publishReminder: true,
+  interactionNotification: true,
+  dailyReport: false,
+  contentInspiration: true,
+};
+
+const DEFAULT_DISPLAY: DisplayPreferences = {
+  defaultPlatform: "wechat",
+  viewMode: "grid",
+  compactMode: false,
+};
+
+const NOTIFICATIONS_KEY = "settings-notifications";
+const DISPLAY_KEY = "settings-display";
+
+/* ================================================================
+   Hooks
+   ================================================================ */
+
+function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] {
+  const [value, setValue] = useState<T>(() => {
+    if (typeof window === "undefined") return defaultValue;
     try {
-      setOnboardingCompleted(false);
-      setOpen(false);
-      toast.success("即将进入引导设置");
-    } finally {
-      setResetting(false);
+      const stored = localStorage.getItem(key);
+      return stored ? (JSON.parse(stored) as T) : defaultValue;
+    } catch {
+      return defaultValue;
     }
+  });
+
+  const setStoredValue = (newValue: T | ((prev: T) => T)) => {
+    setValue((prev) => {
+      const resolved = newValue instanceof Function ? newValue(prev) : newValue;
+      if (typeof window !== "undefined") {
+        localStorage.setItem(key, JSON.stringify(resolved));
+      }
+      return resolved;
+    });
   };
 
-  const handleOpenAccountPanel = () => {
-    setOpen(false);
-    setTimeout(() => {
-      setAccountPanelOpen(true);
-    }, 350);
-  };
+  return [value, setStoredValue];
+}
+
+/* ================================================================
+   Section: AI Model Settings
+   ================================================================ */
+
+function AIModelSection({ onOpenFullSettings }: { onOpenFullSettings: () => void }) {
+  const [configs, setConfigs] = useState<ConfigRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchConfigs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ai-config");
+      if (res.ok) setConfigs(await res.json());
+    } catch {
+      /* empty */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConfigs();
+  }, [fetchConfigs]);
+
+  const activeConfig = configs.find((c) => c.isActive);
+
+  // Mock stats
+  const mockTokens = 128456;
+  const mockRequests = 342;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-9 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
-        >
-          <Settings className="h-4 w-4" />
-          <span className="hidden lg:inline text-xs">设置</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-[820px] w-[95vw] max-h-[90vh] p-0 overflow-hidden">
-        {subPanel === "ai" ? (
-          /* AI Model Config */
-          <div className="h-[90vh] flex flex-col">
-            <div className="flex items-center gap-2 px-5 pt-4 pb-2 flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2"
-                onClick={() => setSubPanel("main")}
-              >
-                ← 返回
-              </Button>
-              <Separator orientation="vertical" className="h-5" />
-              <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                <Cpu className="h-3.5 w-3.5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">AI 模型配置</p>
-                <p className="text-[10px] text-muted-foreground">选择或配置 AI 大模型</p>
-              </div>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <FullAISettings />
-            </div>
+    <div className="space-y-4">
+      {/* Current Active Model Card */}
+      <div className="rounded-xl bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 border border-violet-200 dark:border-violet-800 p-4">
+        <p className="text-xs font-medium text-violet-700 dark:text-violet-300 mb-2">当前使用的模型</p>
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+            <span className="text-xs text-muted-foreground">加载中...</span>
           </div>
-        ) : subPanel === "persona" ? (
-          /* Persona Management */
-          <div className="h-[90vh] flex flex-col">
-            <div className="flex items-center gap-2 px-5 pt-4 pb-2 flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2"
-                onClick={() => setSubPanel("main")}
-              >
-                ← 返回
-              </Button>
-              <Separator orientation="vertical" className="h-5" />
-              <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                <User className="h-3.5 w-3.5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">人设管理</p>
-                <p className="text-[10px] text-muted-foreground">编辑品牌人设、语气风格和目标受众</p>
-              </div>
+        ) : activeConfig ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-sm font-semibold">{activeConfig.name}</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                {activeConfig.modelId}
+              </Badge>
+              {activeConfig.isFree && (
+                <Badge className="text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-200" variant="outline">
+                  免费
+                </Badge>
+              )}
             </div>
-            <div className="flex-1 overflow-hidden">
-              <ScrollArea className="h-full">
-                <div className="p-4">
-                  <PersonaForm />
-                </div>
-              </ScrollArea>
+            <div className="flex gap-4 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-violet-500" />
+                {mockTokens.toLocaleString()} Tokens 已使用
+              </span>
+              <span className="flex items-center gap-1">
+                <Radio className="h-3 w-3 text-violet-500" />
+                {mockRequests} 次请求
+              </span>
             </div>
           </div>
         ) : (
-          /* Main Settings Menu */
-          <>
-            <DialogHeader className="px-6 pt-5 pb-3">
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center">
-                  <Settings className="h-4 w-4 text-white" />
-                </div>
-                设置中心
-              </DialogTitle>
-              <DialogDescription>
-                管理模型配置、平台账号、人设和系统偏好
-              </DialogDescription>
-            </DialogHeader>
-
-            <ScrollArea className="h-[calc(90vh-120px)]">
-              <div className="px-6 pb-6 space-y-3">
-                {/* AI Model Config */}
-                <SettingsCard
-                  icon={Cpu}
-                  iconGradient="from-violet-500 to-purple-600"
-                  title="AI 模型配置"
-                  description="选择或自定义 AI 大模型，支持免费模型和 OpenAI 兼容 API"
-                  onClick={() => setSubPanel("ai")}
-                  badge="核心"
-                />
-
-                {/* Account Management - directly opens PlatformAccountPanel */}
-                <SettingsCard
-                  icon={Link2}
-                  iconGradient="from-emerald-500 to-teal-600"
-                  title="平台账号管理"
-                  description="连接微信朋友圈和小红书账号，配置 API 凭据"
-                  onClick={handleOpenAccountPanel}
-                  badge={connectedPlatforms > 0 ? `${connectedPlatforms}个已连接` : "未连接"}
-                  badgeColor={connectedPlatforms > 0 ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : undefined}
-                />
-
-                <Separator className="my-2" />
-
-                {/* Persona Management - opens embedded form */}
-                <SettingsCard
-                  icon={User}
-                  iconGradient="from-amber-500 to-orange-500"
-                  title="人设管理"
-                  description={`编辑您的品牌人设、语气风格和目标受众${persona?.name ? ` · 当前：${persona.name}` : " · 未设置"}`}
-                  onClick={() => setSubPanel("persona")}
-                />
-
-                <Separator className="my-2" />
-
-                {/* Theme */}
-                <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-sm">
-                          <Palette className="h-4 w-4 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium">外观与主题</h4>
-                          <p className="text-[11px] text-muted-foreground">切换深色/浅色模式</p>
-                        </div>
-                      </div>
-                      <ThemeToggle />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Reset Onboarding */}
-                <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center shadow-sm">
-                          <RotateCcw className="h-4 w-4 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium">重新引导设置</h4>
-                          <p className="text-[11px] text-muted-foreground">重新走一遍初始化引导流程，配置平台、人设和知识库</p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-xs text-muted-foreground"
-                        onClick={handleResetOnboarding}
-                        disabled={resetting}
-                      >
-                        <RotateCcw className={`h-3 w-3 mr-1 ${resetting ? "animate-spin" : ""}`} />
-                        重置
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* About */}
-                <Card className="border-0 shadow-sm bg-muted/30">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="text-[11px] text-muted-foreground leading-relaxed space-y-1">
-                        <p>AI 社交运营助手 v2.0 · 支持朋友圈和小红书双平台</p>
-                        <p>数据存储在本地数据库，API Key 不会外传。</p>
-                        <p className="flex items-center gap-1">
-                          <Shield className="h-3 w-3" />
-                          安全提示：建议定期更换 API Key，生产环境需加密存储。
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </ScrollArea>
-          </>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            <span className="text-sm text-amber-700 dark:text-amber-300">内置 AI 服务（无需配置）</span>
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+
+      {/* Saved Configs */}
+      {configs.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground">已保存的配置 ({configs.length})</p>
+          <ScrollArea className="max-h-48">
+            <div className="space-y-2 pr-2">
+              {configs.map((config) => {
+                const preset = PRESET_PROVIDERS.find((p) => p.provider === config.provider);
+                return (
+                  <div key={config.id} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <span className="text-base flex-shrink-0">{preset?.icon || "🔧"}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium truncate">{config.name}</span>
+                        {config.isActive && (
+                          <Badge className="text-[9px] px-1 py-0 h-4 bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-800" variant="outline">
+                            使用中
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground truncate">{config.modelId}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
+
+      <Button
+        onClick={onOpenFullSettings}
+        className="w-full h-9 text-xs bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
+      >
+        <Cpu className="h-3.5 w-3.5 mr-1.5" />
+        管理AI模型配置
+        <ArrowRight className="h-3 w-3 ml-auto" />
+      </Button>
+    </div>
   );
 }
 
-/* Settings card component */
-function SettingsCard({
-  icon: Icon,
-  iconGradient,
-  title,
-  description,
-  onClick,
-  badge,
-  badgeColor,
-}: {
-  icon: typeof Settings;
-  iconGradient: string;
-  title: string;
-  description: string;
-  onClick: () => void;
-  badge?: string;
-  badgeColor?: string;
-}) {
+/* ================================================================
+   Section: Platform Accounts
+   ================================================================ */
+
+function PlatformAccountsSection({ onOpenAccountPanel }: { onOpenAccountPanel: () => void }) {
+  const [accounts, setAccounts] = useState<Array<{ platform: string; status: string; displayName: string }>>([]);
+
+  useEffect(() => {
+    fetch("/api/platform-accounts")
+      .then((res) => (res.ok ? res.json() : []))
+      .then(setAccounts)
+      .catch(() => {});
+  }, []);
+
+  const wechatAccount = accounts.find((a) => a.platform === "wechat");
+  const xhsAccount = accounts.find((a) => a.platform === "xiaohongshu");
+
   return (
-    <Card
-      className="border-0 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
-      onClick={onClick}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
-              <Icon className="h-4 w-4 text-white" />
+    <div className="space-y-4">
+      {/* WeChat */}
+      <Card className="border-0 shadow-sm bg-muted/30">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-sm">
+              <MessageCircle className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="text-sm font-medium">{title}</h4>
-                {badge && (
-                  <Badge
-                    variant="outline"
-                    className={`text-[9px] px-1.5 py-0 h-4 ${badgeColor || "bg-violet-500/10 text-violet-600 border-violet-200 dark:border-violet-800"}`}
-                  >
-                    {badge}
+                <h4 className="text-sm font-medium">微信朋友圈</h4>
+                {wechatAccount?.status === "connected" ? (
+                  <Badge className="text-[9px] px-1.5 py-0 h-4 bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-800" variant="outline">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
+                    已连接
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 text-muted-foreground">
+                    <WifiOff className="h-2.5 w-2.5 mr-0.5" />
+                    未连接
                   </Badge>
                 )}
               </div>
-              <p className="text-[11px] text-muted-foreground truncate">{description}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {wechatAccount?.displayName || "未配置微信账号"}
+              </p>
             </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
           </div>
-          <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-foreground group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Xiaohongshu */}
+      <Card className="border-0 shadow-sm bg-muted/30">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-sm">
+              <BookOpen className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-medium">小红书</h4>
+                {xhsAccount?.status === "connected" ? (
+                  <Badge className="text-[9px] px-1.5 py-0 h-4 bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-800" variant="outline">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
+                    已连接
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 text-muted-foreground">
+                    <WifiOff className="h-2.5 w-2.5 mr-0.5" />
+                    未连接
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {xhsAccount?.displayName || "未配置小红书账号"}
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button
+        onClick={onOpenAccountPanel}
+        variant="outline"
+        className="w-full h-9 text-xs"
+      >
+        <Link2 className="h-3.5 w-3.5 mr-1.5" />
+        管理账号
+        <ArrowRight className="h-3 w-3 ml-auto" />
+      </Button>
+    </div>
   );
 }
 
-/* =====================================================
-   Full AI Settings - fully functional embedded view
-   ===================================================== */
+/* ================================================================
+   Section: Notification Settings
+   ================================================================ */
+
+function NotificationSettingsSection() {
+  const [settings, setSettings] = useLocalStorage<NotificationSettings>(NOTIFICATIONS_KEY, DEFAULT_NOTIFICATIONS);
+
+  const toggle = (key: keyof NotificationSettings) => {
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const items: Array<{
+    key: keyof NotificationSettings;
+    label: string;
+    description: string;
+  }> = [
+    { key: "publishReminder", label: "发布提醒", description: "当有内容需要发布时发送提醒通知" },
+    { key: "interactionNotification", label: "互动通知", description: "当内容收到点赞、评论、转发时通知" },
+    { key: "dailyReport", label: "每日运营报告", description: "每天定时推送运营数据摘要" },
+    { key: "contentInspiration", label: "内容灵感推送", description: "基于行业动态推送内容创作灵感" },
+  ];
+
+  return (
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground mb-3">自定义您希望接收的通知类型</p>
+      {items.map((item, idx) => (
+        <div key={item.key}>
+          <div className="flex items-center justify-between py-3">
+            <div className="flex-1 min-w-0 mr-4">
+              <h4 className="text-sm font-medium">{item.label}</h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{item.description}</p>
+            </div>
+            <Switch
+              checked={settings[item.key]}
+              onCheckedChange={() => toggle(item.key)}
+              aria-label={item.label}
+            />
+          </div>
+          {idx < items.length - 1 && <Separator />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ================================================================
+   Section: Data Management
+   ================================================================ */
+
+function DataManagementSection() {
+  const [stats, setStats] = useState({
+    totalPosts: 0,
+    totalPlans: 0,
+    totalKnowledge: 0,
+    totalMaterials: 0,
+    totalAIConfigs: 0,
+    totalAccounts: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings/stats")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setStats(data);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingStats(false));
+  }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/export?format=json");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ai-export-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success("数据导出成功");
+      } else {
+        toast.error("导出失败");
+      }
+    } catch {
+      toast.error("导出失败");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleClearCache = () => {
+    if (!confirm("确定要清除缓存吗？这将清除非必要本地数据，不会删除已保存的内容。")) return;
+    setClearing(true);
+    try {
+      // Clear non-essential localStorage data
+      const preservedKeys = [
+        "theme",
+        "onboarding-completed",
+        NOTIFICATIONS_KEY,
+        DISPLAY_KEY,
+        "settings-default-platform",
+        "settings-view-mode",
+        "settings-compact-mode",
+      ];
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && !preservedKeys.includes(key)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+      toast.success(`已清除 ${keysToRemove.length} 项缓存数据`);
+    } catch {
+      toast.error("清除缓存失败");
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const statItems = [
+    { label: "内容总数", value: stats.totalPosts, icon: "📝" },
+    { label: "运营计划", value: stats.totalPlans, icon: "📋" },
+    { label: "知识库条目", value: stats.totalKnowledge, icon: "📚" },
+    { label: "素材库", value: stats.totalMaterials, icon: "🗂️" },
+    { label: "AI配置", value: stats.totalAIConfigs, icon: "🤖" },
+    { label: "平台账号", value: stats.totalAccounts, icon: "🔗" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Database Stats Grid */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">数据库概览</p>
+        {loadingStats ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {statItems.map((item) => (
+              <div key={item.label} className="rounded-lg border border-border/60 p-3 bg-muted/20">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-sm">{item.icon}</span>
+                  <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                </div>
+                <span className="text-lg font-bold tabular-nums">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Separator />
+
+      {/* Action Buttons */}
+      <div className="space-y-2">
+        <Button
+          onClick={handleExport}
+          disabled={exporting}
+          variant="outline"
+          className="w-full h-9 text-xs justify-start"
+        >
+          {exporting ? (
+            <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+          ) : (
+            <Download className="h-3.5 w-3.5 mr-2" />
+          )}
+          导出全部数据 (JSON)
+        </Button>
+        <Button
+          onClick={handleClearCache}
+          disabled={clearing}
+          variant="outline"
+          className="w-full h-9 text-xs justify-start text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/40 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+        >
+          {clearing ? (
+            <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5 mr-2" />
+          )}
+          清除缓存
+        </Button>
+        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+          <Shield className="h-3 w-3" />
+          清除缓存不会删除已保存的内容和配置
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Section: Display Preferences
+   ================================================================ */
+
+function DisplayPreferencesSection() {
+  const [displayPrefs, setDisplayPrefs] = useLocalStorage<DisplayPreferences>(DISPLAY_KEY, DEFAULT_DISPLAY);
+  const { platform, setPlatform } = useAppStore();
+
+  return (
+    <div className="space-y-5">
+      {/* Theme Toggle */}
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground mb-3 block">主题模式</Label>
+        <div className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
+          <div className="flex items-center gap-2.5">
+            <Palette className="h-4 w-4 text-pink-500" />
+            <div>
+              <span className="text-sm font-medium">深色 / 浅色模式</span>
+              <p className="text-[10px] text-muted-foreground">切换界面主题</p>
+            </div>
+          </div>
+          <ThemeToggle />
+        </div>
+      </div>
+
+      {/* Default Platform */}
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground mb-3 block">默认平台</Label>
+        <RadioGroup
+          value={displayPrefs.defaultPlatform}
+          onValueChange={(val) => {
+            setDisplayPrefs((prev) => ({ ...prev, defaultPlatform: val as Platform }));
+            setPlatform(val as Platform);
+          }}
+          className="grid grid-cols-2 gap-3"
+        >
+          <label
+            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+              displayPrefs.defaultPlatform === "wechat"
+                ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/20"
+                : "border-border/60 bg-muted/20 hover:bg-muted/40"
+            }`}
+          >
+            <RadioGroupItem value="wechat" className="sr-only" />
+            <div className="flex items-center gap-2 flex-1">
+              <MessageCircle className={`h-4 w-4 ${displayPrefs.defaultPlatform === "wechat" ? "text-green-600" : "text-muted-foreground"}`} />
+              <span className="text-xs font-medium">朋友圈</span>
+            </div>
+            {displayPrefs.defaultPlatform === "wechat" && <Check className="h-3.5 w-3.5 text-green-600" />}
+          </label>
+          <label
+            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+              displayPrefs.defaultPlatform === "xiaohongshu"
+                ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20"
+                : "border-border/60 bg-muted/20 hover:bg-muted/40"
+            }`}
+          >
+            <RadioGroupItem value="xiaohongshu" className="sr-only" />
+            <div className="flex items-center gap-2 flex-1">
+              <BookOpen className={`h-4 w-4 ${displayPrefs.defaultPlatform === "xiaohongshu" ? "text-red-600" : "text-muted-foreground"}`} />
+              <span className="text-xs font-medium">小红书</span>
+            </div>
+            {displayPrefs.defaultPlatform === "xiaohongshu" && <Check className="h-3.5 w-3.5 text-red-600" />}
+          </label>
+        </RadioGroup>
+      </div>
+
+      {/* Calendar View Mode */}
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground mb-3 block">日历视图模式</Label>
+        <RadioGroup
+          value={displayPrefs.viewMode}
+          onValueChange={(val) => setDisplayPrefs((prev) => ({ ...prev, viewMode: val as "grid" | "list" }))}
+          className="grid grid-cols-2 gap-3"
+        >
+          <label
+            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+              displayPrefs.viewMode === "grid"
+                ? "border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/20"
+                : "border-border/60 bg-muted/20 hover:bg-muted/40"
+            }`}
+          >
+            <RadioGroupItem value="grid" className="sr-only" />
+            <div className="flex items-center gap-2 flex-1">
+              <LayoutGrid className={`h-4 w-4 ${displayPrefs.viewMode === "grid" ? "text-violet-600" : "text-muted-foreground"}`} />
+              <span className="text-xs font-medium">网格模式</span>
+            </div>
+            {displayPrefs.viewMode === "grid" && <Check className="h-3.5 w-3.5 text-violet-600" />}
+          </label>
+          <label
+            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+              displayPrefs.viewMode === "list"
+                ? "border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/20"
+                : "border-border/60 bg-muted/20 hover:bg-muted/40"
+            }`}
+          >
+            <RadioGroupItem value="list" className="sr-only" />
+            <div className="flex items-center gap-2 flex-1">
+              <List className={`h-4 w-4 ${displayPrefs.viewMode === "list" ? "text-violet-600" : "text-muted-foreground"}`} />
+              <span className="text-xs font-medium">列表模式</span>
+            </div>
+            {displayPrefs.viewMode === "list" && <Check className="h-3.5 w-3.5 text-violet-600" />}
+          </label>
+        </RadioGroup>
+      </div>
+
+      {/* Compact Mode */}
+      <div className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
+        <div className="flex items-center gap-2.5">
+          <Minimize2 className="h-4 w-4 text-slate-500" />
+          <div>
+            <span className="text-sm font-medium">紧凑模式</span>
+            <p className="text-[10px] text-muted-foreground">减少间距，显示更多内容</p>
+          </div>
+        </div>
+        <Switch
+          checked={displayPrefs.compactMode}
+          onCheckedChange={(checked) => setDisplayPrefs((prev) => ({ ...prev, compactMode: checked }))}
+          aria-label="紧凑模式"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Section: About
+   ================================================================ */
+
+function AboutSection() {
+  const features = [
+    "AI内容生成与优化",
+    "智能日历规划",
+    "知识库管理",
+    "多平台支持（朋友圈/小红书）",
+    "数据分析与报告",
+    "内容模板库",
+    "账号采集",
+    "封面图生成",
+    "互动数据同步",
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Version Info */}
+      <div className="text-center py-4">
+        <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-violet-200 dark:shadow-violet-900/40">
+          <Sparkles className="h-7 w-7 text-white" />
+        </div>
+        <h3 className="text-base font-bold">朋友圈AI运营助手</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">v1.0.0 · Build 20250601</p>
+      </div>
+
+      <Separator />
+
+      {/* Feature Count */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">功能特性 ({features.length})</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          {features.map((feature) => (
+            <div key={feature} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+              {feature}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Tech Stack */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">技术栈</p>
+        <div className="flex flex-wrap gap-1.5">
+          {["Next.js", "React", "TypeScript", "Tailwind CSS", "Prisma", "Framer Motion", "shadcn/ui"].map((tech) => (
+            <Badge key={tech} variant="secondary" className="text-[10px] px-2 py-0.5">
+              {tech}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Credits */}
+      <div className="rounded-lg p-3 bg-muted/30 text-[11px] text-muted-foreground leading-relaxed">
+        <p className="flex items-center gap-1">
+          <Shield className="h-3 w-3" />
+          数据存储在本地数据库，API Key 不会外传。建议定期更换 API Key，生产环境需加密存储。
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Full AI Settings - Sub-panel (from existing code)
+   ================================================================ */
 
 function FullAISettings() {
   const [configs, setConfigs] = useState<ConfigRecord[]>([]);
@@ -379,7 +802,7 @@ function FullAISettings() {
   }, [fetchConfigs]);
 
   const handleSelectPreset = (presetId: string) => {
-    const preset = PRESET_PROVIDERS.find(p => p.id === presetId);
+    const preset = PRESET_PROVIDERS.find((p) => p.id === presetId);
     if (preset) {
       setEditingConfig({
         name: preset.name,
@@ -504,7 +927,7 @@ function FullAISettings() {
   };
 
   const handleEditConfig = (config: ConfigRecord) => {
-    const preset = PRESET_PROVIDERS.find(p => p.provider === config.provider);
+    const preset = PRESET_PROVIDERS.find((p) => p.provider === config.provider);
     setPresetMode(!!preset);
     if (preset) setSelectedPreset(preset.id);
     setEditingConfig(config);
@@ -536,14 +959,14 @@ function FullAISettings() {
     setShowForm(false);
   };
 
-  const activeConfig = configs.find(c => c.isActive);
+  const activeConfig = configs.find((c) => c.isActive);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" as const }}
         >
           <Sparkles className="h-6 w-6 text-violet-500" />
         </motion.div>
@@ -577,7 +1000,7 @@ function FullAISettings() {
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground">已保存的配置 ({configs.length})</p>
             {configs.map((config) => {
-              const preset = PRESET_PROVIDERS.find(p => p.provider === config.provider);
+              const preset = PRESET_PROVIDERS.find((p) => p.provider === config.provider);
               const isDeleting = deleting === config.id;
               return (
                 <Card key={config.id} className="border-0 shadow-sm hover:shadow-md transition-all">
@@ -619,7 +1042,7 @@ function FullAISettings() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 w-7 p-0 text-[10px] text-muted-foreground hover:text-blue-600"
+                          className="h-7 w-7 p-0 text-[10px] text-muted-foreground hover:text-violet-600"
                           onClick={(e) => { e.stopPropagation(); handleEditConfig(config); }}
                           title="编辑"
                         >
@@ -663,7 +1086,7 @@ function FullAISettings() {
                 <CardContent className="p-4 space-y-3">
                   {/* Provider info card */}
                   {presetMode && selectedPreset && (() => {
-                    const preset = PRESET_PROVIDERS.find(p => p.id === selectedPreset);
+                    const preset = PRESET_PROVIDERS.find((p) => p.id === selectedPreset);
                     if (!preset) return null;
                     return (
                       <div className="rounded-lg bg-gradient-to-br from-violet-50/50 to-purple-50/50 dark:from-violet-950/10 dark:to-purple-950/10 p-3">
@@ -702,7 +1125,7 @@ function FullAISettings() {
 
                   {/* Model Selection (for presets with multiple models) */}
                   {presetMode && selectedPreset && (() => {
-                    const preset = PRESET_PROVIDERS.find(p => p.id === selectedPreset);
+                    const preset = PRESET_PROVIDERS.find((p) => p.id === selectedPreset);
                     if (!preset || preset.models.length <= 1) return null;
                     return (
                       <div className="space-y-1.5">
@@ -756,7 +1179,7 @@ function FullAISettings() {
                   )}
 
                   {/* API Key */}
-                  {editingConfig.provider !== 'z-ai' && (
+                  {editingConfig.provider !== "z-ai" && (
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium">
                         <Shield className="h-3 w-3 inline mr-1" />
@@ -892,8 +1315,8 @@ function FullAISettings() {
 
               {/* Free model presets grid */}
               <div className="grid grid-cols-2 gap-2">
-                {PRESET_PROVIDERS.filter(p => p.provider !== 'z-ai').map((preset) => {
-                  const isConfigured = configs.some(c => c.provider === preset.provider);
+                {PRESET_PROVIDERS.filter((p) => p.provider !== "z-ai").map((preset) => {
+                  const isConfigured = configs.some((c) => c.provider === preset.provider);
                   return (
                     <button
                       key={preset.id}
@@ -921,12 +1344,12 @@ function FullAISettings() {
                 onClick={handleAddCustom}
                 className="w-full flex items-center gap-2.5 p-2.5 rounded-lg border border-dashed border-muted-foreground/30 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/10 transition-all text-left group"
               >
-                <Globe className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors flex-shrink-0" />
+                <Globe className="h-4 w-4 text-muted-foreground group-hover:text-violet-500 transition-colors flex-shrink-0" />
                 <div className="flex-1">
                   <span className="text-xs font-medium group-hover:text-foreground transition-colors">自定义 API (OpenAI 兼容)</span>
                   <p className="text-[10px] text-muted-foreground">DeepSeek / OpenAI / Ollama 本地部署等</p>
                 </div>
-                <Plus className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-blue-500 transition-colors flex-shrink-0" />
+                <Plus className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-violet-500 transition-colors flex-shrink-0" />
               </button>
             </motion.div>
           )}
@@ -939,5 +1362,325 @@ function FullAISettings() {
         </div>
       </div>
     </ScrollArea>
+  );
+}
+
+/* ================================================================
+   Main Settings Center Component
+   ================================================================ */
+
+export function SettingsCenter({ connectedPlatforms }: SettingsCenterProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<SectionId>("ai");
+  const [subPanel, setSubPanel] = useState<"main" | "ai" | "persona">("main");
+  const [resetting, setResetting] = useState(false);
+
+  const {
+    persona,
+    setOnboardingCompleted,
+    setAccountPanelOpen,
+    settingsCenterOpen,
+    setSettingsCenterOpen,
+  } = useAppStore();
+
+  // Sync store state with dialog
+  useEffect(() => {
+    if (settingsCenterOpen && !dialogOpen) {
+      setDialogOpen(true);
+    }
+  }, [settingsCenterOpen, dialogOpen]);
+
+  // Reset section/sub-panel when dialog opens
+  useEffect(() => {
+    if (dialogOpen) {
+      setActiveSection("ai");
+      setSubPanel("main");
+    }
+  }, [dialogOpen]);
+
+  const handleOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    setSettingsCenterOpen(open);
+  };
+
+  const handleResetOnboarding = async () => {
+    if (!confirm("确定要重新进行引导设置吗？当前设置不会被删除，但会重新走一遍引导流程。")) return;
+    setResetting(true);
+    try {
+      setOnboardingCompleted(false);
+      handleOpenChange(false);
+      toast.success("即将进入引导设置");
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleOpenAccountPanel = () => {
+    handleOpenChange(false);
+    setTimeout(() => {
+      setAccountPanelOpen(true);
+    }, 350);
+  };
+
+  // Section content renderer
+  const renderSectionContent = (sectionId: SectionId) => {
+    switch (sectionId) {
+      case "ai":
+        return (
+          <AIModelSection onOpenFullSettings={() => setSubPanel("ai")} />
+        );
+      case "accounts":
+        return (
+          <PlatformAccountsSection
+            onOpenAccountPanel={handleOpenAccountPanel}
+          />
+        );
+      case "notifications":
+        return <NotificationSettingsSection />;
+      case "data":
+        return <DataManagementSection />;
+      case "display":
+        return <DisplayPreferencesSection />;
+      case "about":
+        return <AboutSection />;
+      default:
+        return null;
+    }
+  };
+
+  const currentSection = SECTIONS.find((s) => s.id === activeSection);
+  const SectionIcon = currentSection?.icon ?? Settings;
+
+  return (
+    <>
+      <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
+          >
+            <Settings className="h-4 w-4" />
+            <span className="hidden lg:inline text-xs">设置</span>
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-[900px] w-[100vw] sm:w-[95vw] max-h-[100vh] sm:max-h-[90vh] p-0 overflow-hidden">
+          {/* Sub-panels: Full AI Settings */}
+          {subPanel === "ai" && (
+            <div className="h-[90vh] flex flex-col">
+              <div className="flex items-center gap-2 px-5 pt-4 pb-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() => setSubPanel("main")}
+                >
+                  ← 返回
+                </Button>
+                <Separator orientation="vertical" className="h-5" />
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Cpu className="h-3.5 w-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">AI 模型配置</p>
+                  <p className="text-[10px] text-muted-foreground">选择或配置 AI 大模型</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <FullAISettings />
+              </div>
+            </div>
+          )}
+
+          {/* Sub-panels: Persona Management */}
+          {subPanel === "persona" && (
+            <div className="h-[90vh] flex flex-col">
+              <div className="flex items-center gap-2 px-5 pt-4 pb-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() => setSubPanel("main")}
+                >
+                  ← 返回
+                </Button>
+                <Separator orientation="vertical" className="h-5" />
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <User className="h-3.5 w-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">人设管理</p>
+                  <p className="text-[10px] text-muted-foreground">编辑品牌人设、语气风格和目标受众</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="p-4">
+                    <PersonaForm />
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          )}
+
+          {/* Main Settings Layout: Sidebar + Content */}
+          {subPanel === "main" && (
+            <div className="flex flex-col sm:flex-row h-[90vh]">
+              {/* Sidebar - Desktop */}
+              <div className="hidden sm:flex flex-col w-52 border-r flex-shrink-0 bg-muted/20">
+                <div className="p-4 pb-2">
+                  <h2 className="text-sm font-bold flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center">
+                      <Settings className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    设置中心
+                  </h2>
+                </div>
+                <ScrollArea className="flex-1 px-2 pb-4">
+                  <nav className="space-y-0.5">
+                    {SECTIONS.map((section) => {
+                      const Icon = section.icon;
+                      const isActive = activeSection === section.id;
+                      return (
+                        <button
+                          key={section.id}
+                          onClick={() => setActiveSection(section.id)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all text-xs group ${
+                            isActive
+                              ? "bg-gradient-to-r " + section.gradient + " text-white shadow-sm"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                          }`}
+                        >
+                          <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-white" : "text-muted-foreground group-hover:text-foreground"}`} />
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium block truncate">{section.label}</span>
+                            {!isActive && (
+                              <span className="text-[10px] text-muted-foreground/70 block truncate">{section.description}</span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+
+                    <Separator className="my-2" />
+
+                    {/* Quick Actions */}
+                    <button
+                      onClick={() => setSubPanel("persona")}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 group"
+                    >
+                      <User className="h-4 w-4 flex-shrink-0" />
+                      <span className="font-medium">人设管理</span>
+                      {persona?.name && (
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 ml-auto">
+                          {persona.name}
+                        </Badge>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleResetOnboarding}
+                      disabled={resetting}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 group"
+                    >
+                      <RotateCcw className={`h-4 w-4 flex-shrink-0 ${resetting ? "animate-spin" : ""}`} />
+                      <span className="font-medium">重新引导设置</span>
+                    </button>
+                  </nav>
+                </ScrollArea>
+              </div>
+
+              {/* Mobile: Horizontal Section Tabs */}
+              <div className="sm:hidden flex-shrink-0 border-b">
+                <div className="flex px-3 pt-3 pb-2 gap-2 overflow-x-auto scrollbar-hide">
+                  {SECTIONS.map((section) => {
+                    const Icon = section.icon;
+                    const isActive = activeSection === section.id;
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => setActiveSection(section.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                          isActive
+                            ? "bg-gradient-to-r " + section.gradient + " text-white shadow-sm"
+                            : "text-muted-foreground bg-muted/50 hover:bg-muted/80"
+                        }`}
+                      >
+                        <Icon className="h-3 w-3" />
+                        {section.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Content Area */}
+              <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
+                {/* Mobile Header */}
+                <div className="sm:hidden px-4 pt-4 pb-2">
+                  <h2 className="text-base font-bold flex items-center gap-2">
+                    <div className={`h-7 w-7 rounded-lg bg-gradient-to-br ${currentSection?.gradient || "from-slate-500 to-slate-600"} flex items-center justify-center`}>
+                      <SectionIcon className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    {currentSection?.label || "设置"}
+                  </h2>
+                </div>
+
+                {/* Desktop Section Header */}
+                <div className="hidden sm:flex items-center gap-2 px-6 pt-5 pb-3 flex-shrink-0">
+                  <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${currentSection?.gradient || "from-slate-500 to-slate-600"} flex items-center justify-center shadow-sm`}>
+                    <SectionIcon className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold">{currentSection?.label}</h3>
+                    <p className="text-[10px] text-muted-foreground">{currentSection?.description}</p>
+                  </div>
+                </div>
+
+                {/* Scrollable Content */}
+                <ScrollArea className="flex-1">
+                  <div className="px-4 sm:px-6 pb-6">
+                    {/* Mobile quick actions */}
+                    <div className="sm:hidden mb-4 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-[11px] flex-shrink-0"
+                        onClick={() => setSubPanel("persona")}
+                      >
+                        <User className="h-3 w-3 mr-1" />
+                        人设管理
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-[11px] flex-shrink-0"
+                        onClick={handleResetOnboarding}
+                        disabled={resetting}
+                      >
+                        <RotateCcw className={`h-3 w-3 mr-1 ${resetting ? "animate-spin" : ""}`} />
+                        重新引导
+                      </Button>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeSection}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.2, ease: "easeOut" as const }}
+                      >
+                        {renderSectionContent(activeSection)}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+    </>
   );
 }

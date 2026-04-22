@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,10 @@ import {
   Eye as EyeIcon,
   Star,
   Loader2,
+  FileText,
+  Lightbulb,
+  ClipboardList,
+  Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/app-store";
@@ -171,6 +175,7 @@ export function ContentWorkspace() {
   const [previewMode, setPreviewMode] = useState(false);
   const [toolTab, setToolTab] = useState<ToolTab>("ai");
   const [showHistory, setShowHistory] = useState(false);
+  const qualityScorerRef = useRef<HTMLDivElement>(null);
 
   const selectedPost = useMemo(
     () => contentPosts.find((p) => p.id === selectedPostId) ?? null,
@@ -180,6 +185,39 @@ export function ContentWorkspace() {
   const personaName = persona?.name || "我";
 
   const handlePlatformConnect = () => setAccountPanelOpen(true);
+
+  // Scroll to quality scorer section when score badge is clicked
+  const handleScoreBadgeClick = useCallback(() => {
+    setToolTab("ai");
+    setPreviewMode(false);
+    // Wait for the tab content to render, then scroll
+    setTimeout(() => {
+      qualityScorerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  }, []);
+
+  // ── Template quick-start handler ────────────────────────────────────────
+  const handleImportFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && selectedPost) {
+        const res = await fetch(`/api/content/${selectedPost.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: text }),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          updateContentPost(selectedPost.id, updated);
+          toast.success("已从剪贴板导入内容");
+        }
+      } else {
+        toast.error("剪贴板为空");
+      }
+    } catch {
+      toast.error("无法读取剪贴板，请手动粘贴");
+    }
+  };
 
   // ── No post selected ─────────────────────────────────────────────────────
   if (!selectedPost) {
@@ -242,7 +280,76 @@ export function ContentWorkspace() {
                   exit="exit"
                   className="space-y-3"
                 >
-                  <ContentEditor post={selectedPost} isXHS={isXHS} />
+                  <ContentEditor post={selectedPost} isXHS={isXHS} onScoreBadgeClick={handleScoreBadgeClick} />
+
+                  {/* ── Template Quick Start (shown when content is empty) ── */}
+                  <AnimatePresence>
+                    {!selectedPost.content && (
+                      <motion.div
+                        key="template-quick-start"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25, ease: "easeOut" as const }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-1">
+                          <p className="text-[10px] text-muted-foreground mb-2 px-0.5">快速开始</p>
+                          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+                            {/* Empty Start */}
+                            <button
+                              onClick={() => {/* just let user type */}}
+                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-border/60 bg-background p-2.5 hover:bg-muted/50 hover:border-border transition-colors"
+                            >
+                              <div className="h-8 w-8 rounded-lg bg-muted/80 flex items-center justify-center">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <span className="text-[10px] font-medium text-center leading-tight">空白开始</span>
+                            </button>
+
+                            {/* AI Generate */}
+                            <button
+                              onClick={() => {
+                                // Trigger the optimize/generate flow via PostActions
+                                toast.info("请使用下方 AI智能优化 按钮生成内容");
+                              }}
+                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-violet-200/60 dark:border-violet-800/40 bg-violet-50/50 dark:bg-violet-950/20 p-2.5 hover:bg-violet-100/50 dark:hover:bg-violet-950/30 hover:border-violet-300/60 dark:hover:border-violet-700/50 transition-colors"
+                            >
+                              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                                <Lightbulb className="h-4 w-4 text-violet-500" />
+                              </div>
+                              <span className="text-[10px] font-medium text-center leading-tight text-violet-600 dark:text-violet-400">AI生成</span>
+                            </button>
+
+                            {/* Use Template */}
+                            <button
+                              onClick={() => {
+                                toast.info("模板库功能开发中，敬请期待");
+                              }}
+                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-border/60 bg-background p-2.5 hover:bg-muted/50 hover:border-border transition-colors"
+                            >
+                              <div className="h-8 w-8 rounded-lg bg-muted/80 flex items-center justify-center">
+                                <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <span className="text-[10px] font-medium text-center leading-tight">使用模板</span>
+                            </button>
+
+                            {/* Import from Clipboard */}
+                            <button
+                              onClick={handleImportFromClipboard}
+                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-border/60 bg-background p-2.5 hover:bg-muted/50 hover:border-border transition-colors"
+                            >
+                              <div className="h-8 w-8 rounded-lg bg-muted/80 flex items-center justify-center">
+                                <Link2 className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <span className="text-[10px] font-medium text-center leading-tight">导入内容</span>
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <PostActions post={selectedPost} isXHS={isXHS} />
                 </motion.div>
               ) : (
@@ -308,7 +415,9 @@ export function ContentWorkspace() {
                     className="space-y-3"
                   >
                     {isXHS && <TitleABTest post={selectedPost} />}
-                    <QualityScorer post={selectedPost} />
+                    <div ref={qualityScorerRef}>
+                      <QualityScorer post={selectedPost} />
+                    </div>
                   </motion.div>
                 )}
 

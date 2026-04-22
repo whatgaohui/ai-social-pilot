@@ -182,14 +182,18 @@ export interface ContentVersion {
   createdAt: string;
 }
 
+export type NotificationType = 'system' | 'publish' | 'interaction' | 'ai' | 'inspiration' | 'optimize' | 'polish' | 'generate' | 'reminder' | 'error';
+
 export interface AppNotification {
   id: string;
-  type: 'optimize' | 'polish' | 'generate' | 'publish' | 'reminder' | 'error';
+  type: NotificationType;
   title: string;
   description: string;
   timestamp: number;
   read: boolean;
   postId?: string;
+  actionLabel?: string;
+  actionType?: 'viewPost' | 'viewData' | 'dismiss';
 }
 
 export type ChangeType = 'edit' | 'optimize' | 'polish' | 'ai_generate';
