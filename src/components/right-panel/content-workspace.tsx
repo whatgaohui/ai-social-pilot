@@ -18,13 +18,13 @@ import {
   Pencil,
   ChevronDown,
   Rocket,
-  TrendingUp,
   MessageSquare,
   Wand2,
   FileUp,
   CalendarPlus,
   Lightbulb,
   Sparkles,
+  History,
 } from "lucide-react";
 import { useAppStore } from "@/store/app-store";
 
@@ -42,6 +42,11 @@ import { CrossPlatformPublish } from "@/components/right-panel/cross-platform-pu
 import { HashtagRecommender } from "@/components/right-panel/hashtag-recommender";
 import { CoverImageGenerator } from "@/components/right-panel/cover-image-generator";
 import { ViralInspiration } from "@/components/right-panel/viral-inspiration";
+import { ABComparison } from "@/components/right-panel/ab-comparison";
+import { TitleABTest } from "@/components/right-panel/title-ab-test";
+import { QualityScorer } from "@/components/right-panel/quality-scorer";
+import { ContentHistory } from "@/components/right-panel/content-history";
+import { FormattingOptimizer } from "@/components/right-panel/formatting-optimizer";
 
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
@@ -55,16 +60,18 @@ const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05 },
+    transition: { staggerChildren: 0.04 },
   },
 };
 
 const staggerItem = {
   hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" } },
 };
 
 // ─── Section Collapsible Wrapper ────────────────────────────────────────────
+// Fixed: removed framer-motion height: "auto" animation that conflicted with
+// Radix Collapsible's native open/close behavior, causing content to be cut off.
 
 interface WorkspaceSectionProps {
   id: string;
@@ -78,7 +85,6 @@ interface WorkspaceSectionProps {
 }
 
 function WorkspaceSection({
-  id,
   title,
   subtitle,
   icon: Icon,
@@ -127,14 +133,9 @@ function WorkspaceSection({
         </Card>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          transition={{ duration: 0.25 }}
-          className="space-y-2 mt-1"
-        >
+        <div className="space-y-2 mt-1 pb-1">
           {children}
-        </motion.div>
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );
@@ -171,6 +172,8 @@ export function ContentWorkspace() {
     platform,
     persona,
     setAccountPanelOpen,
+    updateContentPost,
+    addNotification,
   } = useAppStore();
 
   const isXHS = platform === "xiaohongshu";
@@ -324,13 +327,58 @@ export function ContentWorkspace() {
 
           {/* ── Collapsible Sections ───────────────────────────────────── */}
           <motion.div variants={staggerItem} className="space-y-2">
-            {/* 1. 发布工具 */}
+
+            {/* 1. AI优化 - Content optimization tools (moved from AI tab) */}
+            <WorkspaceSection
+              id="ai-optimize"
+              title="AI优化"
+              subtitle="A/B对比、质量评分、排版优化"
+              icon={Sparkles}
+              gradient="from-violet-500 to-purple-600"
+            >
+              <div className="space-y-3 px-1 pb-2">
+                <ABComparison post={selectedPost} />
+
+                {/* Title A/B Test - Xiaohongshu only */}
+                {isXHS && <TitleABTest post={selectedPost} />}
+
+                <QualityScorer post={selectedPost} />
+
+                <FormattingOptimizer
+                  post={selectedPost}
+                  onApply={(formattedContent: string) => {
+                    updateContentPost(selectedPost.id, { content: formattedContent });
+                    addNotification({
+                      type: 'optimize',
+                      title: '排版优化已应用',
+                      description: isXHS ? '小红书笔记排版已优化' : '朋友圈文案排版已优化',
+                      postId: selectedPost.id,
+                    });
+                  }}
+                />
+              </div>
+            </WorkspaceSection>
+
+            {/* 2. 版本历史 (moved from AI tab) */}
+            <WorkspaceSection
+              id="content-history"
+              title="版本历史"
+              subtitle="编辑记录、版本对比、一键恢复"
+              icon={History}
+              gradient="from-slate-500 to-gray-600"
+            >
+              <div className="px-1 pb-2">
+                <ContentHistory post={selectedPost} />
+              </div>
+            </WorkspaceSection>
+
+            {/* 3. 发布工具 */}
             <WorkspaceSection
               id="publish-tools"
               title="发布工具"
               subtitle="AI发布助手、跨平台同步"
               icon={Rocket}
-              gradient="from-violet-500 to-purple-500"
+              gradient="from-emerald-500 to-teal-600"
             >
               <div className="space-y-2 px-1 pb-2">
                 <PublishingAssistant
@@ -355,59 +403,59 @@ export function ContentWorkspace() {
               </div>
             </WorkspaceSection>
 
-            {/* 2. 灵感参考 */}
+            {/* 4. 灵感参考 */}
             <WorkspaceSection
               id="inspiration-ref"
               title="灵感参考"
               subtitle="标题公式、AI话题灵感"
-              icon={Sparkles}
-              gradient="from-amber-500 to-emerald-500"
+              icon={Lightbulb}
+              gradient="from-amber-500 to-orange-500"
             >
               <div className="px-1 pb-2">
                 <ViralInspiration />
               </div>
             </WorkspaceSection>
 
-            {/* 3. 互动数据 */}
+            {/* 5. 互动数据 */}
             <WorkspaceSection
               id="engagement"
               title="互动数据"
               subtitle="浏览、点赞、评论、收藏"
               icon={MessageSquare}
-              gradient="from-emerald-500 to-teal-500"
+              gradient="from-rose-500 to-pink-600"
             >
               <div className="px-1 pb-2">
                 <EngagementCard post={selectedPost} isXHS={isXHS} />
               </div>
             </WorkspaceSection>
 
-            {/* 4. 润色工具 */}
+            {/* 6. 润色工具 */}
             <WorkspaceSection
               id="polish"
               title="润色工具"
               subtitle="口水话一键润色优化"
               icon={Wand2}
-              gradient="from-amber-500 to-orange-500"
+              gradient="from-amber-500 to-yellow-600"
             >
               <div className="px-1 pb-2">
                 <PolishTool isXHS={isXHS} mode="collapsible" defaultOpen={true} />
               </div>
             </WorkspaceSection>
 
-            {/* 5. 碎片转文案 */}
+            {/* 7. 碎片转文案 */}
             <WorkspaceSection
               id="fragment"
               title="碎片转文案"
               subtitle="对话/经历/疑问转化为文案"
               icon={FileUp}
-              gradient="from-sky-500 to-cyan-500"
+              gradient="from-sky-500 to-cyan-600"
             >
               <div className="px-1 pb-2">
                 <FragmentTool isXHS={isXHS} mode="collapsible" defaultOpen={true} />
               </div>
             </WorkspaceSection>
 
-            {/* 6. 发布到日历 */}
+            {/* 8. 发布到日历 */}
             <WorkspaceSection
               id="publish-calendar"
               title="发布到日历"

@@ -2,89 +2,76 @@
 
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Sparkles } from "lucide-react";
-import { ABComparison } from "@/components/right-panel/ab-comparison";
-import { TitleABTest } from "@/components/right-panel/title-ab-test";
-import { QualityScorer } from "@/components/right-panel/quality-scorer";
-import { ContentHistory } from "@/components/right-panel/content-history";
-import { PolishTool } from "@/components/right-panel/polish-tool";
-import { FragmentTool } from "@/components/right-panel/fragment-tool";
-import { FormattingOptimizer } from "@/components/right-panel/formatting-optimizer";
+import { Button } from "@/components/ui/button";
+import { Sparkles, PenTool } from "lucide-react";
 
 export function AIOptimizePanel() {
-  const {
-    contentPosts, selectedPostId, platform,
-    updateContentPost, addNotification,
-  } = useAppStore();
-  const isXHS = platform === 'xiaohongshu';
-  const selectedPost = contentPosts.find(p => p.id === selectedPostId);
+  const { selectedPostId, setRightPanelTab } = useAppStore();
 
-  // No post selected - show empty state
-  if (!selectedPost) {
+  // AI optimization tools have been integrated into the Content Workspace
+  // This panel now serves as a redirect/shortcut to the workspace
+
+  if (selectedPostId) {
     return (
-      <div className="flex flex-col h-full">
-        <ScrollArea className="flex-1 px-4 py-4">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-20 text-muted-foreground"
+      <div className="flex flex-col items-center justify-center h-full px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center text-center space-y-4"
+        >
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500/15 to-purple-500/15 flex items-center justify-center">
+            <Sparkles className="h-7 w-7 text-violet-500" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-sm font-semibold text-foreground">
+              AI优化工具已整合到内容工作台
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
+              A/B对比、质量评分、排版优化、版本历史等AI工具已移至内容工作台，选中内容后可直接使用
+            </p>
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30"
+            onClick={() => setRightPanelTab("workspace")}
           >
-            <Sparkles className="h-10 w-10 mb-3 opacity-20" />
-            <p className="text-sm text-center">请先在日历中选择一条内容</p>
-            <p className="text-xs mt-1 text-center">选中内容后即可使用AI优化工具</p>
-          </motion.div>
-        </ScrollArea>
+            <PenTool className="h-3.5 w-3.5" />
+            前往内容工作台
+          </Button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1 px-4 py-4">
-        <motion.div
-          key={selectedPost.id}
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.2 }}
-          className="space-y-4"
+    <div className="flex flex-col items-center justify-center h-full px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center text-center space-y-4"
+      >
+        <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 flex items-center justify-center">
+          <Sparkles className="h-7 w-7 text-violet-500/40" />
+        </div>
+        <div className="space-y-1.5">
+          <h3 className="text-sm font-semibold text-foreground">
+            请先选择一条内容
+          </h3>
+          <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
+            从左侧日历中选择一条内容后，即可在内容工作台中使用AI优化工具
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => setRightPanelTab("workspace")}
         >
-          {/* A/B Comparison Test */}
-          <ABComparison post={selectedPost} />
-
-          {/* Title A/B Test - Xiaohongshu only */}
-          {isXHS && <TitleABTest post={selectedPost} />}
-
-          {/* Quality Scorer */}
-          <QualityScorer post={selectedPost} />
-
-          {/* Content Version History */}
-          <ContentHistory post={selectedPost} />
-
-          <Separator />
-
-          {/* Formatting Optimizer */}
-          <FormattingOptimizer
-            post={selectedPost}
-            onApply={(formattedContent: string) => {
-              updateContentPost(selectedPost.id, { content: formattedContent });
-              addNotification({
-                type: 'optimize',
-                title: '排版优化已应用',
-                description: isXHS ? '小红书笔记排版已优化' : '朋友圈文案排版已优化',
-                postId: selectedPost.id,
-              });
-            }}
-          />
-
-          <Separator />
-
-          {/* Quick Tools - Collapsible */}
-          <PolishTool isXHS={isXHS} mode="collapsible" />
-          <FragmentTool isXHS={isXHS} mode="collapsible" />
-        </motion.div>
-      </ScrollArea>
+          <PenTool className="h-3.5 w-3.5" />
+          前往内容工作台
+        </Button>
+      </motion.div>
     </div>
   );
 }

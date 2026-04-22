@@ -1859,3 +1859,64 @@ Stage Summary:
   2. 旧组件清理
   3. 内容工作台交互细节打磨
   4. 数据与报告Tab的视觉优化
+Task ID: 13
+Agent: Main Developer
+Task: 优化日历图例+修复工作台折叠面板高度+整合AI工具到内容工作台
+
+Work Log:
+- 读取 worklog.md 了解前12轮开发成果
+- 分析当前布局结构和三个具体问题
+
+### Bug修复
+1. **工作台折叠面板高度不自适应**（高优先级）：
+   - 问题：`WorkspaceSection` 组件中 `CollapsibleContent` 内部使用了 framer-motion 的 `animate={{ height: "auto" }}` 动画，与 Radix UI Collapsible 原生的展开/收起行为冲突，导致内容面板展开时无法正确计算高度，内容被截断
+   - 修复：移除 framer-motion height 动画，改用简单的 `<div>` 包裹 `CollapsibleContent` 的子内容，让 Radix 原生折叠行为正常工作
+   - 文件：`src/components/right-panel/content-workspace.tsx`
+
+### 功能优化
+1. **日历图例增强**（compact-calendar.tsx）：
+   - 原图例：使用 `h-[5px] w-[5px]` 极小圆点 + `text-[8px]` 灰色文字，几乎不可见
+   - 新图例：
+     - 平台图例：彩色背景 badge（朋友圈=绿色背景、小红书=红色背景）+ ring描边圆点 + 加粗彩色文字
+     - 状态图例：4个状态（已发布=紫色、已优化=琥珀色、已生成=天蓝色、待发布=灰色），每个状态都有对应色系背景 badge + ring描边圆点 + 加粗彩色文字
+     - 按重要性排序：已发布 → 已优化 → 已生成 → 待发布
+     - 图例分两行：第一行平台，第二行状态
+
+2. **AI优化工具整合到内容工作台**（content-workspace.tsx）：
+   - 将原 "AI工具" 独立 Tab 中的内容优化工具移入内容工作台：
+     - A/B对比测试（ABComparison）
+     - 标题A/B测试（TitleABTest，仅小红书）
+     - AI质量评分（QualityScorer）
+     - 排版优化（FormattingOptimizer）
+     - 版本历史（ContentHistory）
+   - 新增"AI优化"折叠分区（紫色渐变图标，排在工作台第一位）
+   - 新增"版本历史"折叠分区（灰色渐变图标）
+   - 原有分区顺序调整：AI优化 → 版本历史 → 发布工具 → 灵感参考 → 互动数据 → 润色工具 → 碎片转文案 → 发布到日历
+   - "AI工具" Tab 改为引导面板：选中内容时显示"前往内容工作台"按钮，未选中时提示先选择内容
+
+### 设计理由
+1. **日历图例优化**：发布状态是用户最关心的信息，原设计几乎不可见，新设计使用彩色背景+加粗文字让每个状态一目了然
+2. **折叠面板修复**：Radix Collapsible 自带高度动画能力，额外叠加 framer-motion height 动画导致冲突，移除后回归原生行为
+3. **AI工具整合**：AI优化工具（A/B对比、质量评分等）本质是对当前选中内容的操作，放在独立Tab需要来回切换，降低了使用效率。整合到内容工作台后，用户编辑内容时可顺手使用AI工具，形成"编辑→优化→预览→发布"的流畅工作流
+
+### 修改文件
+- `src/components/left-panel/compact-calendar.tsx` - 图例增强
+- `src/components/right-panel/content-workspace.tsx` - 折叠修复 + AI工具整合
+- `src/components/right-panel/ai-optimize-panel.tsx` - 改为引导面板
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ 页面编译成功（✓ Compiled）
+- ✅ 无未使用的导入
+
+Stage Summary:
+- 项目状态：稳定可运行，UI体验优化完成
+- 本轮修复 1 个 bug，优化 2 个功能点
+- 核心改进：日历图例可视化、折叠面板高度修复、AI工具一站式整合
+- 未解决问题或风险：
+  1. "AI工具" Tab 目前仅作引导跳转，未来可考虑直接移除该Tab或替换为其他功能
+  2. 内容工作台折叠分区较多（8个），用户可能需要滚动较多才能找到目标分区
+- 建议下一阶段优先事项：
+  1. 考虑将低频使用的分区（发布到日历、碎片转文案）移至更深层级
+  2. 增加分区内快速搜索/定位功能
+  3. 移动端适配验证
