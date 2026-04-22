@@ -43,8 +43,8 @@ import {
   Copy,
   ArrowRight,
   Loader2,
-  SelectAll,
-  Deselect,
+  ListChecks,
+  ListX,
   ClipboardCheck,
   ChevronsRight,
   RefreshCw,
@@ -234,12 +234,12 @@ export function BatchToggleButton({ allPostIds }: { allPostIds: string[] }) {
         >
           {selectedCount === allPostIds.length ? (
             <>
-              <Deselect className="h-3 w-3 mr-1" />
+              <ListX className="h-3 w-3 mr-1" />
               取消全选
             </>
           ) : (
             <>
-              <SelectAll className="h-3 w-3 mr-1" />
+              <ListChecks className="h-3 w-3 mr-1" />
               全选
             </>
           )}
@@ -540,12 +540,12 @@ export function BatchToolbar({ posts }: { posts: ContentPost[] }) {
             >
               {allSelected ? (
                 <>
-                  <Deselect className="h-3 w-3 mr-1" />
+                  <ListX className="h-3 w-3 mr-1" />
                   取消全选
                 </>
               ) : (
                 <>
-                  <SelectAll className="h-3 w-3 mr-1" />
+                  <ListChecks className="h-3 w-3 mr-1" />
                   全选
                 </>
               )}

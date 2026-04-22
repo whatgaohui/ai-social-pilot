@@ -2245,3 +2245,26 @@ Stage Summary:
 - 项目状态：稳定可运行，优化方案功能已修复
 - 本轮修改 2 个文件，修复 3 个 bug
 - 核心改进：优化方案改为对比预览模式、markdown清理、prompt精简
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: 修复日历点击报错bug，端到端测试验证
+
+Work Log:
+- 读取 dev.log 查找日历点击相关错误
+- TypeScript编译检查发现 `content-calendar.tsx` 存在多个错误
+- 定位核心bug：`selectedPostId` 未从 Zustand store 解构但被引用（line 784）
+- 修复 `content-calendar.tsx`：在 store 解构中添加 `selectedPostId`
+- 修复 `content-calendar.tsx`：Framer Motion drag事件类型不匹配（5处类型断言）
+- 修复 `batch-operations.tsx`：`SelectAll`/`Deselect` 图标不存在于 lucide-react，替换为 `ListChecks`/`ListX`
+- 修复 `batch-generate/route.ts`：`savedPosts` 数组类型声明缺失
+- 验证 TypeScript 编译：目标文件零错误
+- 验证 ESLint：通过
+- 验证 dev server：正常启动，所有 API 200
+- agent-browser 不可用（sandbox网络限制），通过代码审查确认逻辑正确
+
+Stage Summary:
+- 修复了4个bug，涉及3个文件
+- 核心修复：`selectedPostId` 未从 store 解构导致日历列表视图 ReferenceError
+- TypeScript 编译和 ESLint 均通过

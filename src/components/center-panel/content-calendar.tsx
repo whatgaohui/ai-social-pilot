@@ -77,7 +77,7 @@ function getContentTypeColorForPost(post: ContentPost) {
 export function ContentCalendar() {
   const {
     currentPlan, setCurrentPlan, contentPosts, setContentPosts,
-    selectedDate, setSelectedDate, persona, knowledgeItems,
+    selectedDate, setSelectedDate, selectedPostId, persona, knowledgeItems,
     isGenerating, setIsGenerating, setSelectedPostId, platform,
   } = useAppStore();
   const isXHS = platform === 'xiaohongshu';
@@ -800,11 +800,11 @@ export function ContentCalendar() {
                         transition={{ duration: 0.2, delay: index * 0.015 }}
                         onClick={() => handleListItemClick(post)}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, post.id)}
-                        onDragOver={(e) => handleDragOver(e, post.id)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, post.id)}
-                        onDragEnd={handleDragEnd}
+                        onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, post.id)}
+                        onDragOver={(e) => handleDragOver(e as unknown as React.DragEvent, post.id)}
+                        onDragLeave={(e) => handleDragLeave(e as unknown as React.DragEvent)}
+                        onDrop={(e) => handleDrop(e as unknown as React.DragEvent, post.id)}
+                        onDragEnd={(e) => handleDragEnd(e as unknown as React.DragEvent)}
                         className={`
                           group relative rounded-lg border p-3 cursor-pointer transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:outline-none
                           hover:shadow-md hover:border-primary/30

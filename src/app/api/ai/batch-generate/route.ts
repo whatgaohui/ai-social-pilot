@@ -114,7 +114,7 @@ ${knowledgeContext}
     const posts = JSON.parse(result);
     
     // Save to database
-    const savedPosts = [];
+    const savedPosts: any[] = [];
     for (const post of posts) {
       const saved = await db.contentPost.create({
         data: {
