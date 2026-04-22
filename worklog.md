@@ -1499,3 +1499,50 @@ Stage Summary:
 - 本轮修改 1 个文件：platform-account-panel.tsx
 - 核心变更：微信平台区分"个人朋友圈"（AI辅助复制模式）和"微信公众号"（API接入模式）
 - 重要说明：微信个人朋友圈没有官方API，推荐使用安全的"AI生成→复制→手动发布"工作流
+
+---
+Task ID: 15
+Agent: Main Developer
+Task: 端到端检查设置页面流程，修复人设保存后无法继续下一步的bug
+
+Work Log:
+- 读取 worklog.md 了解前14轮开发成果
+- 读取 welcome-onboarding.tsx、settings-center.tsx、persona-form.tsx、app-store.ts
+- 读取 /api/persona 路由、prisma schema、dev.log
+- 全面端到端检查引导流程（6步）和设置中心流程
+
+### Bug修复
+
+1. **BarChart3Icon 未导入导致欢迎页崩溃**（高优先级）：
+   - 问题：welcome-onboarding.tsx 第344行使用 `BarChart3Icon` 但未在 import 中导入，lucide-react 导出名为 `BarChart3`
+   - 影响：欢迎页渲染时组件崩溃，导致整个引导流程无法使用
+   - 修复：在 import 中添加 `BarChart3`，将引用从 `BarChart3Icon` 改为 `BarChart3`
+
+2. **personaForm.customTone 传入API导致Prisma验证错误**（高优先级 - 核心bug）：
+   - 问题：handleSavePersona 发送 `{ ...personaForm, ... }` 包含 `customTone` 字段，Persona schema 中无此列
+   - Prisma 会因额外字段抛出 PrismaClientValidationError（500），导致 `res.ok` 为 false
+   - 用户看到"保存中..."结束但没有任何反馈，无法跳转下一步
+   - 修复：使用 `const { customTone, ...personaData } = personaForm` 解构移除 customTone 字段
+   - 同步修复 PersonaForm 组件（settings-center 使用）中的相同问题
+
+3. **API保存失败时无错误提示**（中优先级）：
+   - 问题：handleSavePersona 中 `if (res.ok)` 分支外的 else 无处理，用户看到保存按钮结束但无反馈
+   - 修复：添加 else 分支，解析错误信息并通过 toast.error 显示
+
+### 修改文件
+- `src/components/welcome-onboarding.tsx` - 添加 BarChart3 导入 + 修复 customTone + 添加错误处理
+- `src/components/left-panel/persona-form.tsx` - 修复 customTone + 添加错误处理
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ TypeScript 类型正确
+- ✅ dev server 正常运行
+
+Stage Summary:
+- 项目状态：稳定可运行，引导流程核心bug已修复
+- 本轮修改 2 个文件，修复 3 个 bug
+- 核心修复：人设保存后现在可以正常跳转到下一步
+- 建议下一阶段优先事项：
+  1. agent-browser 可视化QA验证修复效果
+  2. 内容版本历史集成到现有AI操作流程
+  3. 拆分 copywriting-output.tsx 为多个子组件

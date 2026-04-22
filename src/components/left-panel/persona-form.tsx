@@ -91,11 +91,12 @@ export function PersonaForm() {
     }
     setSaving(true);
     try {
+      const { customTone, ...formData } = form;
       const res = await fetch("/api/persona", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
+          ...formData,
           tone: form.tone === "custom" ? form.customTone : form.tone,
         }),
       });
@@ -103,6 +104,9 @@ export function PersonaForm() {
         const data = await res.json();
         setPersona(data);
         toast.success("人设信息已保存");
+      } else {
+        const errData = await res.json().catch(() => null);
+        toast.error(errData?.error || "保存失败，请重试");
       }
     } catch (e) {
       toast.error("保存失败");

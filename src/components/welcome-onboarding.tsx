@@ -18,7 +18,7 @@ import {
   Sparkles, User, BookOpen, CalendarDays, ArrowRight, ArrowLeft,
   CheckCircle2, ChevronRight, Cpu, Zap, Link2, MessageCircle,
   BookMarked, ExternalLink, Shield, Loader2, Rocket, Star,
-  Palette, Brain, Target, Eye, EyeOff, Wand2, Settings2
+  Palette, Brain, Target, Eye, EyeOff, Wand2, Settings2, BarChart3
 } from "lucide-react";
 
 // --- Animation Variants ---
@@ -151,11 +151,12 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
     if (personaForm.tone === "custom" && !personaForm.customTone?.trim()) { toast.error("请填写自定义语气风格"); return; }
     setSavingPersona(true);
     try {
+      const { customTone, ...personaData } = personaForm;
       const res = await fetch("/api/persona", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...personaForm,
+          ...personaData,
           tone: personaForm.tone === "custom" ? personaForm.customTone : personaForm.tone,
           style: "balanced",
         }),
@@ -166,8 +167,11 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
         setPersonaSaved(true);
         toast.success("人设已保存");
         goNext();
+      } else {
+        const errData = await res.json().catch(() => null);
+        toast.error(errData?.error || "保存失败，请重试");
       }
-    } catch { toast.error("保存失败"); }
+    } catch { toast.error("网络错误，保存失败"); }
     finally { setSavingPersona(false); }
   };
 
@@ -341,7 +345,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
       <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 max-w-sm mx-auto">
         {[
           { icon: Wand2, label: "AI 创作", color: "from-violet-500 to-purple-600", desc: "智能生成文案" },
-          { icon: BarChart3Icon, label: "数据分析", color: "from-emerald-500 to-teal-600", desc: "互动数据洞察" },
+          { icon: BarChart3, label: "数据分析", color: "from-emerald-500 to-teal-600", desc: "互动数据洞察" },
           { icon: Palette, label: "爆款灵感", color: "from-amber-500 to-orange-500", desc: "12+标题公式" },
         ].map((f) => (
           <Card key={f.label} className="border-0 shadow-sm bg-muted/30 p-0">
