@@ -30,6 +30,7 @@ import {
 import { CommandPalette } from "@/components/command-palette";
 import { ContentSearch } from "@/components/content-search";
 import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
+import { DashboardOverview } from "@/components/dashboard-overview";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useRipple } from "@/hooks/use-ripple";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -367,8 +368,11 @@ function MainContentPanel() {
         </Tabs>
       </div>
 
+      {/* Dashboard Overview - collapsible, only in workspace tab */}
+      {effectiveTab === 'workspace' && <DashboardOverview />}
+
       {/* Tab Content - each tab gets full remaining height */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {effectiveTab === 'workspace' && (
           <ContentWorkspace />
         )}

@@ -11,6 +11,7 @@ import { CompetitorAnalysis } from "@/components/right-panel/competitor-analysis
 import { ReportGenerator } from "@/components/right-panel/report-generator";
 import { WeeklyReport } from "@/components/right-panel/weekly-report";
 import { WeeklyStatsCard } from "@/components/right-panel/weekly-stats-card";
+import ContentCompetitionPanel from "@/components/right-panel/content-competition-panel";
 import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles } from "lucide-react";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
 
@@ -138,8 +139,11 @@ export function DataAndReports() {
               value="analytics"
               className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
-              <div className="flex flex-col flex-1 min-h-0">
-                <AnalyticsPanel />
+              <div className="flex flex-col flex-1 min-h-0 space-y-3">
+                <ContentCompetitionPanel />
+                <div className="flex flex-col flex-1 min-h-0">
+                  <AnalyticsPanel />
+                </div>
               </div>
             </TabsContent>
 

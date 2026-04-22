@@ -5289,3 +5289,145 @@ Work Log:
 6. 内容发布到真实社交平台API对接
 7. 运营报告定时自动生成 + 邮件/消息推送
 8. API Key 加密存储方案
+---
+Task ID: 31
+Agent: Main Orchestrator + 2 Parallel full-stack-developer Sub-agents
+Task: 第31轮开发 - 仪表盘概览 + 日历热力图 + 草稿自动保存 + CSS微交互
+
+Work Log:
+- 读取 worklog.md 了解30轮迭代记录
+- 硬约束：全程未使用 agent-browser（已知会导致OOM kill），使用 curl API级别测试
+- 验证项目状态：standalone production server 稳定运行，9个核心API全部200，ESLint零错误
+- 2个并行 full-stack-developer 子代理同时工作
+
+### 项目当前状态
+- 项目经过31轮迭代，功能极其丰富（110+自定义组件，40+个API路由）
+- 双平台运营：朋友圈 + 小红书
+- 零 lint 错误、production build 稳定
+- 使用 `node .next/standalone/server.js` 替代 dev server（内存限制）
+- agent-browser 绝对不可用（OOM约束）
+
+### 集成工作
+
+1. **ContentCompetitionPanel 集成**：
+   - 修改 data-and-reports.tsx，在"数据分析"Tab 中集成 ContentCompetitionPanel
+   - 位于 AnalyticsPanel 之前，使用 space-y-3 容器包裹
+   - 使用 default import（组件为 export default）
+
+### 新功能 1: 首页仪表盘概览（dashboard-overview.tsx）
+
+1. **顶部欢迎区**：
+   - 动态问候语（根据时间：早上好/下午好/晚上好）
+   - 中文日期显示（YYYY年M月D日 EEEE）
+   - 平台指示 Badge
+
+2. **4个核心指标卡片**（2×2网格，响应式4列）：
+   - 本周发布数（CalendarDays图标，violet渐变边框）
+   - 总互动量（Heart图标，rose渐变边框）
+   - 平均AI评分（Star图标，amber渐变边框）
+   - 内容完成率（CheckCircle图标，emerald渐变边框）
+   - 每个卡片：数值 + 较上周趋势Badge（▲N% / ▼N%）
+   - framer-motion stagger 入场动画
+
+3. **快捷操作区**（4个按钮）：
+   - 生成今日内容 / 查看运营报告 / 管理知识库 / AI灵感推荐
+
+4. **待办提醒**：
+   - 过期未发布内容数量（amber警告）
+   - 待优化内容数量（violet提示）
+   - 空白日数量（rose提示）
+
+5. **集成到 page.tsx**：
+   - 在工作台 Tab 内容区顶部集成 DashboardOverview
+
+### 新功能 2: 内容日历热力图（calendar-heatmap.tsx）
+
+1. **SVG 热力图**：
+   - 90天内容发布数据可视化
+   - 14×14px 方块，violet 色阶（4级：0/1/2-3/4+）
+   - 按周排列（7行×N列），月份标签
+   - 悬停 Tooltip 显示日期和发布数
+
+2. **统计摘要**：
+   - 90天总发布数
+   - 最长连续发布天数（emerald标记）
+   - 本月发布数
+   - 图例（少→多）
+
+3. **集成到 compact-calendar.tsx**：
+   - 在统计栏和 Content Health Indicator 之间
+   - 可折叠面板，默认收起
+
+### 新功能 3: 内容草稿自动保存（use-auto-save.ts）
+
+1. **useAutoSave Hook**：
+   - Props: { data, key, interval?, enabled? }
+   - 每30秒自动保存到 localStorage（key: `autosave-{key}`）
+   - 使用 useSyncExternalStore 避免 lint 错误
+   - 处理 QuotaExceededError
+   - 提供：savedAt, isDirty, clearSaved(), loadSaved()
+
+2. **草稿恢复提示**：
+   - 切换帖子时检测 localStorage 草稿
+   - sonner toast："检测到未保存的草稿（保存于 X 分钟前），是否恢复？"
+   - "恢复草稿" 按钮：恢复内容并清除 localStorage
+   - "忽略" 按钮：仅清除草稿
+   - 15秒超时自动消失
+
+3. **集成到 content-workspace.tsx**：
+   - 导入 useAutoSave hook
+   - 编辑内容时自动保存
+   - 页面加载时提示恢复
+
+### CSS 动画增强（globals.css）
+
+新增 18 个 CSS 动画/工具类：
+1. `.stat-card-animate` — 统计卡片入场动画
+2. `.metric-glow-text` — 指标数值发光脉冲
+3. `.quick-actions-group` — 快捷按钮连接组
+4. `.heatmap-cell` — 热力图格子悬停放大
+5. `.draft-indicator` — 草稿指示器脉冲
+6. `.autosave-flash` — 自动保存闪烁
+7. `.platform-badge-animate` — 平台标签弹入
+8. `.content-preview-hover` — 内容卡片悬停效果
+9. `.alert-slide-down` — 警告横幅滑入
+10. `.skeleton-card` / `.skeleton-line` — 骨架屏卡片/文字行
+11. `.focus-ring-animated` — 输入框聚焦光环动画
+12. `.empty-state-float` — 空状态浮动
+13. `.check-circle-animate` — 成功勾选圈弹入
+14. `.notification-badge-bounce` — 通知Badge弹跳
+15. `.border-glow-violet/emerald/amber/rose` — 4色边框发光
+16. `.ai-cursor-blink` — AI打字光标闪烁
+
+### 新增文件
+- `src/components/dashboard-overview.tsx` — 首页综合仪表盘概览
+- `src/components/left-panel/calendar-heatmap.tsx` — 内容发布日历热力图
+- `src/hooks/use-auto-save.ts` — 内容草稿自动保存 Hook
+
+### 修改文件
+- `src/app/page.tsx` — 集成 DashboardOverview
+- `src/components/right-panel/data-and-reports.tsx` — 集成 ContentCompetitionPanel
+- `src/components/right-panel/content-workspace.tsx` — 集成 useAutoSave
+- `src/components/left-panel/compact-calendar.tsx` — 集成 CalendarHeatmap
+- `src/hooks/use-auto-save.ts` — 修复预存 lint 错误
+- `src/app/globals.css` — 18个新CSS动画类
+
+### QA验证结果
+- ✅ ESLint 零错误
+- ✅ 9个核心API全部200（/ /api/persona /api/content /api/analytics /api/notifications /api/weekly-report /api/search /api/knowledge /api/plan）
+- ✅ 无 agent-browser 使用（遵循OOM约束）
+
+### 未解决问题或风险
+1. 沙箱环境内存限制（使用 standalone production server）
+2. AI功能依赖外部 AI 服务可用性
+3. 移动端布局未在真机上测试
+
+### 建议下一阶段优先事项
+1. 多人协作/团队账号管理功能
+2. 数据导入增强（CSV/Excel文件上传解析）
+3. 性能优化：React.memo、useMemo、虚拟列表
+4. PWA离线支持 + Service Worker
+5. 内容发布到真实社交平台API对接
+6. 运营报告定时自动生成 + 邮件/消息推送
+7. 移动端真机测试和适配优化
+8. API Key 加密存储方案

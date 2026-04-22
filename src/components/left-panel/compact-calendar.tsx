@@ -85,6 +85,7 @@ import {
   useCalendarDragSort,
   CalendarDateDropZone,
 } from "@/components/center-panel/drag-sort-calendar";
+import { CalendarHeatmap } from "@/components/left-panel/calendar-heatmap";
 
 // --- Color maps ---
 
@@ -1426,6 +1427,9 @@ export function CompactCalendar() {
           </div>
         </motion.div>
       )}
+
+      {/* ====== Calendar Heatmap ====== */}
+      <CalendarHeatmap posts={filteredPosts} />
 
       {/* ====== Content Health Indicator ====== */}
       {filteredPosts.length > 0 && (

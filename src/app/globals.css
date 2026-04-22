@@ -3863,3 +3863,215 @@ textarea {
   .sidebar-item-active::before, .skeleton-shine, .content-type-badge, .tooltip-arrow,
   .confetti-burst, .calendar-drop-target { animation: none !important; transition: none !important; }
 }
+
+/* ====== Round 31: Refined Micro-Interaction Utilities ====== */
+
+/* Dashboard stat card entrance animation */
+@keyframes stat-card-enter {
+  0% { opacity: 0; transform: translateY(16px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.stat-card-animate {
+  animation: stat-card-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+}
+
+/* Metric value count-up glow */
+@keyframes metric-glow {
+  0%, 100% { text-shadow: 0 0 0 transparent; }
+  50% { text-shadow: 0 0 12px rgba(139, 92, 246, 0.15); }
+}
+.metric-glow-text {
+  animation: metric-glow 3s ease-in-out infinite;
+}
+
+/* Quick action button group connected style */
+.quick-actions-group {
+  display: flex;
+  gap: 0;
+}
+.quick-actions-group > * {
+  border-radius: 0;
+}
+.quick-actions-group > *:first-child {
+  border-top-left-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-lg);
+}
+.quick-actions-group > *:last-child {
+  border-top-right-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+/* Heatmap cell hover tooltip */
+.heatmap-cell {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+.heatmap-cell:hover {
+  transform: scale(1.4);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+  z-index: 10;
+  position: relative;
+}
+.dark .heatmap-cell:hover {
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5);
+}
+
+/* Draft indicator pulse */
+@keyframes draft-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.draft-indicator {
+  animation: draft-pulse 2s ease-in-out infinite;
+}
+
+/* Auto-save flash indicator */
+@keyframes autosave-flash {
+  0% { background-color: rgba(16, 185, 129, 0.2); }
+  100% { background-color: transparent; }
+}
+.autosave-flash {
+  animation: autosave-flash 1s ease-out;
+}
+
+/* Platform badge micro-animation */
+@keyframes platform-badge-enter {
+  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.platform-badge-animate {
+  animation: platform-badge-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Content card preview hover */
+.content-preview-hover {
+  transition: all 0.25s ease;
+}
+.content-preview-hover:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+.dark .content-preview-hover:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Alert banner slide down */
+@keyframes alert-slide-down {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.alert-slide-down {
+  animation: alert-slide-down 0.3s ease-out;
+}
+
+/* Skeleton card with refined shimmer */
+@keyframes skeleton-card-shine {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-card {
+  background: linear-gradient(90deg, 
+    hsl(var(--muted)) 0%, 
+    hsl(var(--muted) / 0.6) 40%, 
+    hsl(var(--muted)) 60%, 
+    hsl(var(--muted)) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-card-shine 2s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+
+/* Focus ring animation for inputs */
+@keyframes focus-ring-in {
+  0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+  100% { box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15), 0 0 0 1px rgba(139, 92, 246, 0.3); }
+}
+.focus-ring-animated:focus {
+  animation: focus-ring-in 0.2s ease-out forwards;
+  outline: none;
+}
+
+/* Empty state float animation */
+@keyframes empty-float {
+  0%, 100% { transform: translateY(0); }
+  33% { transform: translateY(-6px); }
+  66% { transform: translateY(-3px); }
+}
+.empty-state-float {
+  animation: empty-float 4s ease-in-out infinite;
+}
+
+/* Success checkmark with circle background */
+@keyframes check-circle-fill {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.check-circle-animate {
+  animation: check-circle-fill 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Skeleton text line with variable width */
+.skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, 
+    hsl(var(--muted)) 25%, 
+    hsl(var(--muted) / 0.5) 50%, 
+    hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-card-shine 2s ease-in-out infinite;
+}
+
+/* Notification badge bounce */
+@keyframes badge-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+.notification-badge-bounce {
+  animation: badge-bounce 0.3s ease-out;
+}
+
+/* Subtle border glow for active/focused elements */
+.border-glow-violet {
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3), 0 0 8px rgba(139, 92, 246, 0.08);
+}
+.dark .border-glow-violet {
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.4), 0 0 8px rgba(139, 92, 246, 0.12);
+}
+
+.border-glow-emerald {
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3), 0 0 8px rgba(16, 185, 129, 0.08);
+}
+.dark .border-glow-emerald {
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.4), 0 0 8px rgba(16, 185, 129, 0.12);
+}
+
+.border-glow-amber {
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3), 0 0 8px rgba(245, 158, 11, 0.08);
+}
+.dark .border-glow-amber {
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.4), 0 0 8px rgba(245, 158, 11, 0.12);
+}
+
+.border-glow-rose {
+  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.3), 0 0 8px rgba(244, 63, 94, 0.08);
+}
+.dark .border-glow-rose {
+  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.4), 0 0 8px rgba(244, 63, 94, 0.12);
+}
+
+/* Typing cursor blink for AI loading states */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.ai-cursor-blink::after {
+  content: '|';
+  animation: cursor-blink 0.8s step-end infinite;
+  color: #8b5cf6;
+  font-weight: 300;
+  margin-left: 2px;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useAutoSave, formatRelativeTime } from "@/hooks/use-auto-save";
 import { useAppStore } from "@/store/app-store";
 import type { PostStatus } from "@/types";
 
@@ -197,6 +198,87 @@ export function ContentWorkspace() {
   const [showHistory, setShowHistory] = useState(false);
   const qualityScorerRef = useRef<HTMLDivElement>(null);
 
+  // ── Auto-save draft to localStorage (survives page close) ─────────────────
+  const selectedPost = useMemo(
+    () => contentPosts.find((p) => p.id === selectedPostId) ?? null,
+    [contentPosts, selectedPostId],
+  );
+
+  const draftData = useMemo(
+    () => (selectedPost ? { id: selectedPost.id, content: selectedPost.content, title: selectedPost.title } : null),
+    [selectedPost],
+  );
+
+  const { clearSaved, loadSaved } = useAutoSave({
+    data: draftData,
+    key: `draft-${selectedPostId ?? "none"}`,
+    interval: 30_000,
+    enabled: !!selectedPost,
+  });
+
+  // On mount / post change, check for recoverable draft
+  const draftCheckedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedPost) return;
+    const postId = selectedPost.id;
+    if (draftCheckedRef.current === postId) return;
+    draftCheckedRef.current = postId;
+
+    const saved = loadSaved();
+    if (!saved || typeof saved !== "object") return;
+
+    const draft = saved as { id?: string; content?: string; title?: string };
+    if (draft.id !== postId) return;
+
+    // Only prompt if the draft differs from the current post content
+    if (draft.content && draft.content !== selectedPost.content) {
+      try {
+        const metaKey = `autosave-draft-${postId}.__meta`;
+        const meta = localStorage.getItem(metaKey);
+        let timeLabel = "之前";
+        if (meta) {
+          const parsed = JSON.parse(meta) as { savedAt: string };
+          timeLabel = formatRelativeTime(new Date(parsed.savedAt));
+        }
+
+        toast("检测到未保存的草稿", {
+          description: `保存于 ${timeLabel}，是否恢复？`,
+          duration: 15_000,
+          action: {
+            label: "恢复草稿",
+            onClick: async () => {
+              try {
+                const res = await fetch(`/api/content/${postId}`, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ content: draft.content }),
+                });
+                if (res.ok) {
+                  const updated = await res.json();
+                  updateContentPost(postId, updated);
+                  clearSaved();
+                  toast.success("草稿已恢复");
+                } else {
+                  toast.error("恢复失败");
+                }
+              } catch {
+                toast.error("恢复失败");
+              }
+            },
+          },
+          cancel: {
+            label: "忽略",
+            onClick: () => {
+              clearSaved();
+            },
+          },
+        });
+      } catch {
+        // ignore parsing errors
+      }
+    }
+  }, [selectedPost, loadSaved, clearSaved, updateContentPost]);
+
   // Brief skeleton flash on tab change
   const handleToolTabChange = useCallback((newTab: ToolTab) => {
     if (newTab !== toolTab) {
@@ -206,11 +288,6 @@ export function ContentWorkspace() {
       setTimeout(() => setTabTransitioning(false), 150);
     }
   }, [toolTab]);
-
-  const selectedPost = useMemo(
-    () => contentPosts.find((p) => p.id === selectedPostId) ?? null,
-    [contentPosts, selectedPostId],
-  );
 
   const personaName = persona?.name || "我";
 
