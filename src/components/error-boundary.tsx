@@ -98,7 +98,7 @@ const shakeAnimation = {
   initial: { x: 0 },
   animate: {
     x: [0, -6, 6, -4, 4, -2, 2, 0],
-    transition: { duration: 0.5, ease: "easeOut" },
+    transition: { duration: 0.5, ease: "easeOut" as const },
   },
 };
 

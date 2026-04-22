@@ -39,6 +39,8 @@ import { CoverImageGenerator } from "@/components/right-panel/cover-image-genera
 import { TitleABTest } from "@/components/right-panel/title-ab-test";
 import { QualityScorer } from "@/components/right-panel/quality-scorer";
 import { ContentHistory } from "@/components/right-panel/content-history";
+import { ContentQuickActions } from "@/components/right-panel/content-quick-actions";
+import { AIQuickActionsBar } from "@/components/right-panel/ai-quick-actions-bar";
 
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
@@ -236,7 +238,10 @@ export function ContentWorkspace() {
 
   // ── Post selected ────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 relative">
+      {/* Floating AI Quick Actions Bar */}
+      <AIQuickActionsBar />
+
       <div className="flex-1 overflow-y-auto min-h-0 smooth-scroll">
         <motion.div
           key={selectedPost.id}
@@ -245,6 +250,11 @@ export function ContentWorkspace() {
           variants={staggerContainer}
           className="p-4 space-y-3"
         >
+          {/* ── Quick Actions Bar ───────────────────────────────────────── */}
+          <motion.div variants={staggerItem}>
+            <ContentQuickActions />
+          </motion.div>
+
           {/* ── Header + engagement bar ─────────────────────────────────── */}
           <motion.div variants={staggerItem} className="space-y-2">
             <PostDetailHeader post={selectedPost} isXHS={isXHS} />
@@ -483,8 +493,8 @@ export function ContentWorkspace() {
             </Tabs>
           </motion.div>
 
-          {/* Bottom spacing */}
-          <div className="h-4" />
+          {/* Bottom spacing — extra room for floating AI bar */}
+          <div className="h-16 sm:h-20" />
         </motion.div>
       </div>
     </div>

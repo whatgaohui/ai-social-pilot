@@ -244,22 +244,24 @@ function LeftSidebar() {
   return (
     <div className="flex flex-col h-full">
       {/* Left Panel Tab Bar with animated underline */}
-      <div className="px-3 pt-3 pb-2 border-b">
+      <div className="px-3 pt-3 pb-2 border-b border-border/60">
         <div className="flex gap-1">
           {LEFT_TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = leftPanelTab === tab.value;
             return (
-              <button
+              <motion.button
                 key={tab.value}
                 onClick={() => setLeftPanelTab(tab.value)}
-                className={`relative flex-1 h-7 text-[11px] gap-1 rounded-md flex items-center justify-center transition-colors ${
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className={`relative flex-1 h-8 text-[11px] gap-1 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
                   isActive
-                    ? 'text-foreground font-medium'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'text-foreground font-medium bg-muted/80'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`}
               >
-                <Icon className="h-3 w-3" />
+                <Icon className={`h-3 w-3 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
                 {tab.label}
                 {tab.value === 'knowledge' && knowledgeItems.length > 0 && (
                   <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] tabular-nums">
@@ -268,12 +270,12 @@ function LeftSidebar() {
                 )}
                 {isActive && (
                   <motion.div
-                    className="absolute bottom-0 left-1 right-1 h-0.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 dark:from-violet-400 dark:to-purple-400"
+                    className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-gradient-to-r from-violet-500 to-purple-500 dark:from-violet-400 dark:to-purple-400"
                     layoutId="left-tab-underline"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </div>
@@ -329,16 +331,16 @@ function MainContentPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Main Tab Bar */}
-      <div className="px-4 pt-3 pb-2 border-b flex-shrink-0">
+      <div className="px-4 pt-3 pb-2 border-b border-border/60 flex-shrink-0">
         <Tabs value={effectiveTab} onValueChange={setRightPanelTab}>
-          <TabsList className="w-full h-9 bg-muted/50 p-0.5">
+          <TabsList className="w-full h-9 bg-muted/50 p-0.5 border border-border/40 shadow-sm">
             {MAIN_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="flex-1 h-8 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm"
+                  className="flex-1 h-8 text-xs gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200"
                 >
                   <span className="relative inline-flex">
                     <Icon className="h-3.5 w-3.5" />
@@ -473,19 +475,24 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-gradient-animated">
       <DataInitializer />
       {/* Top Header */}
-      <header className="header-gradient-border border-b bg-background/80 backdrop-blur-xl sticky top-0 z-50 shadow-[0_1px_0_0] shadow-black/5 hover:shadow-md transition-shadow duration-200">
+      <header className="header-gradient-border border-b bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
-            <div className={`h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md logo-hover-spin ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-200 dark:shadow-violet-900/40' : 'from-red-500 to-rose-600 shadow-red-200 dark:shadow-red-900/40'}`}>
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
+            <motion.div
+              className={`h-9 w-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg logo-hover-spin ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-300/50 dark:shadow-violet-900/50' : 'from-red-500 to-rose-600 shadow-red-300/50 dark:shadow-red-900/50'}`}
+              whileHover={{ scale: 1.08, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            >
+              <Sparkles className="h-4.5 w-4.5 text-white" />
+            </motion.div>
             <div>
               <h1 className="text-base font-bold flex items-center gap-1.5">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                <span className="animate-gradient-text">
+                <span className="animate-gradient-text text-[15px]">
                   {platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}
                 </span>
               </h1>
@@ -495,7 +502,7 @@ export default function Home() {
 
           {/* Platform Switcher - Desktop */}
           <div className="hidden sm:flex items-center">
-            <div className="relative flex items-center h-8 rounded-full bg-muted/80 p-0.5">
+            <div className="relative flex items-center h-9 rounded-full bg-muted/70 p-0.5 border border-border/50 shadow-sm">
               <motion.div
                 className="absolute h-7 rounded-full"
                 layoutId="platform-indicator"
@@ -505,7 +512,7 @@ export default function Home() {
                 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               >
-                <div className={`h-full w-full rounded-full ${platform === 'wechat' ? 'bg-green-500' : 'bg-red-500'}`} />
+                <div className={`h-full w-full rounded-full shadow-md ${platform === 'wechat' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`} />
               </motion.div>
               <button
                 onClick={() => setPlatform('wechat')}
@@ -586,7 +593,7 @@ export default function Home() {
               <ResizablePanelGroup direction="horizontal" className="h-full">
                 {/* Left Sidebar */}
                 <ResizablePanel defaultSize={24} minSize={20} maxSize={32}>
-                  <div className="h-full border-r bg-background/50">
+                  <div className="h-full border-r bg-background/60 backdrop-blur-sm">
                     <ErrorBoundary lightweight sectionName="左侧面板">
                       <LeftSidebar />
                     </ErrorBoundary>
@@ -597,7 +604,7 @@ export default function Home() {
 
                 {/* Main Content Area */}
                 <ResizablePanel defaultSize={76} minSize={55}>
-                  <div className="h-full bg-background">
+                  <div className="h-full bg-background/95 backdrop-blur-sm">
                     <ErrorBoundary lightweight sectionName="内容工作台">
                       <MainContentPanel />
                     </ErrorBoundary>
@@ -766,13 +773,23 @@ export default function Home() {
       />
 
       {/* Footer */}
-      <footer className="hidden sm:block footer-gradient-border bg-background/80 backdrop-blur-md py-2 px-4 mt-auto pb-safe">
+      <footer className="hidden sm:block footer-gradient-border bg-background/85 backdrop-blur-xl py-2.5 px-4 mt-auto pb-safe">
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>{platform === 'wechat' ? '朋友圈AI运营助手 · 让每条朋友圈都有价值' : '小红书AI运营助手 · 让每篇笔记都成爆款'}</span>
+          <div className="flex items-center gap-2">
+            <motion.div
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+            />
+            <span className="font-medium text-foreground/60">{platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}</span>
+            <span className="text-foreground/30">·</span>
+            <span>{platform === 'wechat' ? '让每条朋友圈都有价值' : '让每篇笔记都成爆款'}</span>
+          </div>
           <span className="flex items-center gap-2">
-            <span className="version-badge">v2.0</span>
-            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full ai-badge-pulse">
-              Powered by <Sparkles className="h-3 w-3 text-violet-500" /> AI
+            <span className="version-badge">v2.1</span>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full ai-badge-pulse bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/15">
+              <Sparkles className="h-3 w-3 text-violet-500" />
+              <span className="font-medium text-violet-600 dark:text-violet-400">AI Powered</span>
             </span>
           </span>
         </div>

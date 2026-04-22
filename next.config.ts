@@ -8,7 +8,10 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   // Allow cross-origin requests from agent-browser and preview URLs
-  allowedDevOrigins: "*",
+  allowedDevOrigins: [
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+  ],
   // Force server restart to pick up Prisma schema changes
   serverExternalPackages: ["@prisma/client", "@prisma/engines"],
 };

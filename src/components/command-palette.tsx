@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import {
@@ -28,9 +28,67 @@ import {
   PenTool,
   Zap,
   Keyboard,
+  Clock,
+  User,
 } from "lucide-react";
 import { CONTENT_TYPE_LABELS, POST_STATUS_LABELS, KNOWLEDGE_CATEGORY_LABELS, type ContentPost, type KnowledgeItem } from "@/types";
 import { SHORTCUT_LIST } from "@/hooks/use-keyboard-shortcuts";
+
+// ─── Search Tab Types ──────────────────────────────────────────────────────────
+
+type SearchTab = "all" | "posts" | "knowledge";
+
+const SEARCH_TABS: { value: SearchTab; label: string }[] = [
+  { value: "all", label: "全部" },
+  { value: "posts", label: "帖子" },
+  { value: "knowledge", label: "知识库" },
+];
+
+// ─── Status Indicator Colors ───────────────────────────────────────────────────
+
+const STATUS_INDICATOR_COLORS: Record<string, string> = {
+  planned: "bg-gray-400",
+  published: "bg-emerald-500",
+  generated: "bg-violet-500",
+  optimized: "bg-amber-500",
+};
+
+// ─── Dynamic Placeholder ──────────────────────────────────────────────────────
+
+function getSearchPlaceholder(): string {
+  const hour = new Date().getHours();
+  if (hour >= 6 && hour < 12) return "搜索内容或命令...";
+  if (hour >= 12 && hour < 18) return "搜索帖子或灵感...";
+  return "回顾今天的内容...";
+}
+
+// ─── Platform Badge ───────────────────────────────────────────────────────────
+
+function PlatformBadge({ platform }: { platform?: string }) {
+  if (!platform || platform === "wechat") {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        朋友圈
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] text-red-500 dark:text-red-400 font-medium">
+      <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+      小红书
+    </span>
+  );
+}
+
+// ─── Status Indicator Dot ─────────────────────────────────────────────────────
+
+function StatusIndicator({ status }: { status: string }) {
+  const color = STATUS_INDICATOR_COLORS[status] || "bg-gray-400";
+  return <span className={`h-2 w-2 rounded-full ${color}`} title={POST_STATUS_LABELS[status as keyof typeof POST_STATUS_LABELS] || status} />;
+}
+
+// ─── CommandPalette Component ─────────────────────────────────────────────────
 
 interface CommandPaletteProps {
   open: boolean;
@@ -50,6 +108,23 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   } = useAppStore();
 
   const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<SearchTab>("all");
+  const [placeholder, setPlaceholder] = useState(getSearchPlaceholder());
+
+  // Update placeholder every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholder(getSearchPlaceholder());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ── Recent edits (last 5 by updatedAt) ───────────────────────────────────
+  const recentPosts = useMemo(() => {
+    return [...contentPosts]
+      .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))
+      .slice(0, 5);
+  }, [contentPosts]);
 
   // ── Content search results ────────────────────────────────────────────────
   const contentResults = useMemo(() => {
@@ -73,7 +148,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     );
   }, [query, knowledgeItems]);
 
+  // ── Tab-filtered results ──────────────────────────────────────────────────
+  const showPosts = activeTab === "all" || activeTab === "posts";
+  const showKnowledge = activeTab === "all" || activeTab === "knowledge";
+
   const isXHS = platform === "xiaohongshu";
+  const hasQuery = query.trim().length > 0;
 
   // ── Select a content post ─────────────────────────────────────────────────
   const handleSelectPost = useCallback(
@@ -142,6 +222,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     [onOpenChange],
   );
 
+  const handleTabChange = useCallback((tab: SearchTab) => {
+    setActiveTab(tab);
+  }, []);
+
   return (
     <CommandDialog open={open} onOpenChange={handleOpenChange}>
       <AnimatePresence>
@@ -156,10 +240,53 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           >
             <Command shouldFilter={false}>
               <CommandInput
-                placeholder="搜索内容标题、文案、知识库..."
+                placeholder={placeholder}
                 value={query}
                 onValueChange={setQuery}
               />
+
+              {/* ── Search Category Tabs ────────────────────────────── */}
+              <div className="flex items-center gap-1 px-3 pt-1 pb-0">
+                {SEARCH_TABS.map((tab) => (
+                  <button
+                    key={tab.value}
+                    onClick={() => handleTabChange(tab.value)}
+                    className={`
+                      relative flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium
+                      transition-all duration-200
+                      ${activeTab === tab.value
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      }
+                    `}
+                  >
+                    {activeTab === tab.value && (
+                      <motion.div
+                        layoutId="search-tab-active"
+                        className="absolute inset-0 rounded-full bg-primary/10"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                    <span className="relative z-10">{tab.label}</span>
+                    {tab.value === "all" && (
+                      <span className="relative z-10 text-[9px] text-muted-foreground">
+                        {contentPosts.length + knowledgeItems.length}
+                      </span>
+                    )}
+                    {tab.value === "posts" && (
+                      <span className="relative z-10 text-[9px] text-muted-foreground">
+                        {contentPosts.length}
+                      </span>
+                    )}
+                    {tab.value === "knowledge" && (
+                      <span className="relative z-10 text-[9px] text-muted-foreground">
+                        {knowledgeItems.length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
               <CommandList className="max-h-[400px]">
                 <CommandEmpty>
                   <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground">
@@ -212,22 +339,63 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
                 <CommandSeparator />
 
+                {/* ── Recent Edits (when no query) ────────────────────── */}
+                {!hasQuery && showPosts && recentPosts.length > 0 && (
+                  <>
+                    <CommandGroup heading="最近编辑">
+                      {recentPosts.map((post) => (
+                        <CommandItem
+                          key={post.id}
+                          value={`recent-${post.id}`}
+                          onSelect={() => handleSelectPost(post)}
+                          className="flex-col !items-start gap-1 card-glow rounded-lg"
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="text-sm font-medium truncate flex-1">
+                              {post.topic}
+                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <StatusIndicator status={post.status} />
+                              <PlatformBadge platform={post.platform} />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 pl-6">
+                            <Clock className="h-3 w-3 text-muted-foreground/60" />
+                            <span className="text-[10px] text-muted-foreground/70">
+                              {post.updatedAt ? new Date(post.updatedAt).toLocaleDateString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground line-clamp-1">
+                              {post.content.length > 40
+                                ? post.content.slice(0, 40) + "…"
+                                : post.content}
+                            </span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandSeparator />
+                  </>
+                )}
+
                 {/* ── Content Search ─────────────────────────────────── */}
-                {contentResults.length > 0 && (
-                  <CommandGroup heading="内容搜索">
-                    {contentResults.slice(0, 6).map((post) => (
+                {showPosts && contentResults.length > 0 && (
+                  <CommandGroup heading={hasQuery ? "内容搜索" : undefined}>
+                    {(hasQuery ? contentResults : contentResults).slice(0, 6).map((post) => (
                       <CommandItem
                         key={post.id}
                         value={`post-${post.id}`}
                         onSelect={() => handleSelectPost(post)}
-                        className="flex-col !items-start gap-1"
+                        className="flex-col !items-start gap-1 card-glow rounded-lg"
                       >
                         <div className="flex items-center gap-2 w-full">
-                          <PenTool className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                           <span className="text-sm font-medium truncate flex-1">
                             {post.topic}
                           </span>
                           <div className="flex items-center gap-1.5 shrink-0">
+                            <PlatformBadge platform={post.platform} />
+                            <StatusIndicator status={post.status} />
                             <Badge
                               variant="secondary"
                               className="text-[10px] h-5 px-1.5"
@@ -255,14 +423,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 <CommandSeparator />
 
                 {/* ── Knowledge Search ───────────────────────────────── */}
-                {knowledgeResults.length > 0 && (
-                  <CommandGroup heading="知识库搜索">
+                {showKnowledge && knowledgeResults.length > 0 && (
+                  <CommandGroup heading={hasQuery ? "知识库搜索" : undefined}>
                     {knowledgeResults.slice(0, 5).map((item) => (
                       <CommandItem
                         key={item.id}
                         value={`knowledge-${item.id}`}
                         onSelect={() => handleSelectKnowledge(item)}
-                        className="flex-col !items-start gap-1"
+                        className="flex-col !items-start gap-1 card-glow rounded-lg"
                       >
                         <div className="flex items-center gap-2 w-full">
                           <BookOpen className="h-4 w-4 shrink-0 text-amber-500" />
