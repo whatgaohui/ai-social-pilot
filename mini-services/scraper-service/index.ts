@@ -113,9 +113,11 @@ app.post('/api/scrape/xhs/profile', async (c) => {
       signal: AbortSignal.timeout(30000), // 30s timeout for large XHS pages
     });
 
-    if (!response.ok) {
+    // XHS often returns soft 404/403 but still embeds valid data in __INITIAL_STATE__
+    // Only treat 5xx and network errors as fatal; proceed with HTML parsing for 2xx-4xx
+    if (response.status >= 500) {
       return c.json(
-        { error: `Failed to fetch page: ${response.status}` },
+        { error: `Server error: ${response.status}` },
         500
       );
     }
@@ -386,9 +388,11 @@ app.post('/api/scrape/xhs/notes', async (c) => {
       signal: AbortSignal.timeout(30000), // 30s timeout for large XHS pages
     });
 
-    if (!response.ok) {
+    // XHS often returns soft 404/403 but still embeds note data in ISSR_SCRIPT
+    // Only treat 5xx as fatal; proceed with HTML parsing for 2xx-4xx
+    if (response.status >= 500) {
       return c.json(
-        { error: `Failed to fetch page: ${response.status}` },
+        { error: `Server error: ${response.status}` },
         500
       );
     }

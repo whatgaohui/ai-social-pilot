@@ -385,7 +385,7 @@ function MainContentPanel() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, leftPanelTab, setLeftPanelTab, contentPosts, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted, onboardingInit, setSettingsCenterOpen, commandPaletteOpen, setCommandPaletteOpen } = useAppStore();
+  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, leftPanelTab, setLeftPanelTab, contentPosts, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted, onboardingInit, setSettingsCenterOpen, commandPaletteOpen, setCommandPaletteOpen, notifications } = useAppStore();
   const [connectedPlatforms, setConnectedPlatforms] = useState(0);
   const [mobileTabIndex, setMobileTabIndex] = useState(1); // default: 日历
   const [swipeDirection, setSwipeDirection] = useState(0);
@@ -478,7 +478,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-gradient-animated">
       <DataInitializer />
       {/* Top Header */}
-      <header className="header-gradient-border border-b bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300">
+      <header className="header-gradient-border border-b border-border/50 bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <motion.div
@@ -524,7 +524,7 @@ export default function Home() {
               </motion.div>
               <button
                 onClick={() => setPlatform('wechat')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] magnetic-hover ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
               >
                 <motion.span
                   className="h-2 w-2 rounded-full bg-green-400"
@@ -535,7 +535,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setPlatform('xiaohongshu')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-150 active:scale-[0.96] magnetic-hover ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
               >
                 <motion.span
                   className="h-2 w-2 rounded-full bg-red-400"
@@ -592,8 +592,10 @@ export default function Home() {
           {/* Visual divider between settings area and notifications */}
           <div className="hidden sm:block w-px h-5 bg-border/50" />
 
-          {/* Notification Bell - always visible (has its own internal tooltips) */}
-          <NotificationBell />
+          {/* Notification Bell - pulse ring when unread */}
+          <div className={notifications.filter(n => !n.read).length > 0 ? 'animate-pulse-glow rounded-lg' : ''}>
+            <NotificationBell />
+          </div>
         </div>
 
         {/* Mobile: compact header - platform switcher moved to floating nav */}

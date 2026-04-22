@@ -431,20 +431,20 @@ ${weakDimensions ? `需重点改进的维度：\n${weakDimensions}` : ""}
     setApplying(true);
 
     try {
-      // 1. Save version snapshot (before applying)
+      // 1. Save version record for the optimized content
       try {
         await fetch(`/api/content/${post.id}/versions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            content: post.content,
+            content: optimizedContent,
             changeType: "optimize",
-            summary: `评分优化（原${result.overallScore}分）`,
-            aiScore: result.overallScore,
+            summary: `AI评分优化（原${result.overallScore}分）`,
+            aiScore: 0,
           }),
         });
       } catch (e) {
-        console.error("Failed to save version snapshot:", e);
+        console.error("Failed to save version:", e);
       }
 
       // 2. Update content in database

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -907,6 +908,7 @@ export function NotificationBell() {
   const { notifications } = useAppStore();
   const hydrated = useRef(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Hydrate notifications from localStorage on mount
   useEffect(() => {
@@ -938,72 +940,70 @@ export function NotificationBell() {
     setIsMobileOpen(false);
   }, []);
 
+  // Only render one Bell icon based on viewport to prevent duplicate icons
+  // during SSR hydration / FOUC (Flash of Unstyled Content)
   return (
     <TooltipProvider delayDuration={300}>
-      <>
-        {/* Desktop: Popover with label + tooltip */}
-        <div className="hidden sm:block">
-          <Popover>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="relative h-8 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
-                    aria-label="通知中心"
-                  >
-                    <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
-                    <span className={`hidden lg:inline text-xs transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>通知</span>
-                    <UnreadBadge count={unreadCount} />
-                  </Button>
-                </PopoverTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                <p>通知中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ''}</p>
-              </TooltipContent>
-            </Tooltip>
-            <PopoverContent
-              className="w-auto p-0 border-border/50 shadow-xl"
-              align="end"
-              sideOffset={8}
-            >
-              <NotificationCenterPanel onAction={handleAction} />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* Mobile: Sheet with tooltip */}
-        <div className="sm:hidden block">
-          <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
-                    aria-label="通知中心"
-                  >
-                    <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
-                    <UnreadBadge count={unreadCount} />
-                  </Button>
-                </SheetTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                <p>通知中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ''}</p>
-              </TooltipContent>
-            </Tooltip>
-            <SheetContent side="right" className="w-full sm:max-w-md p-0">
-              <SheetHeader className="sr-only">
-                <SheetTitle>通知中心</SheetTitle>
-                <SheetDescription>查看所有通知消息</SheetDescription>
-              </SheetHeader>
-              <NotificationCenterPanel onAction={handleAction} />
-            </SheetContent>
-          </Sheet>
-        </div>
-      </>
+      {isMobile ? (
+        /* Mobile: Sheet */
+        <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
+                  aria-label="通知中心"
+                >
+                  <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
+                  <UnreadBadge count={unreadCount} />
+                </Button>
+              </SheetTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              <p>通知中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ''}</p>
+            </TooltipContent>
+          </Tooltip>
+          <SheetContent side="right" className="w-full sm:max-w-md p-0">
+            <SheetHeader className="sr-only">
+              <SheetTitle>通知中心</SheetTitle>
+              <SheetDescription>查看所有通知消息</SheetDescription>
+            </SheetHeader>
+            <NotificationCenterPanel onAction={handleAction} />
+          </SheetContent>
+        </Sheet>
+      ) : (
+        /* Desktop: Popover with label + tooltip */
+        <Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative h-8 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
+                  aria-label="通知中心"
+                >
+                  <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
+                  <span className={`hidden lg:inline text-xs transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>通知</span>
+                  <UnreadBadge count={unreadCount} />
+                </Button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              <p>通知中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ''}</p>
+            </TooltipContent>
+          </Tooltip>
+          <PopoverContent
+            className="w-auto p-0 border-border/50 shadow-xl"
+            align="end"
+            sideOffset={8}
+          >
+            <NotificationCenterPanel onAction={handleAction} />
+          </PopoverContent>
+        </Popover>
+      )}
     </TooltipProvider>
   );
 }

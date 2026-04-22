@@ -60,21 +60,21 @@ export function PolishTool({ isXHS, mode, defaultOpen }: PolishToolProps) {
           description: isXHS ? "小红书笔记已通过AI润色优化" : "朋友圈文案已通过AI润色优化",
           postId: selectedPostId || undefined,
         });
-        // Auto-save version snapshot for polish operation
+        // Auto-save version record for the polished content
         if (selectedPostId) {
           try {
             await fetch(`/api/content/${selectedPostId}/versions`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                content: polishInput,
+                content: data.content,
                 changeType: "polish",
-                summary: "口水话润色",
+                summary: "AI润色口水话",
                 aiScore: 0,
               }),
             });
           } catch (e) {
-            console.error("Failed to save version snapshot:", e);
+            console.error("Failed to save version:", e);
           }
         }
       }

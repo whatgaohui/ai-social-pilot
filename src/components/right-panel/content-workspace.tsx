@@ -385,6 +385,9 @@ export function ContentWorkspace() {
                   <div className="card-shine rounded-lg">
                     <PostActions post={selectedPost} isXHS={isXHS} />
                   </div>
+
+                  {/* ── Version History (inline collapsible below actions) ── */}
+                  <ContentHistory post={selectedPost} />
                 </motion.div>
               ) : (
                 <motion.div

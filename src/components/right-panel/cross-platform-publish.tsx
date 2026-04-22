@@ -225,21 +225,21 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
         toast.success(`已成功发布到${PLATFORM_LABELS[targetPlatform]}日历！`);
         setAdaptedContent("");
         setAdaptedDate("");
-        // Auto-save version snapshot for cross-platform publish on original post
+        // Auto-save version record for cross-platform adapted content
         if (selectedPost?.id) {
           try {
             await fetch(`/api/content/${selectedPost.id}/versions`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                content: selectedPost.content,
+                content: adaptedContent,
                 changeType: "ai_generate",
-                summary: "跨平台同步发布",
+                summary: `跨平台改编为${PLATFORM_LABELS[targetPlatform]}`,
                 aiScore: selectedPost.aiScore,
               }),
             });
           } catch (e) {
-            console.error("Failed to save version snapshot:", e);
+            console.error("Failed to save version:", e);
           }
         }
       } else {

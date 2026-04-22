@@ -468,7 +468,7 @@ export function CompactCalendar() {
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
-          <span className="text-xs font-semibold min-w-[80px] text-center tabular-nums">
+          <span className="text-xs font-semibold min-w-[80px] text-center tabular-nums animate-float-subtle">
             {format(currentMonth, "yyyy年M月", { locale: zhCN })}
           </span>
           <Button
@@ -902,7 +902,7 @@ export function CompactCalendar() {
                           relative h-8 w-full rounded flex flex-col items-center justify-center cursor-pointer
                           transition-all duration-150 overflow-hidden
                           ${isSelected ? "ring-2 ring-primary ring-offset-1" : ""}
-                          ${today && !isSelected ? "ring-1 ring-primary/50" : ""}
+                          ${today && !isSelected ? "ring-1 ring-primary/50 shimmer-border" : ""}
                           ${today ? "bg-gradient-to-br from-violet-100/60 to-purple-100/40 dark:from-violet-950/40 dark:to-purple-950/30" : ""}
                           ${primaryPost
                             ? `${today ? "" : statusStyle.bg} ${isMultiPlatform ? platformAccent : statusStyle.border} hover:brightness-95 dark:hover:brightness-110`
