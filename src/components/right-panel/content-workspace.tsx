@@ -50,18 +50,25 @@ import { WordCountIndicator } from "@/components/right-panel/word-count-indicato
 
 const fadeSlideIn = {
   hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" as const } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const } },
   exit: { opacity: 0, y: -4, transition: { duration: 0.15 } },
 };
 
 const staggerContainer = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.03 } },
+  visible: { opacity: 1, transition: { staggerChildren: 0.04 } },
 };
 
 const staggerItem = {
-  hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" as const } },
+  hidden: { opacity: 0, y: 10, scale: 0.98 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const } },
+};
+
+// Smooth expand/collapse animation for workspace sections
+const expandCollapse = {
+  hidden: { opacity: 0, height: 0, marginTop: 0 },
+  visible: { opacity: 1, height: 'auto', marginTop: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const } },
+  exit: { opacity: 0, height: 0, marginTop: 0, transition: { duration: 0.2 } },
 };
 
 // ─── Inline Engagement Bar ──────────────────────────────────────────────────
@@ -449,9 +456,10 @@ export function ContentWorkspace() {
                 {toolTab === "ai" && (
                   <motion.div
                     key="ai-panel"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
                     className="space-y-3"
                   >
                     {isXHS && <TitleABTest post={selectedPost} />}
@@ -466,9 +474,10 @@ export function ContentWorkspace() {
                 {toolTab === "publish" && (
                   <motion.div
                     key="publish-panel"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
                     className="space-y-3"
                   >
                     <PublishingAssistant
@@ -494,9 +503,10 @@ export function ContentWorkspace() {
                 {toolTab === "workflow" && (
                   <motion.div
                     key="workflow-panel"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
                   >
                     <PublishWorkflow selectedPost={selectedPost} />
                   </motion.div>
@@ -506,9 +516,10 @@ export function ContentWorkspace() {
                 {toolTab === "history" && (
                   <motion.div
                     key="history-panel"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
                   >
                     <ContentHistory post={selectedPost} />
                   </motion.div>
@@ -518,9 +529,10 @@ export function ContentWorkspace() {
                 {toolTab === "inspiration" && (
                   <motion.div
                     key="inspiration-panel"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
                   >
                     <ViralInspiration />
                   </motion.div>

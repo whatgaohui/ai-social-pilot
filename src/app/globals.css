@@ -2625,3 +2625,89 @@ textarea {
     animation: none;
   }
 }
+
+/* ====== Visual Enhancement Utility Classes ====== */
+
+/* btn-glow: subtle violet/purple glow on hover for primary action buttons */
+.btn-glow {
+  position: relative;
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+.btn-glow:hover {
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.25), 0 0 32px rgba(139, 92, 246, 0.1), 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+.btn-glow:active {
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.2), 0 1px 4px rgba(0, 0, 0, 0.06);
+  transform: translateY(0);
+}
+.dark .btn-glow:hover {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.35), 0 0 40px rgba(139, 92, 246, 0.15), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* badge-shine: subtle shine sweep animation for status badges */
+@keyframes badge-shine-sweep {
+  0% { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+.badge-shine {
+  position: relative;
+  overflow: hidden;
+}
+.badge-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 45%,
+    rgba(255, 255, 255, 0.35) 55%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: badge-shine-sweep 3s ease-in-out infinite;
+  pointer-events: none;
+}
+.dark .badge-shine::after {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.12) 45%,
+    rgba(255, 255, 255, 0.12) 55%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+}
+
+/* scrollbar-thin: thinner custom scrollbar for compact panels */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.75 0 0) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: oklch(0.78 0 0);
+  border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0 0);
+}
+.dark .scrollbar-thin {
+  scrollbar-color: oklch(0.35 0 0) transparent;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: oklch(0.35 0 0);
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.5 0 0);
+}

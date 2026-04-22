@@ -545,7 +545,7 @@ export function CompactCalendar() {
               key={pf.value}
               onClick={() => setPlatformFilter(pf.value)}
               className={`
-                flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium transition-all duration-200
+                flex items-center gap-0.5 h-6 px-2 py-0.5 rounded text-[9px] font-medium transition-all duration-200
                 ${
                   isSelected
                     ? isWechat
@@ -790,8 +790,9 @@ export function CompactCalendar() {
                           transition-all duration-150 overflow-hidden
                           ${isSelected ? "ring-2 ring-primary ring-offset-1" : ""}
                           ${today && !isSelected ? "ring-1 ring-primary/50" : ""}
+                          ${today ? "bg-gradient-to-br from-violet-100/60 to-purple-100/40 dark:from-violet-950/40 dark:to-purple-950/30" : ""}
                           ${primaryPost
-                            ? `${statusStyle.bg} ${isMultiPlatform ? platformAccent : statusStyle.border} hover:brightness-95 dark:hover:brightness-110`
+                            ? `${today ? "" : statusStyle.bg} ${isMultiPlatform ? platformAccent : statusStyle.border} hover:brightness-95 dark:hover:brightness-110`
                             : "hover:bg-muted/40"
                           }
                         `}
@@ -814,6 +815,9 @@ export function CompactCalendar() {
                         {/* Bottom indicator */}
                         {posts && posts.length > 0 && (
                           <div className="flex items-center gap-[2px] mt-[1px]">
+                            {postStatus === 'planned' && (
+                              <span className="absolute top-[3px] right-[3px] h-[4px] w-[4px] rounded-full bg-amber-500 animate-pulse-dot" />
+                            )}
                             {isMultiPlatform ? (
                               posts
                                 .reduce((acc, p) => {

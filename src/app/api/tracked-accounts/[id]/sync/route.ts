@@ -175,7 +175,8 @@ async function scrapeXHS(account: {
   homeUrl: string;
   cookie: string;
 }): Promise<ScrapeResult | null> {
-  const scrapeUrl = '/api/scrape/xhs/notes?XTransformPort=3003';
+  const SCRAPER_BASE = process.env.SCRAPER_URL || 'http://127.0.0.1:3003';
+  const scrapeUrl = `${SCRAPER_BASE}/api/scrape/xhs/notes`;
 
   // Use AbortController with timeout
   const controller = new AbortController();

@@ -245,7 +245,7 @@ export function WorkspaceEmptyState() {
   ];
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-full px-6 py-12 overflow-hidden bg-gradient-animated">
+    <div className="relative flex flex-col items-center justify-center min-h-full px-6 py-12 overflow-hidden bg-gradient-animated bg-dots-pattern">
       {/* Floating background orbs & shapes */}
       <FloatingOrbs />
 

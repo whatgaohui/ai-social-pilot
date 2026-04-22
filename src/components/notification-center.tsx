@@ -953,8 +953,8 @@ export function NotificationBell() {
                     className="relative h-8 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
                     aria-label="通知中心"
                   >
-                    <Bell className="h-4 w-4" />
-                    <span className="hidden lg:inline text-xs">通知</span>
+                    <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
+                    <span className={`hidden lg:inline text-xs transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>通知</span>
                     <UnreadBadge count={unreadCount} />
                   </Button>
                 </PopoverTrigger>
@@ -985,7 +985,7 @@ export function NotificationBell() {
                     className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
                     aria-label="通知中心"
                   >
-                    <Bell className="h-4 w-4 text-muted-foreground" />
+                    <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
                     <UnreadBadge count={unreadCount} />
                   </Button>
                 </SheetTrigger>

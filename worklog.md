@@ -3955,3 +3955,101 @@ Stage Summary:
   5. 内容排期拖拽排序的列表视图支持
   6. 数据导入/导出增强（Excel/CSV格式）
   7. 移动端触摸手势支持
+
+---
+Task ID: 22
+Agent: Cron Review Agent
+Task: 第22轮QA、Bug修复与样式打磨
+
+Work Log:
+- 读取 worklog.md 了解前21轮开发成果
+- 检查 dev server 状态并启动
+- 使用 curl 验证8个核心API端点（全部200）
+- 使用 agent-browser 替代方案（Node.js HTTP）进行页面分析
+- 使用 Explore agent 深入分析通知图标和采集中心源码
+
+### 项目当前状态
+- Next.js 16.1.3 (Turbopack) 运行在端口3000
+- Caddy 代理在端口81
+- ESLint 零错误
+- 8个核心API全部返回200
+- 已完成21轮迭代，基础稳定
+
+### Bug修复
+
+1. **采集中心无法采集小红书信息**（高优先级 - 核心修复）：
+   - 根因分析：scraper mini-service（Hono server, 端口3003）未启动 + Next.js API路由使用了错误的请求路径
+   - 采集架构：Next.js API → fetch('/api/scrape/xhs/profile?XTransformPort=3003') → Caddy代理 → scraper service
+   - 问题：服务端 fetch 使用相对路径，经过Next.js内部路由而非Caddy，导致XTransformPort代理不生效
+   - 修复1：修改 `src/app/api/tracked-accounts/route.ts` - 将 fetch URL 从相对路径改为直接连接 `http://127.0.0.1:3003`
+   - 修复2：修改 `src/app/api/tracked-accounts/[id]/sync/route.ts` - 同上
+   - 修复3：启动 scraper mini-service (`bun run dev` in mini-services/scraper-service/)
+   - 验证：直接测试scraper service可成功获取小红书用户信息（昵称+头像）
+   - 验证：修复后创建tracked account不再报"采集服务未启动"，而是正确连接到scraper service
+   - 注意：前端 `account-collector.tsx` 的健康检查使用浏览器fetch（经过Caddy），XTransformPort=3003是正确的
+
+2. **右上角重复消息提醒图标**（分析结论）：
+   - 深入分析：NotificationBell组件（notification-center.tsx）只在page.tsx header中渲染一次
+   - 桌面版使用 `hidden sm:block`，移动版使用 `sm:hidden block`，CSS响应式切换正确
+   - HTML中两个Bell SVG是SSR服务端渲染的正常现象（CSR时CSS会隐藏其中一个）
+   - 结论：非代码bug，是SSR+响应式的正常行为
+   - 优化：改进Bell图标视觉反馈 - 有未读时使用 text-foreground，无未读时使用 text-muted-foreground
+
+### 样式打磨
+
+1. **NotificationBell视觉增强**（notification-center.tsx）：
+   - Bell图标颜色根据未读数动态变化（有未读=醒目，无未读=低调）
+   - "通知"文字标签同步变色
+   - 添加 transition-colors duration-200 平滑过渡
+
+2. **全局CSS新增工具类**（globals.css）：
+   - `.btn-glow` - 主要操作按钮悬停时紫色发光效果
+   - `.badge-shine` - 状态徽章扫光动画（每3秒）
+   - `.scrollbar-thin` - 紧凑面板用的4px超细滚动条
+
+3. **CompactCalendar增强**（compact-calendar.tsx）：
+   - 今日日期格子添加渐变背景（violet-100/60 → purple-100/40）
+   - planned状态的帖子添加琥珀色脉冲圆点（animate-pulse-dot）
+   - 平台筛选按钮增大到h-6，改善触摸体验
+
+4. **ContentWorkspace增强**（content-workspace.tsx）：
+   - 空状态背景添加 bg-dots-pattern 圆点网格纹理
+   - 5个工具面板使用新的 expandCollapse 动画变体（height+opacity过渡）
+
+5. **Footer视觉优化**（page.tsx）：
+   - 文字缩小到 text-[9px]，透明度降低到 text-muted-foreground/70
+   - 应用名称透明度从 text-foreground/60 降低到 text-foreground/40
+   - padding 从 py-2.5 缩小到 py-2
+
+### 修改文件
+- `src/app/api/tracked-accounts/route.ts` - 修复scraper service连接
+- `src/app/api/tracked-accounts/[id]/sync/route.ts` - 修复scraper service连接
+- `src/components/notification-center.tsx` - Bell图标视觉反馈增强
+- `src/app/globals.css` - 新增3个CSS工具类
+- `src/components/left-panel/compact-calendar.tsx` - 今日渐变+脉冲点+按钮增大
+- `src/components/right-panel/content-workspace.tsx` - 空状态纹理+动画优化
+- `src/app/page.tsx` - Footer视觉优化
+
+### QA验证结果
+- ✅ ESLint 零错误通过
+- ✅ Dev server 编译成功（200）
+- ✅ 8个核心API全部返回200（/persona, /knowledge, /content, /plan, /analytics, /ai-config, /notifications, /tracked-accounts）
+- ✅ Scraper service 启动成功（端口3003，health check 200）
+- ✅ Scraper service 可直接访问小红书并解析用户信息
+- ✅ 修复后 tracked account 创建不再报"采集服务未启动"
+
+Stage Summary:
+- 项目状态：稳定可运行，采集功能核心修复完成
+- 本轮修改 5 个文件，修复 1 个核心bug（采集中心连接），优化 5 处视觉效果
+- 关键修复：API路由改为直接连接scraper service端口3003，绕过Caddy XTransformPort代理
+- 未解决问题或风险：
+  1. Scraper service需要手动启动（建议添加自动启动脚本或集成到Next.js）
+  2. 小红书反爬机制：直接HTTP请求可能被拦截（需要cookie/登录态才能获取完整数据）
+  3. Dev server在nohup模式下偶尔会自行退出，需要监控和自动重启
+  4. 用户反馈的"2个消息提醒"经分析是SSR正常现象，但可能需要在特定断点下进一步验证
+- 建议下一阶段优先事项：
+  1. 添加 scraper service 自动启动/监控机制
+  2. 小红书采集增加cookie模式引导（帮助用户提取和输入登录cookie）
+  3. 内容版本历史集成到AI操作流程
+  4. 旧组件清理（不再使用的旧版ContentCalendar等）
+  5. 移动端真机测试

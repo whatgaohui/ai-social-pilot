@@ -822,15 +822,15 @@ export default function Home() {
       />
 
       {/* Footer */}
-      <footer className="hidden sm:block footer-gradient-border bg-background/85 backdrop-blur-xl py-2.5 px-4 mt-auto pb-safe">
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+      <footer className="hidden sm:block footer-gradient-border bg-background/85 backdrop-blur-xl py-2 px-4 mt-auto pb-safe">
+        <div className="flex items-center justify-between text-[9px] text-muted-foreground/70">
           <div className="flex items-center gap-2">
             <motion.div
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               className="h-1.5 w-1.5 rounded-full bg-emerald-500"
             />
-            <span className="font-medium text-foreground/60">{platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}</span>
+            <span className="font-medium text-foreground/40">{platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}</span>
             <span className="text-foreground/30">·</span>
             <span>{platform === 'wechat' ? '让每条朋友圈都有价值' : '让每篇笔记都成爆款'}</span>
           </div>

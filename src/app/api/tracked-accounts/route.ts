@@ -146,9 +146,10 @@ async function triggerProfileScrape(
   cookie?: string,
 ) {
   try {
+    const SCRAPER_BASE = process.env.SCRAPER_URL || 'http://127.0.0.1:3003';
     const scrapeUrl = platform === 'xiaohongshu'
-      ? '/api/scrape/xhs/profile?XTransformPort=3003'
-      : '/api/scrape/wechat/profile?XTransformPort=3003';
+      ? `${SCRAPER_BASE}/api/scrape/xhs/profile`
+      : `${SCRAPER_BASE}/api/scrape/wechat/profile`;
 
     // Use AbortController with timeout for service availability detection
     const controller = new AbortController();
