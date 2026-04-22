@@ -352,11 +352,12 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
 
   // ── Scraper service health check ────────────────────────────────────
   const [scraperAvailable, setScraperAvailable] = useState<boolean | null>(null);
+  const [isRetryingCheck, setIsRetryingCheck] = useState(false);
 
   const checkScraperService = useCallback(async (): Promise<boolean> => {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+      const timeout = setTimeout(() => controller.abort(), 2000);
       const res = await fetch(
         "/api/scrape/xhs/profile?XTransformPort=3003",
         { method: "OPTIONS", signal: controller.signal }
@@ -370,6 +371,18 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
       return false;
     }
   }, []);
+
+  const handleRetryHealthCheck = useCallback(async () => {
+    setIsRetryingCheck(true);
+    setScraperAvailable(null); // Reset to indeterminate state
+    const result = await checkScraperService();
+    setIsRetryingCheck(false);
+    if (result) {
+      toast.success("采集服务已连接");
+    } else {
+      toast.error("采集服务仍不可用，请稍后重试");
+    }
+  }, [checkScraperService]);
 
   // Check scraper availability on mount
   useEffect(() => {
@@ -1135,27 +1148,31 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
         className="p-4 space-y-4"
       >
         {/* ── Scraper service status banner (体验模式) ────────────────── */}
-        {scraperAvailable === false && (
+        {(scraperAvailable === false || isRetryingCheck) && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-xl border border-violet-200/60 dark:border-violet-700/40"
+            className="relative overflow-hidden rounded-xl border border-amber-200/70 dark:border-amber-700/50"
           >
-            {/* Gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-violet-50 via-amber-50 to-violet-50 dark:from-violet-950/40 dark:via-amber-950/30 dark:to-violet-950/40" />
+            {/* Amber/yellow gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 dark:from-amber-950/30 dark:via-yellow-950/20 dark:to-amber-950/30" />
             <div className="relative p-3.5">
               <div className="flex items-start gap-2.5">
-                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500 to-amber-500 flex items-center justify-center shrink-0 shadow-sm">
-                  <AlertCircle className="h-3.5 w-3.5 text-white" />
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shrink-0 shadow-sm">
+                  {isRetryingCheck ? (
+                    <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
+                  ) : (
+                    <AlertCircle className="h-3.5 w-3.5 text-white" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-violet-800 dark:text-violet-200">
-                      采集服务暂未连接，当前为体验模式
+                    <p className="text-xs font-bold text-amber-800 dark:text-amber-200">
+                      {isRetryingCheck ? "正在重新检测采集服务..." : "采集服务暂未连接"}
                     </p>
                   </div>
-                  <p className="text-[10px] text-violet-600/80 dark:text-violet-300/70 mt-1 leading-relaxed">
-                    小红书采集服务未启动，链接导入和Cookie采集暂不可用。您可以使用手动导入模式粘贴内容，或生成示例数据体验完整功能。
+                  <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 mt-1 leading-relaxed">
+                    采集服务启动中，请稍后刷新页面重试。如持续无法使用，可使用手动导入功能。
                   </p>
                   <div className="flex items-center gap-2 mt-2.5">
                     <motion.div whileTap={{ scale: 0.95 }}>
@@ -1167,7 +1184,8 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                           setFormPlatform("xiaohongshu");
                           setFormMethod("manual");
                         }}
-                        className="h-7 text-[11px] gap-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-sm hover:from-violet-600 hover:to-purple-700 px-3"
+                        disabled={isRetryingCheck}
+                        className="h-7 text-[11px] gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm hover:from-amber-600 hover:to-orange-600 px-3"
                       >
                         <ClipboardList className="h-3 w-3" />
                         手动导入
@@ -1176,17 +1194,22 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => checkScraperService()}
-                      className="h-7 text-[11px] gap-1.5 border-violet-200/60 dark:border-violet-700/40 text-violet-600 dark:text-violet-300 hover:bg-violet-100/50 dark:hover:bg-violet-900/20 px-3"
+                      onClick={() => handleRetryHealthCheck()}
+                      disabled={isRetryingCheck}
+                      className="h-7 text-[11px] gap-1.5 border-amber-300/70 dark:border-amber-600/50 text-amber-700 dark:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-900/30 px-3"
                     >
-                      <RefreshCw className="h-3 w-3" />
+                      {isRetryingCheck ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3" />
+                      )}
                       重新检测
                     </Button>
                     <Button
                       size="sm"
                       onClick={() => handleGenerateDemo()}
-                      disabled={isSubmitting}
-                      className="h-7 text-[11px] gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm hover:from-amber-600 hover:to-orange-600 px-3"
+                      disabled={isSubmitting || isRetryingCheck}
+                      className="h-7 text-[11px] gap-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-sm hover:from-violet-600 hover:to-purple-700 px-3"
                     >
                       {isSubmitting ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -2116,22 +2139,36 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="relative overflow-hidden rounded-xl border border-violet-200/60 dark:border-violet-700/40"
+                  className="relative overflow-hidden rounded-xl border border-amber-200/70 dark:border-amber-700/50"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-violet-50 via-amber-50 to-violet-50 dark:from-violet-950/40 dark:via-amber-950/30 dark:to-violet-950/40" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 dark:from-amber-950/30 dark:via-yellow-950/20 dark:to-amber-950/30" />
                   <div className="relative p-3">
                     <div className="flex items-start gap-2">
-                      <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-violet-500 to-amber-500 flex items-center justify-center shrink-0">
+                      <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shrink-0">
                         <AlertCircle className="h-3 w-3 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-violet-800 dark:text-violet-200">
-                          采集服务未连接 · 体验模式
+                        <p className="text-[11px] font-bold text-amber-800 dark:text-amber-200">
+                          采集服务暂未连接
                         </p>
-                        <p className="text-[10px] text-violet-600/80 dark:text-violet-300/70 mt-0.5">
-                          链接导入和Cookie采集暂不可用，推荐使用「手动导入」粘贴内容体验功能。
+                        <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 mt-0.5">
+                          采集服务启动中，请稍后刷新页面重试。如持续无法使用，可使用手动导入功能。
                         </p>
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRetryHealthCheck()}
+                        disabled={isRetryingCheck}
+                        className="h-6 text-[10px] gap-1 border-amber-300/70 dark:border-amber-600/50 text-amber-700 dark:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-900/30 px-2 shrink-0"
+                      >
+                        {isRetryingCheck ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3" />
+                        )}
+                        重新检测
+                      </Button>
                     </div>
                   </div>
                 </motion.div>

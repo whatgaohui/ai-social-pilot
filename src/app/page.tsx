@@ -491,11 +491,7 @@ export default function Home() {
               <Sparkles className="h-4.5 w-4.5 text-white" />
             </motion.div>
             <div>
-              <h1 className="text-base font-bold flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
+              <h1 className="text-base font-bold">
                 <span className="animate-gradient-text text-[15px]">
                   {platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}
                 </span>
