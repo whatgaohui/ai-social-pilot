@@ -715,7 +715,7 @@ export function ContentSearch({ open, onOpenChange }: ContentSearchProps) {
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="全局搜索帖子、知识库、人设、账号..."
-                  className="border-0 shadow-none focus-visible:ring-0 h-8 px-0 text-sm"
+                  className="border-0 shadow-none focus-visible:ring-0 h-8 px-0 text-sm input-focus-glow"
                 />
                 {query && (
                   <button

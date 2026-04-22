@@ -502,7 +502,7 @@ export default function Home() {
 
           {/* Platform Switcher - Desktop */}
           <div className="hidden sm:flex items-center">
-            <div className="relative flex items-center h-9 rounded-full bg-muted/70 p-0.5 border border-border/50 shadow-sm">
+            <div className="relative flex items-center h-9 rounded-full bg-muted/70 p-0.5 border border-border/50 shadow-sm ambient-glow">
               {/* Glow backdrop for active platform */}
               <motion.div
                 className="absolute h-9 w-1/2 rounded-full"

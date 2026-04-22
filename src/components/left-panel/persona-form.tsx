@@ -160,7 +160,7 @@ export function PersonaForm() {
               placeholder="输入您的姓名"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="h-9 text-sm"
+              className="h-9 text-sm input-focus-glow"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAIClient } from '@/lib/ai-client';
+import { db } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -88,6 +89,30 @@ ${knowledgeItems && knowledgeItems.length > 0 ? `可参考的知识库素材：$
       cleaned = codeBlockMatch[1].trim();
     }
 
+    // Auto-create a ContentVersion record for history tracking
+    if (post?.id) {
+      try {
+        const maxVersion = await db.contentVersion.findFirst({
+          where: { postId: post.id },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
+        const newVersion = (maxVersion?.version || 0) + 1;
+        await db.contentVersion.create({
+          data: {
+            postId: post.id,
+            version: newVersion,
+            content: cleaned,
+            changeType: 'optimize',
+            summary: 'AI优化文案',
+            aiScore: 0,
+          },
+        });
+      } catch (versionError) {
+        console.error('Failed to auto-create content version:', versionError);
+      }
+    }
+
     return NextResponse.json({
       content: cleaned,
       model: ai.config?.name || ai.config?.provider || 'default',
@@ -165,6 +190,30 @@ ${post.content}
   const codeBlockMatch = cleaned.match(/```(?:[a-zA-Z]*)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
     cleaned = codeBlockMatch[1].trim();
+  }
+
+  // Auto-create a ContentVersion record for format mode
+  if (post?.id) {
+    try {
+      const maxVersion = await db.contentVersion.findFirst({
+        where: { postId: post.id },
+        orderBy: { version: 'desc' },
+        select: { version: true },
+      });
+      const newVersion = (maxVersion?.version || 0) + 1;
+      await db.contentVersion.create({
+        data: {
+          postId: post.id,
+          version: newVersion,
+          content: cleaned,
+          changeType: 'optimize',
+          summary: 'AI排版优化',
+          aiScore: 0,
+        },
+      });
+    } catch (versionError) {
+      console.error('Failed to auto-create content version:', versionError);
+    }
   }
 
   return NextResponse.json({

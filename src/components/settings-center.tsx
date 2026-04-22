@@ -1464,7 +1464,7 @@ export function SettingsCenter({ connectedPlatforms }: SettingsCenterProps) {
             <span className="hidden lg:inline text-xs">设置</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-[900px] w-[100vw] sm:w-[95vw] max-h-[100vh] sm:max-h-[90vh] p-0 overflow-hidden">
+        <DialogContent className="max-w-[900px] w-[100vw] sm:w-[95vw] max-h-[100vh] sm:max-h-[90vh] p-0 overflow-hidden glass-card-xl">
           {/* Sub-panels: Full AI Settings */}
           {subPanel === "ai" && (
             <div className="h-[90vh] flex flex-col">

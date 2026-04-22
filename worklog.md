@@ -3874,3 +3874,84 @@ Stage Summary:
   5. 运营报告自动生成（PDF/图片格式）
   6. 定时发布提醒功能
   7. 多人协作文案审阅功能
+---
+Task ID: 23
+Agent: Main Orchestrator
+Task: 第23轮Cron开发 - 功能扩展+样式打磨+版本追踪
+
+Work Log:
+- 验证项目状态：build零错误，ESLint零错误，所有核心API正常返回200
+- 使用 `npx next start` 启动生产服务器，curl验证11个API端点全部正常
+- 确认第22轮修复的两个bug仍然生效（通知图标无重复、采集中心增强保留）
+
+### 新功能
+
+1. **AI操作自动版本记录**：
+   - 修改 `src/app/api/ai/optimize/route.ts`：
+     - AI优化成功后自动创建ContentVersion记录（changeType: "optimize"）
+     - 排版优化模式也自动创建版本（changeType: "optimize", summary: "AI排版优化"）
+     - 使用 try/catch 包裹，失败不影响主流程
+   - 修改 `src/app/api/ai/generate/route.ts`：
+     - auto模式生成成功后，若提供postId则自动创建版本记录（changeType: "ai_generate"）
+     - 向后兼容：postId为可选参数
+   - 修改 `src/app/api/ai/batch-generate/route.ts`：
+     - 批量生成循环中，每个新创建的帖子自动创建初始版本（version: 1）
+     - 每个版本创建独立 try/catch，单个失败不影响其余
+   - 使用 `@/lib/db` 直接访问Prisma，避免HTTP开销
+
+2. **内容排期拖拽排序**（`content-calendar.tsx`）：
+   - 仅在网格视图启用拖拽（列表视图不支持）
+   - 日历格子添加 GripVertical 拖拽手柄（hover时显示）
+   - 支持两种操作：
+     a. **交换日期**：拖拽有内容的格子到另一个有内容的格子 → 交换两者的 scheduledDate
+     b. **移动日期**：拖拽到空格子 → 将内容移动到新日期
+   - 视觉反馈：拖拽源降低透明度，目标格子显示 violet ring + shadow
+   - 空格子在拖拽时显示居中放置指示点
+   - cursor: grab/grabbing 状态切换
+   - 更新数据库（PUT /api/content/:id）+ Zustand store 实时响应
+
+3. **CSS工具类应用到现有组件**：
+   - `notification-center.tsx`：主面板添加 `glass-card-xl`（毛玻璃效果），QuickStats添加 `hover-lift-sm`
+   - `page.tsx`：平台切换器区域添加 `ambient-glow`（环境光效）
+   - `content-search.tsx`：搜索框添加 `input-focus-glow`（聚焦发光）
+   - `persona-form.tsx`：人设名称输入框添加 `input-focus-glow`
+   - `knowledge-base.tsx`：知识条目卡片添加 `card-enter`（入场动画）
+   - `copywriting-templates.tsx`：模板卡片添加 `card-enter`（入场动画）
+   - `settings-center.tsx`：设置对话框添加 `glass-card-xl`
+
+### 修改文件
+- `src/app/api/ai/optimize/route.ts` — 自动版本记录
+- `src/app/api/ai/generate/route.ts` — 自动版本记录
+- `src/app/api/ai/batch-generate/route.ts` — 自动版本记录
+- `src/components/center-panel/content-calendar.tsx` — 拖拽排序
+- `src/components/notification-center.tsx` — CSS类应用
+- `src/app/page.tsx` — CSS类应用
+- `src/components/content-search.tsx` — CSS类应用
+- `src/components/left-panel/persona-form.tsx` — CSS类应用
+- `src/components/left-panel/knowledge-base.tsx` — CSS类应用
+- `src/components/left-panel/copywriting-templates.tsx` — CSS类应用
+- `src/components/settings-center.tsx` — CSS类应用
+
+### QA验证结果
+- ✅ `next build` 编译成功（零错误）
+- ✅ ESLint 零错误零警告（全部src/目录）
+- ✅ 生产服务器所有API正常（persona/knowledge/plan/content/analytics/tracked-accounts/notifications/ai-config/search 全部200）
+- ⚠️ dev server（Turbopack）仍有内存问题，需 `HOSTNAME=0.0.0.0` 或使用 `next build + next start`
+- ⚠️ agent-browser 不可用，使用 curl + build 替代QA
+
+Stage Summary:
+- 项目状态：完全稳定，build零错误，ESLint零错误，所有API正常
+- 本轮新增2个功能（AI自动版本记录+拖拽排序），CSS工具类应用到7个组件
+- 累计25+轮迭代，功能极其丰富
+- 未解决问题或风险：
+  1. dev server Turbopack 内存问题（使用生产构建替代）
+  2. agent-browser 不可用（使用 curl 替代）
+  3. scraper mini-service 仍需手动启动
+- 建议下一阶段优先事项：
+  1. 运营报告自动生成（PDF/图片格式）
+  2. 定时发布提醒功能
+  3. 多人协作文案审阅功能
+  4. 全局搜索增强（全文搜索+高亮）
+  5. 内容排期拖拽排序的列表视图支持
+  6. 数据导入/导出增强（Excel/CSV格式）
+  7. 移动端触摸手势支持

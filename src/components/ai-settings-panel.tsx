@@ -191,7 +191,7 @@ export function AISettingsPanel() {
           <span className="hidden sm:inline text-xs">模型配置</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[920px] w-[95vw] max-h-[90vh] p-0 overflow-hidden">
+      <DialogContent className="glass-card-xl rounded-xl max-w-[920px] w-[95vw] max-h-[90vh] p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -208,7 +208,7 @@ export function AISettingsPanel() {
         <div className="px-6 pb-3">
           {activeConfig ? (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="status-dot-breathing" />
               <span className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
                 当前使用: {activeConfig.name}
               </span>
@@ -263,7 +263,7 @@ export function AISettingsPanel() {
                           <div className="font-medium truncate">{preset.name}</div>
                           {isActive && (
                             <div className="text-[9px] text-emerald-500 flex items-center gap-0.5">
-                              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                               使用中
                             </div>
                           )}

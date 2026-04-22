@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAIClient } from '@/lib/ai-client';
+import { db } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
-    const { type, persona, knowledgeItems, material, topic, tone, style, existingContent, platform = 'wechat' } = await request.json();
+    const { type, persona, knowledgeItems, material, topic, tone, style, existingContent, platform = 'wechat', postId } = await request.json();
     const isXHS = platform === 'xiaohongshu';
     
     const ai = await createAIClient();
@@ -154,7 +155,31 @@ ${knowledgeContext}
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ]);
-    
+
+    // Auto-create a ContentVersion record in "auto" mode when postId is provided
+    if (type === 'auto' && postId) {
+      try {
+        const maxVersion = await db.contentVersion.findFirst({
+          where: { postId },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
+        const newVersion = (maxVersion?.version || 0) + 1;
+        await db.contentVersion.create({
+          data: {
+            postId,
+            version: newVersion,
+            content: generatedContent,
+            changeType: 'ai_generate',
+            summary: 'AI生成文案',
+            aiScore: 0,
+          },
+        });
+      } catch (versionError) {
+        console.error('Failed to auto-create content version:', versionError);
+      }
+    }
+
     return NextResponse.json({ 
       content: generatedContent,
       model: ai.config?.name || ai.config?.provider || 'default',

@@ -130,6 +130,22 @@ ${knowledgeContext}
         },
       });
       savedPosts.push(saved);
+
+      // Auto-create an initial ContentVersion record for each generated post
+      try {
+        await db.contentVersion.create({
+          data: {
+            postId: saved.id,
+            version: 1,
+            content: post.content,
+            changeType: 'ai_generate',
+            summary: 'AI批量生成',
+            aiScore: saved.aiScore,
+          },
+        });
+      } catch (versionError) {
+        console.error(`Failed to auto-create version for post ${saved.id}:`, versionError);
+      }
     }
 
     // Update plan status

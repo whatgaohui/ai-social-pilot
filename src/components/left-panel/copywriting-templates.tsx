@@ -174,7 +174,7 @@ export function CopywritingTemplates() {
             const isGenerating = generating === template.id;
 
             return (
-              <Card key={template.id} className="border-0 shadow-sm hover:shadow-md transition-all duration-200 group">
+              <Card key={template.id} className="border-0 shadow-sm hover:shadow-md transition-all duration-200 group card-enter">
                 <CardContent className="p-3">
                   <div className="flex items-start gap-3">
                     <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${template.gradient} flex items-center justify-center shrink-0 shadow-sm`}>

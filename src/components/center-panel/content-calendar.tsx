@@ -87,9 +87,10 @@ export function ContentCalendar() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [platformFilter, setPlatformFilter] = useState<'all' | 'wechat' | 'xiaohongshu'>('all');
 
-  // Drag-and-drop state
+  // Drag-and-drop state (grid view)
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [draggedDate, setDraggedDate] = useState<string | null>(null);
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [hasReordered, setHasReordered] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -285,99 +286,118 @@ export function ContentCalendar() {
     setSelectedPostId(post.id);
   };
 
-  // Drag-and-drop handlers
-  const handleDragStart = useCallback((e: React.DragEvent, postId: string) => {
+  // Grid view drag-and-drop handlers
+  const handleGridDragStart = useCallback((e: React.DragEvent, postId: string, dateStr: string) => {
     setDraggedId(postId);
+    setDraggedDate(dateStr);
     e.dataTransfer.effectAllowed = 'move';
-    // Use timeout to allow the browser to capture the drag image before applying opacity
-    const target = e.currentTarget as HTMLElement;
-    requestAnimationFrame(() => {
-      target.style.opacity = '0.5';
-      target.style.transform = 'scale(0.95)';
-    });
+    e.dataTransfer.setData('text/plain', postId);
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent, postId: string) => {
+  const handleGridDragOver = useCallback((e: React.DragEvent, dateStr: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (postId !== draggedId) {
-      setDragOverId(postId);
+    if (dateStr !== draggedDate) {
+      setDragOverDate(dateStr);
     }
-  }, [draggedId]);
+  }, [draggedDate]);
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only clear if actually leaving the element
+  const handleGridDragLeave = useCallback((e: React.DragEvent) => {
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      setDragOverId(null);
+      setDragOverDate(null);
     }
   }, []);
 
-  const handleDrop = useCallback(async (e: React.DragEvent, targetPostId: string) => {
+  const handleGridDrop = useCallback(async (e: React.DragEvent, targetDateStr: string) => {
     e.preventDefault();
-    if (!draggedId || draggedId === targetPostId) {
+    if (!draggedId || !draggedDate || draggedDate === targetDateStr) {
       setDraggedId(null);
-      setDragOverId(null);
+      setDraggedDate(null);
+      setDragOverDate(null);
       return;
     }
 
     const draggedPost = contentPosts.find(p => p.id === draggedId);
-    const targetPost = contentPosts.find(p => p.id === targetPostId);
-
-    if (!draggedPost || !targetPost) {
+    if (!draggedPost) {
       setDraggedId(null);
-      setDragOverId(null);
+      setDraggedDate(null);
+      setDragOverDate(null);
       return;
     }
 
+    const targetPosts = postsByDate[targetDateStr];
+
     try {
-      // Swap scheduledDates via PUT API
-      const [res1, res2] = await Promise.all([
-        fetch(`/api/content/${draggedId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scheduledDate: targetPost.scheduledDate }),
-        }),
-        fetch(`/api/content/${targetPostId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scheduledDate: draggedPost.scheduledDate }),
-        }),
-      ]);
+      if (targetPosts && targetPosts.length > 0) {
+        // Target cell has content: swap scheduledDates
+        const targetPost = targetPosts[0];
+        const [res1, res2] = await Promise.all([
+          fetch(`/api/content/${draggedId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scheduledDate: targetDateStr }),
+          }),
+          fetch(`/api/content/${targetPost.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scheduledDate: draggedDate }),
+          }),
+        ]);
 
-      if (!res1.ok || !res2.ok) {
-        throw new Error('Failed to update posts');
+        if (!res1.ok || !res2.ok) {
+          throw new Error('Failed to update posts');
+        }
+
+        await Promise.all([res1.json(), res2.json()]);
+
+        // Update store with both updated posts
+        const newPosts = contentPosts.map(p => {
+          if (p.id === draggedId) return { ...p, scheduledDate: targetDateStr };
+          if (p.id === targetPost.id) return { ...p, scheduledDate: draggedDate };
+          return p;
+        });
+        setContentPosts(newPosts);
+        toast.success('已交换排期日期');
+      } else {
+        // Target cell is empty: move post to new date
+        const res = await fetch(`/api/content/${draggedId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduledDate: targetDateStr }),
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to update post');
+        }
+
+        await res.json();
+
+        const newPosts = contentPosts.map(p => {
+          if (p.id === draggedId) return { ...p, scheduledDate: targetDateStr };
+          return p;
+        });
+        setContentPosts(newPosts);
+        toast.success('已移动排期到新日期');
       }
-
-      await Promise.all([res1.json(), res2.json()]);
-
-      // Update store with both updated posts
-      const newPosts = contentPosts.map(p => {
-        if (p.id === draggedId) return { ...p, scheduledDate: targetPost.scheduledDate };
-        if (p.id === targetPostId) return { ...p, scheduledDate: draggedPost.scheduledDate };
-        return p;
-      });
-      setContentPosts(newPosts);
       setHasReordered(true);
-      toast.success('已交换排期日期');
     } catch (error) {
-      console.error('Drag-and-drop swap failed:', error);
-      toast.error('交换排期失败，请重试');
+      console.error('Grid drag-and-drop failed:', error);
+      toast.error('排期操作失败，请重试');
     } finally {
       setDraggedId(null);
-      setDragOverId(null);
+      setDraggedDate(null);
+      setDragOverDate(null);
     }
-  }, [draggedId, contentPosts, setContentPosts]);
+  }, [draggedId, draggedDate, contentPosts, setContentPosts, postsByDate]);
 
-  const handleDragEnd = useCallback((e: React.DragEvent) => {
-    const target = e.currentTarget as HTMLElement;
-    target.style.opacity = '1';
-    target.style.transform = 'scale(1)';
+  const handleGridDragEnd = useCallback(() => {
     setDraggedId(null);
-    setDragOverId(null);
+    setDraggedDate(null);
+    setDragOverDate(null);
   }, []);
 
   // Save reordering: assign sequential dates to all posts
@@ -648,6 +668,8 @@ export function ContentCalendar() {
                     const today = isToday(day);
                     const isSelected = selectedDate === dateStr;
                     const primaryPost = posts?.[0];
+                    const isDragOver = dragOverDate === dateStr;
+                    const isDragging = draggedId != null && draggedDate === dateStr;
 
                     // Determine platform ring color when showing all
                     const platformRing = platformFilter === 'all' && posts?.length === 1 && primaryPost?.platform
@@ -655,67 +677,95 @@ export function ContentCalendar() {
                       : '';
 
                     return (
-                      <motion.div
+                      <div
                         key={dateStr}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleDayClick(dateStr)}
-                        className={`
-                          calendar-cell aspect-[4/3] rounded-md p-1.5 cursor-pointer relative overflow-hidden focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:outline-none
-                          ${primaryPost ? STATUS_COLORS[primaryPost.status as PostStatus] || "bg-muted/50" : "bg-muted/30"}
-                          ${isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02] calendar-glow" : ""}
-                          ${platformRing && !isSelected ? `ring-1 ${platformRing}` : ""}
-                          ${today && !primaryPost ? "ring-1 ring-primary/40 bg-primary/[0.03]" : ""}
+                        draggable={!!primaryPost}
+                        onDragStart={(e) => primaryPost && handleGridDragStart(e as unknown as React.DragEvent, primaryPost.id, dateStr)}
+                        onDragOver={(e) => handleGridDragOver(e as unknown as React.DragEvent, dateStr)}
+                        onDragLeave={(e) => handleGridDragLeave(e as unknown as React.DragEvent)}
+                        onDrop={(e) => handleGridDrop(e as unknown as React.DragEvent, dateStr)}
+                        onDragEnd={handleGridDragEnd}
+                        className={`calendar-cell aspect-[4/3] rounded-md p-1.5 relative overflow-hidden focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:outline-none transition-shadow duration-200
+                          ${primaryPost ? `cursor-grab active:cursor-grabbing ${STATUS_COLORS[primaryPost.status as PostStatus] || "bg-muted/50"}` : "cursor-default bg-muted/30"}
+                          ${isDragging ? 'opacity-40 scale-95 ring-2 ring-primary/30' : ''}
+                          ${isDragOver ? 'ring-2 ring-violet-500 shadow-lg shadow-violet-200 dark:shadow-violet-900/30 bg-violet-50/50 dark:bg-violet-900/20 scale-[1.03]' : ''}
+                          ${!isDragging && !isDragOver ? 'hover:shadow-sm' : ''}
+                          ${isSelected && !isDragOver ? "ring-2 ring-primary shadow-lg scale-[1.02] calendar-glow" : ""}
+                          ${platformRing && !isSelected && !isDragOver ? `ring-1 ${platformRing}` : ""}
+                          ${today && !primaryPost && !isDragOver ? "ring-1 ring-primary/40 bg-primary/[0.03]" : ""}
                         `}
                       >
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className={`text-xs font-medium ${today ? "text-primary font-bold" : ""}`}>
-                            {format(day, "d")}
-                          </span>
-                          <div className="flex items-center gap-0.5">
-                            {/* Platform dots when multi-platform or all view */}
-                            {platformFilter === 'all' && posts && posts.length > 1 && (
-                              <div className="flex items-center gap-0.5">
-                                {posts.map((p, i) => (
-                                  <div key={i} className={`h-1.5 w-1.5 rounded-full ${PLATFORM_DOT_COLORS[p.platform || 'wechat']}`} />
-                                ))}
-                              </div>
-                            )}
-                            {/* Status dot */}
-                            {primaryPost && posts?.length <= 1 && (
-                              <div className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT_COLORS[primaryPost.status as PostStatus]}`} />
-                            )}
+                        <motion.div
+                          whileHover={!isDragging && !isDragOver ? { scale: 1.02 } : {}}
+                          whileTap={!isDragging && !isDragOver ? { scale: 0.98 } : {}}
+                          onClick={() => handleDayClick(dateStr)}
+                          className="h-full"
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className={`text-xs font-medium ${today ? "text-primary font-bold" : ""}`}>
+                              {format(day, "d")}
+                            </span>
+                            <div className="flex items-center gap-0.5">
+                              {/* Drag handle for cells with content */}
+                              {primaryPost && (
+                                <div className="opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground"
+                                  style={{ opacity: draggedId != null ? 0.6 : undefined }}
+                                >
+                                  <GripVertical className="h-3 w-3" />
+                                </div>
+                              )}
+                              {/* Platform dots when multi-platform or all view */}
+                              {platformFilter === 'all' && posts && posts.length > 1 && (
+                                <div className="flex items-center gap-0.5">
+                                  {posts.map((p, i) => (
+                                    <div key={i} className={`h-1.5 w-1.5 rounded-full ${PLATFORM_DOT_COLORS[p.platform || 'wechat']}`} />
+                                  ))}
+                                </div>
+                              )}
+                              {/* Status dot */}
+                              {primaryPost && posts?.length <= 1 && (
+                                <div className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT_COLORS[primaryPost.status as PostStatus]}`} />
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        {primaryPost && (
-                          <div className="space-y-0.5">
-                            {/* Platform indicator badge in all-view */}
-                            {platformFilter === 'all' && primaryPost.platform && (
+                          {primaryPost && (
+                            <div className="space-y-0.5">
+                              {/* Platform indicator badge in all-view */}
+                              {platformFilter === 'all' && primaryPost.platform && (
+                                <Badge
+                                  className={`text-[8px] px-1 py-0 h-3 leading-3 ${primaryPost.platform === 'xiaohongshu' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300'}`}
+                                  variant="secondary"
+                                >
+                                  {primaryPost.platform === 'xiaohongshu' ? '红' : '绿'}
+                                </Badge>
+                              )}
                               <Badge
-                                className={`text-[8px] px-1 py-0 h-3 leading-3 ${primaryPost.platform === 'xiaohongshu' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300'}`}
+                                className={`text-[9px] px-1 py-0 h-4 leading-4 ${getContentTypeColorForPost(primaryPost)}`}
                                 variant="secondary"
                               >
-                                {primaryPost.platform === 'xiaohongshu' ? '红' : '绿'}
+                                {getContentTypeLabelForPost(primaryPost)}
                               </Badge>
-                            )}
-                            <Badge
-                              className={`text-[9px] px-1 py-0 h-4 leading-4 ${getContentTypeColorForPost(primaryPost)}`}
-                              variant="secondary"
-                            >
-                              {getContentTypeLabelForPost(primaryPost)}
-                            </Badge>
-                            <p className="text-[10px] leading-tight line-clamp-2 font-medium">
-                              {primaryPost.topic}
-                            </p>
-                            {primaryPost.aiScore > 0 && (
-                              <div className="flex items-center gap-0.5">
-                                <span className="text-[9px] text-amber-600 dark:text-amber-400">★</span>
-                                <span className="text-[9px] text-muted-foreground">{primaryPost.aiScore}</span>
+                              <p className="text-[10px] leading-tight line-clamp-2 font-medium">
+                                {primaryPost.topic}
+                              </p>
+                              {primaryPost.aiScore > 0 && (
+                                <div className="flex items-center gap-0.5">
+                                  <span className="text-[9px] text-amber-600 dark:text-amber-400">★</span>
+                                  <span className="text-[9px] text-muted-foreground">{primaryPost.aiScore}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Drop indicator for empty cells during drag */}
+                          {!primaryPost && isDragOver && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-violet-500" />
                               </div>
-                            )}
-                          </div>
-                        )}
-                      </motion.div>
+                            </div>
+                          )}
+                        </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -782,8 +832,6 @@ export function ContentCalendar() {
                 ) : (
                   sortedPosts.map((post, index) => {
                     const isSelected = selectedPostId === post.id;
-                    const isDragging = draggedId === post.id;
-                    const isDragOver = dragOverId === post.id;
                     let formattedDate = "";
                     try {
                       formattedDate = format(parseISO(post.scheduledDate), 'M月d日 EEEE', { locale: zhCN });
@@ -796,23 +844,12 @@ export function ContentCalendar() {
                         key={post.id}
                         layout
                         initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0, scale: isDragging ? 0.95 : 1 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2, delay: index * 0.015 }}
                         onClick={() => handleListItemClick(post)}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, post.id)}
-                        onDragOver={(e) => handleDragOver(e as unknown as React.DragEvent, post.id)}
-                        onDragLeave={(e) => handleDragLeave(e as unknown as React.DragEvent)}
-                        onDrop={(e) => handleDrop(e as unknown as React.DragEvent, post.id)}
-                        onDragEnd={(e) => handleDragEnd(e as unknown as React.DragEvent)}
                         className={`
                           group relative rounded-lg border p-3 cursor-pointer transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:outline-none
                           hover:shadow-md hover:border-primary/30
-                          ${isDragging ? 'opacity-50 scale-95 z-50' : ''}
-                          ${isDragOver 
-                            ? 'border-t-2 border-t-violet-500 bg-violet-50/50 dark:bg-violet-900/10' 
-                            : ''
-                          }
                           ${isSelected 
                             ? "ring-2 ring-primary bg-primary/[0.03] border-primary/40 shadow-md calendar-glow" 
                             : index % 2 === 1
@@ -822,19 +859,6 @@ export function ContentCalendar() {
                         `}
                       >
                         <div className="flex items-start gap-3">
-                          {/* Drag Handle */}
-                          <div
-                            className={`
-                              flex-shrink-0 flex items-center justify-center w-5 h-8
-                              opacity-0 group-hover:opacity-100 transition-opacity duration-200
-                              ${draggedId ? 'opacity-100' : ''}
-                              text-muted-foreground hover:text-foreground
-                              cursor-grab active:cursor-grabbing
-                            `}
-                          >
-                            <GripVertical className="h-4 w-4" />
-                          </div>
-
                           {/* Date Column */}
                           <div className="flex-shrink-0 w-[68px]">
                             <div className="text-[10px] text-muted-foreground leading-tight">

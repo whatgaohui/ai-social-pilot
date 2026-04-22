@@ -370,7 +370,7 @@ function QuickStats() {
   const trendUp = stats.publishedRate >= 50;
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-2 hover-lift-sm">
       <div className="rounded-lg bg-muted/50 p-2.5 text-center">
         <div className="text-lg font-bold tabular-nums text-foreground">
           {stats.total}
@@ -671,7 +671,7 @@ function NotificationCenterPanel({
   }, [mergedNotifications]);
 
   const panelContent = (
-    <div className="w-80 sm:w-96 max-h-[70vh] flex flex-col">
+    <div className="w-80 sm:w-96 max-h-[70vh] flex flex-col glass-card-xl">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
