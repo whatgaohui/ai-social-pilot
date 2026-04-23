@@ -45,6 +45,7 @@ import {
   isToday,
   isAfter,
   isBefore,
+  isValid,
 } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
@@ -153,9 +154,10 @@ function GanttBar({
   isSelected,
   onClick,
 }: GanttBarProps) {
-  const postDate = parseISO(post.scheduledDate);
+  const parsedDate = parseISO(post.scheduledDate);
+  const postDate = isValid(parsedDate) ? parsedDate : new Date();
   const endPostDate = post.publishedAt
-    ? parseISO(post.publishedAt)
+    ? (() => { const d = parseISO(post.publishedAt); return isValid(d) ? d : postDate; })()
     : post.scheduledDate === format(new Date(), "yyyy-MM-dd")
       ? new Date()
       : postDate;

@@ -17,6 +17,7 @@ import {
   subMonths,
   parseISO,
   isSameDay,
+  isValid,
 } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import {
@@ -351,7 +352,7 @@ export function MobileCalendarEnhanced({ className = "" }: MobileCalendarEnhance
       <BottomSheet
         isOpen={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        title={sheetDate ? format(parseISO(sheetDate), "M月d日 EEEE", { locale: zhCN }) : ""}
+        title={sheetDate && isValid(parseISO(sheetDate)) ? format(parseISO(sheetDate), "M月d日 EEEE", { locale: zhCN }) : (sheetDate || "")}
         initialSnap={0}
         snapPoints={[0.4, 0.75]}
       >

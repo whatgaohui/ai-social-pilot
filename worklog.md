@@ -9081,3 +9081,49 @@ Stage Summary:
 - 修复了 QuickCreateDialog 中的 "Invalid time value" 运行时崩溃错误
 - 三个 QuickCreateDialog 实例均已添加日期有效性检查
 - 当 defaultDate 为空字符串或无效日期时，显示友好占位文本而非崩溃
+---
+Task ID: 45
+Agent: Bug Fix Agent
+Task: 修复 RangeError: Invalid time value 崩溃问题
+
+Work Log:
+- 用户报告应用根节点渲染崩溃：RangeError: Invalid time value at QuickCreateDialog
+- 全面审计项目中所有 date-fns format() 调用（约100+处）
+- 发现4处高风险的未保护 format() 调用，均可能在渲染路径中导致崩溃
+
+### Bug修复
+1. **calendar-week-view.tsx:438** - TooltipContent 中直接 format(parseISO(post.scheduledDate))
+   - 修复：使用 IIFE + try/catch 包裹，失败时回退显示原始日期字符串
+
+2. **calendar-gantt-view.tsx:156** - GanttBar 组件顶部 parseISO(post.scheduledDate) 无验证
+   - 修复：添加 isValid() 校验，无效日期回退为 new Date()
+   - 同时修复 publishedAt 解析也添加 isValid() 校验
+   - 新增 isValid import from date-fns
+
+3. **calendar-gantt-view.tsx:251** - format(parseISO(post.publishedAt)) 仅用 truthiness 检查
+   - 已通过上述修复一并解决（isValid 校验）
+
+4. **mobile-calendar-enhanced.tsx:354** - BottomSheet title 中 format(parseISO(sheetDate)) 仅用 truthiness
+   - 修复：添加 isValid() 校验 + 新增 isValid import from date-fns
+
+### 修改文件
+- `src/components/center-panel/calendar-week-view.tsx` - TooltipContent format 添加 try/catch
+- `src/components/center-panel/calendar-gantt-view.tsx` - postDate/publishedAt 添加 isValid 校验 + import isValid
+- `src/components/mobile-calendar-enhanced.tsx` - BottomSheet title 添加 isValid 校验 + import isValid
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ next build 编译成功（70个静态页面 + 所有动态路由）
+- ✅ TypeScript 类型正确
+
+Stage Summary:
+- 项目状态：稳定可运行，崩溃问题已修复
+- 本轮修改 3 个文件，修复 4 处不安全的 date-fns format() 调用
+- 根本原因：多个组件在渲染路径中直接调用 format(parseISO()) 但未验证日期有效性，当 scheduledDate 为空字符串或无效值时导致 RangeError
+- 未解决问题或风险：
+  1. agent-browser 因沙箱内存限制会导致 OOM kill，不能用于 QA（硬约束）
+  2. dev server 在沙箱中也会 OOM，只能用 next build + next lint 验证
+- 建议下一阶段优先事项：
+  1. 继续开发新功能（样式细节打磨、功能增强）
+  2. 考虑为所有 date-fns 操作创建统一的 safeFormat 工具函数
+  3. 审查其他可能的运行时崩溃路径

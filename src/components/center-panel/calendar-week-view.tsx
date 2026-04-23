@@ -435,7 +435,7 @@ function WeekPostCard({
           <TooltipContent side="bottom" className="max-w-[220px]">
             <p className="text-xs font-medium">{post.topic}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {format(parseISO(post.scheduledDate), "M月d日 EEEE", { locale: zhCN })}
+              {(() => { try { return format(parseISO(post.scheduledDate), "M月d日 EEEE", { locale: zhCN }); } catch { return post.scheduledDate || "日期无效"; } })()}
               {" · "}
               {getPlatformLabel(post)}
             </p>
