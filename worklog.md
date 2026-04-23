@@ -11464,3 +11464,101 @@ Stage Summary:
   4. Dashboard Overview 接入真实活动数据（部分已完成）
   5. 移动端布局真机测试
   6. 发布日历热力图功能
+
+---
+Task ID: 67
+Agent: Main Developer + Subagents
+Task: 第67轮 - 全面UI修复与平台感知CSS基础设施
+
+Work Log:
+- 读取 worklog.md 了解第66轮项目状态
+- 运行 eslint（零错误）+ next build（编译成功）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），改用 next build + eslint 验证
+- 使用 Explore agent 对 9 个核心 UI 文件进行全面分析（发现 36 项问题）
+
+### UI问题分析
+对 36 项 UI 问题进行分类：
+- 🔴 Critical: 3项（CSS 9.6K行monolith、store过度渲染、CTA缺少平台主题）
+- 🟠 High: 10项（平台主题缺口、无障碍、性能）
+- 🟡 Medium: 11项（暗色模式不一致、死代码、布局断点）
+- 🟢 Low: 12项（硬编码violet、CSS反模式）
+
+### Bug修复 + UI修复
+
+1. **globals.css 死代码清理**（-12个未使用CSS块）：
+   - 移除：animate-breathe-glow、animate-check-pop、ribbon、neon-border、wave-underline、
+     logo-hover-spin、btn-copy-success、calendar-glow、filter-dot-active、glass-panel、glass-card-pro
+   - 验证方式：`rg` 搜索所有 .tsx 文件确认零使用后才移除
+   - 保留确认使用的：btn-tooltip、animate-float、typing-dot-*
+
+2. **CSS平台感知基础设施**（globals.css 新增）：
+   - 新增 `:root` / `[data-platform="xiaohongshu"]` / `.dark` / `.dark[data-platform]` CSS变量块
+   - 8个设计Token：--platform-primary、--platform-primary-light、--platform-primary-dark、
+     --platform-accent、--platform-bg-subtle、--platform-bg-hover、--platform-text、--platform-shadow
+   - 转换18个硬编码 violet CSS 类使用 CSS 变量：
+     focus-soft、focus-visible-ring、focus-ring-glow、drag-handle、tab-glow、animate-shimmer、
+     stat-card-hover、magnetic-hover、skeleton-enhanced、skeleton-pulse、card-glow、tag-pulse-active、
+     btn-click-pulse、content-texture、header-gradient-border、btn-ripple、animate-gradient-text、gradient-text
+   - 效果：切换平台时，所有使用这些变量的UI元素自动适配配色（无需修改组件代码）
+
+3. **CSS反模式修复**：
+   - `.btn-press:active:hover` → `.btn-press:active`（原组合几乎不会触发）
+   - `.interactive-transition` 的 `transition: all` → 显式属性列表（避免布局抖动）
+
+4. **persona-form.tsx 平台感知**：
+   - EmptyState gradientClass：XHS=rose，WeChat=violet
+   - 基本信息卡片装饰线：XHS=rose，WeChat=violet
+   - 保存按钮渐变+阴影：XHS=rose/red，WeChat=violet/purple
+   - 新增 `platform` + `isXHS` 从 useAppStore 解构
+
+5. **dashboard-overview.tsx 平台感知**：
+   - 触发图标背景渐变：XHS=rose，WeChat=violet
+   - 流水线"已生成"状态渐变：XHS=rose，WeChat=violet
+   - DashboardPipelineOverview 新增 platform 解构 + generatedGradient 变量
+
+6. **page.tsx 移动端触摸目标修复**：
+   - 平台切换器按钮添加 `min-w-[44px] min-h-[44px]`（满足WCAG 44×44px最小触摸目标）
+   - 根div添加 `data-platform={platform}` 属性（启用CSS平台感知选择器）
+
+7. **新增键盘快捷键提示组件**（keyboard-shortcut-hint.tsx）：
+   - 5个常用快捷键展示（⌘K搜索、⌘/快捷键、⌘⇧P切换平台、⌘B知识库、⌘C日历）
+   - 折叠式设计，点击展开/收起
+   - 集成到 LeftSidebar 底部（所有tab共享）
+   - framer-motion 展开/收起动画
+
+### 修改文件
+- `src/app/globals.css` — 12个死CSS移除 + CSS变量系统 + 18个类变量化 + 2个反模式修复
+- `src/app/page.tsx` — data-platform属性 + 触摸目标 + KeyboardShortcutHint集成
+- `src/components/left-panel/persona-form.tsx` — 3处平台感知配色
+- `src/components/dashboard-overview.tsx` — 2处平台感知配色
+- `src/components/left-panel/keyboard-shortcut-hint.tsx` — 新增快捷键提示组件
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（70页面正常生成）
+
+Stage Summary:
+- 项目状态：稳定可运行，UI一致性和平台适配能力大幅提升
+- 本轮修改 5 个文件（1个新增），核心改进：
+  1. CSS变量系统建立（8个平台Token），切换平台时UI元素自动适配
+  2. 18个硬编码violet类改为使用CSS变量
+  3. 12个未使用CSS块移除（减少CSS体积）
+  4. persona-form + dashboard 平台配色修复
+  5. 移动端44px触摸目标（无障碍合规）
+  6. CSS反模式修复（btn-press、interactive-transition）
+  7. 键盘快捷键提示组件（可发现性增强）
+- 累计美化组件数：30+ 核心组件已完成视觉增强
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. globals.css 仍有~9500行，可继续优化
+  3. 右侧面板95+文件未分组整理
+  4. ~85个TS类型错误（framer-motion Variants）未修复
+  5. 移动端布局未在真机测试
+  6. content-context-menu 跨平台发布仍显示"coming soon"
+- 建议下一阶段优先事项：
+  1. framer-motion Variants 类型统一修复（消除~85个TS错误）
+  2. 右侧面板文件目录重组（95+文件→分类目录）
+  3. content-context-menu 跨平台发布功能实现
+  4. 发布日历热力图功能
+  5. 移动端真机测试优化
+  6. 继续清理 globals.css 中的重复 keyframes

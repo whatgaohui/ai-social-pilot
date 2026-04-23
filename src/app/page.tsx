@@ -13,6 +13,7 @@ const XiaohongshuTemplates = dynamic(() => import("@/components/right-panel/xiao
 const TemplateMarketplace = dynamic(() => import("@/components/template-marketplace").then(m => ({ default: m.TemplateMarketplace })), { ssr: false, loading: () => <Skeleton className="h-full" /> });
 const AIPromptLibrary = dynamic(() => import("@/components/ai-prompt-library").then(m => ({ default: m.AIPromptLibrary })), { ssr: false, loading: () => <Skeleton className="h-full" /> });
 const CalendarThemeSelector = dynamic(() => import("@/components/calendar-theme-selector").then(m => ({ default: m.CalendarThemeSelector })), { ssr: false, loading: () => <Skeleton className="h-10 w-full" /> });
+const KeyboardShortcutHint = dynamic(() => import("@/components/left-panel/keyboard-shortcut-hint").then(m => ({ default: m.KeyboardShortcutHint })), { ssr: false });
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -329,6 +330,9 @@ function LeftSidebar() {
           <AIPromptLibrary />
         </ScrollArea>
       )}
+
+      {/* Keyboard Shortcut Hint — fixed at sidebar bottom for all tabs */}
+      <KeyboardShortcutHint />
     </div>
   );
 }
@@ -613,7 +617,7 @@ export default function Home() {
 
   return (
     <ShortcutManagerProvider>
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background" data-platform={platform}>
       {/* Scroll Progress Indicator */}
       <ScrollProgressIndicator />
       {/* Accessibility: Screen reader live regions */}
@@ -819,7 +823,7 @@ export default function Home() {
           <div className="flex items-center gap-1.5 px-2">
             <button
               onClick={() => setPlatform('wechat')}
-              className="relative flex items-center justify-center"
+              className="relative flex items-center justify-center min-w-[44px] min-h-[44px]"
               aria-label="切换到朋友圈"
             >
               <span className={`h-3 w-3 rounded-full transition-all duration-200 ${
@@ -830,7 +834,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => setPlatform('xiaohongshu')}
-              className="relative flex items-center justify-center"
+              className="relative flex items-center justify-center min-w-[44px] min-h-[44px]"
               aria-label="切换到小红书"
             >
               <span className={`h-3 w-3 rounded-full transition-all duration-200 ${

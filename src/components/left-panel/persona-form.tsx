@@ -32,7 +32,8 @@ const STYLE_OPTIONS = [
 ];
 
 export function PersonaForm() {
-  const { persona, setPersona } = useAppStore();
+  const { persona, setPersona, platform } = useAppStore();
+  const isXHS = platform === 'xiaohongshu';
   const [form, setForm] = useState({
     name: "",
     title: "",
@@ -139,13 +140,13 @@ export function PersonaForm() {
           action={{ label: "开始设置", onClick: () => { const nameInput = document.querySelector('input[placeholder="输入您的姓名"]') as HTMLInputElement; nameInput?.focus(); } }}
           variant="gradient"
           size="sm"
-          gradientClass="from-violet-500 to-purple-600"
+          gradientClass={isXHS ? 'from-rose-500 to-red-500' : 'from-violet-500 to-purple-600'}
         />
       )}
 
       {/* Basic Info */}
       <Card className="border-0 shadow-sm bg-gradient-to-br from-card to-card/80 card-glass-enhanced content-card-hover">
-        <div className="h-0.5 bg-gradient-to-r from-violet-500/60 via-purple-500/40 to-transparent rounded-t-xl -mt-4 -mx-4 mb-0" />
+        <div className={`h-0.5 bg-gradient-to-r ${isXHS ? 'from-rose-500/60 via-red-500/40' : 'from-violet-500/60 via-purple-500/40'} to-transparent rounded-t-xl -mt-4 -mx-4 mb-0`} />
         <CardHeader className="pb-3 px-4 pt-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -292,7 +293,10 @@ export function PersonaForm() {
         </CardContent>
       </Card>
 
-      <Button onClick={handleSave} disabled={saving} className={`w-full h-10 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/40 focus-ring-soft ${saving ? 'btn-loading' : ''}`} size="sm">
+      <Button onClick={handleSave} disabled={saving} className={isXHS
+        ? `w-full h-10 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white shadow-md shadow-rose-200 dark:shadow-rose-900/40 focus-ring-soft ${saving ? 'btn-loading' : ''}`
+        : `w-full h-10 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/40 focus-ring-soft ${saving ? 'btn-loading' : ''}`
+      } size="sm">
         {saving ? (
           <span>保存中...</span>
         ) : (

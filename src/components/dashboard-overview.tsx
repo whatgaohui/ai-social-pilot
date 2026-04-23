@@ -394,7 +394,12 @@ const PIPELINE_OVERVIEW_STAGES = [
 ];
 
 function DashboardPipelineOverview() {
-  const { contentPosts, setRightPanelTab } = useAppStore();
+  const { contentPosts, setRightPanelTab, platform } = useAppStore();
+
+  // Platform-aware colors for the "generated" stage
+  const generatedGradient = platform === 'wechat'
+    ? 'bg-gradient-to-r from-violet-500 to-purple-500'
+    : 'bg-gradient-to-r from-rose-500 to-red-500';
 
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -450,7 +455,7 @@ function DashboardPipelineOverview() {
                 {count > 0 && (
                   <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
                     <motion.div
-                      className={`h-full rounded-full ${stage.gradient}`}
+                      className={`h-full rounded-full ${stage.id === 'generated' ? generatedGradient : stage.gradient}`}
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.max(pct, 8)}%` }}
                       transition={{ duration: 0.5, delay: i * 0.1 }}
@@ -817,7 +822,7 @@ export function DashboardOverview() {
               whileTap={{ scale: 0.998 }}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border/50 hover:border-border transition-all duration-200 cursor-pointer group"
             >
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm">
+              <div className={`flex items-center justify-center h-8 w-8 rounded-lg ${platform === 'wechat' ? 'bg-gradient-to-br from-violet-500 to-purple-600' : 'bg-gradient-to-br from-rose-500 to-red-600'} shadow-sm`}>
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div className="flex-1 text-left">
