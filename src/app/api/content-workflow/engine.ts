@@ -576,7 +576,7 @@ export async function executeWorkflow(
       message: hasError
         ? `部分步骤执行失败，请检查`
         : `所有步骤执行成功，最终评分${context.aiScore || '--'}分`,
-    }).catch(() => {});
+    }).catch((e) => console.error("Failed to create notification:", e));
 
     run.status = hasError ? 'partial' : 'completed';
     run.completedAt = new Date().toISOString();

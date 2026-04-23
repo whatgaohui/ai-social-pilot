@@ -326,7 +326,7 @@ ${knowledgeContext}
       title: 'AI内容生成完成',
       message: `${topic || type === 'polish' ? '润色' : '自动生成'}内容已生成完毕（${generatedContent.length}字），请查看并优化。`,
       metadata: { actionType: 'viewPost', postId: postId || undefined },
-    }).catch(() => {});
+    }).catch((e) => console.error("Failed to create notification:", e));
 
     return NextResponse.json({ 
       content: generatedContent,

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       title: '内容计划已创建',
       message: `${plan.month || '新月度'}的内容计划已成功创建，包含${body.posts?.length || 0}篇内容。`,
       metadata: { actionType: 'viewData' },
-    }).catch(() => {});
+    }).catch((e) => console.error("Failed to create notification:", e));
 
     return NextResponse.json(plan);
   } catch (error) {

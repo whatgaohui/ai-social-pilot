@@ -300,7 +300,7 @@ function EmojiPickerContent({
 
       // Copy to clipboard
       try {
-        navigator.clipboard.writeText(emoji).catch(() => {});
+        navigator.clipboard.writeText(emoji).catch((e) => console.warn("Clipboard write failed:", e));
       } catch {
         // ignore
       }

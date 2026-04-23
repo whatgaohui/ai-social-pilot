@@ -120,7 +120,7 @@ ${knowledgeItems && knowledgeItems.length > 0 ? `可参考的知识库素材：$
       title: 'AI内容优化完成',
       message: `「${post?.topic || '未命名内容'}」已优化完毕（${cleaned.length}字），请查看最新版本。`,
       metadata: { actionType: 'viewPost', postId: post?.id },
-    }).catch(() => {});
+    }).catch((e) => console.error("Failed to create notification:", e));
 
     return NextResponse.json({
       content: cleaned,
