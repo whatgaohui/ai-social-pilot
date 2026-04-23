@@ -2091,15 +2091,17 @@ export function CompactCalendar() {
       />
 
       {/* ====== Content Hover Preview ====== */}
-      <ContentHoverPreview
-        post={hoveredPost}
-        anchorRect={anchorRect}
-        containerRect={containerRect}
-        visible={!!hoveredPost && !isDndReorderActive && !isDragMode}
-        onEdit={handlePreviewEdit}
-        onViewAnalytics={handlePreviewAnalytics}
-        onCopy={handlePreviewCopy}
-      />
+      {hoveredPost && (
+        <ContentHoverPreview
+          post={hoveredPost}
+          anchorRect={anchorRect}
+          containerRect={containerRect}
+          visible={!isDndReorderActive && !isDragMode}
+          onEdit={handlePreviewEdit}
+          onViewAnalytics={handlePreviewAnalytics}
+          onCopy={handlePreviewCopy}
+        />
+      )}
     </div>
   );
 }
