@@ -96,7 +96,7 @@ export function FloatingActionBar() {
 
         {/* Main container — glass morphism pill */}
         <div
-          className={`flex flex-col items-center gap-1 p-1.5 rounded-2xl bg-background/80 backdrop-blur-xl border border-border/50 shadow-lg transition-all duration-300 ${
+          className={`glass-card content-card-hover flex flex-col items-center gap-1 p-1.5 rounded-2xl bg-background/80 backdrop-blur-xl border border-border/50 shadow-lg transition-all duration-300 ${
             expanded ? "shadow-xl" : ""
           }`}
         >
@@ -115,7 +115,7 @@ export function FloatingActionBar() {
                     whileHover={{ scale: 1.15 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={action.onClick}
-                    className={`h-9 w-9 rounded-xl ${action.color} text-white flex items-center justify-center shadow-sm transition-all duration-200 cursor-pointer`}
+                    className={`focus-ring-soft h-9 w-9 rounded-xl ${action.color} text-white flex items-center justify-center shadow-sm transition-all duration-200 cursor-pointer`}
                     aria-label={action.label}
                   >
                     <Icon className="h-4 w-4" />
@@ -132,7 +132,7 @@ export function FloatingActionBar() {
         {/* Expand / Collapse toggle */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-1 h-6 w-6 rounded-full bg-muted/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className="focus-ring-soft mt-1 h-6 w-6 rounded-full bg-muted/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-200 cursor-pointer"
           aria-label={expanded ? "收起" : "展开"}
         >
           {expanded ? (

@@ -20,7 +20,6 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
@@ -226,7 +225,7 @@ function AchievementCard({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9, height: 0 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className="relative overflow-hidden rounded-xl cursor-pointer group"
+      className="relative overflow-hidden rounded-xl cursor-pointer group content-card-hover card-spotlight"
       onClick={() => {
         if (!notification.read) onRead(notification.id);
       }}
@@ -305,7 +304,7 @@ function NotificationCard({
     <motion.div
       variants={itemVariants}
       layout
-      className={`group relative flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors hover:bg-muted/50 border-l-[3px] ${
+      className={`group relative flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors hover:bg-muted/50 border-l-[3px] content-card-hover card-spotlight ${
         !notification.read
           ? `${config.borderLeftColor} bg-muted/30`
           : "border-l-transparent"
@@ -587,7 +586,7 @@ function EnhancedNotificationCenterPanel({
           <Bell className="h-4 w-4 text-violet-500" />
           <span className="text-sm font-semibold">通知中心</span>
           {unreadCount > 0 && (
-            <Badge className="h-5 px-1.5 text-[10px] bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 border-0">
+            <Badge className="h-5 px-1.5 text-[10px] bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 border-0 badge-pulse">
               {unreadCount} 未读
             </Badge>
           )}
@@ -654,7 +653,7 @@ function EnhancedNotificationCenterPanel({
                   setActiveFilter(tab.value);
                   setPage(1);
                 }}
-                className={`relative flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
+                className={`relative flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors focus-ring-soft ${
                   isActive
                     ? "text-white"
                     : "text-muted-foreground hover:text-foreground"
@@ -685,7 +684,7 @@ function EnhancedNotificationCenterPanel({
         </div>
       </div>
 
-      <Separator className="mx-3 opacity-50" />
+      <div className="divider-gradient mx-3" />
 
       {/* Notification List */}
       <ScrollArea className="flex-1 max-h-[50vh]">
@@ -758,7 +757,7 @@ function EnhancedNotificationCenterPanel({
       {/* Footer with quick stats */}
       {!isLoading && mergedNotifications.length > 0 && (
         <>
-          <Separator className="opacity-50" />
+          <div className="divider-gradient" />
           <div className="px-4 py-2 flex items-center justify-between text-[10px] text-muted-foreground">
             <span>{mergedNotifications.length} 条通知</span>
             <span>{unreadCount} 条未读</span>

@@ -509,7 +509,7 @@ function FullErrorFallback({
         {...shakeAnimation}
         className="w-full max-w-sm"
       >
-        <Card className="border-0 shadow-xl overflow-hidden">
+        <Card className="card-spotlight bg-gradient-to-br from-red-50/50 to-orange-50/50 dark:from-red-950/20 dark:to-orange-950/20 border-0 shadow-xl overflow-hidden">
           <CardContent className="p-6 text-center space-y-5">
             {/* Animated Error Illustration */}
             <div className="flex justify-center">
@@ -524,7 +524,7 @@ function FullErrorFallback({
               className="space-y-2"
             >
               <h3 className="text-lg font-bold">{config.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed py-1">
                 {config.description}
               </p>
               {sectionName && (
@@ -561,7 +561,7 @@ function FullErrorFallback({
               <Button
                 onClick={onRetry}
                 disabled={state.retryCountdown > 0}
-                className={`w-full h-10 bg-gradient-to-r ${config.gradient} text-white shadow-md btn-press retry-button-pulse`}
+                className={`focus-ring-soft w-full h-10 bg-gradient-to-r ${config.gradient} text-white shadow-md btn-press retry-button-pulse`}
               >
                 {state.retryCountdown > 0 ? (
                   <>
@@ -639,7 +639,7 @@ function LightweightErrorFallback({
   return (
     <motion.div
       {...shakeAnimation}
-      className="flex flex-col items-center justify-center py-12 px-4"
+      className="flex flex-col items-center justify-center py-12 px-4 bg-gradient-to-br from-red-50/50 to-orange-50/50 dark:from-red-950/20 dark:to-orange-950/20 rounded-xl"
     >
       {/* Lightweight icon */}
       <motion.div
@@ -660,7 +660,7 @@ function LightweightErrorFallback({
           size="sm"
           onClick={onRetry}
           disabled={state.retryCountdown > 0}
-          className="h-7 text-[11px] gap-1"
+          className="h-7 text-[11px] gap-1 focus-ring-soft"
         >
           {state.retryCountdown > 0 ? (
             <>

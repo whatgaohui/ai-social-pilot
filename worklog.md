@@ -10755,3 +10755,120 @@ Stage Summary:
   4. Dashboard Activity Timeline 接入真实数据
   5. 内容工作台 Dashboard 数据实时刷新
   6. 运营报告自动导出功能
+
+---
+Task ID: 61
+Agent: Main Developer + Subagents
+Task: 第61轮 - 状态快速切换+全局组件美化+空状态/错误边界增强
+
+Work Log:
+- 读取 worklog.md 了解第60轮项目状态
+- 运行 eslint（零错误）+ next build（编译成功10.0s）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），改用 next build + eslint 验证
+- 并行执行 4 组开发任务
+
+### 新功能：内容状态快速切换
+
+1. **PostStatusSwitcher 组件**（`post-status-switcher.tsx`，~165行）：
+   - 紧凑型内联状态切换器
+   - 显示当前状态为彩色圆点+标签 Badge
+   - 点击展开 Popover 下拉菜单（5种状态）
+   - 每个选项：彩色圆点 + 标签 + 描述 + Check 图标（已选中）
+   - 状态颜色编码：planned=gray, generated=violet, optimized=emerald, scheduled=cyan, published=purple
+   - 切换流程：PUT API → 更新 Store → Toast 通知 → 关闭
+   - framer-motion AnimatePresence 动画
+   - Loading 态：Spinner + disabled
+
+2. **日历列表视图集成**（`compact-calendar.tsx`）：
+   - 动态导入 PostStatusSwitcher（ssr: false）
+   - 在 DraggableListItem 的状态 Badge 后显示
+   - 仅当选中帖子时渲染（`isSelected && <PostStatusSwitcher />`）
+
+### 全局组件美化（10个组件，30+处修改）
+
+3. **Tooltip 组件增强**（`ui/tooltip.tsx`）：
+   - 添加 `tooltip-enhanced` 类（drop-shadow 增强）
+   - 添加 `max-w-xs` 约束
+   - 文字添加 `font-medium`
+
+4. **NotificationCenter Enhanced**（`notification-center-enhanced.tsx`）— 5处修改：
+   - AchievementCard + NotificationCard 添加 `content-card-hover card-spotlight`
+   - 未读计数 Badge 添加 `badge-pulse`
+   - 过滤器按钮添加 `focus-ring-soft`
+   - 2处 Separator 改为 `divider-gradient`
+   - 删除未使用的 Separator 导入
+
+5. **QuickStatsFloat**（`quick-stats-float.tsx`）— 3处修改：
+   - 浮动卡片添加 `content-card-hover`
+   - StatRow 添加 `transition-all duration-200`
+   - 7天迷你图分隔线改为 `divider-gradient`
+
+6. **SettingsCenter**（`settings-center.tsx`）— 10处修改：
+   - 8处水平 `<Separator />` 全部替换为 `divider-gradient`
+   - 数据库维护卡片添加 `content-card-hover`
+
+### 组件增强（3个组件）
+
+7. **WorkspaceEmptyState**（`workspace-empty-state.tsx`）— 6处修改：
+   - 外层容器添加 `card-spotlight`
+   - 内容区包裹 gradient border + `content-card-hover`
+   - 插图区域添加 `animate-breathe` 呼吸动画
+   - 插图与操作按钮间添加 `divider-gradient`
+   - QuickCard + SuggestionChip 添加 `focus-ring-soft`
+   - SuggestionChip 添加 `badge-pulse`
+
+8. **FloatingActionBar**（`floating-action-bar.tsx`）— 4处修改：
+   - 主容器添加 `glass-card` + `content-card-hover`
+   - 所有操作按钮添加 `focus-ring-soft`
+   - 展开/折叠按钮添加 `focus-ring-soft` + `transition-all duration-200`
+
+9. **ErrorBoundary**（`error-boundary.tsx`）— 4处修改：
+   - 错误卡片添加 `card-spotlight`
+   - 渐变背景（from-red-50/50 to-orange-50/50 + dark 变体）
+   - 重试按钮添加 `focus-ring-soft`
+   - 错误描述添加 `py-1` 改善间距
+
+### 新增文件
+- `src/components/post-status-switcher.tsx` — 内容状态快速切换（~165行）
+
+### 修改文件
+- `src/components/left-panel/compact-calendar.tsx` — 集成 PostStatusSwitcher
+- `src/components/ui/tooltip.tsx` — 3处增强
+- `src/components/notification-center-enhanced.tsx` — 5处增强
+- `src/components/quick-stats-float.tsx` — 3处增强
+- `src/components/settings-center.tsx` — 10处增强
+- `src/components/right-panel/workspace-empty-state.tsx` — 6处增强
+- `src/components/floating-action-bar.tsx` — 4处增强
+- `src/components/error-boundary.tsx` — 4处增强
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（10.0s，70个页面正常生成）
+- ✅ 所有修改文件 lint 通过
+
+Stage Summary:
+- 项目状态：稳定可运行，UI细节全面覆盖
+- 本轮新增 1 个文件，修改 8 个文件，35+处视觉改进
+- 核心改进：
+  1. 新增内容状态快速切换器（5种状态，Popover UI，API+Store+Toast 完整流程）
+  2. Tooltip 全局增强（drop-shadow、max-width、font-medium）
+  3. 通知中心增强（hover/spotlight、脉冲Badge、渐变分隔线）
+  4. 快速统计浮动卡片增强（hover lift、stat 过渡、分隔线）
+  5. 设置中心 8 处分隔线统一为渐变分隔线
+  6. 空状态组件全面增强（spotlight、呼吸动画、divider、focus）
+  7. 浮动操作栏增强（glass-card、hover、按钮 focus）
+  8. 错误边界增强（渐变背景、spotlight、focus ring）
+- 累计美化组件数：本轮 10 个 → 全项目约 20+ 个核心组件已完成视觉增强
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. ~85 个 TS 类型错误仍存在（framer-motion Variants）
+  3. 右侧面板 88 个文件仍未分组整理
+  4. 移动端响应式布局未在真机测试
+  5. AI Settings Panel 文件不存在（可能在 SettingsCenter 内部实现）
+- 建议下一阶段优先事项：
+  1. framer-motion Variants 类型统一修复（减少 TS 错误）
+  2. 右侧面板文件目录重组
+  3. Dashboard Activity Timeline 接入真实数据
+  4. 运营报告自动导出功能
+  5. 内容工作台数据实时刷新
+  6. 多语言/国际化支持

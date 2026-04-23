@@ -455,7 +455,7 @@ function NotificationSettingsSection() {
               aria-label={item.label}
             />
           </div>
-          {idx < items.length - 1 && <Separator />}
+          {idx < items.length - 1 && <div className="divider-gradient" />}
         </div>
       ))}
     </div>
@@ -475,7 +475,7 @@ function SystemSection() {
     <div className="space-y-4">
       <SystemHealthDashboard />
 
-      <Separator />
+      <div className="divider-gradient" />
 
       {/* Database Optimization */}
       <div>
@@ -506,7 +506,7 @@ function DatabaseOptimizeCard() {
   };
 
   return (
-    <div className="rounded-lg border border-border/60 p-3 bg-muted/20 space-y-2">
+    <div className="rounded-lg border border-border/60 p-3 bg-muted/20 space-y-2 content-card-hover">
       <div className="flex items-center gap-2 mb-1">
         <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
           <Database className="h-3.5 w-3.5 text-white" />
@@ -647,7 +647,7 @@ function DataManagementSection() {
         )}
       </div>
 
-      <Separator />
+      <div className="divider-gradient" />
 
       {/* Action Buttons */}
       <div className="space-y-2">
@@ -693,7 +693,7 @@ function DataManagementSection() {
 
       <DataImport open={importOpen} onOpenChange={setImportOpen} />
 
-      <Separator />
+      <div className="divider-gradient" />
 
       {/* Backup Manager */}
       <div>
@@ -826,7 +826,7 @@ function DisplayPreferencesSection() {
         />
       </div>
 
-      <Separator />
+      <div className="divider-gradient" />
 
       {/* Theme Customizer */}
       <div>
@@ -834,7 +834,7 @@ function DisplayPreferencesSection() {
         <ThemeCustomizer />
       </div>
 
-      <Separator />
+      <div className="divider-gradient" />
 
       {/* Restart Tour */}
       <div>
@@ -873,7 +873,7 @@ function AboutSection() {
         <p className="text-xs text-muted-foreground mt-0.5">v1.0.0 · Build 20250601</p>
       </div>
 
-      <Separator />
+      <div className="divider-gradient" />
 
       {/* Feature Count */}
       <div>
@@ -888,7 +888,7 @@ function AboutSection() {
         </div>
       </div>
 
-      <Separator />
+      <div className="divider-gradient" />
 
       {/* Tech Stack */}
       <div>
@@ -902,7 +902,7 @@ function AboutSection() {
         </div>
       </div>
 
-      <Separator />
+      <div className="divider-gradient" />
 
       {/* Credits */}
       <div className="rounded-lg p-3 bg-muted/30 text-[11px] text-muted-foreground leading-relaxed">
@@ -1219,7 +1219,7 @@ function FullAISettings() {
           </div>
         )}
 
-        <Separator />
+        <div className="divider-gradient" />
 
         {/* Config form (shown when adding/editing) */}
         <AnimatePresence>

@@ -209,7 +209,7 @@ function QuickCard({
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className={`flex items-center gap-3 p-3.5 rounded-xl bg-background border border-border/60 hover:border-border transition-colors cursor-pointer text-left group w-full ${extraClass || ''}`}
+      className={`focus-ring-soft flex items-center gap-3 p-3.5 rounded-xl bg-background border border-border/60 hover:border-border transition-colors cursor-pointer text-left group w-full ${extraClass || ''}`}
     >
       <div
         className={`flex-shrink-0 h-10 w-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-sm group-hover:shadow-md ${shadowColor} transition-shadow duration-200`}
@@ -239,7 +239,7 @@ function SuggestionChip({ icon: Icon, label, delay }: { icon: typeof Sparkles; l
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       onClick={() => toast.info("请在左侧日历中选择日期开始创作")}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 hover:bg-muted border border-border/40 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+      className="badge-pulse inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 hover:bg-muted border border-border/40 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer focus-ring-soft"
     >
       <Icon className="h-3 w-3" />
       {label}
@@ -297,14 +297,17 @@ export function WorkspaceEmptyState() {
   ];
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-full px-6 py-12 overflow-hidden bg-gradient-animated bg-dots-pattern">
+    <div className="card-spotlight relative flex flex-col items-center justify-center min-h-full px-6 py-12 overflow-hidden bg-gradient-animated bg-dots-pattern">
       {/* Floating background orbs & shapes */}
       <FloatingOrbs />
 
       {/* Content */}
+      <div className="content-card-hover border border-border/40 rounded-2xl p-8">
       <div className="relative z-10 flex flex-col items-center w-full max-w-[320px]">
         {/* Animated illustration with pulse glow */}
+        <div className="animate-breathe">
         <AnimatedIllustration />
+        </div>
 
         {/* Title */}
         <motion.div
@@ -330,6 +333,9 @@ export function WorkspaceEmptyState() {
           开启你的内容运营之旅
         </motion.p>
 
+        {/* Divider between illustration and actions */}
+        <div className="divider-gradient w-full my-4" />
+
         {/* Quick-action suggestion chips */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -348,6 +354,7 @@ export function WorkspaceEmptyState() {
             <QuickCard key={card.label} {...card} />
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

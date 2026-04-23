@@ -90,7 +90,7 @@ function MicroSparkline({ values, color }: { values: number[]; color: string }) 
 
 function StatRow({ icon, label, value, color, sparkline, suffix }: StatRowProps) {
   return (
-    <div className="flex items-center gap-2.5 py-1.5 group">
+    <div className="flex items-center gap-2.5 py-1.5 group transition-all duration-200">
       <div
         className={`flex items-center justify-center h-7 w-7 rounded-lg ${color} shrink-0 transition-transform duration-200 group-hover:scale-110`}
       >
@@ -339,7 +339,7 @@ export function QuickStatsFloat() {
               stiffness: 400,
               damping: 30,
             }}
-            className="w-[300px] hover:scale-[1.02] transition-transform duration-200"
+            className="w-[300px] hover:scale-[1.02] transition-transform duration-200 content-card-hover"
           >
             <div className="rounded-xl bg-gradient-to-br from-violet-500/20 via-transparent to-emerald-500/20 p-[1px]">
             <div
@@ -582,7 +582,7 @@ export function QuickStatsFloat() {
 
                   {/* 7-day sparkline mini chart */}
                   {stats.sevenDaySparkline && stats.sevenDaySparkline.length > 0 && (
-                    <div className="mt-1.5 pt-2 border-t border-border/50">
+                    <div className="mt-1.5 pt-2 divider-gradient">
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[9px] text-muted-foreground/60">近7天内容量</span>
                         <span className="text-[9px] text-muted-foreground/60 tabular-nums">

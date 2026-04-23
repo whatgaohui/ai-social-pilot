@@ -102,6 +102,12 @@ const QuickCreatePopup = dynamic(
   { ssr: false },
 );
 
+// Dynamically import PostStatusSwitcher for inline status toggling
+const PostStatusSwitcher = dynamic(
+  () => import("@/components/post-status-switcher"),
+  { ssr: false },
+);
+
 // --- Color maps ---
 
 const STATUS_DOT_COLORS: Record<PostStatus, string> = {
@@ -472,6 +478,8 @@ function DraggableListItem({
               <Badge className={`text-[7px] px-1 py-0 h-3 leading-3 flex-shrink-0 ${STATUS_BADGE_COLORS[post.status as PostStatus]}`} variant="secondary">
                 {POST_STATUS_LABELS[post.status as PostStatus]}
               </Badge>
+              {/* Inline status switcher for selected post */}
+              {isSelected && <PostStatusSwitcher post={post} />}
             </div>
             {/* Content preview */}
             {post.content && (
