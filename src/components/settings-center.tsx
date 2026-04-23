@@ -49,6 +49,7 @@ import {
   EyeOff,
   ExternalLink,
   Thermometer,
+  Activity,
   Download,
   RefreshCw,
   Upload,
@@ -70,6 +71,8 @@ import { ThemeCustomizer } from "@/components/theme-customizer";
 import { RestartTourButton } from "@/components/onboarding-tour";
 import { PersonaForm } from "@/components/left-panel/persona-form";
 import { DataImport } from "@/components/data-import";
+import { BackupManager } from "@/components/backup-manager";
+import { SystemHealthDashboard } from "@/components/system-health";
 import type { Platform } from "@/types";
 
 /* ================================================================
@@ -94,7 +97,7 @@ interface ConfigRecord {
   createdAt: string;
 }
 
-type SectionId = "ai" | "accounts" | "notifications" | "data" | "display" | "about";
+type SectionId = "ai" | "accounts" | "notifications" | "data" | "system" | "display" | "about";
 
 interface NotificationSettings {
   publishReminder: boolean;
@@ -123,7 +126,8 @@ const SECTIONS: Array<{
   { id: "ai", icon: Cpu, label: "AI模型配置", gradient: "from-violet-500 to-purple-600", description: "管理AI大模型配置和连接" },
   { id: "accounts", icon: Link2, label: "平台账号管理", gradient: "from-emerald-500 to-teal-600", description: "管理微信和小红书账号" },
   { id: "notifications", icon: Bell, label: "通知设置", gradient: "from-amber-500 to-orange-500", description: "配置通知和提醒偏好" },
-  { id: "data", icon: Database, label: "数据管理", gradient: "from-violet-500 to-purple-600", description: "导出数据和管理缓存" },
+  { id: "data", icon: Database, label: "数据管理", gradient: "from-violet-500 to-purple-600", description: "备份恢复和数据管理" },
+  { id: "system", icon: Activity, label: "系统状态", gradient: "from-emerald-500 to-teal-600", description: "系统健康和性能监控" },
   { id: "display", icon: Palette, label: "显示偏好", gradient: "from-pink-500 to-rose-500", description: "主题和界面设置" },
   { id: "about", icon: Info, label: "关于", gradient: "from-slate-400 to-slate-600", description: "应用信息和版本" },
 ];
@@ -429,6 +433,77 @@ function NotificationSettingsSection() {
    Section: Data Management
    ================================================================ */
 
+/* ================================================================
+   Section: System Health Monitor
+   ================================================================ */
+
+function SystemSection() {
+  return (
+    <div className="space-y-4">
+      <SystemHealthDashboard />
+
+      <Separator />
+
+      {/* Database Optimization */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">数据库维护</p>
+        <DatabaseOptimizeCard />
+      </div>
+    </div>
+  );
+}
+
+function DatabaseOptimizeCard() {
+  const [optimizing, setOptimizing] = useState(false);
+
+  const handleOptimize = async () => {
+    setOptimizing(true);
+    try {
+      const res = await fetch("/api/settings/optimize-db", { method: "POST" });
+      if (res.ok) {
+        toast.success("数据库优化完成", { description: "已执行 VACUUM 优化" });
+      } else {
+        toast.error("优化失败");
+      }
+    } catch {
+      toast.error("优化失败");
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-border/60 p-3 bg-muted/20 space-y-2">
+      <div className="flex items-center gap-2 mb-1">
+        <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+          <Database className="h-3.5 w-3.5 text-white" />
+        </div>
+        <div>
+          <span className="text-xs font-medium">数据库优化</span>
+          <p className="text-[10px] text-muted-foreground">执行 VACUUM 优化数据库性能</p>
+        </div>
+      </div>
+      <Button
+        onClick={handleOptimize}
+        disabled={optimizing}
+        variant="outline"
+        className="w-full h-8 text-xs justify-start"
+      >
+        {optimizing ? (
+          <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5 mr-2" />
+        )}
+        {optimizing ? "优化中..." : "立即优化"}
+      </Button>
+    </div>
+  );
+}
+
+/* ================================================================
+   Section: Data Management
+   ================================================================ */
+
 function DataManagementSection() {
   const [stats, setStats] = useState({
     totalPosts: 0,
@@ -584,6 +659,14 @@ function DataManagementSection() {
       </div>
 
       <DataImport open={importOpen} onOpenChange={setImportOpen} />
+
+      <Separator />
+
+      {/* Backup Manager */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">备份与恢复</p>
+        <BackupManager />
+      </div>
     </div>
   );
 }
@@ -1471,6 +1554,8 @@ export function SettingsCenter({ connectedPlatforms }: SettingsCenterProps) {
         return <NotificationSettingsSection />;
       case "data":
         return <DataManagementSection />;
+      case "system":
+        return <SystemSection />;
       case "display":
         return <DisplayPreferencesSection />;
       case "about":

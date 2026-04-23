@@ -39,7 +39,7 @@ interface AppState {
   isGenerating: boolean;
   setIsGenerating: (generating: boolean) => void;
 
-  // Left panel active tab
+  // Left panel active tab (calendar | knowledge | templates | marketplace | prompts)
   leftPanelTab: string;
   setLeftPanelTab: (tab: string) => void;
 
@@ -118,7 +118,7 @@ export const useAppStore = create<AppState>((set) => ({
   isGenerating: false,
   setIsGenerating: (generating) => set({ isGenerating: generating }),
 
-  // Left panel tab (calendar | knowledge | templates)
+  // Left panel tab (calendar | knowledge | templates | marketplace | prompts)
   leftPanelTab: 'calendar',
   setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
 

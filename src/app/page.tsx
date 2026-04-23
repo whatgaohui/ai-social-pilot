@@ -7,6 +7,9 @@ import { KnowledgeBase } from "@/components/left-panel/knowledge-base";
 import { CompactCalendar } from "@/components/left-panel/compact-calendar";
 import { CopywritingTemplates } from "@/components/left-panel/copywriting-templates";
 import { XiaohongshuTemplates } from "@/components/right-panel/xiaohongshu-templates";
+import { TemplateMarketplace } from "@/components/template-marketplace";
+import { AIPromptLibrary } from "@/components/ai-prompt-library";
+import { CalendarThemeSelector } from "@/components/calendar-theme-selector";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -28,7 +31,7 @@ import {
 } from "@/components/lazy-components";
 import {
   Sparkles, BookOpen, PenTool, CalendarDays,
-  BarChart3, Zap, FileText,
+  BarChart3, Zap, FileText, Wand2,
   Settings, Globe, User, Check, Search,
   HelpCircle,
 } from "lucide-react";
@@ -63,6 +66,8 @@ const LEFT_TABS = [
   { value: 'calendar', icon: CalendarDays, label: '日历' },
   { value: 'knowledge', icon: BookOpen, label: '知识库' },
   { value: 'templates', icon: FileText, label: '模板' },
+  { value: 'marketplace', icon: Sparkles, label: '市场' },
+  { value: 'prompts', icon: Wand2, label: '提示词' },
 ] as const;
 
 // ─── Mobile bottom navigation tabs ───────────────────────────────────────────
@@ -78,6 +83,7 @@ interface MobileTabConfig {
 const MOBILE_TABS: MobileTabConfig[] = [
   { key: 'persona', label: '人设', icon: User, panel: 'left', subTab: 'knowledge' },
   { key: 'calendar', label: '日历', icon: CalendarDays, panel: 'left', subTab: 'calendar' },
+  { key: 'marketplace', label: '市场', icon: Sparkles, panel: 'left', subTab: 'marketplace' },
   { key: 'workspace', label: '工作台', icon: FileText, panel: 'main', subTab: 'workspace' },
   { key: 'data', label: '数据', icon: BarChart3, panel: 'main', subTab: 'data' },
 ];
@@ -304,14 +310,25 @@ function LeftSidebar() {
 
       {/* Left Panel Content */}
       {leftPanelTab === 'calendar' ? (
-        <CompactCalendar />
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+          <CompactCalendar />
+          <CalendarThemeSelector />
+        </ScrollArea>
       ) : leftPanelTab === 'knowledge' ? (
         <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
           <KnowledgeBase />
         </ScrollArea>
-      ) : (
+      ) : leftPanelTab === 'templates' ? (
         <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
           {isXHS ? <XiaohongshuTemplates /> : <CopywritingTemplates />}
+        </ScrollArea>
+      ) : leftPanelTab === 'marketplace' ? (
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+          <TemplateMarketplace />
+        </ScrollArea>
+      ) : (
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+          <AIPromptLibrary />
         </ScrollArea>
       )}
     </div>
@@ -413,6 +430,8 @@ export default function Home() {
   const [contentSearchOpen, setContentSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const mobileTabIndexRef = useRef(mobileTabIndex);
+  const lastTabTapRef = useRef<{ tab: number; time: number }>({ tab: -1, time: 0 });
+  const [hapticPulse, setHapticPulse] = useState<string | null>(null);
 
   // Keep ref in sync for stable drag handler
   useEffect(() => { mobileTabIndexRef.current = mobileTabIndex; }, [mobileTabIndex]);
@@ -426,7 +445,7 @@ export default function Home() {
   useEffect(() => {
     const tab = MOBILE_TABS[mobileTabIndex];
     if (tab.panel === 'left') {
-      setLeftPanelTab(tab.subTab as 'calendar' | 'knowledge' | 'templates');
+      setLeftPanelTab(tab.subTab as 'calendar' | 'knowledge' | 'templates' | 'marketplace' | 'prompts');
     } else {
       setRightPanelTab(tab.subTab as 'workspace' | 'data' | 'collect');
     }
@@ -446,6 +465,28 @@ export default function Home() {
 
     setMobileTabIndex(newIndex);
   }, [setLeftPanelTab, setRightPanelTab]);
+
+  // Double-tap to scroll top on active mobile tab
+  const handleMobileTabTap = useCallback((index: number) => {
+    const now = Date.now();
+    const last = lastTabTapRef.current;
+
+    if (index === last.tab && now - last.time < 350) {
+      // Double tap on same tab — scroll to top
+      const mainEl = document.getElementById('main-content');
+      if (mainEl) {
+        mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      // Visual haptic pulse feedback
+      setHapticPulse(MOBILE_TABS[index].key);
+      setTimeout(() => setHapticPulse(null), 300);
+      lastTabTapRef.current = { tab: -1, time: 0 };
+      return;
+    }
+
+    lastTabTapRef.current = { tab: index, time: now };
+    handleMobileTabChange(index);
+  }, [handleMobileTabChange]);
 
   const handleMobileDragEnd = useCallback((
     _: MouseEvent | TouchEvent | PointerEvent,
@@ -769,7 +810,7 @@ export default function Home() {
               return (
                 <motion.button
                   key={tab.key}
-                  onClick={() => handleMobileTabChange(index)}
+                  onClick={() => handleMobileTabTap(index)}
                   whileTap={{ scale: 0.9 }}
                   className={`relative flex flex-col items-center justify-center w-[3.25rem] h-12 rounded-2xl text-[10px] font-medium transition-colors duration-200 ${
                     isActive ? 'text-white' : 'text-muted-foreground'
@@ -815,6 +856,18 @@ export default function Home() {
                     >
                       <Icon className="h-[18px] w-[18px] mx-auto" />
                     </motion.div>
+                    {/* Haptic pulse ring on double-tap */}
+                    <AnimatePresence>
+                      {hapticPulse === tab.key && (
+                        <motion.div
+                          initial={{ scale: 0.5, opacity: 0.8 }}
+                          animate={{ scale: 2, opacity: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                          className="absolute inset-0 rounded-full border-2 border-primary/60"
+                        />
+                      )}
+                    </AnimatePresence>
                   </span>
                   <span className="relative z-10 mt-0.5 leading-none">{tab.label}</span>
 
