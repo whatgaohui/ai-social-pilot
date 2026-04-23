@@ -81,28 +81,28 @@ const CompetitorCalendarComparison = dynamic(
 
 function OpsSectionSkeleton() {
   return (
-    <div className="p-4 space-y-3">
-      <Skeleton className="h-5 w-32" />
-      <Skeleton className="h-24 w-full rounded-lg" />
-      <Skeleton className="h-20 w-full rounded-lg" />
+    <div className="p-4 space-y-3 skeleton-card">
+      <Skeleton className="h-5 w-32 skeleton-wave" />
+      <Skeleton className="h-24 w-full rounded-lg skeleton-wave" />
+      <Skeleton className="h-20 w-full rounded-lg skeleton-wave" />
     </div>
   );
 }
 
 function SectionSkeleton({ title, icon: Icon }: { title: string; icon: React.ComponentType<{ className?: string }> }) {
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="border-0 shadow-sm content-card-hover">
       <CardHeader className="pb-2 px-4 pt-3">
         <CardTitle className="text-xs font-semibold flex items-center gap-2">
           <div className="h-6 w-6 rounded bg-gradient-to-br from-violet-500/20 to-emerald-500/20 flex items-center justify-center">
-            {Icon ? <Icon className="h-3.5 w-3.5 text-muted-foreground/40" /> : <Skeleton className="h-5 w-5 rounded" />}
+            {Icon ? <Icon className="h-3.5 w-3.5 text-muted-foreground/40" /> : <Skeleton className="h-5 w-5 rounded skeleton-wave" />}
           </div>
           <span className="text-muted-foreground/60">{title}</span>
           <Loader2 className="h-3 w-3 text-muted-foreground/30 animate-spin" />
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
-        <Skeleton className="h-48 w-full rounded-lg" />
+        <Skeleton className="h-48 w-full rounded-lg skeleton-wave" />
       </CardContent>
     </Card>
   );
@@ -130,7 +130,7 @@ function CollapsibleSection({
     <Collapsible open={open} onOpenChange={setOpen} className="group">
       <CollapsibleTrigger asChild>
         <button
-          className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all hover:bg-muted/40 ${gradientClass}`}
+          className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all hover:bg-muted/40 micro-hover content-card-hover ${gradientClass}`}
         >
           <div className={`h-6 w-6 rounded flex items-center justify-center bg-gradient-to-br ${gradientClass}`}>
             <Icon className="h-3.5 w-3.5 text-white" />
@@ -419,7 +419,7 @@ function CompetitorTabEnhanced() {
           <Button
             onClick={generateReport}
             disabled={reportLoading}
-            className="w-full gap-2 bg-gradient-to-r from-violet-500 via-purple-500 to-emerald-500 hover:from-violet-600 hover:via-purple-600 hover:to-emerald-600 text-white shadow-md transition-all"
+            className="w-full gap-2 bg-gradient-to-r from-violet-500 via-purple-500 to-emerald-500 hover:from-violet-600 hover:via-purple-600 hover:to-emerald-600 text-white shadow-md transition-all focus-ring-soft"
             size="sm"
           >
             {reportLoading ? (
@@ -551,7 +551,7 @@ export function DataAndReports() {
           transition={{ duration: 0.25 }}
         >
           <Tabs defaultValue="analytics" className="w-full">
-            <TabsList className="w-full h-8 bg-muted/50 p-0.5 overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_0%,black_85%,transparent)]">
+            <TabsList className="w-full h-8 bg-muted/50 p-0.5 overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_0%,black_85%,transparent)] micro-hover">
               <TabsTrigger value="analytics" className={`${tabTriggerClass("analytics")} flex-shrink-0`}>
                 <span className="badge-dot dot-violet">
                   <BarChart3 className="h-3.5 w-3.5" />

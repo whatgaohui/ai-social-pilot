@@ -232,7 +232,7 @@ function MetricCard({
       className="group relative"
     >
       <div
-        className={`relative rounded-xl border p-4 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border-border/60 hover:border-border content-card-hover ${gradientBorder}`}
+        className={`relative rounded-xl border p-4 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border-border/60 hover:border-border content-card-hover micro-hover ${gradientBorder}`}
       >
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">

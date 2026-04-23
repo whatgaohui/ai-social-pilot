@@ -109,7 +109,7 @@ const ContentReschedulePanel = dynamic(
 );
 
 function SkeletonBox({ className = "" }: { className?: string }) {
-  return <div className={`rounded-xl bg-muted/60 animate-pulse ${className}`} />;
+  return <div className={`rounded-xl bg-muted/60 skeleton-wave ${className}`} />;
 }
 
 const ContentPipelineKanban = dynamic(

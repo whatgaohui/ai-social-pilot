@@ -46,6 +46,8 @@ function ActionButton({ icon, label, isLoading, isSuccess, onClick }: ActionButt
             disabled={isLoading}
             className={`
               magnetic-hover
+              content-card-hover micro-hover
+              focus-ring-soft
               relative flex items-center justify-center
               h-7 w-7 rounded-lg border
               transition-all duration-200

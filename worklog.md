@@ -10872,3 +10872,108 @@ Stage Summary:
   4. 运营报告自动导出功能
   5. 内容工作台数据实时刷新
   6. 多语言/国际化支持
+
+---
+Task ID: 62
+Agent: Main Developer + Subagents
+Task: 第62轮 - CSS高级微交互 + 组件视觉增强 + MiniSparkline组件
+
+Work Log:
+- 读取 worklog.md 了解第61轮项目状态
+- 运行 eslint（零错误）+ next build（编译成功）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），改用 next build + eslint 验证
+- 并行执行 4 组开发任务
+
+### CSS 基础设施增强（globals.css）
+
+1. **新增 23 个 CSS 工具类**（Session 62 区块，+340行）：
+   - `.border-animate` — 悬停/激活时显示渐变描边动画（紫→粉→琥珀→绿循环）
+   - `.micro-hover` — 微型悬停效果（translateY -1px + scale 1.01 + 柔和阴影）
+   - `.skeleton-wave` — 精炼波浪骨架屏加载动画（双向渐变扫光）
+   - `.card-spotlight` — 鼠标追踪聚光灯效果（通过 CSS 自定义属性 --spot-x/--spot-y）
+   - `.badge-pulse` — 通知 Badge 发光脉冲动画
+   - `.focus-ring-soft` — 柔和焦点环（紫色半透明 outline + 2px offset）
+   - `.stagger-children` — 子元素交错入场延迟（支持 1-12 个子元素，40ms 间隔）
+   - `.gradient-text-violet` — 紫色品牌渐变文字
+   - `.hover-glow-violet` — 悬停紫色光晕
+   - `.loading-bar-top` — 页面顶部固定加载进度条
+   - `.context-menu-enter` — 右键菜单弹入动画（scale+fade+translateY）
+   - `.platform-badge-wechat` / `.platform-badge-xhs` — 平台感知 Badge（绿/红渐变背景）
+   - `.animate-fade-in-up` — 淡入上滑动画
+   - `.logo-notification-pulse` — Logo 通知发光脉冲
+   - `.ambient-glow` — 环境光效背景（径向渐变）
+   - `.gear-spin` — 设置图标悬停旋转 45°
+   - `.animated-border-gradient` — 持久显示的渐变描边动画
+   - `.card-gradient-border` — 卡片微渐变描边（紫→粉→透明→琥珀）
+   - `.animate-breathe` — 呼吸缩放动画
+   - `.mini-stat` — 迷你统计卡片样式（内联 sparkline 容器）
+   - `.skeleton-card` — 骨架卡片占位符
+   - `.section-dot-active` — 活跃区段指示圆点（左侧 4px 紫色圆点 + 发光）
+
+### 新组件
+
+2. **MiniSparkline**（`ui/mini-sparkline.tsx`，~120行）：
+   - 可复用内联 SVG 迷你趋势图
+   - Catmull-Rom → Bézier 平滑曲线插值
+   - 渐变填充区域
+   - 可选末端脉冲圆点
+   - 可选路径绘制动画
+   - 无障碍：role="img" + aria-label
+   - 唯一 gradientId 避免 SVG ID 冲突
+
+### 组件视觉增强
+
+3. **data-and-reports.tsx**（5处修改）：
+   - OpsSectionSkeleton 添加 `skeleton-card` + 3处 `skeleton-wave`
+   - SectionSkeleton 添加 `content-card-hover` + 2处 `skeleton-wave`
+   - CollapsibleSection 触发按钮添加 `micro-hover content-card-hover`
+   - 报告生成按钮添加 `focus-ring-soft`
+   - TabsList 添加 `micro-hover`
+
+4. **content-workspace.tsx**（1处修改）：
+   - SkeletonBox 动画从 `animate-pulse` 升级为 `skeleton-wave`
+
+5. **dashboard-overview.tsx**（1处修改）：
+   - MetricCard 添加 `micro-hover`
+
+6. **calendar-quick-actions.tsx**（1处修改）：
+   - ActionButton 添加 `content-card-hover micro-hover focus-ring-soft`
+
+### 新增文件
+- `src/components/ui/mini-sparkline.tsx` — 迷你内联 SVG 趋势图组件（~120行）
+
+### 修改文件
+- `src/app/globals.css` — 新增 23 个 CSS 工具类（+340行）
+- `src/components/right-panel/data-and-reports.tsx` — 5处视觉增强
+- `src/components/right-panel/content-workspace.tsx` — SkeletonBox 动画升级
+- `src/components/dashboard-overview.tsx` — MetricCard 微悬停
+- `src/components/left-panel/calendar-quick-actions.tsx` — ActionButton 增强
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（70个页面正常生成）
+- ✅ 所有修改文件 lint 通过
+
+Stage Summary:
+- 项目状态：稳定可运行，CSS基础设施和组件视觉全面提升
+- 本轮新增 1 个文件，修改 5 个文件
+- 核心改进：
+  1. CSS 新增 23 个高级微交互动画工具类（渐变、光效、骨架屏、脉冲、焦点等）
+  2. 新建 MiniSparkline 可复用 SVG 迷你趋势图组件
+  3. data-and-reports 面板骨架屏+折叠区+Tab 全部视觉增强
+  4. content-workspace 骨架屏动画升级
+  5. dashboard-overview 指标卡片微悬停增强
+  6. 日历快捷操作按钮悬停+焦点增强
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. ~85 个 TS 类型错误仍存在（framer-motion Variants）
+  3. 右侧面板 95 个文件仍未分组整理
+  4. 移动端响应式布局未在真机测试
+  5. MiniSparkline 组件尚未实际集成到任何面板中
+- 建议下一阶段优先事项：
+  1. 将 MiniSparkline 集成到 Dashboard Overview 的指标卡片中
+  2. 将 MiniSparkline 集成到 InlineEngagementBar（显示趋势）
+  3. framer-motion Variants 类型统一修复（减少 TS 错误）
+  4. 右侧面板文件目录重组
+  5. 移动端布局优化（底部导航栏横向滚动）
+  6. 运营报告自动导出功能

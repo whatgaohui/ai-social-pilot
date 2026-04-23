@@ -9727,3 +9727,343 @@ html {
   0% { opacity: 0; transform: translateX(100%) scale(0.95); }
   100% { opacity: 1; transform: translateX(0) scale(1); }
 }
+
+/* ─── Session 62: Advanced Micro-Interactions & Visual Polish ─────── */
+
+/* 1. Animated border gradient v2 - rotates through brand colors */
+@keyframes border-rotate-v2 {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.border-animate {
+  position: relative;
+}
+.border-animate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(90deg, #8b5cf6, #ec4899, #f59e0b, #10b981, #8b5cf6);
+  background-size: 300% 100%;
+  animation: border-rotate-v2 3s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.border-animate:hover::before,
+.border-animate.active::before {
+  opacity: 1;
+}
+
+/* 2. Micro-hover: scale on hover with soft shadow */
+.micro-hover {
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.micro-hover:hover {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.08);
+}
+.dark .micro-hover:hover {
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.12);
+}
+
+/* 3. Shimmer skeleton refined - smoother wave */
+@keyframes skeleton-wave {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-wave {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.05) 20%,
+    rgba(139, 92, 246, 0.1) 50%,
+    rgba(139, 92, 246, 0.05) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-wave 2s ease-in-out infinite;
+  border-radius: 6px;
+}
+.dark .skeleton-wave {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.04) 20%,
+    rgba(139, 92, 246, 0.08) 50%,
+    rgba(139, 92, 246, 0.04) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* 4. Card spotlight effect - follows mouse via CSS custom property */
+.card-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+.card-spotlight::before {
+  content: '';
+  position: absolute;
+  top: var(--spot-y, 50%);
+  left: var(--spot-x, 50%);
+  width: 120px;
+  height: 120px;
+  margin-left: -60px;
+  margin-top: -60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.card-spotlight:hover::before {
+  opacity: 1;
+}
+
+/* 5. Badge pulse animation - subtle glow pulse for notification badges */
+@keyframes badge-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(139, 92, 246, 0); }
+}
+.badge-pulse {
+  animation: badge-glow-pulse 2s ease-in-out infinite;
+}
+
+/* 6. Focus ring soft - less aggressive focus indicator */
+.focus-ring-soft:focus-visible {
+  outline: 2px solid rgba(139, 92, 246, 0.25);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 7. Stagger children animation - supports 1-12 children */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 40ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 80ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 160ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 280ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 320ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 360ms; }
+.stagger-children > *:nth-child(11) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(12) { animation-delay: 440ms; }
+
+/* 8. Gradient text for violet brand */
+.gradient-text-violet {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7, #d946ef);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 9. Hover glow for interactive sections */
+.hover-glow-violet {
+  transition: box-shadow 0.25s ease;
+}
+.hover-glow-violet:hover {
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.12), 0 2px 8px rgba(0,0,0,0.04);
+}
+.dark .hover-glow-violet:hover {
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.18), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* 10. Loading bar at top of page */
+.loading-bar-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  background: linear-gradient(90deg, transparent, #8b5cf6, #ec4899, #8b5cf6, transparent);
+  background-size: 200% 100%;
+  animation: loading-bar-slide 1.2s ease-in-out infinite;
+}
+@keyframes loading-bar-slide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 11. Context menu enter animation */
+@keyframes context-menu-enter {
+  0% { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.context-menu-enter {
+  animation: context-menu-enter 0.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* 12. Platform-aware badges */
+.platform-badge-wechat {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));
+  color: rgb(34, 197, 94);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+.dark .platform-badge-wechat {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.15));
+  color: rgb(74, 222, 128);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+.platform-badge-xhs {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.1), rgba(236, 72, 153, 0.1));
+  color: rgb(244, 63, 94);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+}
+.dark .platform-badge-xhs {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(236, 72, 153, 0.15));
+  color: rgb(251, 113, 133);
+  border-color: rgba(244, 63, 94, 0.25);
+}
+
+/* 13. Animate fade in up for tab content */
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out;
+}
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* 14. Logo notification pulse - when new notifications exist */
+.logo-notification-pulse {
+  animation: logo-pulse 2s ease-in-out infinite;
+}
+@keyframes logo-pulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+  50% { box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5), 0 0 30px rgba(139, 92, 246, 0.15); }
+}
+
+/* 15. Ambient glow - subtle background glow effect */
+.ambient-glow {
+  position: relative;
+}
+.ambient-glow::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 16. Gear spin animation for settings icon */
+.gear-spin {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.gear-spin:hover {
+  transform: rotate(45deg);
+}
+
+/* 17. Animated border gradient for special cards */
+.animated-border-gradient {
+  position: relative;
+}
+.animated-border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, #8b5cf6, #ec4899, #f59e0b, #10b981, #8b5cf6);
+  background-size: 400% 100%;
+  animation: border-rotate-v2 4s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* 18. Card gradient border for resizable panels */
+.card-gradient-border {
+  position: relative;
+}
+.card-gradient-border::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.05), transparent, rgba(245, 158, 11, 0.05)) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* 19. Shimmer text sweep */
+@keyframes shimmer-text-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 20. Animate breathe for decorative elements */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* 21. Mini stat card with inline sparkline area */
+.mini-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(139, 92, 246, 0.03);
+  border: 1px solid rgba(139, 92, 246, 0.06);
+  transition: all 0.2s ease;
+}
+.mini-stat:hover {
+  background: rgba(139, 92, 246, 0.06);
+  border-color: rgba(139, 92, 246, 0.12);
+}
+.dark .mini-stat {
+  background: rgba(139, 92, 246, 0.04);
+  border-color: rgba(139, 92, 246, 0.08);
+}
+.dark .mini-stat:hover {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.15);
+}
+
+/* 22. Skeleton card that matches real card layout */
+.skeleton-card {
+  border-radius: 12px;
+  padding: 16px;
+  background: rgba(139, 92, 246, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+.dark .skeleton-card {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+/* 23. Active section indicator dot */
+.section-dot-active {
+  position: relative;
+}
+.section-dot-active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.5);
+}
