@@ -171,3 +171,13 @@ export const LazyAIChatWorkspace = dynamic(
     })),
   { ssr: false, loading: () => <TabContentSkeleton /> }
 );
+
+// ─── Floating UI components ────────────────────────────────────────────────
+
+export const LazyFloatingActionBar = dynamic(
+  () =>
+    import("./floating-action-bar").then((mod) => ({
+      default: mod.FloatingActionBar,
+    })),
+  { ssr: false, loading: () => null }
+);

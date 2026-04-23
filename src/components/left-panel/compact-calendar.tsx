@@ -93,6 +93,7 @@ import {
   useContentHover,
 } from "@/components/left-panel/content-hover-preview";
 import { CalendarDndReorder } from "@/components/left-panel/calendar-dnd-reorder";
+import { ContentHeatmap } from "@/components/left-panel/content-heatmap";
 
 // --- Color maps ---
 
@@ -2089,6 +2090,9 @@ export function CompactCalendar() {
         onOpenChange={setMoveToDateOpen}
         post={movePost}
       />
+
+      {/* ====== Content Heatmap ====== */}
+      <ContentHeatmap />
 
       {/* ====== Content Hover Preview ====== */}
       {hoveredPost && (
