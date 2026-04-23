@@ -25,8 +25,6 @@ import {
   ChevronDown,
   Sparkles,
   BarChart3,
-  BookOpen,
-  Lightbulb,
   AlertTriangle,
   Clock,
   FileText,
@@ -274,36 +272,6 @@ function MetricCard({
         </div>
       </div>
     </motion.div>
-  );
-}
-
-// ─── Quick Action Button (original) ─────────────────────────────────────────
-
-interface QuickActionProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  gradient: string;
-  onClick: () => void;
-  index: number;
-}
-
-function QuickAction({ icon: Icon, label, gradient, onClick, index }: QuickActionProps) {
-  return (
-    <motion.button
-      variants={staggerChild}
-      custom={index}
-      whileHover={{ scale: 1.03, y: -2 }}
-      whileTap={{ scale: 0.97 }}
-      onClick={onClick}
-      className="flex flex-col items-center gap-2 p-3 rounded-xl border border-border/60 bg-card/60 hover:bg-card transition-all duration-200 hover:shadow-md cursor-pointer group min-w-[80px]"
-    >
-      <div className={`relative flex items-center justify-center h-10 w-10 rounded-xl ${gradient} transition-transform duration-300 group-hover:scale-110`}>
-        <Icon className="h-5 w-5 text-white" />
-      </div>
-      <span className="text-[11px] font-medium text-foreground/80 group-hover:text-foreground transition-colors whitespace-nowrap">
-        {label}
-      </span>
-    </motion.button>
   );
 }
 

@@ -155,7 +155,8 @@ function BriefCard({ brief, index, onUse, onRefine }: {
     navigator.clipboard.writeText(brief.title).then(() => {
       setCopiedTitle(true);
       setTimeout(() => setCopiedTitle(false), 1500);
-    }).catch(() => {
+    }).catch((error) => {
+      console.warn('[ai-idea-generator]', error);
       toast.error("复制失败");
     });
   };

@@ -267,8 +267,8 @@ export function QuickStatsFloat() {
         const data = await res.json();
         setStats(data);
       }
-    } catch {
-      // silently ignore
+    } catch (error) {
+      console.warn('[quick-stats-float]', error);
     } finally {
       setLoading(false);
     }

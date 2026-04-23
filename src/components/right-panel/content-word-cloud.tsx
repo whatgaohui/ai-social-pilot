@@ -177,7 +177,8 @@ export function ContentWordCloud({ posts }: ContentWordCloudProps) {
   const handleWordClick = useCallback((word: string) => {
     navigator.clipboard.writeText(word).then(() => {
       toast.success("已复制到剪贴板", { description: word, duration: 1500 });
-    }).catch(() => {
+    }).catch((error) => {
+      console.warn('[content-word-cloud]', error);
       toast.error("复制失败");
     });
   }, []);

@@ -463,7 +463,8 @@ export function AIChatWorkspace() {
   const handleCopy = useCallback((content: string) => {
     navigator.clipboard.writeText(content).then(() => {
       toast.success("已复制到剪贴板");
-    }).catch(() => {
+    }).catch((error) => {
+      console.warn('[ai-chat-workspace]', error);
       toast.error("复制失败");
     });
   }, []);
