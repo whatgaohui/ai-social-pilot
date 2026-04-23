@@ -384,18 +384,38 @@ export function QuickStatsFloat() {
                   ))}
                 </div>
               ) : stats ? (
-                <div className="space-y-0.5">
+                <motion.div
+                  className="space-y-0.5"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
+                  }}
+                  initial="hidden"
+                  animate="visible"
+                >
                   {/* Row 1: Total Content Count with trend */}
-                  <div className="flex items-center gap-2.5 py-1.5 group">
+                  <motion.div
+                    variants={{
+                      hidden: { opacity: 0, y: 8, scale: 0.98 },
+                      visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 25 } },
+                    }}
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    className="flex items-center gap-2.5 py-1.5 group cursor-default">
                     <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shrink-0 transition-transform duration-200 group-hover:scale-110">
                       <FileStack className="h-3.5 w-3.5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-muted-foreground leading-none">内容总数</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <p className="text-sm font-bold tabular-nums leading-tight counter-animate">
+                        <motion.p
+                          key={`total-${stats.totalContent}`}
+                          initial={{ scale: 1.15, opacity: 0.7 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          className="text-sm font-bold tabular-nums leading-tight"
+                        >
                           {stats.totalContent}
-                        </p>
+                        </motion.p>
                         <span className="text-[10px] font-normal text-muted-foreground ml-0.5">篇</span>
                         {(stats.lastWeekTotal ?? 0) > 0 && (
                           <motion.span
@@ -420,9 +440,17 @@ export function QuickStatsFloat() {
                       values={(stats.sevenDaySparkline || []).map(d => d.count)}
                       color="#8b5cf6"
                     />
-                  </div>
+                  </motion.div>
 
                   {/* Row 2: Today Pending */}
+                  <motion.div
+                    variants={{
+                      hidden: { opacity: 0, y: 8, scale: 0.98 },
+                      visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 25 } },
+                    }}
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  >
                   <StatRow
                     icon={<Send className="h-3.5 w-3.5 text-white" />}
                     label="今日待发布"
@@ -431,17 +459,32 @@ export function QuickStatsFloat() {
                     color="bg-gradient-to-br from-sky-500 to-cyan-600"
                   />
 
+                  </motion.div>
+
                   {/* Row 3: Unpublished with urgency */}
-                  <div className="flex items-center gap-2.5 py-1.5 group">
+                  <motion.div
+                    variants={{
+                      hidden: { opacity: 0, y: 8, scale: 0.98 },
+                      visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 25 } },
+                    }}
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="flex items-center gap-2.5 py-1.5 group cursor-default">
                     <div className={`flex items-center justify-center h-7 w-7 rounded-lg shrink-0 transition-transform duration-200 group-hover:scale-110 bg-gradient-to-br ${stats.unpublishedCount > 10 ? 'from-rose-500 to-red-600' : stats.unpublishedCount > 5 ? 'from-amber-500 to-orange-600' : 'from-zinc-400 to-zinc-500'}`}>
                       <Clock className="h-3.5 w-3.5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-muted-foreground leading-none">未发布</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <p className="text-sm font-bold tabular-nums leading-tight counter-animate">
+                        <motion.p
+                          key={`unpublished-${stats.unpublishedCount ?? 0}`}
+                          initial={{ scale: 1.15, opacity: 0.7 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          className="text-sm font-bold tabular-nums leading-tight"
+                        >
                           {stats.unpublishedCount ?? 0}
-                        </p>
+                        </motion.p>
                         <span className="text-[10px] font-normal text-muted-foreground ml-0.5">篇</span>
                         {(stats.unpublishedCount ?? 0) > 10 && (
                           <motion.span
@@ -453,19 +496,32 @@ export function QuickStatsFloat() {
                         )}
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Row 4: Average AI Score with color coding */}
-                  <div className="flex items-center gap-2.5 py-1.5 group">
+                  <motion.div
+                    variants={{
+                      hidden: { opacity: 0, y: 8, scale: 0.98 },
+                      visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 25 } },
+                    }}
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="flex items-center gap-2.5 py-1.5 group cursor-default">
                     <div className={`flex items-center justify-center h-7 w-7 rounded-lg shrink-0 transition-transform duration-200 group-hover:scale-110 bg-gradient-to-br ${getAIScoreBg(stats.avgAIScore)}`}>
                       <Star className="h-3.5 w-3.5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-muted-foreground leading-none">AI评分均值</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <p className={`text-sm font-bold tabular-nums leading-tight counter-animate ${getAIScoreColor(stats.avgAIScore)}`}>
+                        <motion.p
+                          key={`score-${stats.avgAIScore}`}
+                          initial={{ scale: 1.15, opacity: 0.7 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          className={`text-sm font-bold tabular-nums leading-tight ${getAIScoreColor(stats.avgAIScore)}`}
+                        >
                           {stats.avgAIScore}
-                        </p>
+                        </motion.p>
                         {scoreTrend !== 0 && (
                           <motion.span
                             initial={{ opacity: 0, x: -4 }}
@@ -484,19 +540,32 @@ export function QuickStatsFloat() {
                       values={stats.recentScores}
                       color={stats.avgAIScore >= 80 ? "bg-emerald-400/60 dark:bg-emerald-300/50" : stats.avgAIScore >= 60 ? "bg-amber-400/60 dark:bg-amber-300/50" : "bg-rose-400/60 dark:bg-rose-300/50"}
                     />
-                  </div>
+                  </motion.div>
 
                   {/* Row 5: Content Streak */}
-                  <div className="flex items-center gap-2.5 py-1.5 group">
+                  <motion.div
+                    variants={{
+                      hidden: { opacity: 0, y: 8, scale: 0.98 },
+                      visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 25 } },
+                    }}
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="flex items-center gap-2.5 py-1.5 group cursor-default">
                     <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 shrink-0 transition-transform duration-200 group-hover:scale-110">
                       <Flame className="h-3.5 w-3.5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-muted-foreground leading-none">连续发布</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <p className="text-sm font-bold tabular-nums leading-tight counter-animate">
+                        <motion.p
+                          key={`streak-${stats.currentStreak}`}
+                          initial={{ scale: 1.15, opacity: 0.7 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          className="text-sm font-bold tabular-nums leading-tight"
+                        >
                           {stats.currentStreak}
-                        </p>
+                        </motion.p>
                         <span className="text-[10px] text-muted-foreground">天</span>
                         {stats.currentStreak >= 7 && (
                           <motion.span
@@ -509,7 +578,7 @@ export function QuickStatsFloat() {
                       </div>
                     </div>
                     <MiniProgressRing value={stats.weeklyCompletionRate} />
-                  </div>
+                  </motion.div>
 
                   {/* 7-day sparkline mini chart */}
                   {stats.sevenDaySparkline && stats.sevenDaySparkline.length > 0 && (
@@ -541,7 +610,7 @@ export function QuickStatsFloat() {
                       </div>
                     </div>
                   )}
-                </div>
+                </motion.div>
               ) : null}
 
               {/* View Details Button */}

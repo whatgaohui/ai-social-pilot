@@ -31,6 +31,8 @@ import {
   ChevronRight,
   Activity,
   Wand2,
+  Cloud,
+  TrendingUp,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -39,13 +41,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { useSuccessToast, useErrorToast } from "@/hooks/use-toast-operations";
+import { useSuccessToast } from "@/hooks/use-toast-operations";
 import { useAutoSave, formatRelativeTime } from "@/hooks/use-auto-save";
 import { useAppStore } from "@/store/app-store";
 import type { PostStatus } from "@/types";
 
 import { PostDetailHeader } from "@/components/right-panel/post-detail-header";
-import { ContentEditor } from "@/components/right-panel/content-editor";
 import { EnhancedContentEditor } from "@/components/right-panel/enhanced-content-editor";
 import { PostActions } from "@/components/right-panel/post-actions";
 import { WeChatPreview } from "@/components/right-panel/wechat-preview";
@@ -84,6 +85,8 @@ import { RealtimeMetrics } from "@/components/right-panel/realtime-metrics";
 import { InspirationWaterfall } from "@/components/right-panel/inspiration-waterfall";
 import { PublishToCalendar } from "@/components/right-panel/publish-to-calendar";
 import { AIChatWorkspace } from "@/components/right-panel/ai-chat-workspace";
+import { ContentWordCloud } from "@/components/right-panel/content-word-cloud";
+import { QualityTimeline } from "@/components/right-panel/quality-timeline";
 
 // ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
 
@@ -275,13 +278,14 @@ const TOOL_TABS = [
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500" },
   { value: "queue", icon: Layers, label: "发布队列", color: "text-purple-500" },
   { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500" },
-  { value: "ai-workflow", icon: Bot, label: "AI工作流", color: "text-violet-500" },
   { value: "pipeline", icon: Layers, label: "内容流水线", color: "text-cyan-500" },
   { value: "writing", icon: Sparkles, label: "写作助手", color: "text-emerald-500" },
   { value: "history", icon: History, label: "版本记录", color: "text-violet-500" },
   { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500" },
   { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500" },
   { value: "metrics", icon: Activity, label: "实时指标", color: "text-teal-500" },
+  { value: "wordcloud", icon: Cloud, label: "词云分析", color: "text-fuchsia-500" },
+  { value: "quality-timeline", icon: TrendingUp, label: "质量趋势", color: "text-emerald-500" },
   { value: "chat", icon: MessageSquare, label: "AI对话", color: "text-sky-500" },
 ] as const;
 
@@ -294,7 +298,7 @@ export function ContentWorkspace() {
   const persona = useAppStore((s) => s.persona);
   const setAccountPanelOpen = useAppStore((s) => s.setAccountPanelOpen);
   const updateContentPost = useAppStore((s) => s.updateContentPost);
-  const addNotification = useAppStore((s) => s.addNotification);
+
 
   const isXHS = platform === "xiaohongshu";
   const [previewMode, setPreviewMode] = useState(false);
@@ -493,7 +497,20 @@ export function ContentWorkspace() {
           </motion.div>
 
           {/* ── Editor / Preview ─────────────────────────────────────────── */}
-          <motion.div variants={staggerItem} className="card-shine hover-glow-violet rounded-lg">
+          <motion.div variants={staggerItem} className="card-shine hover-glow-violet rounded-lg ring-1 ring-violet-500/20 shadow-lg shadow-violet-500/5 relative overflow-hidden">
+            {/* Subtle animated gradient border effect */}
+            <div className="pointer-events-none absolute inset-0 rounded-lg overflow-hidden">
+              <motion.div
+                className="absolute inset-0 rounded-lg"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(139,92,246,0.08) 0%, transparent 40%, transparent 60%, rgba(168,85,247,0.06) 100%)',
+                }}
+                animate={{
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </div>
             <div className="flex items-center justify-center mb-2">
               <div className="inline-flex items-center rounded-full bg-muted/60 p-0.5">
                 <Button
@@ -731,10 +748,10 @@ export function ContentWorkspace() {
                       key={tab.value}
                       title={tab.label}
                       onClick={() => setToolTab(tab.value as ToolTab)}
-                      className={`flex-shrink-0 min-w-[4.5rem] flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
+                      className={`flex-shrink-0 min-w-[4.5rem] flex items-center justify-center gap-1.5 py-2.5 text-xs transition-all duration-200 relative rounded-md ${
                         isActive
-                          ? `text-foreground ${tab.color}`
-                          : "text-muted-foreground hover:text-foreground/70"
+                          ? `font-semibold text-foreground ${tab.color}`
+                          : "text-muted-foreground hover:text-foreground/70 hover:bg-accent/50"
                       }`}
                     >
                       <Icon className="h-3.5 w-3.5" />
@@ -742,8 +759,14 @@ export function ContentWorkspace() {
                       {isActive && (
                         <motion.div
                           layoutId="tool-tab-indicator"
-                          className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-current"
-                          transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                          className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500"
+                          initial={false}
+                          animate={{ opacity: [0.8, 1, 0.8], scaleX: [0.95, 1, 0.95] }}
+                          transition={{
+                            opacity: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
+                            scaleX: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
+                            layout: { type: "spring", stiffness: 500, damping: 35 },
+                          }}
                         />
                       )}
                     </button>
@@ -889,19 +912,6 @@ export function ContentWorkspace() {
                   </motion.div>
                 )}
 
-                {/* ── AI Workflow Tab ────────────────────────────────────── */}
-                {toolTab === "ai-workflow" && (
-                  <motion.div
-                    key="ai-workflow-panel"
-                    variants={expandCollapse}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                  >
-                    <ContentPipeline />
-                  </motion.div>
-                )}
-
                 {/* ── Pipeline Tab ───────────────────────────────────────── */}
                 {toolTab === "pipeline" && (
                   <motion.div
@@ -965,6 +975,20 @@ export function ContentWorkspace() {
                     exit="exit"
                   >
                     <RealtimeMetrics />
+                  </motion.div>
+                )}
+
+                {/* ── Word Cloud Tab ─────────────────────────────── */}
+                {toolTab === "wordcloud" && (
+                  <motion.div key="wordcloud-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
+                    <ContentWordCloud posts={contentPosts} />
+                  </motion.div>
+                )}
+
+                {/* ── Quality Timeline Tab ─────────────────────── */}
+                {toolTab === "quality-timeline" && (
+                  <motion.div key="quality-timeline-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
+                    <QualityTimeline posts={contentPosts} />
                   </motion.div>
                 )}
 

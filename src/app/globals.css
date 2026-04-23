@@ -1103,9 +1103,13 @@ textarea {
 
 /* Scale down on press for all buttons */
 .btn-press {
-  transition: transform 0.1s ease, box-shadow 0.15s ease;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 .btn-press:active {
+  transform: scale(0.97);
+  box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+}
+.btn-press:active:hover {
   transform: scale(0.97);
 }
 

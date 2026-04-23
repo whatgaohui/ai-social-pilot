@@ -9290,3 +9290,154 @@ Stage Summary:
   3. 添加内容排期拖拽排序（已有 @dnd-kit 依赖）
   4. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
   5. 移动端响应式深度优化
+---
+Task ID: 48
+Agent: Main Developer + Subagents
+Task: 第四十八轮开发 - 死代码清理 + 代码质量修复 + 视觉增强 + 新功能组件
+
+Work Log:
+- 运行 eslint（零错误）和 next build（编译成功）确认项目状态稳定
+- 使用 Explore agent 全面审计：发现20+孤立组件、3处未使用导入、重复tab、约5000+行死代码
+- 硬约束：未使用 agent-browser（会导致 OOM kill），使用 lint + build 验证
+
+### Bug修复与代码质量
+
+1. **未使用导入清理**（content-workspace.tsx）：
+   - 移除 `useErrorToast`（从 use-toast-operations 导入但未使用）
+   - 移除 `ContentEditor`（已被 EnhancedContentEditor 替代）
+   - 移除 `addNotification`（从 store 解构但从未调用）
+
+2. **重复 Tab 合并**（content-workspace.tsx）：
+   - 发现 `ai-workflow` 和 `pipeline` 两个 tab 渲染完全相同的 `<ContentPipeline />` 组件
+   - 合并为单个 `pipeline` tab（"内容流水线"），移除冗余的 `ai-workflow` tab
+   - 同步移除对应的渲染代码块
+
+3. **大规模死代码清理**（20+ 文件删除）：
+   - 删除 src/components/ 层级下 17 个孤立组件文件（零导入）：
+     - content-streak-tracker.tsx, tooltip-enhancements.tsx, animated-components.tsx
+     - keyboard-shortcuts-enhanced.tsx, micro-interactions.tsx, notification-enhancements.tsx
+     - memoized-components.tsx, pull-to-refresh.tsx, mobile-calendar-enhanced.tsx
+     - decorative-elements.tsx, content-search-filters.tsx, status-indicators.tsx
+     - suspense-wrappers.tsx, glass-components.tsx, keyboard-shortcuts-dialog.tsx
+     - realtime-metrics-widget.tsx, skeleton-system.tsx
+   - 删除自引用孤儿组件：loading-overlay.tsx, swipe-actions.tsx, bottom-sheet.tsx
+   - 删除整个孤立组件集群：center-panel/content-calendar.tsx + calendar-week-view.tsx + calendar-gantt-view.tsx
+   - 删除过期备份文件：app/showcase-page.tsx.bak
+   - 总计删除约 5000+ 行死代码
+
+### 视觉增强
+
+1. **Tab 指示器动画**（content-workspace.tsx）：
+   - 活跃 tab 添加渐变下划线（violet→purple→fuchsia），带呼吸脉冲动画（2.5s 循环）
+   - 非活跃 tab 添加 hover:bg-accent/50 效果（transition-all duration-200）
+   - 活跃 tab 文字加粗（font-semibold）
+
+2. **选中帖子卡片光晕效果**（content-workspace.tsx）：
+   - ring-1 ring-violet-500/20 微妙发光环
+   - shadow-lg shadow-violet-500/5 深度阴影
+   - motion.div 渐变覆盖层，4s 呼吸动画（opacity 50%↔100%）
+
+3. **统计卡片微动画**（quick-stats-float.tsx）：
+   - 容器 staggered 入场（staggerChildren: 0.05）
+   - 每个卡片 whileHover={{ scale: 1.03, y: -2 }} + spring 过渡
+   - 统计数值变化时脉冲动画（scale 1.15→1）
+
+4. **按钮按压反馈**（globals.css）：
+   - .btn-press 类添加 active 状态 scale(0.97) 缩放
+   - box-shadow 重置 + active:hover 保持按压状态
+
+5. **页面滚动进度条**（page.tsx）：
+   - ScrollProgressIndicator 组件
+   - h-0.5 固定顶部，violet→fuchsia 渐变
+   - 宽度跟随滚动位置实时变化（0%↔100%）
+   - z-[60] 确保在 header 之上，pointer-events-none
+
+### 新功能组件
+
+1. **内容词云分析**（content-word-cloud.tsx）：
+   - 分析所有帖子的 topic + content，提取中英文高频词汇
+   - 80+ 停用词过滤（中文+英文）
+   - 显示 TOP 30 高频词，6 色方案（violet/emerald/amber/rose/cyan/fuchsia）
+   - 随机旋转角度（-15°~+15°）的 pill 展示
+   - 点击复制到剪贴板 + toast 通知
+   - "分析词频" 按钮重新生成
+   - TOP 5 词频条形图
+   - framer-motion 交错入场动画（0.03s/词）
+
+2. **内容质量趋势图**（quality-timeline.tsx）：
+   - 纯 SVG 内联折线图（560×220 viewBox）
+   - 展示所有 aiScore > 0 的帖子的分数时间线
+   - 渐变填充（violet-500/20 → transparent）
+   - 路径绘制动画（pathLength 0→1）
+   - 数据点颜色编码：绿色(≥80)/琥珀(≥60)/红色(<60)
+   - 悬停 tooltip 显示日期+分数+主题
+   - 简单线性回归趋势线（虚线粉色）
+   - 平均分水平虚线（琥珀色）
+   - 统计行：最高分、最低分、趋势方向
+   - 空状态处理
+
+3. **集成到 content-workspace.tsx**：
+   - TOOL_TABS 新增 2 个 tab：词云分析(Cloud icon) + 质量趋势(TrendingUp icon)
+   - tab 总数从 14 个扩展到 15 个（合并 ai-workflow 后净增 1 个）
+   - 渲染区域使用 expandCollapse variants 动画
+
+### 新增文件
+- `src/components/right-panel/content-word-cloud.tsx` - 内容词云分析组件
+- `src/components/right-panel/quality-timeline.tsx` - 内容质量趋势图组件
+
+### 修改文件
+- `src/components/right-panel/content-workspace.tsx` - 清理导入 + 合并tab + 新增2个tab + 视觉增强
+- `src/components/right-panel/quick-stats-float.tsx` - 统计卡片微动画
+- `src/app/globals.css` - 按钮按压反馈CSS
+- `src/app/page.tsx` - 滚动进度条
+
+### 删除文件（24个）
+- src/components/content-streak-tracker.tsx
+- src/components/tooltip-enhancements.tsx
+- src/components/animated-components.tsx
+- src/components/keyboard-shortcuts-enhanced.tsx
+- src/components/micro-interactions.tsx
+- src/components/notification-enhancements.tsx
+- src/components/memoized-components.tsx
+- src/components/pull-to-refresh.tsx
+- src/components/mobile-calendar-enhanced.tsx
+- src/components/decorative-elements.tsx
+- src/components/content-search-filters.tsx
+- src/components/status-indicators.tsx
+- src/components/suspense-wrappers.tsx
+- src/components/glass-components.tsx
+- src/components/keyboard-shortcuts-dialog.tsx
+- src/components/realtime-metrics-widget.tsx
+- src/components/skeleton-system.tsx
+- src/components/loading-overlay.tsx
+- src/components/swipe-actions.tsx
+- src/components/bottom-sheet.tsx
+- src/components/center-panel/content-calendar.tsx
+- src/components/center-panel/calendar-week-view.tsx
+- src/components/center-panel/calendar-gantt-view.tsx
+- src/app/showcase-page.tsx.bak
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ next build 编译成功（所有动态路由正常）
+
+Stage Summary:
+- 项目状态：稳定可运行，代码质量显著提升
+- 本轮新增 2 个文件，修改 4 个文件，删除 24 个文件
+- 核心成果：
+  1. 清理约 5000+ 行死代码（24 个孤立/过期文件）
+  2. 修复 3 处代码质量问题（未使用导入 + 重复 tab）
+  3. 5 处视觉微交互增强（tab 动画、卡片光晕、统计脉冲、按钮反馈、滚动进度条）
+  4. 2 个新功能组件（词云分析 + 质量趋势图），TOOL_TABS 扩展至 15 个
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. TOOL_TABS 已达 15 个，tab 栏水平滚动方案已就位但极窄面板仍可能拥挤
+  3. 词云分析依赖前端文本分词，中文分词精度有限（基于 N-gram）
+  4. 质量趋势图仅显示有 aiScore 的帖子，无 AI 评分的帖子不计入
+- 建议下一阶段优先事项：
+  1. 为 content-workspace 的 15 个 tab 添加分组折叠机制（如"分析"、"发布"、"工具"三组）
+  2. 扩展 safeFormat 到剩余约 80+ 处 format(new Date(...)) 调用
+  3. 添加内容排期拖拽排序功能（已有 @dnd-kit 依赖）
+  4. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
+  5. 移动端响应式深度优化
+  6. 运营报告自动生成功能完善（PDF/图片导出）

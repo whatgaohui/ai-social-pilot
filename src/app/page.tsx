@@ -425,6 +425,37 @@ function MainContentPanel() {
   );
 }
 
+// ─── Scroll Progress Indicator ──────────────────────────────────────────────
+
+function ScrollProgressIndicator() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight > 0) {
+        setProgress((scrollTop / docHeight) * 100);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <div
+      className="fixed top-0 left-0 z-[60] h-0.5 w-full pointer-events-none"
+      aria-hidden="true"
+    >
+      <motion.div
+        className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+        style={{ width: `${progress}%` }}
+        transition={{ duration: 0 }}
+      />
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -580,6 +611,8 @@ export default function Home() {
   return (
     <ShortcutManagerProvider>
     <div className="min-h-screen flex flex-col bg-gradient-animated">
+      {/* Scroll Progress Indicator */}
+      <ScrollProgressIndicator />
       {/* Accessibility: Screen reader live regions */}
       <AccessibilityAnnouncer />
       {/* Skip navigation link for keyboard/screen reader users */}
