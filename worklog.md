@@ -11709,3 +11709,43 @@ Stage Summary:
   4. 发布日历热力图功能
   5. 移动端真机测试优化
   6. Dashboard Activity Timeline 接入真实数据
+
+---
+Task ID: 69
+Agent: Main Developer
+Task: 修复全局黑边问题 - @theme inline 颜色变量缺少 hsl() 包裹
+
+Work Log:
+- 读取 globals.css 发现 @theme inline 中所有颜色映射使用 `--color-border: var(--border)` 格式
+- CSS 变量存储的是裸 HSL 值（如 `240 5.9% 90%`），不带 `hsl()` 包裹
+- 在 Tailwind CSS v4 中，`@theme inline` 的值必须是有效 CSS 颜色
+- `240 5.9% 90%` 不是有效 CSS 颜色，浏览器回退到 `border-color` 初始值 `currentcolor` = 黑色
+- 这导致所有使用 `border`, `border-border`, `border-input`, `bg-background`, `text-foreground` 等的组件都渲染为黑色边框/背景/文字
+
+### 根因分析
+- 项目使用 Tailwind CSS v4（@tailwindcss/postcss）
+- v4 的 `@theme inline` 块不会自动包裹 `hsl()`（与 v3 的 `hsl(var(--border))` 模式不同）
+- 原始映射 `--color-border: var(--border)` 展开为 `border-color: 240 5.9% 90%` → 无效 CSS → 黑色
+- 之前几轮仅降低了 opacity（/20），但因为颜色值本身无效，无论如何降低 opacity 都仍然是黑色
+- Card、Input、Dialog 等 shadcn/ui 组件都使用了 `border` class → 全部受影响
+
+### 修复内容
+- 在 `src/app/globals.css` 的 `@theme inline` 块中，为所有 32 个颜色变量添加 `hsl()` 包裹
+- `--color-border: var(--border)` → `--color-border: hsl(var(--border))`
+- `--color-background: var(--background)` → `--color-background: hsl(var(--background))`
+- 所有其他颜色变量同理（foreground, card, popover, primary, secondary, muted, accent, destructive, input, ring, chart, sidebar 等）
+- 非颜色变量（font-sans, font-mono, radius-*）保持不变
+- 新增 `--color-destructive-foreground: hsl(var(--destructive-foreground))`（原映射中遗漏）
+
+### 修改文件
+- `src/app/globals.css` - @theme inline 块全部颜色变量添加 hsl() 包裹
+
+### 验证结果
+- ✅ next build 编译成功
+- ✅ eslint 零错误
+
+Stage Summary:
+- 项目状态：黑边问题根因已修复
+- 核心修复：@theme inline 中 32 个颜色变量全部添加 hsl() 包裹
+- 这是之前多轮修复黑边失败的根本原因 — 之前仅调了 opacity，但颜色值本身在 CSS 中是无效的
+- 建议：请在 Preview Panel 中验证所有组件边框是否已恢复正常颜色
