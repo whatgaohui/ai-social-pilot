@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
@@ -95,6 +96,12 @@ import {
 import { CalendarDndReorder } from "@/components/left-panel/calendar-dnd-reorder";
 import { ContentHeatmap } from "@/components/left-panel/content-heatmap";
 
+// Dynamically import QuickCreatePopup to avoid SSR issues with dialog/focus
+const QuickCreatePopup = dynamic(
+  () => import("@/components/left-panel/quick-create-popup").then((m) => m.QuickCreatePopup),
+  { ssr: false },
+);
+
 // --- Color maps ---
 
 const STATUS_DOT_COLORS: Record<PostStatus, string> = {
@@ -171,106 +178,6 @@ function getContentTypeColorForPost(post: ContentPost) {
   if (post.platform === "xiaohongshu")
     return XHS_CONTENT_TYPE_COLORS[post.contentType as XHSContentType] || "";
   return CONTENT_TYPE_COLORS[post.contentType as ContentType] || "";
-}
-
-// --- Quick Create Dialog ---
-
-interface QuickCreateDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  defaultDate: string;
-}
-
-function QuickCreateDialog({ open, onOpenChange, defaultDate }: QuickCreateDialogProps) {
-  const { addContentPost, platform, currentPlan } = useAppStore();
-  const [topic, setTopic] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (open) {
-      setTopic("");
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  }, [open]);
-
-  const handleCreate = useCallback(async () => {
-    if (!topic.trim()) return;
-    setIsCreating(true);
-    try {
-      const newPost: ContentPost = {
-        id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        planId: currentPlan?.id || "",
-        scheduledDate: defaultDate,
-        platform,
-        contentType: platform === "xiaohongshu" ? "seeding" : "text",
-        topic: topic.trim(),
-        content: "",
-        status: "planned",
-        generationType: "auto",
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        views: 0,
-        aiScore: 0,
-        feedback: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      addContentPost(newPost);
-      toast.success("已添加新内容", { description: `${safeFormat(defaultDate, "M月d日", defaultDate)} - ${topic.trim()}` });
-      onOpenChange(false);
-    } catch {
-      toast.error("创建失败");
-    } finally {
-      setIsCreating(false);
-    }
-  }, [topic, defaultDate, platform, currentPlan, addContentPost, onOpenChange]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[380px]">
-        <DialogHeader>
-          <DialogTitle className="text-sm flex items-center gap-2">
-            <Plus className="h-4 w-4 text-primary" />
-            快速创建内容
-          </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            排期：{safeFormat(defaultDate, "yyyy年M月d日 EEEE", "请选择日期", { locale: zhCN })}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3 py-2">
-          <Input
-            ref={inputRef}
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder="输入内容主题..."
-            className="text-sm"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleCreate();
-            }}
-          />
-          <div className="flex items-center gap-1">
-            <Badge variant="secondary" className="text-[10px]">
-              {platform === "wechat" ? "朋友圈" : "小红书"}
-            </Badge>
-            <Badge variant="outline" className="text-[10px]">
-              {platform === "xiaohongshu" ? "种草安利" : "纯文字"}
-            </Badge>
-          </div>
-        </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            取消
-          </Button>
-          <Button size="sm" onClick={handleCreate} disabled={!topic.trim() || isCreating}>
-            {isCreating ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Plus className="h-3 w-3 mr-1" />}
-            创建
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 // --- Move-to-Date Dialog ---
@@ -899,9 +806,8 @@ export function CompactCalendar() {
   const [weekAnchor, setWeekAnchor] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [weekSlideDir, setWeekSlideDir] = useState<0 | -1 | 1>(0);
 
-  // Quick create dialog state
-  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
-  const [quickCreateDate, setQuickCreateDate] = useState("");
+  // Quick create popup state
+  const [quickCreateDate, setQuickCreateDate] = useState<string | null>(null);
 
   // Move-to-date dialog state
   const [moveToDateOpen, setMoveToDateOpen] = useState(false);
@@ -1244,15 +1150,46 @@ export function CompactCalendar() {
     }
   }, [viewMode, handlePrevWeek, handleNextWeek, handlePrevMonth, handleNextMonth]);
 
+  // --- Quick create popup handler ---
+  const handleQuickCreate = useCallback(
+    (data: { topic: string; content: string; contentType: string; scheduledDate: string }) => {
+      const newPost: ContentPost = {
+        id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        planId: currentPlan?.id || "",
+        scheduledDate: data.scheduledDate,
+        platform,
+        contentType: data.contentType,
+        topic: data.topic,
+        content: data.content,
+        status: "planned",
+        generationType: "auto",
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        views: 0,
+        aiScore: 0,
+        feedback: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      addContentPost(newPost);
+      toast.success("已添加新内容", {
+        description: `${safeFormat(data.scheduledDate, "M月d日", data.scheduledDate)} - ${data.topic}`,
+      });
+      setQuickCreateDate(null);
+    },
+    [currentPlan, platform, addContentPost],
+  );
+
   // --- Grid double-click handler ---
   const handleGridDayDoubleClick = useCallback(
     (dateStr: string) => {
-      // If no posts on this date, open quick create
+      // If no posts on this date, open quick create popup
       const posts = postsByDate[dateStr];
       if (!posts || posts.length === 0) {
         setQuickCreateDate(dateStr);
-        setQuickCreateOpen(true);
       }
+      // If the day has posts, keep existing behavior (no action on double-click)
     },
     [postsByDate],
   );
@@ -2101,12 +2038,16 @@ export function CompactCalendar() {
         </div>
       </ScrollArea>
 
-      {/* ====== Dialogs ====== */}
-      <QuickCreateDialog
-        open={quickCreateOpen}
-        onOpenChange={setQuickCreateOpen}
-        defaultDate={quickCreateDate}
-      />
+      {/* ====== Quick Create Popup (double-click on empty grid day) ====== */}
+      {quickCreateDate && (
+        <QuickCreatePopup
+          date={quickCreateDate}
+          isOpen={true}
+          onClose={() => setQuickCreateDate(null)}
+          platform={platform}
+          onCreate={handleQuickCreate}
+        />
+      )}
       <MoveToDateDialog
         open={moveToDateOpen}
         onOpenChange={setMoveToDateOpen}

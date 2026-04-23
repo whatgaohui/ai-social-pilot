@@ -342,7 +342,7 @@ function KnowledgeCard({
       transition={{ duration: 0.2 }}
       layout
     >
-      <Card className="knowledge-card border-0 shadow-sm hover:shadow-md hover:border-primary/10 transition-all duration-200 group card-enter list-item-enter">
+      <Card className="knowledge-card content-card-hover card-spotlight border-0 shadow-sm hover:shadow-md hover:border-primary/10 transition-all duration-200 group card-enter list-item-enter">
         <CardContent className="p-3">
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
@@ -354,7 +354,7 @@ function KnowledgeCard({
                 <h4 className="text-sm font-medium truncate">{item.title}</h4>
                 <Badge
                   variant="outline"
-                  className={`text-[10px] px-1.5 py-0 shrink-0 ${
+                  className={`text-[10px] px-1.5 py-0 shrink-0 transition-all duration-200 ${
                     CATEGORY_COLORS[item.category] || CATEGORY_COLORS.general
                   } border-transparent`}
                 >
@@ -418,7 +418,7 @@ function KnowledgeCard({
               {tagsList.slice(0, isExpanded ? undefined : 5).map((tag, i) => (
                 <span
                   key={`${tag}-${i}`}
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full tag-pill ${getTagColor(tag)}`}
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full tag-pill transition-all duration-200 ${getTagColor(tag)}`}
                 >
                   {tag}
                 </span>
@@ -455,7 +455,7 @@ function KnowledgeCard({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mt-2 pt-2 border-t border-border/50"
+                className="mt-2 pt-2 divider-gradient"
               >
                 <p className="text-[10px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
                   <Network className="h-3 w-3" />
@@ -888,7 +888,7 @@ export function KnowledgeBase() {
             placeholder="搜索知识库..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 text-sm pl-8 input-glow"
+            className="h-9 text-sm pl-8 input-glow focus-ring-soft"
           />
         </div>
 
@@ -914,7 +914,7 @@ export function KnowledgeBase() {
 
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button size="sm" className="h-9 px-3">
+            <Button size="sm" className="h-9 px-3 focus-ring-soft">
               <Plus className="h-4 w-4" />
             </Button>
           </DialogTrigger>

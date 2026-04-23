@@ -174,7 +174,7 @@ export function CopywritingTemplates() {
             const isGenerating = generating === template.id;
 
             return (
-              <Card key={template.id} className="border-0 shadow-sm hover:shadow-md transition-all duration-200 group card-enter">
+              <Card key={template.id} className="content-card-hover card-spotlight border-0 shadow-sm hover:shadow-md transition-all duration-200 group card-enter">
                 <CardContent className="p-3">
                   <div className="flex items-start gap-3">
                     <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${template.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
@@ -193,7 +193,7 @@ export function CopywritingTemplates() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 text-xs mt-2 text-violet-600 dark:text-violet-400 hover:text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-950/30"
+                          className="h-7 text-xs mt-2 text-violet-600 dark:text-violet-400 hover:text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-950/30 focus-ring-soft"
                           onClick={() => handleGenerate(template)}
                           disabled={isGenerating}
                         >
@@ -231,7 +231,7 @@ export function CopywritingTemplates() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 text-[10px] mt-1 text-muted-foreground"
+                            className="h-6 text-[10px] mt-1 text-muted-foreground focus-ring-soft"
                             onClick={() => handleGenerate(template)}
                             disabled={isGenerating}
                           >

@@ -1015,6 +1015,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 }}
                 onFocus={handleInputFocus}
                 onBlur={handleInputBlur}
+                className="focus-ring-soft"
               />
 
               {/* ── Search Category Tabs + Sort ────────────────────── */}
@@ -1153,7 +1154,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                         </CommandGroup>
                       )}
 
-                      {showPosts && !hasQuery && <CommandSeparator />}
+                      {showPosts && !hasQuery && <CommandSeparator className="divider-gradient" />}
 
                       {/* ── Command Groups (when querying) ────────── */}
                       {hasQuery && filteredCommandGroups.length > 0 && (
@@ -1210,7 +1211,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               </CommandGroup>
                             );
                           })}
-                          <CommandSeparator />
+                          <CommandSeparator className="divider-gradient" />
                         </>
                       )}
 
@@ -1220,7 +1221,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                           <CommandGroup heading="人设信息">
                             <CommandItem
                               onSelect={() => handleAction("knowledge")}
-                              className="flex-col !items-start gap-1.5 card-glow rounded-lg py-2.5"
+                              className="flex-col !items-start gap-1.5 card-glow card-spotlight rounded-lg py-2.5"
                             >
                               <div className="flex items-center gap-2.5 w-full">
                                 <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm flex-shrink-0">
@@ -1276,7 +1277,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                         </CommandGroup>
                       )}
 
-                      {showPersona && <CommandSeparator />}
+                      {showPersona && <CommandSeparator className="divider-gradient" />}
 
                       {/* ── Recent Edits (when no query) ────────────── */}
                       {!hasQuery && showPosts && recentPosts.length > 0 && (
@@ -1287,7 +1288,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                                 key={post.id}
                                 value={`recent-${post.id}`}
                                 onSelect={() => handleSelectPost(post)}
-                                className="flex-col !items-start gap-1 card-glow rounded-lg"
+                                className="flex-col !items-start gap-1 card-glow card-spotlight rounded-lg"
                               >
                                 <div className="flex items-center gap-2 w-full">
                                   <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -1313,7 +1314,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               </CommandItem>
                             ))}
                           </CommandGroup>
-                          <CommandSeparator />
+                          <CommandSeparator className="divider-gradient" />
                         </>
                       )}
 
@@ -1325,7 +1326,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               key={post.id}
                               value={`post-${post.id}`}
                               onSelect={() => handleSelectPost(post)}
-                              className="flex-col !items-start gap-1 card-glow rounded-lg"
+                              className="flex-col !items-start gap-1 card-glow card-spotlight rounded-lg"
                             >
                               <div className="flex items-center gap-2 w-full">
                                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -1364,7 +1365,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                         </CommandGroup>
                       )}
 
-                      <CommandSeparator />
+                      <CommandSeparator className="divider-gradient" />
 
                       {/* ── Knowledge Search ───────────────────────── */}
                       {showKnowledge && knowledgeResults.length > 0 && (
@@ -1374,7 +1375,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               key={item.id}
                               value={`knowledge-${item.id}`}
                               onSelect={() => handleSelectKnowledge(item)}
-                              className="flex-col !items-start gap-1 card-glow rounded-lg"
+                              className="flex-col !items-start gap-1 card-glow card-spotlight rounded-lg"
                             >
                               <div className="flex items-center gap-2 w-full">
                                 <BookOpen className="h-4 w-4 shrink-0 text-amber-500" />
@@ -1396,7 +1397,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                         </CommandGroup>
                       )}
 
-                      <CommandSeparator />
+                      <CommandSeparator className="divider-gradient" />
 
                       {/* ── Template Search ────────────────────────── */}
                       {showTemplates && templateResults.length > 0 && (
@@ -1406,7 +1407,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               key={t.id}
                               value={`template-${t.id}`}
                               onSelect={handleSelectTemplate}
-                              className="flex-col !items-start gap-1 card-glow rounded-lg"
+                              className="flex-col !items-start gap-1 card-glow card-spotlight rounded-lg"
                             >
                               <div className="flex items-center gap-2 w-full">
                                 <LayoutTemplate className="h-4 w-4 shrink-0 text-violet-500" />
@@ -1428,7 +1429,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                         </CommandGroup>
                       )}
 
-                      {showTemplates && <CommandSeparator />}
+                      {showTemplates && <CommandSeparator className="divider-gradient" />}
 
                       {/* ── Panel Navigation ───────────────────────── */}
                       {showPosts && !hasQuery && (
@@ -1455,7 +1456,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                         </CommandGroup>
                       )}
 
-                      {!hasQuery && <CommandSeparator />}
+                      {!hasQuery && <CommandSeparator className="divider-gradient" />}
 
                       {/* ── Keyboard Shortcuts Help ────────────────── */}
                       {showPosts && !hasQuery && (
@@ -1481,28 +1482,28 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               </CommandList>
 
               {/* ── Footer ──────────────────────────────────────────── */}
-              <div className="border-t px-3 py-2 flex items-center justify-between text-[11px] text-muted-foreground">
+              <div className="divider-gradient px-3 py-2 flex items-center justify-between text-[11px] text-muted-foreground">
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1">
-                    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px]">
+                    <kbd className="kbd-badge">
                       ↑↓
                     </kbd>
                     导航
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px]">
+                    <kbd className="kbd-badge">
                       ↵
                     </kbd>
                     选择
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px]">
+                    <kbd className="kbd-badge">
                       esc
                     </kbd>
                     关闭
                   </span>
                 </div>
-                <span className="hidden sm:inline">{isXHS ? "小红书" : "朋友圈"}AI运营助手</span>
+                <span className="hidden sm:inline font-medium">{isXHS ? "小红书" : "朋友圈"}AI运营助手</span>
               </div>
             </Command>
           </motion.div>

@@ -10638,3 +10638,120 @@ Stage Summary:
   4. Dashboard Activity Timeline 接入真实数据
   5. 右侧面板文件目录重组（ai-tools/, publishing/, analytics/）
   6. 添加内容快捷操作面板到日历空日期格子
+
+---
+Task ID: 60
+Agent: Main Developer + Subagents
+Task: 第60轮 - 快速创建功能+全局组件美化+CSS增强
+
+Work Log:
+- 读取 worklog.md 了解第59轮项目状态
+- 运行 eslint（零错误）+ next build（编译成功10.7s）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），改用 next build + eslint 验证
+- 并行执行 4 项开发任务
+
+### 新功能：空日历格子快速创建内容
+
+1. **QuickCreatePopup 组件**（`quick-create-popup.tsx`，~210行）：
+   - 双击空日历格子弹出快速创建对话框
+   - 主题输入框（自动聚焦）
+   - 平台感知内容类型选择器（朋友圈7种 / 小红书8种）
+   - 文案描述 textarea（Shift+Enter 换行）
+   - 平台感知配色（紫色/玫红渐变顶部条）
+   - framer-motion 弹入动画（scale+fade+顶部条滑入）
+   - shadcn/ui Dialog 容器（max-w-sm, rounded-xl）
+
+2. **日历集成**（`compact-calendar.tsx`）：
+   - 动态导入 QuickCreatePopup（ssr: false）
+   - `handleGridDayDoubleClick` 增强：空日期→打开快速创建；有内容→保持原逻辑
+   - `handleQuickCreate` 回调：生成完整 ContentPost → addContentPost + toast 提示
+   - 删除旧的 `QuickCreateDialog` 内联组件（~90行死代码）
+   - `quickCreateDate` 状态从 `""` 改为 `string | null`
+
+### 全局组件视觉美化（3个组件，35+处修改）
+
+3. **Enhanced Footer**（`enhanced-footer.tsx`）— 4处修改：
+   - 主卡片添加 `content-card-hover` 悬停微浮
+   - 分隔线改为 `divider-gradient`（删除~6行内联样式）
+   - ⌘K 提示改用 `kbd-badge` 样式模式
+   - App 名称添加 `font-medium`
+
+4. **Welcome Onboarding**（`welcome-onboarding.tsx`）— 7处修改：
+   - 未完成步骤指示器添加 `badge-pulse` 脉冲
+   - 平台选择卡片添加 `card-spotlight` + `focus-ring-soft`
+   - Persona/Knowledge 表单卡片添加 `content-card-hover`
+   - AI 模式切换卡片添加 `card-spotlight` + `focus-ring-soft`
+   - AI 配置表单卡片添加 `content-card-hover`
+
+5. **Command Palette**（`command-palette.tsx`）— 21处修改：
+   - 搜索输入框添加 `focus-ring-soft`
+   - 10处 `CommandSeparator` 全部改用 `divider-gradient`
+   - Footer 分隔线改用 `divider-gradient`
+   - 3个快捷键 Badge（↑↓/↵/esc）统一 `kbd-badge` 样式
+   - 5个搜索结果项添加 `card-spotlight`
+   - 品牌文字添加 `font-medium`
+
+### 左侧面板组件增强
+
+6. **Knowledge Base**（`knowledge-base.tsx`）— 6处修改：
+   - KnowledgeCard 添加 `content-card-hover` + `card-spotlight`
+   - 分类 Badge 添加 `transition-all duration-200`
+   - 标签 pill 添加 `transition-all duration-200`
+   - 搜索输入框添加 `focus-ring-soft`
+   - 新增按钮添加 `focus-ring-soft`
+   - 相关内容分隔线改用 `divider-gradient`
+
+7. **Copywriting Templates**（`copywriting-templates.tsx`）— 3处修改：
+   - 模板卡片添加 `content-card-hover` + `card-spotlight`
+   - "AI生成"按钮添加 `focus-ring-soft`
+   - "重新生成"按钮添加 `focus-ring-soft`
+
+### CSS 增强（globals.css）
+
+8. **新增 CSS 规则**（Session 60 区块）：
+   - `html { scroll-behavior: smooth }` — 全局平滑滚动
+   - `.section-header-gradient` — 区段标题渐变底线
+   - `.toast-container-enter` + `@keyframes toast-slide-in` — Toast 滑入动画
+   - （`::selection`、`.scrollbar-thin`、`.card-interactive`、`button:focus-visible`、`prefers-reduced-motion` 已存在，未重复添加）
+
+### 新增文件
+- `src/components/left-panel/quick-create-popup.tsx` — 快速创建内容弹窗（~210行）
+
+### 修改文件
+- `src/components/left-panel/compact-calendar.tsx` — 快速创建集成 + 删除旧代码
+- `src/components/enhanced-footer.tsx` — 4处视觉增强
+- `src/components/welcome-onboarding.tsx` — 7处视觉增强
+- `src/components/command-palette.tsx` — 21处视觉增强
+- `src/components/left-panel/knowledge-base.tsx` — 6处视觉增强
+- `src/components/left-panel/copywriting-templates.tsx` — 3处视觉增强
+- `src/app/globals.css` — 新增 3 个 CSS 规则
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（10.7s，70个页面正常生成）
+- ✅ 所有组件 lint 通过
+
+Stage Summary:
+- 项目状态：稳定可运行，UI细节全面增强
+- 本轮新增 1 个文件，修改 7 个文件，45+处视觉改进
+- 核心改进：
+  1. 新增空日历格子双击快速创建内容功能（QuickCreatePopup）
+  2. Enhanced Footer 全面美化（hover、分隔线、kbd、字体）
+  3. Welcome Onboarding 7处增强（脉冲Badge、spotlight、hover）
+  4. Command Palette 21处增强（focus、分隔线、kbd、spotlight）
+  5. Knowledge Base 6处增强（卡片hover/spotlight、输入框focus）
+  6. Copywriting Templates 3处增强（卡片hover、按钮focus）
+  7. CSS 新增平滑滚动、区段渐变、Toast 动画
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. content-context-menu.tsx 组件未被集成（日历列表视图已有 shadcn ContextMenu）
+  3. ~85 个 TS 类型错误仍存在（framer-motion Variants）
+  4. 右侧面板 88 个文件仍未分组
+  5. 移动端布局优化未深入
+- 建议下一阶段优先事项：
+  1. 移动端 Tab 栏横向滚动优化
+  2. framer-motion Variants 类型统一修复
+  3. 右侧面板文件目录重组
+  4. Dashboard Activity Timeline 接入真实数据
+  5. 内容工作台 Dashboard 数据实时刷新
+  6. 运营报告自动导出功能

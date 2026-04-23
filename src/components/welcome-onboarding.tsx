@@ -294,7 +294,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
                     ? `bg-gradient-to-br ${s.gradient} shadow-lg`
                     : isCompleted
                     ? "bg-emerald-500 shadow-md"
-                    : "bg-muted"
+                    : "bg-muted badge-pulse"
                 }`}
                 animate={isCurrent ? { scale: [1, 1.08, 1] } : {}}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -430,7 +430,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
                     prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id]
                   );
                 }}
-                className={`cursor-pointer transition-all border-2 hover:shadow-lg ${
+                className={`cursor-pointer transition-all border-2 hover:shadow-lg card-spotlight focus-ring-soft ${
                   isSelected ? `${p.bg} ${p.ring}` : "border-transparent hover:border-muted"
                 }`}
               >
@@ -490,7 +490,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
         <p className="text-xs text-muted-foreground">AI 将根据人设信息生成个性化内容，填写越详细效果越好</p>
       </div>
 
-      <Card className="border-0 shadow-sm">
+      <Card className="border-0 shadow-sm content-card-hover">
         <CardContent className="p-4 space-y-3.5">
           {/* Name */}
           <div className="space-y-1.5">
@@ -637,7 +637,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
         <p className="text-xs text-muted-foreground">添加专业知识、经验总结，让 AI 生成更贴合您的内容</p>
       </div>
 
-      <Card className="border-0 shadow-sm">
+      <Card className="border-0 shadow-sm content-card-hover">
         <CardContent className="p-4 space-y-3">
           {/* Quick Add */}
           <div className="space-y-1.5">
@@ -763,7 +763,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
       <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
         <Card
           onClick={() => setAiMode("builtin")}
-          className={`cursor-pointer transition-all border-2 ${
+          className={`cursor-pointer transition-all border-2 card-spotlight focus-ring-soft ${
             aiMode === "builtin"
               ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20 shadow-md"
               : "border-transparent hover:border-muted"
@@ -785,7 +785,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
 
         <Card
           onClick={() => setAiMode("custom")}
-          className={`cursor-pointer transition-all border-2 ${
+          className={`cursor-pointer transition-all border-2 card-spotlight focus-ring-soft ${
             aiMode === "custom"
               ? "border-amber-500 bg-amber-50 dark:bg-amber-950/20 shadow-md"
               : "border-transparent hover:border-muted"
@@ -815,7 +815,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm content-card-hover">
               <CardContent className="p-4 space-y-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">配置名称</Label>

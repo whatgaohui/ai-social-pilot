@@ -332,6 +332,7 @@ export function EnhancedFooter() {
           bg-background/80 dark:bg-background/60
           border-t border-transparent
           transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+          content-card-hover
         `}
         style={{
           borderTopColor: isWechat
@@ -344,12 +345,7 @@ export function EnhancedFooter() {
       >
         {/* Gradient top border overlay */}
         <div
-          className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-          style={{
-            background: isWechat
-              ? 'linear-gradient(90deg, transparent 5%, rgba(139, 92, 246, 0.3) 30%, rgba(168, 85, 247, 0.2) 50%, rgba(139, 92, 246, 0.3) 70%, transparent 95%)'
-              : 'linear-gradient(90deg, transparent 5%, rgba(244, 63, 94, 0.3) 30%, rgba(251, 113, 133, 0.2) 50%, rgba(244, 63, 94, 0.3) 70%, transparent 95%)',
-          }}
+          className="absolute top-0 left-0 right-0 h-px pointer-events-none divider-gradient"
           aria-hidden="true"
         />
 
@@ -476,7 +472,7 @@ export function EnhancedFooter() {
         <div className="flex items-center justify-between px-4 pb-2 pt-0.5">
           {/* Left: App name + version */}
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-semibold text-foreground/40">
+            <span className="text-[9px] font-semibold text-foreground/40 font-medium">
               {isWechat ? '朋友圈AI运营助手' : '小红书AI运营助手'}
             </span>
             <span className="version-badge">v2.1</span>
@@ -510,7 +506,8 @@ export function EnhancedFooter() {
             </span>
             <span className="hidden lg:flex items-center gap-1 text-[8px] text-muted-foreground/40" aria-hidden="true">
               <Keyboard className="h-2.5 w-2.5" />
-              ⌘K 快速搜索
+              <kbd className="inline-flex items-center justify-center min-w-[20px] h-5 rounded border bg-muted/50 px-1 font-mono text-[10px]">⌘K</kbd>
+              快速搜索
             </span>
           </div>
         </div>

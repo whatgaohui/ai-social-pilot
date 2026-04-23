@@ -9697,3 +9697,33 @@ textarea,
   pointer-events: none;
   background: linear-gradient(90deg, transparent, hsl(0 84% 60% / 0.5), transparent);
 }
+
+/* ─── Session 60: Scroll & Selection Enhancements ─────────────── */
+
+/* Smooth scrolling for the whole app */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Subtle gradient overlay for section headers */
+.section-header-gradient {
+  position: relative;
+}
+.section-header-gradient::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, hsl(var(--primary) / 0.2), hsl(var(--border) / 0.3), transparent);
+}
+
+/* Toast notification container animation */
+.toast-container-enter > * {
+  animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes toast-slide-in {
+  0% { opacity: 0; transform: translateX(100%) scale(0.95); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
