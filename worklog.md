@@ -11749,3 +11749,45 @@ Stage Summary:
 - 核心修复：@theme inline 中 32 个颜色变量全部添加 hsl() 包裹
 - 这是之前多轮修复黑边失败的根本原因 — 之前仅调了 opacity，但颜色值本身在 CSS 中是无效的
 - 建议：请在 Preview Panel 中验证所有组件边框是否已恢复正常颜色
+
+---
+Task ID: 70
+Agent: Main Developer
+Task: 修复全局黑边问题 - 第三次修复（真正的根因）
+
+Work Log:
+- 分析编译后的CSS输出发现：Tailwind v4的`@theme inline`会剥离`hsl()`包裹
+- 上轮修复`--color-border: hsl(var(--border))`被Tailwind v4编译后变回`--color-border: var(--border)`
+- `--border`仍是裸HSL值`240 5.9% 90%`（无效CSS颜色）
+- Tailwind v4自动生成`[class*="border-"] { border-color: oklch(from var(--color-border) l c h / .2); }`
+- `oklch(from 240 5.9% 90% l c h / .2)` 解析失败 → 回退黑色
+- 另外Tailwind preflight设置`border: 0 solid`使默认border-color为currentcolor（黑色）
+
+### 根因分析（三层）
+1. **`:root`中的CSS变量存储裸HSL值**（如`--border: 240 5.9% 90%`）→ 不是有效CSS颜色
+2. **Tailwind v4的`@theme inline`会剥离`hsl()`函数** → 无法在theme层包裹
+3. **Tailwind preflight的`border: 0 solid`** → 不带颜色class的`border`元素使用currentcolor=黑色
+
+### 修复方案
+1. **底层变量用`hsl()`包裹**：`:root`中`--border: hsl(240 5.9% 90%)` → Tailwind v4编译为`#e4e4e7`（有效CSS颜色）
+2. **`@theme inline`恢复`var()`引用**：`--color-border: var(--border)` → 正确解析
+3. **全局`border-color`覆盖**：`*, *::before, *::after { border-color: var(--border); }` → 覆盖preflight的currentcolor
+
+### 修改文件
+- `src/app/globals.css`:
+  - `:root`中35个变量全部添加`hsl()`包裹
+  - `.dark`中35个变量全部添加`hsl()`包裹
+  - `@theme inline`恢复为`var(--xxx)`引用
+  - 新增全局`border-color: var(--border)`规则
+
+### 验证结果
+- ✅ 编译后`--border: #e4e4e7`（浅灰色，有效CSS颜色）
+- ✅ 编译后`--color-border: var(--border)` = `#e4e4e7`
+- ✅ `oklch(from var(--color-border) l c h / .2)` 正确解析
+- ✅ next build 编译成功
+- ✅ eslint 零错误
+
+Stage Summary:
+- 这是黑边问题的**真正根因修复**
+- 核心发现：Tailwind v4会剥离`@theme inline`中的`hsl()`函数包裹，因此必须将`hsl()`放在底层`:root`变量定义中
+- 建议用户在Preview Panel中验证效果
