@@ -12,12 +12,14 @@ import { ReportGenerator } from "@/components/right-panel/report-generator";
 import { WeeklyReport } from "@/components/right-panel/weekly-report";
 import { WeeklyStatsCard } from "@/components/right-panel/weekly-stats-card";
 import { KpiOverviewCards } from "@/components/right-panel/kpi-overview-cards";
-import { TrendLineChart } from "@/components/charts/trend-line-chart";
 import { TrendLineChartPanel } from "@/components/right-panel/trend-line-chart-panel";
 import ContentCompetitionPanel from "@/components/right-panel/content-competition-panel";
 import { TrendComparisonChart } from "@/components/right-panel/trend-comparison-chart";
 import { CompetitorCalendarView } from "@/components/right-panel/competitor-calendar-view";
 import { CompetitorDashboard } from "@/components/right-panel/competitor-dashboard";
+import { CompetitorRadarEnhanced } from "@/components/right-panel/competitor-radar-enhanced";
+import { CompetitorTrendsEnhanced } from "@/components/right-panel/competitor-trends-enhanced";
+import { CompetitorCalendarComparison } from "@/components/right-panel/competitor-calendar-comparison";
 import { TrendTracker } from "@/components/right-panel/trend-tracker";
 import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity, Radar, Flame, Gauge, Layers, UserCheck, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -180,6 +182,9 @@ export function DataAndReports() {
               className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
               <div className="flex flex-col flex-1 min-h-0 space-y-3">
+                <CompetitorRadarEnhanced />
+                <CompetitorTrendsEnhanced />
+                <CompetitorCalendarComparison />
                 <TrendComparisonChart />
                 <CompetitorCalendarView />
                 <div className="flex flex-col flex-1 min-h-0">

@@ -26,13 +26,6 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -63,16 +56,22 @@ import {
   Bot,
   Settings,
   MoreVertical,
-  ChevronDown,
   X,
   Star,
   Flame,
   CalendarX,
   Zap,
+  BarChart3,
+  Lightbulb,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import type { AppNotification, NotificationType } from "@/types";
 
-// ─── Notification type config (as specified) ───────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Notification type config — 5 core types + legacy aliases
+// ═══════════════════════════════════════════════════════════════════
+
 interface NotifTypeConfig {
   icon: typeof Info;
   color: string;
@@ -80,16 +79,65 @@ interface NotifTypeConfig {
   borderLeftColor: string;
   dotColor: string;
   label: string;
+  emoji: string;
 }
 
 const TYPE_CONFIG: Record<string, NotifTypeConfig> = {
+  // ── 5 core types (task spec) ────────────────────────────────────
+  publish: {
+    icon: CalendarClock,
+    color: "text-violet-600 dark:text-violet-400",
+    bgColor: "bg-violet-100 dark:bg-violet-900/30",
+    borderLeftColor: "border-l-violet-500 dark:border-l-violet-400",
+    dotColor: "bg-violet-500",
+    label: "发布提醒",
+    emoji: "📅",
+  },
+  ai: {
+    icon: Sparkles,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    borderLeftColor: "border-l-emerald-500 dark:border-l-emerald-400",
+    dotColor: "bg-emerald-500",
+    label: "AI完成",
+    emoji: "🤖",
+  },
+  report: {
+    icon: BarChart3,
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-100 dark:bg-amber-900/30",
+    borderLeftColor: "border-l-amber-500 dark:border-l-amber-400",
+    dotColor: "bg-amber-500",
+    label: "数据报告",
+    emoji: "📊",
+  },
+  warning: {
+    icon: AlertTriangle,
+    color: "text-rose-600 dark:text-rose-400",
+    bgColor: "bg-rose-100 dark:bg-rose-900/30",
+    borderLeftColor: "border-l-rose-500 dark:border-l-rose-400",
+    dotColor: "bg-rose-500",
+    label: "异常警告",
+    emoji: "⚠️",
+  },
+  tip: {
+    icon: Lightbulb,
+    color: "text-sky-600 dark:text-sky-400",
+    bgColor: "bg-sky-100 dark:bg-sky-900/30",
+    borderLeftColor: "border-l-sky-500 dark:border-l-sky-400",
+    dotColor: "bg-sky-500",
+    label: "运营建议",
+    emoji: "💡",
+  },
+  // ── Legacy aliases (backward compatibility) ─────────────────────
   system: {
     icon: Info,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-100 dark:bg-blue-900/30",
-    borderLeftColor: "border-l-blue-500 dark:border-l-blue-400",
-    dotColor: "bg-blue-500",
+    color: "text-violet-600 dark:text-violet-400",
+    bgColor: "bg-violet-100 dark:bg-violet-900/30",
+    borderLeftColor: "border-l-violet-500 dark:border-l-violet-400",
+    dotColor: "bg-violet-500",
     label: "系统",
+    emoji: "📋",
   },
   reminder: {
     icon: Bell,
@@ -98,6 +146,7 @@ const TYPE_CONFIG: Record<string, NotifTypeConfig> = {
     borderLeftColor: "border-l-amber-500 dark:border-l-amber-400",
     dotColor: "bg-amber-500",
     label: "提醒",
+    emoji: "🔔",
   },
   achievement: {
     icon: Trophy,
@@ -106,6 +155,7 @@ const TYPE_CONFIG: Record<string, NotifTypeConfig> = {
     borderLeftColor: "border-l-emerald-500 dark:border-l-emerald-400",
     dotColor: "bg-emerald-500",
     label: "成就",
+    emoji: "🏆",
   },
   schedule: {
     icon: CalendarClock,
@@ -114,23 +164,16 @@ const TYPE_CONFIG: Record<string, NotifTypeConfig> = {
     borderLeftColor: "border-l-violet-500 dark:border-l-violet-400",
     dotColor: "bg-violet-500",
     label: "排期",
+    emoji: "📅",
   },
-  ai: {
-    icon: Sparkles,
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-100 dark:bg-purple-900/30",
-    borderLeftColor: "border-l-purple-500 dark:border-l-purple-400",
-    dotColor: "bg-purple-500",
-    label: "AI",
-  },
-  // Extended types (mapped to core)
   ai_task: {
     icon: Bot,
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-100 dark:bg-purple-900/30",
-    borderLeftColor: "border-l-purple-500 dark:border-l-purple-400",
-    dotColor: "bg-purple-500",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    borderLeftColor: "border-l-emerald-500 dark:border-l-emerald-400",
+    dotColor: "bg-emerald-500",
     label: "AI任务",
+    emoji: "🤖",
   },
   completion: {
     icon: CheckCircle,
@@ -139,22 +182,16 @@ const TYPE_CONFIG: Record<string, NotifTypeConfig> = {
     borderLeftColor: "border-l-emerald-500 dark:border-l-emerald-400",
     dotColor: "bg-emerald-500",
     label: "完成",
+    emoji: "✅",
   },
   marketing: {
-    icon: AlertTriangle,
+    icon: Flame,
     color: "text-amber-600 dark:text-amber-400",
     bgColor: "bg-amber-100 dark:bg-amber-900/30",
     borderLeftColor: "border-l-amber-500 dark:border-l-amber-400",
     dotColor: "bg-amber-500",
     label: "营销",
-  },
-  publish: {
-    icon: Clock,
-    color: "text-violet-600 dark:text-violet-400",
-    bgColor: "bg-violet-100 dark:bg-violet-900/30",
-    borderLeftColor: "border-l-violet-500 dark:border-l-violet-400",
-    dotColor: "bg-violet-500",
-    label: "发布",
+    emoji: "🔥",
   },
   interaction: {
     icon: Star,
@@ -163,14 +200,43 @@ const TYPE_CONFIG: Record<string, NotifTypeConfig> = {
     borderLeftColor: "border-l-rose-500 dark:border-l-rose-400",
     dotColor: "bg-rose-500",
     label: "互动",
+    emoji: "⭐",
   },
   error: {
     icon: X,
-    color: "text-red-600 dark:text-red-400",
-    bgColor: "bg-red-100 dark:bg-red-900/30",
-    borderLeftColor: "border-l-red-500 dark:border-l-red-400",
-    dotColor: "bg-red-500",
+    color: "text-rose-600 dark:text-rose-400",
+    bgColor: "bg-rose-100 dark:bg-rose-900/30",
+    borderLeftColor: "border-l-rose-500 dark:border-l-rose-400",
+    dotColor: "bg-rose-500",
     label: "错误",
+    emoji: "❌",
+  },
+  generate: {
+    icon: Sparkles,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    borderLeftColor: "border-l-emerald-500 dark:border-l-emerald-400",
+    dotColor: "bg-emerald-500",
+    label: "生成",
+    emoji: "🤖",
+  },
+  optimize: {
+    icon: Zap,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    borderLeftColor: "border-l-emerald-500 dark:border-l-emerald-400",
+    dotColor: "bg-emerald-500",
+    label: "优化",
+    emoji: "⚡",
+  },
+  polish: {
+    icon: Sparkles,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    borderLeftColor: "border-l-emerald-500 dark:border-l-emerald-400",
+    dotColor: "bg-emerald-500",
+    label: "润色",
+    emoji: "✨",
   },
 };
 
@@ -178,7 +244,10 @@ function getTypeConfig(type?: string): NotifTypeConfig {
   return TYPE_CONFIG[type || "system"] || TYPE_CONFIG.system;
 }
 
-// ─── DB notification type ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// DB notification type mapping
+// ═══════════════════════════════════════════════════════════════════
+
 interface DbNotification {
   id: string;
   type: string;
@@ -196,7 +265,7 @@ interface DbNotification {
 
 function mapDbToApp(dbNotif: DbNotification): AppNotification {
   let meta: Record<string, unknown> = {};
-  try { meta = JSON.parse(dbNotif.metadata || "{}"); } catch { /* ignore */ }
+  try { meta = JSON.parse(dbNotif.metadata || "{}"); } catch { /* noop */ }
   return {
     id: dbNotif.id,
     type: (dbNotif.type as NotificationType) || "system",
@@ -211,16 +280,16 @@ function mapDbToApp(dbNotif: DbNotification): AppNotification {
   };
 }
 
-// ─── Time grouping helper ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Time grouping & formatting
+// ═══════════════════════════════════════════════════════════════════
+
 type TimeGroup = "today" | "yesterday" | "earlier";
 
 function getTimeGroup(timestamp: number): TimeGroup {
   const now = new Date();
-  const date = new Date(timestamp);
-
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const yesterdayStart = todayStart - 86400000;
-
   if (timestamp >= todayStart) return "today";
   if (timestamp >= yesterdayStart) return "yesterday";
   return "earlier";
@@ -238,7 +307,6 @@ function formatRelativeTime(timestamp: number): string {
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-
   if (seconds < 60) return "刚刚";
   if (minutes < 60) return `${minutes}分钟前`;
   if (hours < 24) return `${hours}小时前`;
@@ -246,19 +314,25 @@ function formatRelativeTime(timestamp: number): string {
   return `${Math.floor(days / 7)}周前`;
 }
 
-// ─── Filter tabs ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Filter tabs — 5 core types + "all"
+// ═══════════════════════════════════════════════════════════════════
+
 const FILTER_TABS = [
   { value: "all", label: "全部" },
-  { value: "system", label: "系统" },
-  { value: "reminder", label: "提醒" },
-  { value: "achievement", label: "成就" },
-  { value: "schedule", label: "排期" },
-  { value: "ai", label: "AI" },
+  { value: "publish", label: "📅 发布" },
+  { value: "ai", label: "🤖 AI" },
+  { value: "report", label: "📊 报告" },
+  { value: "warning", label: "⚠️ 警告" },
+  { value: "tip", label: "💡 建议" },
 ] as const;
 
 type FilterValue = (typeof FILTER_TABS)[number]["value"];
 
-// ─── Animation variants ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Animation variants
+// ═══════════════════════════════════════════════════════════════════
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -284,7 +358,35 @@ const itemVariants = {
   },
 };
 
-// ─── Achievement card (special gradient design) ────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Notification Sound helper
+// ═══════════════════════════════════════════════════════════════════
+
+function playNotificationSound() {
+  if (typeof window === "undefined") return;
+  try {
+    const soundEnabled = localStorage.getItem("notif-sound") !== "false";
+    if (!soundEnabled) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch {
+    // audio not available
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Achievement card (special gradient design)
+// ═══════════════════════════════════════════════════════════════════
+
 function AchievementCard({
   notification,
   onRead,
@@ -347,7 +449,10 @@ function AchievementCard({
   );
 }
 
-// ─── Regular notification card ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Regular notification card
+// ═══════════════════════════════════════════════════════════════════
+
 function NotificationCard({
   notification,
   onRead,
@@ -395,7 +500,7 @@ function NotificationCard({
             {formatRelativeTime(notification.timestamp)}
           </span>
           <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal">
-            {config.label}
+            {config.emoji} {config.label}
           </Badge>
           {notification.actionLabel && (
             <Button
@@ -424,7 +529,10 @@ function NotificationCard({
   );
 }
 
-// ─── Time-grouped section ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Time-grouped section
+// ═══════════════════════════════════════════════════════════════════
+
 function TimeGroupSection({
   label,
   notifications,
@@ -476,7 +584,10 @@ function TimeGroupSection({
   );
 }
 
-// ─── Smart reminder card ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Smart reminder card
+// ═══════════════════════════════════════════════════════════════════
+
 function SmartReminderCard({
   icon: Icon,
   color,
@@ -510,7 +621,10 @@ function SmartReminderCard({
   );
 }
 
-// ─── Beautiful empty state ────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Empty state with illustration
+// ═══════════════════════════════════════════════════════════════════
+
 function EmptyState() {
   return (
     <motion.div
@@ -521,19 +635,19 @@ function EmptyState() {
     >
       <div className="relative mb-4">
         <motion.div
-          className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-900/30 dark:to-violet-900/30 flex items-center justify-center"
+          className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-100 to-rose-100 dark:from-violet-900/30 dark:to-rose-900/30 flex items-center justify-center"
           animate={{ y: [0, -4, 0] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          <BellOff className="h-8 w-8 text-blue-400 dark:text-blue-500" />
+          <BellOff className="h-8 w-8 text-violet-400 dark:text-violet-500" />
         </motion.div>
         <motion.div
-          className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-blue-300 dark:bg-blue-600"
+          className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-emerald-300 dark:bg-emerald-600"
           animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
         <motion.div
-          className="absolute -bottom-1 -left-1 h-2 w-2 rounded-full bg-emerald-300 dark:bg-emerald-600"
+          className="absolute -bottom-1 -left-1 h-2 w-2 rounded-full bg-amber-300 dark:bg-amber-600"
           animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }}
           transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
         />
@@ -546,13 +660,17 @@ function EmptyState() {
   );
 }
 
-// ─── Notification preferences settings ────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Notification preferences settings (with sound toggle)
+// ═══════════════════════════════════════════════════════════════════
+
 interface NotifPreferences {
-  system: boolean;
-  reminder: boolean;
-  achievement: boolean;
-  schedule: boolean;
+  publish: boolean;
   ai: boolean;
+  report: boolean;
+  warning: boolean;
+  tip: boolean;
+  soundEnabled: boolean;
   dndEnabled: boolean;
   dndStart: string;
   dndEnd: string;
@@ -560,11 +678,12 @@ interface NotifPreferences {
 }
 
 const DEFAULT_PREFERENCES: NotifPreferences = {
-  system: true,
-  reminder: true,
-  achievement: true,
-  schedule: true,
+  publish: true,
   ai: true,
+  report: true,
+  warning: true,
+  tip: true,
+  soundEnabled: true,
   dndEnabled: false,
   dndStart: "22:00",
   dndEnd: "08:00",
@@ -574,9 +693,9 @@ const DEFAULT_PREFERENCES: NotifPreferences = {
 function loadPreferences(): NotifPreferences {
   if (typeof window === "undefined") return DEFAULT_PREFERENCES;
   try {
-    const stored = localStorage.getItem("notif-preferences");
+    const stored = localStorage.getItem("notif-preferences-v2");
     if (stored) return { ...DEFAULT_PREFERENCES, ...JSON.parse(stored) };
-  } catch { /* ignore */ }
+  } catch { /* noop */ }
   return DEFAULT_PREFERENCES;
 }
 
@@ -587,7 +706,7 @@ function NotificationPreferencesPanel() {
     <K extends keyof NotifPreferences>(key: K, value: NotifPreferences[K]) => {
       setPrefs((prev) => {
         const next = { ...prev, [key]: value };
-        try { localStorage.setItem("notif-preferences", JSON.stringify(next)); } catch { /* ignore */ }
+        try { localStorage.setItem("notif-preferences-v2", JSON.stringify(next)); } catch { /* noop */ }
         return next;
       });
     },
@@ -595,10 +714,11 @@ function NotificationPreferencesPanel() {
   );
 
   const typeToggles = [
-    { key: "system" as const, label: "系统通知", desc: "版本更新、系统公告", icon: Info, color: "text-blue-500" },
-    { key: "reminder" as const, label: "排期提醒", desc: "内容发布、到期提醒", icon: Bell, color: "text-amber-500" },
-    { key: "ai" as const, label: "AI完成通知", desc: "AI生成、优化任务完成", icon: Sparkles, color: "text-purple-500" },
-    { key: "achievement" as const, label: "成就通知", desc: "里程碑、成就解锁", icon: Trophy, color: "text-emerald-500" },
+    { key: "publish" as const, label: "发布提醒", desc: "排期发布、到期提醒", icon: CalendarClock, color: "text-violet-500", emoji: "📅" },
+    { key: "ai" as const, label: "AI完成通知", desc: "AI生成、优化任务完成", icon: Sparkles, color: "text-emerald-500", emoji: "🤖" },
+    { key: "report" as const, label: "数据报告", desc: "周报、日报数据就绪", icon: BarChart3, color: "text-amber-500", emoji: "📊" },
+    { key: "warning" as const, label: "异常警告", desc: "低互动率、错过排期", icon: AlertTriangle, color: "text-rose-500", emoji: "⚠️" },
+    { key: "tip" as const, label: "运营建议", desc: "AI运营策略建议", icon: Lightbulb, color: "text-sky-500", emoji: "💡" },
   ];
 
   const previewModes = [
@@ -609,6 +729,32 @@ function NotificationPreferencesPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Sound toggle */}
+      <div className="flex items-center justify-between p-3 rounded-xl bg-violet-50 dark:bg-violet-900/10 border border-violet-200/50 dark:border-violet-800/30">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+            {prefs.soundEnabled ? (
+              <Volume2 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            ) : (
+              <VolumeX className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-medium">通知提示音</p>
+            <p className="text-[10px] text-muted-foreground">收到新通知时播放声音</p>
+          </div>
+        </div>
+        <Switch
+          checked={prefs.soundEnabled}
+          onCheckedChange={(v) => {
+            updatePref("soundEnabled", v);
+            try { localStorage.setItem("notif-sound", String(v)); } catch { /* noop */ }
+          }}
+        />
+      </div>
+
+      <Separator />
+
       {/* Type toggles */}
       <div>
         <h3 className="text-sm font-semibold mb-3">通知类型</h3>
@@ -622,7 +768,7 @@ function NotificationPreferencesPanel() {
                     <Icon className={`h-4 w-4 ${toggle.color}`} />
                   </div>
                   <div>
-                    <p className="text-xs font-medium">{toggle.label}</p>
+                    <p className="text-xs font-medium">{toggle.emoji} {toggle.label}</p>
                     <p className="text-[10px] text-muted-foreground">{toggle.desc}</p>
                   </div>
                 </div>
@@ -705,7 +851,12 @@ function NotificationPreferencesPanel() {
   );
 }
 
-// ─── Notification Center Panel (shared content) ───────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Notification Center Panel (shared content)
+// ═══════════════════════════════════════════════════════════════════
+
+const MAX_NOTIFICATIONS = 50;
+
 function NotificationCenterPanel({
   onAction,
   showPreferences,
@@ -729,12 +880,12 @@ function NotificationCenterPanel({
   const initialized = useRef(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch from API
+  // Fetch from API on mount
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
 
-    (async () => {
+    void (async () => {
       try {
         const res = await fetch("/api/notifications?limit=50");
         if (res.ok) {
@@ -748,7 +899,7 @@ function NotificationCenterPanel({
         // fallback to store
       }
 
-      // Fallback: generate demo if store empty
+      // Fallback: hydrate from localStorage
       const current = useAppStore.getState().notifications;
       if (current.length === 0) {
         try {
@@ -756,10 +907,10 @@ function NotificationCenterPanel({
           if (stored) {
             const parsed = JSON.parse(stored) as AppNotification[];
             if (Array.isArray(parsed) && parsed.length > 0) {
-              useAppStore.setState({ notifications: parsed });
+              useAppStore.setState({ notifications: parsed.slice(0, MAX_NOTIFICATIONS) });
             }
           }
-        } catch { /* ignore */ }
+        } catch { /* noop */ }
       }
       setLoading(false);
     })();
@@ -778,7 +929,7 @@ function NotificationCenterPanel({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids: [id] }),
         });
-      } catch { /* ignore */ }
+      } catch { /* noop */ }
     },
     [markNotificationRead]
   );
@@ -793,7 +944,7 @@ function NotificationCenterPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ markAllRead: true }),
       });
-    } catch { /* ignore */ }
+    } catch { /* noop */ }
   }, [markAllNotificationsRead]);
 
   // Dismiss single notification
@@ -805,7 +956,7 @@ function NotificationCenterPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: [id] }),
       });
-    } catch { /* ignore */ }
+    } catch { /* noop */ }
   }, []);
 
   // Archive all read
@@ -817,14 +968,14 @@ function NotificationCenterPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ archiveAllRead: true }),
       });
-    } catch { /* ignore */ }
+    } catch { /* noop */ }
   }, []);
 
-  // Merge notifications
+  // Merge notifications from store + API, cap at MAX
   const mergedNotifications = useMemo(() => {
     const storeIds = new Set(notifications.map((n) => n.id));
     const apiFiltered = apiNotifications.filter((n) => !storeIds.has(n.id));
-    return [...apiFiltered, ...notifications];
+    return [...apiFiltered, ...notifications].slice(0, MAX_NOTIFICATIONS);
   }, [apiNotifications, notifications]);
 
   const unreadCount = useMemo(
@@ -837,10 +988,9 @@ function NotificationCenterPanel({
     [mergedNotifications]
   );
 
-  // Filter by type
+  // Filter by type (new 5-core types + legacy mapping)
   const filteredNotifications = useMemo(() => {
     if (activeFilter === "all") return mergedNotifications;
-    // Map filter to notification types
     if (activeFilter === "ai") {
       return mergedNotifications.filter(
         (n) =>
@@ -850,6 +1000,16 @@ function NotificationCenterPanel({
           n.type === "optimize" ||
           n.type === "polish" ||
           n.type === "completion"
+      );
+    }
+    if (activeFilter === "publish") {
+      return mergedNotifications.filter(
+        (n) => n.type === "publish" || n.type === "schedule" || n.type === "reminder"
+      );
+    }
+    if (activeFilter === "warning") {
+      return mergedNotifications.filter(
+        (n) => n.type === "warning" || n.type === "error" || n.type === "interaction"
       );
     }
     return mergedNotifications.filter((n) => n.type === activeFilter);
@@ -869,18 +1029,11 @@ function NotificationCenterPanel({
     return groups;
   }, [filteredNotifications]);
 
-  // Filter counts
+  // Filter counts for tabs
   const filterCounts = useMemo(() => {
     const all = mergedNotifications.length;
-    const system = mergedNotifications.filter((n) => n.type === "system").length;
-    const reminder = mergedNotifications.filter(
-      (n) => n.type === "reminder" || n.type === "publish" || n.type === "marketing"
-    ).length;
-    const achievement = mergedNotifications.filter(
-      (n) => n.type === "achievement" || n.type === "completion"
-    ).length;
-    const schedule = mergedNotifications.filter(
-      (n) => n.type === "schedule" || n.type === "calendar"
+    const publish = mergedNotifications.filter(
+      (n) => n.type === "publish" || n.type === "schedule" || n.type === "reminder"
     ).length;
     const ai = mergedNotifications.filter(
       (n) =>
@@ -888,9 +1041,19 @@ function NotificationCenterPanel({
         n.type === "ai_task" ||
         n.type === "generate" ||
         n.type === "optimize" ||
-        n.type === "polish"
+        n.type === "polish" ||
+        n.type === "completion"
     ).length;
-    return { all, system, reminder, achievement, schedule, ai };
+    const report = mergedNotifications.filter(
+      (n) => n.type === "report" || n.type === "marketing"
+    ).length;
+    const warning = mergedNotifications.filter(
+      (n) => n.type === "warning" || n.type === "error" || n.type === "interaction"
+    ).length;
+    const tip = mergedNotifications.filter(
+      (n) => n.type === "tip" || n.type === "system"
+    ).length;
+    return { all, publish, ai, report, warning, tip };
   }, [mergedNotifications]);
 
   // Smart reminders from content
@@ -906,7 +1069,6 @@ function NotificationCenterPanel({
       action: () => void;
     }[] = [];
 
-    // 1. Content expiring soon (scheduled for today but not published)
     const todayScheduled = posts.filter(
       (p) => p.scheduledDate === today && p.status !== "published"
     );
@@ -924,7 +1086,6 @@ function NotificationCenterPanel({
       });
     }
 
-    // 2. Interaction milestone (likes > 100)
     const highEngagement = posts.filter(
       (p) => p.likes >= 100 || p.comments >= 50 || p.shares >= 20
     );
@@ -946,7 +1107,6 @@ function NotificationCenterPanel({
       });
     }
 
-    // 3. Content calendar gap (3+ days without content)
     const scheduledDates = posts
       .map((p) => p.scheduledDate)
       .filter(Boolean)
@@ -973,13 +1133,12 @@ function NotificationCenterPanel({
       }
     }
 
-    // 4. Low AI score content
     const lowScore = posts.filter((p) => p.aiScore > 0 && p.aiScore < 50);
     if (lowScore.length > 0) {
       reminders.push({
         icon: Zap,
-        color: "text-purple-600 dark:text-purple-400",
-        bgColor: "bg-purple-100 dark:bg-purple-900/30",
+        color: "text-sky-600 dark:text-sky-400",
+        bgColor: "bg-sky-100 dark:bg-sky-900/30",
         label: "AI优化建议",
         description: `${lowScore.length} 篇内容AI评分低于50`,
         action: () => {
@@ -1041,10 +1200,10 @@ function NotificationCenterPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
         <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-blue-500" />
+          <Bell className="h-4 w-4 text-violet-500" />
           <span className="text-sm font-semibold">消息中心</span>
           {unreadCount > 0 && (
-            <Badge className="h-5 px-1.5 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-0">
+            <Badge className="h-5 px-1.5 text-[10px] bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 border-0">
               {unreadCount} 未读
             </Badge>
           )}
@@ -1106,7 +1265,7 @@ function NotificationCenterPanel({
         </div>
       </div>
 
-      {/* Filter tabs */}
+      {/* Filter tabs — 5 core types */}
       <div className="px-3 pt-3 pb-1">
         <div className="flex gap-1 overflow-x-auto scrollbar-none pb-1">
           {FILTER_TABS.map((tab) => {
@@ -1125,7 +1284,7 @@ function NotificationCenterPanel({
               >
                 {isActive && (
                   <motion.div
-                    layoutId="msg-center-filter"
+                    layoutId="msg-center-filter-v2"
                     className="absolute inset-0 rounded-full bg-foreground"
                     transition={{
                       type: "spring",
@@ -1191,7 +1350,7 @@ function NotificationCenterPanel({
               )}
 
               {/* Time-grouped notifications */}
-              {(TIME_GROUP_LABELS as unknown as Array<TimeGroup>)
+              {(Object.keys(TIME_GROUP_LABELS) as TimeGroup[])
                 .filter((group) => groupedNotifications[group].length > 0)
                 .map((group) => (
                   <TimeGroupSection
@@ -1230,7 +1389,10 @@ function NotificationCenterPanel({
   );
 }
 
-// ─── NotificationBadge (exported for page.tsx) ────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// NotificationBadge (exported for page.tsx) — with pulsing animation
+// ═══════════════════════════════════════════════════════════════════
+
 export function NotificationBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
@@ -1244,12 +1406,12 @@ export function NotificationBadge({ count }: { count: number }) {
         damping: 15,
         duration: 0.4,
       }}
-      className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white leading-none shadow-sm"
+      className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white leading-none shadow-sm"
     >
       {count > 9 ? "9+" : count}
-      {/* Pulse ring animation when there are new notifications */}
+      {/* Pulse ring animation */}
       <motion.span
-        className="absolute inset-0 rounded-full bg-red-500"
+        className="absolute inset-0 rounded-full bg-rose-500"
         animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
       />
@@ -1257,12 +1419,18 @@ export function NotificationBadge({ count }: { count: number }) {
   );
 }
 
-// ─── Hydration-safe mounted check ─────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Hydration-safe mounted check
+// ═══════════════════════════════════════════════════════════════════
+
 const subscribe = () => () => {};
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-// ─── Main exported component: NotificationBell ────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// Main exported component: NotificationBell
+// ═══════════════════════════════════════════════════════════════════
+
 export function NotificationBell() {
   const { notifications } = useAppStore();
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -1270,7 +1438,7 @@ export function NotificationBell() {
   const [showPreferences, setShowPreferences] = useState(false);
   const isMobile = useIsMobile();
 
-  // Hydrate from localStorage
+  // Hydrate from localStorage on mount
   const hydrated = useRef(false);
   useEffect(() => {
     if (hydrated.current) return;
@@ -1282,11 +1450,11 @@ export function NotificationBell() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const current = useAppStore.getState().notifications;
           if (current.length === 0) {
-            useAppStore.setState({ notifications: parsed });
+            useAppStore.setState({ notifications: parsed.slice(0, MAX_NOTIFICATIONS) });
           }
         }
       }
-    } catch { /* ignore */ }
+    } catch { /* noop */ }
   }, []);
 
   const unreadCount = useMemo(
@@ -1387,3 +1555,5 @@ export function NotificationBell() {
     </TooltipProvider>
   );
 }
+
+export { playNotificationSound };

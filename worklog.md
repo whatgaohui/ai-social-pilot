@@ -8355,3 +8355,52 @@ Work Log:
 8. 虚拟滚动优化（大列表场景）
 9. 移动端真机测试
 10. 键盘快捷键全覆盖（目前26个→目标40+）
+---
+Task ID: 41-fix
+Agent: Main Orchestrator
+Task: 修复预览问题 - ESLint错误导致编译失败
+
+Work Log:
+- 发现 Next.js dev server 无法稳定运行（沙箱内存限制，频繁OOM）
+- 检查 ESLint 发现第41轮Track D（通知+备份+设置）引入了 6 个 React 19 严格模式错误
+- 修复 backup-restore-panel.tsx：
+  - 移除 render 阶段 ref.current 访问（4个 refs 错误）
+  - 用 useEffect + AbortController 替代直接 fetch 调用
+  - 移除未使用的 fetchInitRef
+- 修复 system-settings-page.tsx：
+  - 移除 useEffect 中直接调用 setSettings（使用 loadSettings 懒初始化器替代）
+  - 移除 useEffect 中直接调用 fetchStats（内联 fetch + AbortController）
+  - 移除无效的 eslint-disable 注释
+- 添加 CORS headers 到 next.config.ts 解决预览 iframe 跨域问题
+- 重新构建项目（clean build, 8.0s编译, 69个静态页面）
+- 使用 standalone 生产模式启动服务器（更省内存）
+- 验证预览：Homepage 200, Caddy 200, 页面标题正确
+
+### Bug修复
+1. **backup-restore-panel.tsx ref访问错误**（4个错误）：
+   - 问题：render阶段直接访问 ref.current 违反 React 19 规则
+   - 修复：移除 ref，改用 useEffect + AbortController 初始化
+
+2. **system-settings-page.tsx setState in effect**（2个错误）：
+   - 问题：useEffect 中同步调用 setState 导致级联渲染
+   - 修复：loadSettings 懒初始化 + 内联异步 fetch
+
+### QA验证结果
+- ✅ ESLint 零错误、零警告
+- ✅ Next.js clean build（8.0s编译）
+- ✅ 69个静态页面成功生成
+- ✅ Homepage HTTP 200
+- ✅ Caddy gateway HTTP 200
+- ✅ 预览面板可正常访问
+
+Stage Summary:
+- 项目状态：稳定可运行，预览功能已恢复
+- 预览方式：standalone 生产模式 + Caddy 代理（端口81）
+- 注意：dev server 因内存限制不稳定，使用 production standalone 模式更可靠
+- 建议下一阶段优先事项：
+  1. 继续第41轮Track A/B/C开发（Track D已完成但引入了lint错误已修复）
+  2. 确保所有 Track 41 组件正确集成到 page.tsx
+  3. 竞品雷达、趋势对比、日历对比组件集成验证
+  4. 内容管线看板、AI批量操作、写作教练集成验证
+  5. 运营节奏引擎、实时指标、发布工作流集成验证
+

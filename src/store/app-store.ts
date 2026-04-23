@@ -167,7 +167,7 @@ export const useAppStore = create<AppState>((set) => ({
       timestamp: Date.now(),
       read: false,
     };
-    const updated = [newNotification, ...state.notifications].slice(0, 20);
+    const updated = [newNotification, ...state.notifications].slice(0, 50);
     // Persist to localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('app-notifications', JSON.stringify(updated));
