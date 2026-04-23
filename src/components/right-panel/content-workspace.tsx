@@ -78,6 +78,11 @@ import { QuickActionsToolbar } from "@/components/right-panel/quick-actions-tool
 import { AIBatchOperations } from "@/components/right-panel/ai-batch-operations";
 import { ContentHealthDashboard } from "@/components/right-panel/content-health-dashboard";
 import { PublishingQueue } from "@/components/right-panel/publishing-queue";
+import { CrossPlatformPublish } from "@/components/right-panel/cross-platform-publish";
+import { CreativeAssetsLibrary } from "@/components/right-panel/creative-assets-library";
+import { RealtimeMetrics } from "@/components/right-panel/realtime-metrics";
+import { InspirationWaterfall } from "@/components/right-panel/inspiration-waterfall";
+import { PublishToCalendar } from "@/components/right-panel/publish-to-calendar";
 
 // ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
 
@@ -274,6 +279,8 @@ const TOOL_TABS = [
   { value: "writing", icon: Sparkles, label: "写作助手", color: "text-emerald-500" },
   { value: "history", icon: History, label: "版本记录", color: "text-violet-500" },
   { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500" },
+  { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500" },
+  { value: "metrics", icon: Activity, label: "实时指标", color: "text-teal-500" },
 ] as const;
 
 type ToolTab = (typeof TOOL_TABS)[number]["value"];
@@ -791,6 +798,7 @@ export function ContentWorkspace() {
                     <SchedulingAssistantEnhanced />
                     <Separator className="my-1" />
                     <AISchedulingAssistant />
+                    <PublishToCalendar isXHS={isXHS} mode="inline" />
                   </motion.div>
                 )}
 
@@ -810,6 +818,7 @@ export function ContentWorkspace() {
                       post={selectedPost}
                       onPlatformConnect={handlePlatformConnect}
                     />
+                    <CrossPlatformPublish />
                     {isXHS && (
                       <>
                         <HashtagRecommender
@@ -926,6 +935,33 @@ export function ContentWorkspace() {
                     exit="exit"
                   >
                     <ViralInspiration />
+                    <InspirationWaterfall />
+                  </motion.div>
+                )}
+
+                {/* ── Assets Tab ──────────────────────────────────────── */}
+                {toolTab === "assets" && (
+                  <motion.div
+                    key="assets-panel"
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <CreativeAssetsLibrary />
+                  </motion.div>
+                )}
+
+                {/* ── Realtime Metrics Tab ───────────────────────────── */}
+                {toolTab === "metrics" && (
+                  <motion.div
+                    key="metrics-panel"
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <RealtimeMetrics />
                   </motion.div>
                 )}
               </div>

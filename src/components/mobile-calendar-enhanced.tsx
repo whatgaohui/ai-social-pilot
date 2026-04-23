@@ -15,10 +15,9 @@ import {
   isSameMonth,
   addMonths,
   subMonths,
-  parseISO,
   isSameDay,
-  isValid,
 } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { zhCN } from "date-fns/locale";
 import {
   ChevronLeft,
@@ -352,7 +351,7 @@ export function MobileCalendarEnhanced({ className = "" }: MobileCalendarEnhance
       <BottomSheet
         isOpen={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        title={sheetDate && isValid(parseISO(sheetDate)) ? format(parseISO(sheetDate), "M月d日 EEEE", { locale: zhCN }) : (sheetDate || "")}
+        title={safeFormat(sheetDate, "M月d日 EEEE", sheetDate || "", { locale: zhCN })}
         initialSnap={0}
         snapPoints={[0.4, 0.75]}
       >

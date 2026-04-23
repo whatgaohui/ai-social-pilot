@@ -58,11 +58,10 @@ import {
   isToday,
   addWeeks,
   subWeeks,
-  parseISO,
   startOfDay,
   differenceInCalendarDays,
-  isValid,
 } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { zhCN } from "date-fns/locale";
 import {
   useCalendarDragSort,
@@ -204,7 +203,7 @@ function QuickCreateDialog({
       };
       addContentPost(newPost);
       toast.success("已添加新内容", {
-        description: `${defaultDate && isValid(parseISO(defaultDate)) ? format(parseISO(defaultDate), "M月d日") : defaultDate} - ${topic.trim()}`,
+        description: `${safeFormat(defaultDate, "M月d日", defaultDate)} - ${topic.trim()}`,
       });
       onOpenChange(false);
     } catch {
@@ -224,9 +223,7 @@ function QuickCreateDialog({
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             排期：
-            {defaultDate && isValid(parseISO(defaultDate))
-              ? format(parseISO(defaultDate), "yyyy年M月d日 EEEE", { locale: zhCN })
-              : "请选择日期"}
+            {safeFormat(defaultDate, "yyyy年M月d日 EEEE", "请选择日期", { locale: zhCN })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
@@ -435,7 +432,7 @@ function WeekPostCard({
           <TooltipContent side="bottom" className="max-w-[220px]">
             <p className="text-xs font-medium">{post.topic}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {(() => { try { return format(parseISO(post.scheduledDate), "M月d日 EEEE", { locale: zhCN }); } catch { return post.scheduledDate || "日期无效"; } })()}
+              {safeFormat(post.scheduledDate, "M月d日 EEEE", post.scheduledDate || "日期无效", { locale: zhCN })}
               {" · "}
               {getPlatformLabel(post)}
             </p>

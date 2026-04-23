@@ -8,6 +8,9 @@ import {
   FileText,
   PenLine,
   TrendingUp,
+  CalendarPlus,
+  Wand2,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/app-store";
@@ -64,36 +67,46 @@ function FloatingOrbs() {
   );
 }
 
-// ─── Animated Illustration ───────────────────────────────────────────────────
+// ─── Animated Illustration (larger, centered, with pulse) ─────────────────────
 
 function AnimatedIllustration() {
   return (
-    <div className="relative flex items-center justify-center w-full mb-6">
-      {/* Shimmer overlay behind the illustration */}
+    <div className="relative flex items-center justify-center w-full mb-8">
+      {/* Subtle pulsing glow ring behind the illustration */}
       <motion.div
-        className="absolute inset-0 rounded-3xl animate-shimmer opacity-50"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.5 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
+        className="absolute h-40 w-40 sm:h-48 sm:w-48 rounded-full bg-gradient-to-br from-violet-400/10 to-emerald-400/8"
+        animate={{
+          scale: [1, 1.15, 1],
+          opacity: [0.3, 0.6, 0.3],
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute h-32 w-32 sm:h-40 sm:w-40 rounded-full bg-gradient-to-br from-violet-400/8 to-rose-400/5"
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.2, 0.4, 0.2],
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
       />
 
       {/* Main document icon */}
       <motion.div
-        className="relative float-subtle"
-        animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        className="relative"
+        animate={{ y: [0, -8, 0] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
       >
         {/* Glow behind the icon */}
         <motion.div
-          className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-400/30 to-emerald-400/20 blur-xl"
+          className="absolute inset-0 rounded-3xl bg-gradient-to-br from-violet-400/30 to-emerald-400/20 blur-xl"
           animate={{ opacity: [0.4, 0.7, 0.4] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
 
         {/* Card shape */}
-        <div className="relative h-24 w-20 sm:h-28 sm:w-24 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25 flex items-center justify-center">
+        <div className="relative h-28 w-24 sm:h-32 sm:w-28 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25 flex items-center justify-center">
           {/* Decorative lines on the card */}
-          <div className="absolute top-4 left-4 right-4 space-y-1.5">
+          <div className="absolute top-5 left-5 right-5 space-y-2">
             <motion.div
               className="h-1.5 w-full rounded-full bg-white/30"
               initial={{ width: "100%" }}
@@ -120,30 +133,41 @@ function AnimatedIllustration() {
             animate={{ rotate: [0, 180, 360], scale: [1, 1.2, 1] }}
             transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
           >
-            <Sparkles className="h-5 w-5 text-amber-300" />
+            <Sparkles className="h-6 w-6 text-amber-300" />
           </motion.div>
         </div>
       </motion.div>
 
       {/* Floating pen */}
       <motion.div
-        className="absolute -right-2 top-0"
-        animate={{ y: [0, -8, 0], rotate: [-15, 5, -15] }}
+        className="absolute -right-4 top-0"
+        animate={{ y: [0, -10, 0], rotate: [-15, 5, -15] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
       >
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25 flex items-center justify-center">
-          <PenLine className="h-4.5 w-4.5 text-white" />
+        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25 flex items-center justify-center">
+          <PenLine className="h-5 w-5 text-white" />
         </div>
       </motion.div>
 
       {/* Floating chart */}
       <motion.div
-        className="absolute -left-2 bottom-0"
-        animate={{ y: [0, 6, 0], rotate: [10, -5, 10] }}
+        className="absolute -left-4 bottom-0"
+        animate={{ y: [0, 8, 0], rotate: [10, -5, 10] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
       >
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25 flex items-center justify-center">
-          <TrendingUp className="h-4.5 w-4.5 text-white" />
+        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25 flex items-center justify-center">
+          <TrendingUp className="h-5 w-5 text-white" />
+        </div>
+      </motion.div>
+
+      {/* Floating book */}
+      <motion.div
+        className="absolute -left-1 top-2"
+        animate={{ y: [0, -6, 0], rotate: [-5, 8, -5] }}
+        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+      >
+        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 shadow-lg shadow-rose-500/25 flex items-center justify-center">
+          <BookOpen className="h-4 w-4 text-white" />
         </div>
       </motion.div>
     </div>
@@ -204,6 +228,25 @@ function QuickCard({
   );
 }
 
+// ─── Suggestion Chip ──────────────────────────────────────────────────────────
+
+function SuggestionChip({ icon: Icon, label, delay }: { icon: typeof Sparkles; label: string; delay: number }) {
+  return (
+    <motion.button
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.35, ease: "easeOut" }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={() => toast.info("请在左侧日历中选择日期开始创作")}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 hover:bg-muted border border-border/40 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+    >
+      <Icon className="h-3 w-3" />
+      {label}
+    </motion.button>
+  );
+}
+
 // ─── Main Empty State Component ──────────────────────────────────────────────
 
 export function WorkspaceEmptyState() {
@@ -247,6 +290,12 @@ export function WorkspaceEmptyState() {
     },
   ];
 
+  const suggestionChips = [
+    { icon: CalendarPlus, label: "创建内容", delay: 0.6 },
+    { icon: Wand2, label: "AI 助手", delay: 0.7 },
+    { icon: FileText, label: "导入草稿", delay: 0.8 },
+  ];
+
   return (
     <div className="relative flex flex-col items-center justify-center min-h-full px-6 py-12 overflow-hidden bg-gradient-animated bg-dots-pattern">
       {/* Floating background orbs & shapes */}
@@ -254,7 +303,7 @@ export function WorkspaceEmptyState() {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center w-full max-w-[320px]">
-        {/* Animated illustration with shimmer */}
+        {/* Animated illustration with pulse glow */}
         <AnimatedIllustration />
 
         {/* Title */}
@@ -262,9 +311,9 @@ export function WorkspaceEmptyState() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.4, ease: "easeOut" }}
-          className="text-center mb-1.5"
+          className="text-center mb-2"
         >
-          <h3 className="text-base font-bold animate-gradient-text">
+          <h3 className="text-lg font-bold animate-gradient-text leading-snug">
             选择内容开始创作
           </h3>
         </motion.div>
@@ -274,12 +323,24 @@ export function WorkspaceEmptyState() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
-          className="text-xs text-muted-foreground text-center mb-8 leading-relaxed"
+          className="text-sm text-muted-foreground text-center mb-6 leading-relaxed"
         >
           在左侧日历中选择日期，或创建新内容
           <br />
-          开始你的内容运营之旅
+          开启你的内容运营之旅
         </motion.p>
+
+        {/* Quick-action suggestion chips */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.55, duration: 0.3 }}
+          className="flex flex-wrap items-center justify-center gap-2 mb-8"
+        >
+          {suggestionChips.map((chip) => (
+            <SuggestionChip key={chip.label} {...chip} />
+          ))}
+        </motion.div>
 
         {/* Quick action cards */}
         <div className="w-full space-y-2.5">

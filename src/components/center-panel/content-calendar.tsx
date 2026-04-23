@@ -84,14 +84,13 @@ import {
   isToday,
   addMonths,
   subMonths,
-  parseISO,
   startOfDay,
   startOfWeek,
   endOfWeek,
   addWeeks,
   subWeeks,
-  isValid,
 } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { zhCN } from "date-fns/locale";
 import { CalendarWeekView } from "@/components/center-panel/calendar-week-view";
 import { CalendarGanttView } from "@/components/center-panel/calendar-gantt-view";
@@ -252,7 +251,7 @@ function QuickCreateDialog({
       };
       addContentPost(newPost);
       toast.success("已添加新内容", {
-        description: `${defaultDate && isValid(parseISO(defaultDate)) ? format(parseISO(defaultDate), "M月d日") : defaultDate} - ${topic.trim()}`,
+        description: `${safeFormat(defaultDate, "M月d日", defaultDate)} - ${topic.trim()}`,
       });
       onOpenChange(false);
     } catch {
@@ -272,9 +271,7 @@ function QuickCreateDialog({
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             排期：
-            {defaultDate && isValid(parseISO(defaultDate))
-              ? format(parseISO(defaultDate), "yyyy年M月d日 EEEE", { locale: zhCN })
-              : "请选择日期"}
+            {safeFormat(defaultDate, "yyyy年M月d日 EEEE", "请选择日期", { locale: zhCN })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
@@ -467,14 +464,9 @@ function ListItem({
   onClick,
   onContextMenuAction,
 }: ListItemProps) {
-  let formattedDate = "";
-  try {
-    formattedDate = format(parseISO(post.scheduledDate), "M/d EEEE", {
-      locale: zhCN,
-    });
-  } catch {
-    formattedDate = post.scheduledDate;
-  }
+  let formattedDate = safeFormat(post.scheduledDate, "M/d EEEE", post.scheduledDate, {
+    locale: zhCN,
+  });
 
   const platformColor =
     post.platform === "xiaohongshu"
@@ -830,7 +822,7 @@ export function ContentCalendar() {
       const { updateContentPost } = useAppStore.getState();
       updateContentPost(movePost.id, { scheduledDate: moveDate });
       toast.success("已移动", {
-        description: format(parseISO(moveDate), "M月d日"),
+        description: safeFormat(moveDate, "M月d日"),
       });
       setMovePost(null);
     } catch {

@@ -71,7 +71,6 @@ import {
   isAfter,
   addMonths,
   subMonths,
-  parseISO,
   startOfDay,
   startOfWeek,
   endOfWeek,
@@ -79,8 +78,8 @@ import {
   subWeeks,
   isSameDay,
   addDays,
-  isValid,
 } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { zhCN } from "date-fns/locale";
 import {
   useCalendarDragSort,
@@ -215,7 +214,7 @@ function QuickCreateDialog({ open, onOpenChange, defaultDate }: QuickCreateDialo
         updatedAt: new Date().toISOString(),
       };
       addContentPost(newPost);
-      toast.success("已添加新内容", { description: `${defaultDate && isValid(parseISO(defaultDate)) ? format(parseISO(defaultDate), "M月d日") : defaultDate} - ${topic.trim()}` });
+      toast.success("已添加新内容", { description: `${safeFormat(defaultDate, "M月d日", defaultDate)} - ${topic.trim()}` });
       onOpenChange(false);
     } catch {
       toast.error("创建失败");
@@ -233,7 +232,7 @@ function QuickCreateDialog({ open, onOpenChange, defaultDate }: QuickCreateDialo
             快速创建内容
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            排期：{defaultDate && isValid(parseISO(defaultDate)) ? format(parseISO(defaultDate), "yyyy年M月d日 EEEE", { locale: zhCN }) : "请选择日期"}
+            排期：{safeFormat(defaultDate, "yyyy年M月d日 EEEE", "请选择日期", { locale: zhCN })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
@@ -300,7 +299,7 @@ function MoveToDateDialog({ open, onOpenChange, post }: MoveToDateDialogProps) {
       });
       if (!res.ok) throw new Error("移动失败");
       updateContentPost(post.id, { scheduledDate: targetDate });
-      toast.success("已移动", { description: `${format(parseISO(targetDate), "M月d日")}` });
+      toast.success("已移动", { description: `${safeFormat(targetDate, "M月d日")}` });
       onOpenChange(false);
     } catch {
       toast.error("移动失败");
@@ -506,12 +505,7 @@ function DraggableListItem({
     if (!didDragRef.current) onDoubleClick(post);
   }, [post, onDoubleClick]);
 
-  let formattedDate = "";
-  try {
-    formattedDate = format(parseISO(post.scheduledDate), "M/d EEEE", { locale: zhCN });
-  } catch {
-    formattedDate = post.scheduledDate;
-  }
+  let formattedDate = safeFormat(post.scheduledDate, "M/d EEEE", post.scheduledDate, { locale: zhCN });
 
   const platformColor = post.platform === "xiaohongshu"
     ? "border-l-rose-400 dark:border-l-rose-400"
@@ -1844,7 +1838,7 @@ export function CompactCalendar() {
                     <div className="space-y-1.5">
                       {upcomingPosts.map((post, idx) => {
                         let dayLabel = "";
-                        try { dayLabel = format(parseISO(post.scheduledDate), "M/d EEE", { locale: zhCN }); } catch { dayLabel = post.scheduledDate; }
+                        dayLabel = safeFormat(post.scheduledDate, "M/d EEE", post.scheduledDate, { locale: zhCN });
                         return (
                           <motion.button
                             key={post.id}

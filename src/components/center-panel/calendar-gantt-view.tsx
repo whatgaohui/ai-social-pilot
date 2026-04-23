@@ -38,15 +38,14 @@ import {
 } from "lucide-react";
 import {
   format,
-  parseISO,
   startOfDay,
   addDays,
   differenceInCalendarDays,
   isToday,
   isAfter,
   isBefore,
-  isValid,
 } from "date-fns";
+import { safeFormat, safeParseISO } from "@/lib/safe-date";
 import { zhCN } from "date-fns/locale";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -154,10 +153,9 @@ function GanttBar({
   isSelected,
   onClick,
 }: GanttBarProps) {
-  const parsedDate = parseISO(post.scheduledDate);
-  const postDate = isValid(parsedDate) ? parsedDate : new Date();
+  const postDate = safeParseISO(post.scheduledDate) || new Date();
   const endPostDate = post.publishedAt
-    ? (() => { const d = parseISO(post.publishedAt); return isValid(d) ? d : postDate; })()
+    ? (safeParseISO(post.publishedAt) || postDate)
     : post.scheduledDate === format(new Date(), "yyyy-MM-dd")
       ? new Date()
       : postDate;
@@ -250,7 +248,7 @@ function GanttBar({
             <p className="text-[10px] text-muted-foreground">
               排期：{format(postDate, "M月d日 EEEE", { locale: zhCN })}
               {post.publishedAt && (
-                <span> · 发布：{format(parseISO(post.publishedAt), "M月d日")}</span>
+                <span> · 发布：{safeFormat(post.publishedAt, "M月d日")}</span>
               )}
             </p>
             {post.status === "published" && (
@@ -326,9 +324,10 @@ export function CalendarGanttView({ posts: externalPosts }: CalendarGanttViewPro
     return [...posts]
       .filter((p) => p.scheduledDate)
       .filter(
-        (p) =>
-          !isAfter(parseISO(p.scheduledDate), rangeEnd) &&
-          !isBefore(parseISO(p.scheduledDate), addDays(rangeStart, -1)),
+        (p) => {
+          const d = safeParseISO(p.scheduledDate);
+          return d && !isAfter(d, rangeEnd) && !isBefore(d, addDays(rangeStart, -1));
+        },
       )
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
   }, [posts, rangeStart, rangeEnd]);
@@ -669,7 +668,7 @@ export function CalendarGanttView({ posts: externalPosts }: CalendarGanttViewPro
           {/* Post rows */}
           <div className="relative">
             {ganttPosts.map((post, index) => {
-              const postDate = parseISO(post.scheduledDate);
+              const postDate = safeParseISO(post.scheduledDate) || new Date();
               const isThisSelected = selectedPostId === post.id;
               const postStartOffset = differenceInCalendarDays(
                 postDate,

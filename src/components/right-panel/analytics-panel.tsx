@@ -1067,6 +1067,7 @@ export function AnalyticsPanel() {
   const [analyzing, setAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>("week");
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
   // Filter contentPosts by period
   const filteredPosts = useMemo(() => {
@@ -1121,6 +1122,7 @@ export function AnalyticsPanel() {
       const res = await fetch("/api/analytics");
       if (res.ok) {
         setAnalytics(await res.json());
+        setLastUpdated(new Date());
       }
     } catch (e) {
       console.error("Failed to fetch analytics:", e);
@@ -1247,6 +1249,9 @@ export function AnalyticsPanel() {
           {/* ── Period Toggle ──────────────────────────────────────── */}
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <Badge variant="secondary" className="text-[10px] font-normal text-muted-foreground">
+              {lastUpdated.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })} 更新
+            </Badge>
             <div className="flex gap-1 flex-1">
               {(["week", "month", "all"] as Period[]).map((p) => (
                 <button

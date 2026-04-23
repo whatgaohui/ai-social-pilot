@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   SparkLine,
-  PieChart,
-  ProgressChart,
+  MiniPieChart,
+  ProgressRing,
 } from "@/components/charts";
 import { formatNumber, CHART_PALETTE } from "@/lib/chart-utils";
 import {
@@ -451,11 +451,9 @@ export function RealtimeMetrics() {
                   </p>
                 </div>
               </div>
-              <ProgressChart
+              <ProgressRing
                 value={avgScore}
-                max={100}
                 size={100}
-                showLinear={false}
               />
             </div>
 
@@ -470,9 +468,8 @@ export function RealtimeMetrics() {
                   </p>
                 </div>
               </div>
-              <PieChart
+              <MiniPieChart
                 data={stats?.platformSplit ?? []}
-                donut
                 size={100}
               />
             </div>

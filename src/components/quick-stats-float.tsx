@@ -339,11 +339,12 @@ export function QuickStatsFloat() {
               stiffness: 400,
               damping: 30,
             }}
-            className="w-[300px] rounded-2xl border border-white/20 dark:border-white/[0.08]
-              bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl saturate-200
-              shadow-[0_8px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]
-              overflow-hidden glass-card"
+            className="w-[300px] hover:scale-[1.02] transition-transform duration-200"
           >
+            <div className="rounded-xl bg-gradient-to-br from-violet-500/20 via-transparent to-emerald-500/20 p-[1px]">
+            <div
+              className="rounded-2xl border border-white/20 dark:border-white/[0.08] bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl saturate-200 shadow-[0_8px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)] overflow-hidden glass-card"
+            >
             {/* Card Header */}
             <div className="px-4 pt-3 pb-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -557,6 +558,8 @@ export function QuickStatsFloat() {
                 查看详情
                 <ArrowRight className="h-3 w-3" />
               </motion.button>
+            </div>
+            </div>
             </div>
           </motion.div>
         )}
