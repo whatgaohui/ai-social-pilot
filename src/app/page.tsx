@@ -276,8 +276,8 @@ function LeftSidebar() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Left Panel Tab Bar with animated underline */}
-      <div className="px-3 pt-3 pb-2 border-b border-border/60">
+      {/* Left Panel Tab Bar — Enhanced with glow + platform accent */}
+      <div className="px-3 pt-3 pb-2 divider-gradient">
         <div className="flex gap-1">
           {LEFT_TABS.map((tab) => {
             const Icon = tab.icon;
@@ -286,24 +286,35 @@ function LeftSidebar() {
               <motion.button
                 key={tab.value}
                 onClick={() => setLeftPanelTab(tab.value)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                className={`relative flex-1 h-8 text-[11px] gap-1 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.96 }}
+                className={`relative flex-1 h-9 text-[11px] gap-1 rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer focus-ring-soft ${
                   isActive
-                    ? 'text-foreground font-medium bg-muted/80'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                    ? `font-medium shadow-sm ${isXHS
+                      ? 'text-rose-700 dark:text-rose-300 bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/50 dark:border-rose-800/30'
+                      : 'text-violet-700 dark:text-violet-300 bg-violet-50/80 dark:bg-violet-950/30 border border-violet-200/50 dark:border-violet-800/30'}`
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 }`}
               >
-                <Icon className={`h-3 w-3 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
+                <Icon className={`h-3.5 w-3.5 transition-all duration-200 ${isActive ? 'scale-115 drop-shadow-sm' : ''}`} />
                 {tab.label}
                 {tab.value === 'knowledge' && knowledgeItems.length > 0 && (
-                  <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] tabular-nums">
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className={`ml-0.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full text-[9px] font-semibold tabular-nums ${isXHS
+                      ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300'
+                      : 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300'}`}
+                  >
                     {knowledgeItems.length}
-                  </Badge>
+                  </motion.span>
                 )}
+                {/* Active bottom accent line */}
                 {isActive && (
                   <motion.div
-                    className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-gradient-to-r from-violet-500 to-purple-500 dark:from-violet-400 dark:to-purple-400"
+                    className={`absolute bottom-0 left-2 right-2 h-[2px] rounded-full ${isXHS
+                      ? 'bg-gradient-to-r from-rose-400 to-pink-400'
+                      : 'bg-gradient-to-r from-violet-500 to-purple-500'}`}
                     layoutId="left-tab-underline"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
@@ -374,22 +385,22 @@ function MainContentPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Main Tab Bar */}
-      <div className="px-4 pt-3 pb-2 border-b border-border/60 flex-shrink-0">
+      {/* Main Tab Bar — Enhanced with divider gradient */}
+      <div className="px-4 pt-3 pb-2 divider-gradient flex-shrink-0">
         <Tabs value={effectiveTab} onValueChange={setRightPanelTab}>
-          <TabsList className="w-full h-9 bg-muted/50 p-0.5 border border-border/40 shadow-sm">
+          <TabsList className="w-full h-10 bg-muted/40 p-0.5 border border-border/40 shadow-sm rounded-lg">
             {MAIN_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="flex-1 h-8 text-xs gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200"
+                  className={`flex-1 h-9 text-xs gap-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200 data-[state=active]:font-medium ${effectiveTab === tab.value && isXHS ? 'data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400' : ''}`}
                 >
                   <span className="relative inline-flex">
                     <Icon className="h-3.5 w-3.5" />
                     {tab.value === 'data' && unpublishedCount > 0 && (
-                      <span className="absolute -top-1.5 -right-2.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-violet-500 text-[8px] font-bold text-white ring-1 ring-background">
+                      <span className="absolute -top-1.5 -right-2.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-violet-500 text-[8px] font-bold text-white ring-1 ring-background badge-pulse">
                         {unpublishedCount > 9 ? '9+' : unpublishedCount}
                       </span>
                     )}
@@ -466,6 +477,7 @@ export default function Home() {
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [contentSearchOpen, setContentSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const isXHS = platform === 'xiaohongshu';
   const mobileTabIndexRef = useRef(mobileTabIndex);
 
   // Listen for custom shortcuts-help event from command palette
@@ -627,8 +639,8 @@ export default function Home() {
       <NotificationHooks />
       {/* 顶部加载进度条 */}
       <DataInitializer />
-      {/* Top Header */}
-      <header role="banner" className="header-gradient-border border-b border-border/50 bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300">
+      {/* Top Header — Enhanced with gradient accent */}
+      <header role="banner" className={`header-gradient-border border-b border-border/50 bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300 ${isXHS ? 'header-xhs-accent' : 'header-wechat-accent'}`}>
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <motion.div
@@ -641,7 +653,7 @@ export default function Home() {
             </motion.div>
             <div>
               <h1 className="text-base font-bold">
-                <span className="gradient-text-violet text-sm drop-shadow-sm">
+                <span className={`text-sm drop-shadow-sm ${isXHS ? 'text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-500' : 'gradient-text-violet'}`}>
                   {platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}
                 </span>
               </h1>
@@ -700,15 +712,15 @@ export default function Home() {
           <div className="hidden sm:flex items-center gap-2">
             {/* Command Palette trigger — ⌘K */}
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => setCommandPaletteOpen(true)}
-              className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+              className="group flex items-center gap-2 h-8 px-3 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted/70 hover:border-border text-muted-foreground hover:text-foreground text-xs transition-all duration-200 focus-ring-soft"
               aria-label="命令面板"
             >
-              <Search className="h-3.5 w-3.5" />
+              <Search className="h-3.5 w-3.5 transition-colors group-hover:text-violet-500" />
               <span className="hidden md:inline">搜索</span>
-              <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border bg-background px-1 font-mono text-[10px] text-muted-foreground">
+              <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border border-border/50 bg-background/80 px-1 font-mono text-[10px] text-muted-foreground group-hover:border-violet-300/50 group-hover:text-violet-500 transition-colors">
                 ⌘K
               </kbd>
             </motion.button>
@@ -717,10 +729,14 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-xs"
+                exit={{ opacity: 0, x: -10 }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 text-violet-700 dark:text-violet-300 text-xs border border-violet-200/50 dark:border-violet-700/30"
               >
-                <span className="h-2 w-2 rounded-full bg-violet-500 animate-pulse" />
-                AI正在生成内容...
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
+                </span>
+                <span className="font-medium">AI生成中</span>
               </motion.div>
             )}
             <TooltipProvider delayDuration={300}>
@@ -751,9 +767,9 @@ export default function Home() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Badge variant="outline" className="hidden md:inline-flex text-[10px] gap-1 px-1.5 py-0 pulse-soft">
-              <Zap className="h-2.5 w-2.5 text-amber-500" />
-              <span className="hidden lg:inline">AI驱动</span>
+            <Badge variant="outline" className="hidden md:inline-flex text-[10px] gap-1 px-1.5 py-0 border-amber-300/40 dark:border-amber-700/40 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400">
+              <Zap className="h-2.5 w-2.5 text-amber-500 animate-pulse" />
+              <span className="hidden lg:inline font-medium">AI驱动</span>
             </Badge>
           </div>
 

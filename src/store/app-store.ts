@@ -21,6 +21,7 @@ interface AppState {
   addContentPost: (post: ContentPost) => void;
   updateContentPost: (id: string, data: Partial<ContentPost>) => void;
   reorderPosts: (activeId: string, overId: string) => void;
+  deleteContentPost: (id: string) => void;
 
   // Materials
   materials: Material[];
@@ -109,6 +110,9 @@ export const useAppStore = create<AppState>((set) => ({
     updated.splice(newIndex, 0, moved);
     return { contentPosts: updated };
   }),
+  deleteContentPost: (id) => set((state) => ({
+    contentPosts: state.contentPosts.filter(p => p.id !== id)
+  })),
 
   // Materials
   materials: [],
