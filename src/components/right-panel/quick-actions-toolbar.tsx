@@ -15,6 +15,9 @@ import {
   RefreshCw,
   CheckCircle2,
   CalendarPlus,
+  CalendarClock,
+  CopyPlus,
+  Wand2,
   Loader2,
 } from "lucide-react";
 
@@ -37,6 +40,7 @@ export function QuickActionsToolbar() {
     selectedPostId,
     contentPosts,
     updateContentPost,
+    addContentPost,
     persona,
     knowledgeItems,
     platform,
@@ -147,8 +151,138 @@ export function QuickActionsToolbar() {
     return "已添加到发布日历";
   }, [selectedPost, updateContentPost]);
 
-  // ── Actions array ──────────────────────────────────────────────────────
+  // ── New Handlers ───────────────────────────────────────────────────────
 
+  const handleReschedule = useCallback(async (): Promise<string> => {
+    // Open the reschedule panel by toggling it via DOM event
+    const panelTrigger = document.querySelector("[data-reschedule-trigger]");
+    if (panelTrigger instanceof HTMLElement) {
+      panelTrigger.click();
+      return "打开改期面板";
+    }
+    return "请展开内容改期面板";
+  }, []);
+
+  const handleDuplicateToDate = useCallback(async (): Promise<string> => {
+    if (!selectedPost) return "";
+
+    // Find the next empty date
+    const currentDate = new Date(selectedPost.scheduledDate);
+    const dateCountMap = new Map<string, number>();
+    for (const p of contentPosts) {
+      const count = dateCountMap.get(p.scheduledDate) || 0;
+      dateCountMap.set(p.scheduledDate, count + 1);
+    }
+
+    let targetDate: string | null = null;
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(currentDate);
+      d.setDate(currentDate.getDate() + i);
+      const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if ((dateCountMap.get(ds) || 0) === 0) {
+        targetDate = ds;
+        break;
+      }
+    }
+
+    if (!targetDate) {
+      targetDate = (() => {
+        const d = new Date(currentDate);
+        d.setDate(currentDate.getDate() + 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      })();
+    }
+
+    // Create a duplicate post
+    const res = await fetch("/api/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        planId: selectedPost.planId,
+        scheduledDate: targetDate,
+        platform: selectedPost.platform,
+        contentType: selectedPost.contentType,
+        topic: selectedPost.topic,
+        content: selectedPost.content,
+        status: "generated",
+      }),
+    });
+
+    if (!res.ok) throw new Error("复制失败");
+    const newPost = await res.json();
+    addContentPost(newPost);
+
+    addNotification({
+      type: "schedule",
+      category: "schedule",
+      title: "内容已复制",
+      description: `"${selectedPost.topic}" 已复制到 ${targetDate}`,
+      postId: newPost.id,
+    });
+
+    return `已复制到 ${targetDate}`;
+  }, [selectedPost, contentPosts, addContentPost, addNotification]);
+
+  const handleAIMarkComplete = useCallback(async (): Promise<string> => {
+    if (!selectedPost) return "";
+
+    const res = await fetch(`/api/content/${selectedPost.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "published" }),
+    });
+
+    if (!res.ok) throw new Error("操作失败");
+    const updated = await res.json();
+    updateContentPost(selectedPost.id, updated);
+
+    addNotification({
+      type: "publish",
+      title: "内容已发布",
+      description: `"${selectedPost.topic}" 已标记为已完成`,
+      postId: selectedPost.id,
+    });
+    return "已标记为已完成";
+  }, [selectedPost, updateContentPost, addNotification]);
+
+  const handleAIRewrite = useCallback(async (): Promise<string> => {
+    if (!selectedPost) return "";
+
+    const res = await fetch("/api/ai/optimize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        post: selectedPost,
+        persona,
+        feedback: "",
+        knowledgeItems,
+        platform,
+      }),
+    });
+
+    if (!res.ok) throw new Error("AI重写失败");
+    const data = await res.json();
+    const newContent = data.content || "";
+
+    if (newContent) {
+      const updateRes = await fetch(`/api/content/${selectedPost.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: newContent,
+          status: "optimized",
+          aiScore: Math.min(98, selectedPost.aiScore + Math.floor(Math.random() * 5) + 3),
+        }),
+      });
+      if (updateRes.ok) {
+        const updated = await updateRes.json();
+        updateContentPost(selectedPost.id, updated);
+      }
+    }
+    return "AI重写完成";
+  }, [selectedPost, persona, knowledgeItems, platform, updateContentPost]);
+
+  // ── Actions array (original + new) ─────────────────────────────────────
   const actions: QuickAction[] = [
     {
       id: "copy",
@@ -186,6 +320,43 @@ export function QuickActionsToolbar() {
       hoverBg: "hover:bg-rose-100 dark:hover:bg-rose-900/30",
       handler: handleOpenCalendar,
     },
+    // ── New actions ─────────────────────────────────────────────────────
+    {
+      id: "reschedule",
+      label: "快速改期",
+      description: "打开改期面板，选择新的发布日期",
+      icon: CalendarClock,
+      color: "text-violet-600 dark:text-violet-400",
+      hoverBg: "hover:bg-violet-100 dark:hover:bg-violet-900/30",
+      handler: handleReschedule,
+    },
+    {
+      id: "duplicate-date",
+      label: "复制到新日期",
+      description: "将内容复制到下一个空日",
+      icon: CopyPlus,
+      color: "text-cyan-600 dark:text-cyan-400",
+      hoverBg: "hover:bg-cyan-100 dark:hover:bg-cyan-900/30",
+      handler: handleDuplicateToDate,
+    },
+    {
+      id: "ai-complete",
+      label: "标记为已完成",
+      description: "将内容状态标记为已发布",
+      icon: CheckCircle2,
+      color: "text-emerald-600 dark:text-emerald-400",
+      hoverBg: "hover:bg-emerald-100 dark:hover:bg-emerald-900/30",
+      handler: handleAIMarkComplete,
+    },
+    {
+      id: "ai-rewrite",
+      label: "AI重写",
+      description: "使用AI智能优化和重写内容",
+      icon: Wand2,
+      color: "text-amber-600 dark:text-amber-400",
+      hoverBg: "hover:bg-amber-100 dark:hover:bg-amber-900/30",
+      handler: handleAIRewrite,
+    },
   ];
 
   const executeAction = useCallback(async (action: QuickAction) => {
@@ -221,7 +392,7 @@ export function QuickActionsToolbar() {
             {/* Glow backdrop */}
             <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-slate-500/10 via-violet-500/10 to-rose-500/10 blur-xl opacity-50" />
 
-            <div className="relative flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+            <div className="relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)] overflow-x-auto scrollbar-none">
               <TooltipProvider delayDuration={300}>
                 {actions.map((action, idx) => {
                   const Icon = action.icon;
@@ -234,7 +405,7 @@ export function QuickActionsToolbar() {
                           initial={{ opacity: 0, scale: 0.7, y: 10 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           transition={{
-                            delay: idx * 0.07,
+                            delay: idx * 0.05,
                             type: "spring",
                             stiffness: 500,
                             damping: 28,
@@ -243,14 +414,14 @@ export function QuickActionsToolbar() {
                           whileTap={{ scale: 0.9 }}
                           onClick={() => executeAction(action)}
                           disabled={isLoading}
-                          className={`flex items-center justify-center gap-1.5 h-8 w-8 sm:h-9 sm:w-auto sm:px-3 rounded-lg ${action.hoverBg} ${action.color} transition-colors disabled:opacity-60 cursor-pointer`}
+                          className={`flex items-center justify-center gap-1.5 h-8 w-8 sm:h-9 sm:w-auto sm:px-2.5 rounded-lg ${action.hoverBg} ${action.color} transition-colors disabled:opacity-60 cursor-pointer shrink-0`}
                         >
                           {isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Icon className="h-4 w-4" />
                           )}
-                          <span className="hidden sm:inline text-xs font-medium">{action.label}</span>
+                          <span className="hidden sm:inline text-[11px] font-medium whitespace-nowrap">{action.label}</span>
                         </motion.button>
                       </TooltipTrigger>
                       <TooltipContent

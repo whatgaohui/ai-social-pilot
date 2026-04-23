@@ -81,6 +81,11 @@ import { PublishingQueue } from "@/components/right-panel/publishing-queue";
 
 // ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
 
+const ContentReschedulePanel = dynamic(
+  () => import("@/components/right-panel/content-reschedule-panel").then((m) => ({ default: m.ContentReschedulePanel })),
+  { ssr: false, loading: () => <SkeletonBox className="h-32" /> },
+);
+
 function SkeletonBox({ className = "" }: { className?: string }) {
   return <div className={`rounded-xl bg-muted/60 animate-pulse ${className}`} />;
 }
@@ -463,18 +468,23 @@ export function ContentWorkspace() {
           className="p-4 space-y-3"
         >
           {/* ── Quick Actions Bar ───────────────────────────────────────── */}
-          <motion.div variants={staggerItem} className="card-glow rounded-lg">
+          <motion.div variants={staggerItem} className="card-glow hover-glow-violet rounded-lg">
             <ContentQuickActions />
           </motion.div>
 
           {/* ── Header + engagement bar ─────────────────────────────────── */}
-          <motion.div variants={staggerItem} className="space-y-2 card-glow rounded-lg p-3 -mx-3">
+          <motion.div variants={staggerItem} className="space-y-2 card-glow hover-glow-violet rounded-lg p-3 -mx-3">
             <PostDetailHeader post={selectedPost} isXHS={isXHS} />
             <InlineEngagementBar post={selectedPost} isXHS={isXHS} />
           </motion.div>
 
+          {/* ── Content Reschedule Panel ──────────────────────────────────── */}
+          <motion.div variants={staggerItem} data-reschedule-trigger>
+            <ContentReschedulePanel post={selectedPost} />
+          </motion.div>
+
           {/* ── Editor / Preview ─────────────────────────────────────────── */}
-          <motion.div variants={staggerItem} className="card-shine rounded-lg">
+          <motion.div variants={staggerItem} className="card-shine hover-glow-violet rounded-lg">
             <div className="flex items-center justify-center mb-2">
               <div className="inline-flex items-center rounded-full bg-muted/60 p-0.5">
                 <Button
@@ -923,7 +933,7 @@ export function ContentWorkspace() {
           </motion.div>
 
           {/* ── Iteration 41: Collapsible Enhancement Sections ──────── */}
-          <motion.div variants={staggerItem} className="space-y-2">
+          <motion.div variants={staggerItem} className="space-y-2 stagger-children">
             <Separator className="my-1" />
             <p className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase px-1">
               高级工具

@@ -624,6 +624,9 @@ export function ContentCalendar() {
   const [moveDate, setMoveDate] = useState("");
   const [isMoving, setIsMoving] = useState(false);
 
+  // Reorder persistence
+  const [isReordering, setIsReordering] = useState(false);
+
   // ─── Platform Filter ───────────────────────────────────────
 
   const [platformFilter, setPlatformFilter] = useState<
@@ -683,7 +686,11 @@ export function ContentCalendar() {
   const sortedPosts = useMemo(() => {
     return [...filteredPosts]
       .filter((p) => p.scheduledDate)
-      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+      .sort((a, b) => {
+        const dateCmp = a.scheduledDate.localeCompare(b.scheduledDate);
+        if (dateCmp !== 0) return dateCmp;
+        return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+      });
   }, [filteredPosts]);
 
   // ─── DnD sensors for list view ──────────────────────────────
@@ -700,9 +707,44 @@ export function ContentCalendar() {
   const handleListDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
-      if (over && active.id !== over.id) {
-        reorderPosts(String(active.id), String(over.id));
-      }
+      if (!over || active.id === over.id) return;
+
+      // Reorder in the Zustand store first (optimistic)
+      reorderPosts(String(active.id), String(over.id));
+
+      // Compute the new ordered list and persist to DB
+      const { contentPosts: currentPosts } = useAppStore.getState();
+      const reordered = [...currentPosts]
+        .filter((p) => p.scheduledDate)
+        .sort((a, b) => {
+          const dateCmp = a.scheduledDate.localeCompare(b.scheduledDate);
+          if (dateCmp !== 0) return dateCmp;
+          return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+        });
+      const orderedIds = reordered.map((p) => p.id);
+
+      setIsReordering(true);
+      fetch('/api/content/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to persist order');
+          // Update sortOrder in the store to match DB
+          const { updateContentPost } = useAppStore.getState();
+          reordered.forEach((p, i) => {
+            updateContentPost(p.id, { sortOrder: i });
+          });
+        })
+        .catch(() => {
+          toast.error('排序保存失败', {
+            description: '已恢复到上一次的顺序',
+          });
+        })
+        .finally(() => {
+          setIsReordering(false);
+        });
     },
     [reorderPosts],
   );

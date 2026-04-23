@@ -241,7 +241,7 @@ function AIModelSection({ onOpenFullSettings }: { onOpenFullSettings: () => void
   return (
     <div className="space-y-4">
       {/* Current Active Model Card */}
-      <div className="rounded-xl bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 border border-violet-200 dark:border-violet-800 p-4">
+      <div className="rounded-xl bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 border border-violet-200 dark:border-violet-800 p-4 glass-card">
         <p className="text-xs font-medium text-violet-700 dark:text-violet-300 mb-2">当前使用的模型</p>
         {loading ? (
           <div className="flex items-center gap-2">
@@ -1654,7 +1654,7 @@ export function SettingsCenter({ connectedPlatforms }: SettingsCenterProps) {
             <span className="hidden lg:inline text-xs">设置</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-[900px] w-[100vw] sm:w-[95vw] max-h-[100vh] sm:max-h-[90vh] p-0 overflow-hidden glass-card-xl">
+        <DialogContent className="max-w-[900px] w-[100vw] sm:w-[95vw] max-h-[100vh] sm:max-h-[90vh] p-0 overflow-hidden glass-card-xl slide-in-right-edge">
           {/* Sub-panels: Full AI Settings */}
           {subPanel === "ai" && (
             <div className="h-[90vh] flex flex-col">

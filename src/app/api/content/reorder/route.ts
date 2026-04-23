@@ -2,60 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 
-interface ReorderItem {
-  id: string;
-  scheduledDate: string;
-  sortOrder: number;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items } = body as { items: ReorderItem[] };
+    const { orderedIds } = body as { orderedIds?: string[] };
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!orderedIds || !Array.isArray(orderedIds) || orderedIds.length === 0) {
       return NextResponse.json(
-        { error: 'items is required and must be a non-empty array' },
+        { error: 'orderedIds is required and must be a non-empty array of post IDs' },
         { status: 400 },
       );
     }
 
-    // Validate each item
-    for (const item of items) {
-      if (!item.id || typeof item.id !== 'string') {
+    // Validate all IDs are non-empty strings
+    for (const id of orderedIds) {
+      if (!id || typeof id !== 'string') {
         return NextResponse.json(
-          { error: 'Each item must have a valid id' },
-          { status: 400 },
-        );
-      }
-      if (!item.scheduledDate || typeof item.scheduledDate !== 'string') {
-        return NextResponse.json(
-          { error: 'Each item must have a valid scheduledDate (yyyy-MM-dd)' },
-          { status: 400 },
-        );
-      }
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (!dateRegex.test(item.scheduledDate)) {
-        return NextResponse.json(
-          { error: 'scheduledDate must be in yyyy-MM-dd format' },
-          { status: 400 },
-        );
-      }
-      if (typeof item.sortOrder !== 'number' || item.sortOrder < 0) {
-        return NextResponse.json(
-          { error: 'Each item must have a valid sortOrder (non-negative number)' },
+          { error: 'Each item in orderedIds must be a valid string ID' },
           { status: 400 },
         );
       }
     }
 
-    // Batch update using Prisma transaction
-    const updatePromises = items.map((item) =>
+    // Batch update sortOrder using Prisma transaction
+    const updatePromises = orderedIds.map((id, index) =>
       db.contentPost.update({
-        where: { id: item.id },
-        data: {
-          scheduledDate: item.scheduledDate,
-        },
+        where: { id },
+        data: { sortOrder: index },
       }),
     );
 
@@ -64,7 +37,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       updatedCount: updatedPosts.length,
-      posts: updatedPosts,
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {

@@ -6,6 +6,8 @@ import { useCallback, useRef, type MouseEvent } from "react";
  * useRipple — attaches a click handler that sets CSS custom properties
  * --ripple-x and --ripple-y on the target element, enabling the
  * .btn-ripple CSS animation to originate from the exact click position.
+ *
+ * Also provides createRipple for DOM-based ripple effects via .ripple-click class.
  */
 export function useRipple<T extends HTMLElement = HTMLElement>() {
   const ref = useRef<T>(null);
@@ -36,5 +38,26 @@ export function useRipple<T extends HTMLElement = HTMLElement>() {
     el.addEventListener("animationend", cleanup);
   }, []);
 
-  return { ref, onClick: handleClick };
+  /**
+   * createRipple — creates a DOM-based ripple element (.ripple-click)
+   * at the click position. Use on elements with `ripple-container` class.
+   */
+  const createRipple = useCallback((e: MouseEvent<HTMLDivElement>) => {
+    const button = e.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = e.clientX - rect.left - size / 2;
+    const y = e.clientY - rect.top - size / 2;
+
+    const ripple = document.createElement("span");
+    ripple.className = "ripple-click";
+    ripple.style.width = ripple.style.height = `${size}px`;
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+
+    button.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  }, []);
+
+  return { ref, onClick: handleClick, createRipple };
 }

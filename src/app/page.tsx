@@ -607,7 +607,7 @@ export default function Home() {
             </motion.div>
             <div>
               <h1 className="text-base font-bold">
-                <span className="animate-gradient-text text-[15px]">
+                <span className="gradient-text-violet text-[15px]">
                   {platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}
                 </span>
               </h1>
@@ -617,7 +617,7 @@ export default function Home() {
 
           {/* Platform Switcher - Desktop */}
           <div className="hidden sm:flex items-center">
-            <div className="relative flex items-center h-9 rounded-full bg-muted/70 p-0.5 border border-border/50 shadow-sm ambient-glow">
+            <div className="animated-border-gradient relative flex items-center h-9 rounded-full bg-muted/70 p-0.5 border border-border/50 shadow-sm ambient-glow">
               {/* Glow backdrop for active platform */}
               <motion.div
                 className="absolute h-9 w-1/2 rounded-full"

@@ -57,6 +57,12 @@ const WeeklyReportGenerator = dynamic(
   { loading: () => <OpsSectionSkeleton />, ssr: false }
 );
 
+// ── Dynamic import for Content Streak Widget ──
+const ContentStreakWidget = dynamic(
+  () => import("@/components/content-streak-widget").then((m) => ({ default: m.ContentStreakWidget })),
+  { ssr: false, loading: () => <OpsSectionSkeleton /> }
+);
+
 // ── Dynamic imports for competitor analysis components (SVG animations, ssr: false) ──
 const CompetitorRadarEnhanced = dynamic(
   () => import("@/components/right-panel/competitor-radar-enhanced").then((m) => ({ default: m.CompetitorRadarEnhanced })),
@@ -632,6 +638,7 @@ export function DataAndReports() {
               className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
               <div className="flex flex-col flex-1 min-h-0 space-y-3">
+                <ContentStreakWidget />
                 <ContentCompetitionPanel />
                 <div className="flex flex-col flex-1 min-h-0">
                   <AnalyticsPanel />

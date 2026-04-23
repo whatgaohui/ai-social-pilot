@@ -52,6 +52,7 @@ export interface ContentPost {
   favorites?: number;
   aiScore: number;
   feedback: string;
+  sortOrder?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -342,7 +342,7 @@ export function QuickStatsFloat() {
             className="w-[300px] rounded-2xl border border-white/20 dark:border-white/[0.08]
               bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl saturate-200
               shadow-[0_8px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]
-              overflow-hidden"
+              overflow-hidden glass-card"
           >
             {/* Card Header */}
             <div className="px-4 pt-3 pb-2 flex items-center justify-between">
@@ -392,7 +392,7 @@ export function QuickStatsFloat() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-muted-foreground leading-none">内容总数</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <p className="text-sm font-bold tabular-nums leading-tight">
+                        <p className="text-sm font-bold tabular-nums leading-tight counter-animate">
                           {stats.totalContent}
                         </p>
                         <span className="text-[10px] font-normal text-muted-foreground ml-0.5">篇</span>
@@ -438,7 +438,7 @@ export function QuickStatsFloat() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-muted-foreground leading-none">未发布</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <p className="text-sm font-bold tabular-nums leading-tight">
+                        <p className="text-sm font-bold tabular-nums leading-tight counter-animate">
                           {stats.unpublishedCount ?? 0}
                         </p>
                         <span className="text-[10px] font-normal text-muted-foreground ml-0.5">篇</span>
@@ -462,7 +462,7 @@ export function QuickStatsFloat() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-muted-foreground leading-none">AI评分均值</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <p className={`text-sm font-bold tabular-nums leading-tight ${getAIScoreColor(stats.avgAIScore)}`}>
+                        <p className={`text-sm font-bold tabular-nums leading-tight counter-animate ${getAIScoreColor(stats.avgAIScore)}`}>
                           {stats.avgAIScore}
                         </p>
                         {scoreTrend !== 0 && (
@@ -493,7 +493,7 @@ export function QuickStatsFloat() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-muted-foreground leading-none">连续发布</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <p className="text-sm font-bold tabular-nums leading-tight">
+                        <p className="text-sm font-bold tabular-nums leading-tight counter-animate">
                           {stats.currentStreak}
                         </p>
                         <span className="text-[10px] text-muted-foreground">天</span>
@@ -588,7 +588,7 @@ export function QuickStatsFloat() {
         {/* Pulse animation when there are pending tasks or urgent items */}
         {(hasPending || hasUrgent) && !expanded && (
           <>
-            <span className={`absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full text-[9px] font-bold text-white px-1 shadow-lg ${hasUrgent ? 'bg-rose-500' : 'bg-violet-500'}`}>
+            <span className={`absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full text-[9px] font-bold text-white px-1 shadow-lg ${hasUrgent ? 'bg-rose-500 glow-pulse-rose' : 'bg-violet-500'}`}>
               {hasUrgent ? "!" : (stats?.todayPending ?? 0)}
             </span>
             <motion.span
