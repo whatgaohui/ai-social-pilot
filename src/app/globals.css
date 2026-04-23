@@ -201,14 +201,7 @@
   animation: breathe-glow 3s ease-in-out infinite;
 }
 
-/* Card hover lift */
-.card-hover-lift {
-  transition: all 0.2s ease;
-}
-.card-hover-lift:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
+/* (card-hover-lift removed — unused) */
 
 /* Success checkmark animation */
 @keyframes check-pop {
@@ -261,32 +254,9 @@
   background: linear-gradient(135deg, #7c3aed, #db2777, #d97706);
 }
 
-/* Glow pulse on hover */
-.glow-hover {
-  transition: box-shadow 0.3s ease, transform 0.2s ease;
-}
-.glow-hover:hover {
-  animation: glow-pulse-hover 2s ease-in-out infinite;
-  transform: translateY(-1px);
-}
-@keyframes glow-pulse-hover {
-  0%, 100% { box-shadow: 0 0 12px rgba(139, 92, 246, 0.12), 0 4px 12px rgba(0, 0, 0, 0.05); }
-  50% { box-shadow: 0 0 24px rgba(139, 92, 246, 0.22), 0 4px 16px rgba(0, 0, 0, 0.08); }
-}
-@keyframes glow-pulse-hover-dark {
-  0%, 100% { box-shadow: 0 0 12px rgba(139, 92, 246, 0.15), 0 4px 12px rgba(0, 0, 0, 0.25); }
-  50% { box-shadow: 0 0 28px rgba(139, 92, 246, 0.3), 0 4px 16px rgba(0, 0, 0, 0.35); }
-}
+/* (glow-hover removed — unused) */
 
-/* Sparkle shimmer for featured cards */
-@keyframes sparkle-shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-.sparkle-shimmer {
-  background-size: 200% auto;
-  animation: sparkle-shimmer 3s linear infinite;
-}
+/* (sparkle-shimmer removed — unused) */
 
 /* Subtle scale-in animation */
 @keyframes scale-in {
@@ -640,28 +610,11 @@ textarea {
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
 }
 
-/* Smooth hover shadow for clickable cards */
-.card-clickable {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  cursor: pointer;
-}
-.card-clickable:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
+/* (card-clickable removed — unused) */
 
 /* ====== Round 15: Visual Enhancements ====== */
 
-/* Fast shimmer animation (1.5s) */
-@keyframes shimmer-fast {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.animate-shimmer-fast {
-  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.12), rgba(236, 72, 153, 0.08), transparent);
-  background-size: 200% 100%;
-  animation: shimmer-fast 1.5s infinite;
-}
+/* (shimmer-fast removed — unused) */
 
 /* Animated gradient border effect for cards */
 @keyframes gradient-border-rotate {
@@ -1017,14 +970,7 @@ textarea {
 
 /* ====== Micro-Interaction Animation Utilities ====== */
 
-/* Shimmer loading effect for cards */
-@keyframes shimmer-slide {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-.animate-shimmer-slide {
-  animation: shimmer-slide 2s ease-in-out infinite;
-}
+/* (shimmer-slide and animate-shimmer-slide removed — unused) */
 
 /* Pulse glow for active elements */
 @keyframes pulse-glow {
@@ -1064,20 +1010,7 @@ textarea {
 }
 
 /* Skeleton shimmer overlay */
-.skeleton-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.skeleton-shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-  animation: shimmer-slide 2s ease-in-out infinite;
-}
-.dark .skeleton-shimmer::after {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
-}
+/* (skeleton-shimmer removed — unused; use loading-skeleton-shimmer instead) */
 
 /* Stat card hover glow ring */
 .stat-card-hover {
@@ -8200,10 +8133,6 @@ textarea,
     linear-gradient(90deg, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
 }
 
-/* ─── Dark theme card-clickable ────────────────────────────── */
-.dark .card-clickable:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(139, 92, 246, 0.08);
-}
 
 /* ─── Dark theme shadow-card ───────────────────────────────── */
 .dark .shadow-card {
@@ -8218,10 +8147,7 @@ textarea,
     0 0 0 1px rgba(139, 92, 246, 0.06);
 }
 
-/* ─── Dark theme card-hover-lift ───────────────────────────── */
-.dark .card-hover-lift:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-}
+/* (card-hover-lift removed — unused) */
 
 /* ─── Deep space ambient glow for .dark body ───────────────── */
 .dark body::before {
@@ -8498,18 +8424,7 @@ textarea,
 /* ====== Round 44-c: Advanced Micro-Interaction Utilities ====== */
 
 /* ── a. Gradient text color variants ── */
-.gradient-text-amber {
-  background: linear-gradient(135deg, #f59e0b, #f97316, #ef4444);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.gradient-text-rose {
-  background: linear-gradient(135deg, #f43f5e, #ec4899, #a855f7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+/* (gradient-text-amber and gradient-text-rose removed — unused) */
 
 /* ── b. Animated border gradient with @property ── */
 @property --border-angle {
@@ -8752,21 +8667,8 @@ textarea,
   border-radius: 0.75rem;
 }
 
-/* Gradient text utility — violet */
-.gradient-text-violet {
-  background: linear-gradient(135deg, #8b5cf6, #d946ef);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Gradient text utility — emerald */
-.gradient-text-emerald {
-  background: linear-gradient(135deg, #10b981, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+/* (gradient-text-violet consolidated to single definition below) */
+/* (gradient-text-emerald removed — unused) */
 
 /* Dot pulse animation */
 @keyframes dot-pulse {

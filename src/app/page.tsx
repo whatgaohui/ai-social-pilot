@@ -31,6 +31,7 @@ import {
   LazyContentWorkspace,
   LazyDataAndReports,
   LazyAccountCollector,
+  LazyFloatingActionBar,
 } from "@/components/lazy-components";
 import {
   Sparkles, BookOpen, PenTool, CalendarDays,
@@ -1012,6 +1013,9 @@ export default function Home() {
 
       {/* Floating Quick Stats Widget */}
       <QuickStatsFloat />
+
+      {/* Floating Action Bar (Desktop) */}
+      {!showWelcome && <LazyFloatingActionBar />}
 
       {/* AI Writing Assistant FAB */}
       <LazyAIWritingAssistant />

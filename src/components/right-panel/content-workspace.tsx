@@ -27,6 +27,7 @@ import {
   ImageIcon,
   Download,
   Layers,
+  ListOrdered,
   ChevronRight,
   Activity,
   Wand2,
@@ -282,7 +283,8 @@ const STATUS_BORDER_COLORS: Record<PostStatus, string> = {
 // ─── Tab Group Definitions ─────────────────────────────────────────────────
 
 const TAB_GROUPS = [
-  { id: "create", label: "创作", icon: Pencil, color: "text-violet-500" },
+  { id: "ai-tools", label: "AI 工具", icon: Sparkles, color: "text-violet-500" },
+  { id: "content", label: "内容", icon: Pencil, color: "text-cyan-500" },
   { id: "publish", label: "发布", icon: Rocket, color: "text-emerald-500" },
   { id: "insights", label: "洞察", icon: BarChart3, color: "text-amber-500" },
 ] as const;
@@ -292,19 +294,23 @@ type TabGroup = (typeof TAB_GROUPS)[number]["id"];
 // Sub-tabs for the tool panel below the editor
 // Using a different visual style (underline-style) to differentiate from action buttons above
 const TOOL_TABS = [
-  { value: "ai", icon: Sparkles, label: "智能分析", color: "text-amber-500", group: "create" as const },
-  { value: "batch", icon: Bot, label: "批量操作", color: "text-violet-500", group: "create" as const },
-  { value: "pipeline", icon: Layers, label: "内容流水线", color: "text-cyan-500", group: "create" as const },
-  { value: "writing", icon: PenLine, label: "写作助手", color: "text-emerald-500", group: "create" as const },
-  { value: "review", icon: Shield, label: "AI评审", color: "text-violet-500", group: "create" as const },
-  { value: "chat", icon: MessageSquare, label: "AI对话", color: "text-sky-500", group: "create" as const },
-  { value: "ideas", icon: Lightbulb, label: "创意生成", color: "text-amber-500", group: "create" as const },
-  { value: "optimizer", icon: Wand2, label: "优化工作台", color: "text-violet-500", group: "create" as const },
+  // ── AI 工具 ─────────────────────────────────────────────
+  { value: "ai", icon: Sparkles, label: "智能分析", color: "text-amber-500", group: "ai-tools" as const },
+  { value: "review", icon: Shield, label: "AI评审", color: "text-violet-500", group: "ai-tools" as const },
+  { value: "chat", icon: MessageSquare, label: "AI对话", color: "text-sky-500", group: "ai-tools" as const },
+  { value: "ideas", icon: Lightbulb, label: "创意生成", color: "text-amber-500", group: "ai-tools" as const },
+  { value: "optimizer", icon: Wand2, label: "优化工作台", color: "text-violet-500", group: "ai-tools" as const },
+  // ── 内容 ────────────────────────────────────────────────
+  { value: "batch", icon: Bot, label: "批量操作", color: "text-violet-500", group: "content" as const },
+  { value: "pipeline", icon: Layers, label: "内容流水线", color: "text-cyan-500", group: "content" as const },
+  { value: "writing", icon: PenLine, label: "写作助手", color: "text-emerald-500", group: "content" as const },
+  // ── 发布 ────────────────────────────────────────────────
   { value: "schedule", icon: CalendarClock, label: "智能排期", color: "text-cyan-500", group: "publish" as const },
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500", group: "publish" as const },
-  { value: "queue", icon: Layers, label: "发布队列", color: "text-purple-500", group: "publish" as const },
+  { value: "queue", icon: ListOrdered, label: "发布队列", color: "text-purple-500", group: "publish" as const },
   { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500", group: "publish" as const },
   { value: "timeline", icon: GitBranch, label: "排期时间线", color: "text-cyan-500", group: "publish" as const },
+  // ── 洞察 ────────────────────────────────────────────────
   { value: "history", icon: History, label: "版本记录", color: "text-violet-500", group: "insights" as const },
   { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500", group: "insights" as const },
   { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500", group: "insights" as const },
@@ -330,7 +336,7 @@ export function ContentWorkspace() {
   const isXHS = platform === "xiaohongshu";
   const [previewMode, setPreviewMode] = useState(false);
   const [toolTab, setToolTab] = useState<ToolTab>("ai");
-  const [activeGroup, setActiveGroup] = useState<TabGroup>("create");
+  const [activeGroup, setActiveGroup] = useState<TabGroup>("ai-tools");
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     kanban: false,
@@ -458,7 +464,7 @@ export function ContentWorkspace() {
 
   // Scroll to quality scorer section when score badge is clicked
   const handleScoreBadgeClick = useCallback(() => {
-    setActiveGroup("create");
+    setActiveGroup("ai-tools");
     setToolTab("ai");
     setPreviewMode(false);
     // Wait for the tab content to render, then scroll

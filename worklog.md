@@ -10290,3 +10290,86 @@ Stage Summary:
   3. 移动端布局的视觉对齐
   4. 清理未使用的代码（QuickAction 组件等）
   5. 统一全项目的颜色系统为更柔和的色调
+
+---
+Task ID: 57
+Agent: Main Developer + Subagents
+Task: 第57轮 - 架构优化+UI集成+代码清理
+
+Work Log:
+- 读取 worklog.md 了解前56轮开发成果（10292行工作日志）
+- 运行 eslint（零错误）+ next build（编译成功10.0s）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），改用 next build + eslint + API curl 验证
+- 使用 Explore agent 全面分析项目架构（160+组件，89个right-panel文件）
+- 并行执行：功能集成 + Tab重组 + CSS清理 + 死代码删除
+
+### 功能集成
+
+1. **FloatingActionBar 集成到主页面**（page.tsx）：
+   - 问题：`floating-action-bar.tsx` 已完整开发（147行，含5个快捷操作）但在 page.tsx 中从未渲染
+   - 修复：添加 `LazyFloatingActionBar` 导入，在 QuickStatsFloat 下方渲染
+   - 条件：仅在非欢迎引导页面时显示（`!showWelcome`）
+   - 功能：桌面端右侧浮动快捷栏（AI生成/新建内容/搜索/数据分析/设置），可关闭
+
+### Tab 系统重组（content-workspace.tsx）
+
+2. **21 个 sub-tab 从 3 组拆分为 4 组**：
+   - 旧结构：创作(8) + 发布(5) + 洞察(8)
+   - 新结构：**AI 工具**(5) + **内容**(3) + **发布**(5) + **洞察**(8)
+   - AI 工具组：智能分析、AI评审、AI对话、创意生成、优化工作台
+   - 内容组：批量操作、内容流水线、写作助手
+   - 发布组：智能排期、发布管理、发布队列、发布流程、排期时间线
+   - 洞察组：版本记录、爆款灵感、素材库、实时指标、词云分析、风格DNA、质量趋势、周报生成
+
+3. **图标冲突修复**：
+   - 问题：`Layers` 图标同时用于"内容流水线"和"发布队列"
+   - 修复：发布队列图标改为 `ListOrdered`
+
+### 代码清理
+
+4. **死代码删除**：
+   - 删除 `src/components/notification-center.tsx`（已被 notification-center-enhanced.tsx 替代）
+   - 确认无任何文件导入旧版本
+
+5. **CSS 清理**（globals.css）：
+   - 删除 7 个未使用的 CSS 规则块（含 dark mode 覆盖）：
+     - `.card-hover-lift`、`.card-clickable`、`.glow-hover`
+     - `.sparkle-shimmer`、`.animate-shimmer-fast`、`.animate-shimmer-slide`、`.skeleton-shimmer`
+   - 删除未使用的颜色变体：`.gradient-text-amber`、`.gradient-text-rose`、`.gradient-text-emerald`
+   - 合并重复的 `.gradient-text-violet` 定义（文件中存在两处定义，删除第一处）
+
+### 修改文件
+- `src/app/page.tsx` — 添加 LazyFloatingActionBar 导入和渲染
+- `src/components/right-panel/content-workspace.tsx` — Tab 分组重组 + 图标修复 + 初始状态更新
+- `src/app/globals.css` — 删除 ~100 行未使用 CSS
+- `src/components/notification-center.tsx` — 删除死代码文件
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（10.0s，70个页面正常生成）
+- ✅ Tab 分组正确（AI工具=5, 内容=3, 发布=5, 洞察=8）
+- ✅ 图标冲突已修复（ListOrdered 替代重复的 Layers）
+- ✅ FloatingActionBar 已集成（仅在非引导页面显示）
+- ✅ 所有 CSS 删除项确认无引用
+
+Stage Summary:
+- 项目状态：稳定可运行，架构更清晰
+- 本轮修改 4 个文件，删除 1 个文件
+- 核心改进：
+  1. FloatingActionBar 正式集成（已开发但从未使用的组件）
+  2. Tab 系统从 3 组 21 个重组为 4 组 21 个（AI工具/内容/发布/洞察），信息层级更清晰
+  3. 图标冲突修复（Layers → ListOrdered）
+  4. CSS bloat 减少 ~100 行（7个未使用规则块 + 3个未使用颜色变体 + 1个重复定义）
+  5. 死代码删除（旧 notification-center.tsx）
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill），无法进行可视化 QA
+  2. 约 85 个 TS 错误仍存在（主要为 framer-motion Variants 类型 + readonly 数组）
+  3. Tab 数量仍为 21 个，洞察组 8 个子 tab 偏多
+  4. 移动端响应式深度优化未涉及
+- 建议下一阶段优先事项：
+  1. 洞察组进一步拆分（数据分析 vs 内容追踪 vs 运营工具）
+  2. framer-motion Variants 类型统一修复
+  3. 移动端 UI 视觉对齐与优化
+  4. 内容工作台 Dashboard Overview 数据实时刷新
+  5. 大组件拆分重构（analytics-panel.tsx、content-workspace.tsx）
+  6. 运营报告自动导出功能（PDF/图片格式）
