@@ -10088,3 +10088,105 @@ Stage Summary:
   4. 移动端响应式深度优化
   5. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
   6. 运营报告自动导出功能（PDF/图片格式）
+
+---
+Task ID: 54
+Agent: Main Orchestrator + Subagents
+Task: 第五十四轮开发 - 关键Bug修复 + CSS优化 + AI优化工作台
+
+Work Log:
+- 读取 worklog.md 了解第53轮项目状态（20个tab，CSS已去重）
+- 运行 eslint（零错误）+ next build（编译成功9.2s）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill）
+- 使用 Explore agent 扫描全量 TS 错误（107个），定位5个最高优先级问题
+- 并行执行：Bug修复 + 新功能开发
+
+### Bug修复（3个关键问题）
+
+1. **backup/restore 路由 20 个 TS 错误 + 数据丢失 bug**（api/backup/restore/route.ts）：
+   - 问题：`Parameters<typeof db.X.createMany>[0]["data"]` 模式在 Prisma 类型解析为可能 undefined，导致 10 个表的 createMany 调用全部报 TS2339/TS2322
+   - 修复：所有 `as Parameters<typeof...>` 替换为 `as any`（10 处）
+   - 数据丢失修复：删除了 `contentInteraction` 和 `analyticsSummary` 表但从未恢复数据
+   - 新增：`contentInteractions` 和 `analyticsSummaries` 的条件恢复逻辑（从 backupData 中读取并恢复）
+
+2. **useRef React 19 兼容性**（content-health-dashboard.tsx）：
+   - 问题：`useRef<number>()` 在 React 19 类型中需要显式初始参数
+   - 修复：`useRef<number>()` → `useRef<number | undefined>(undefined)`
+
+3. **周报排行进度条始终100%**（ai-weekly-report.tsx）：
+   - 问题：`RankedPostCard` 组件中 `maxEngagement` 硬编码为 1，导致所有帖子的进度条始终显示 100%
+   - 修复：添加 `maxEngagement` prop，从父组件传入 `rankedPosts[0]?.engagementScore || 1`
+
+### 新功能组件
+
+**AI 内容优化对比工作台**（content-optimizer-studio.tsx）：
+- **双面板分割视图**：左面板"原文"（可编辑 textarea）+ 右面板"优化后"，可拖拽分割线调整比例
+- **4 种优化模式**：全面提升(violet) / 标题优化(amber) / 情感增强(rose) / 精简压缩(emerald)
+- **Diff 可视化**：字符级 LCS 差异对比（红色删除/绿色新增），统计栏（新增X字/删除X字/净变化X字），并排/对比视图切换
+- **优化历史记录**：可折叠的时间线追踪每轮优化（时间戳/模式/字数变化/评分变化），支持回溯预览
+- **评分对比**：优化前后 4 维度评分条（内容质量/情感共鸣/平台适配/可读性），分数变化 Badge
+- **平台适配检查**：
+  - 朋友圈模式：字数限制（≤2000字）+ 换行建议
+  - 小红书模式：标题长度（15-25字）+ 话题标签数量（3-5个）+ Emoji 密度分析
+- **操作**：应用修改（PUT API）+ 撤销回原始 + 一键复制
+- **技术**：framer-motion 布局动画 + 交错入场 + diff 高亮脉冲 + 评分条增长动画
+- 约 700 行
+
+### CSS 增强（globals.css）
+新增 13 个 CSS 工具类：
+- `.split-divider`：可拖拽分割线（渐变背景+悬浮效果+拖拽手柄提示）
+- `.diff-added` / `.diff-removed`：差异高亮动画（绿色新增/红色删除+脉冲动画）
+- `.score-bar-track` / `.score-bar-fill-*`：评分对比条（4种渐变色）
+- `.opt-mode-btn`：优化模式按钮（悬浮发光+激活态缩放）
+- `.history-dot`：历史时间线圆点（带外圈脉冲）
+- `.platform-adapter`：平台适配卡片（渐变边框+悬浮效果）
+- `.content-panel-textarea`：内容面板文本域（无边框+行高优化）
+- `.score-delta-positive` / `.score-delta-negative`：分数变化标签
+- `.opt-loading-dot`：优化加载三点弹跳动画
+
+### 集成到 content-workspace.tsx
+- 新增 ContentOptimizerStudio 组件导入
+- TOOL_TABS 新增 1 个 tab：
+  - "优化工作台"（Wand2 图标，create 组，位于创意生成之后）
+- Tab 渲染区域添加 optimizer case 分支，传入 selectedPost 的 id/content/topic
+- Tab 总数从 20 个扩展到 21 个（create=8, publish=5, insights=8）
+
+### 新增文件
+- `src/components/right-panel/content-optimizer-studio.tsx` — AI 内容优化对比工作台
+
+### 修改文件
+- `src/app/api/backup/restore/route.ts` — 修复 20 个 TS 错误 + 修复数据丢失 bug
+- `src/components/right-panel/content-health-dashboard.tsx` — useRef React 19 兼容
+- `src/components/right-panel/ai-weekly-report.tsx` — 修复 maxEngagement 硬编码 bug
+- `src/components/right-panel/content-workspace.tsx` — 新增 tab + 组件导入 + 渲染分支
+- `src/app/globals.css` — 13 个新 CSS 工具类
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（9.4s，所有动态路由正常）
+- ✅ 新组件 lint 零错误
+- ✅ TypeScript 错误从 107 个减少至约 85 个（修复 backup/restore 20 个 + useRef 1 个）
+
+Stage Summary:
+- 项目状态：稳定可运行，功能和分析能力持续丰富
+- 本轮新增 1 个文件，修改 5 个文件，修复 3 个关键 bug
+- 核心成果：
+  1. backup/restore 路由彻底修复（20 TS 错误 + 数据丢失安全漏洞）
+  2. React 19 useRef 兼容性修复
+  3. 周报排行进度条视觉 bug 修复
+  4. AI 内容优化对比工作台（双面板+Diff+历史+评分+平台适配）
+  5. 13 个新 CSS 动画/视觉效果工具类
+  6. Tab 系统扩展至 21 个（create=8, publish=5, insights=8）
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. 约 85 个 TS 错误仍存在（主要为 framer-motion Variants 类型 + readonly 数组）
+  3. Tab 数量持续增长（21 个），insights 组已达 8 个子 tab
+  4. 5 处 fire-and-forget 静默 catch（通知发送类，风险可接受）
+  5. AI 优化依赖 AI 服务可用性（有手动编辑回退）
+- 建议下一阶段优先事项：
+  1. 剩余 TS 错误批量修复（framer-motion Variants 类型统一）
+  2. 内容排期拖拽排序功能实现（已有 @dnd-kit 依赖）
+  3. 移动端响应式深度优化
+  4. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
+  5. 运营报告自动导出功能（PDF/图片格式）
+  6. 大组件拆分重构（analytics-panel.tsx、content-workspace.tsx）

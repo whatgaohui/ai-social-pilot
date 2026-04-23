@@ -97,6 +97,7 @@ import { CalendarMiniHeatmap } from "@/components/left-panel/calendar-mini-heatm
 import { ContentSchedulerTimeline } from "@/components/right-panel/content-scheduler-timeline";
 import { AIIdeaGenerator } from "@/components/right-panel/ai-idea-generator";
 import { AIWeeklyReport } from "@/components/right-panel/ai-weekly-report";
+import { ContentOptimizerStudio } from "@/components/right-panel/content-optimizer-studio";
 
 // ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
 
@@ -298,6 +299,7 @@ const TOOL_TABS = [
   { value: "review", icon: Shield, label: "AI评审", color: "text-violet-500", group: "create" as const },
   { value: "chat", icon: MessageSquare, label: "AI对话", color: "text-sky-500", group: "create" as const },
   { value: "ideas", icon: Lightbulb, label: "创意生成", color: "text-amber-500", group: "create" as const },
+  { value: "optimizer", icon: Wand2, label: "优化工作台", color: "text-violet-500", group: "create" as const },
   { value: "schedule", icon: CalendarClock, label: "智能排期", color: "text-cyan-500", group: "publish" as const },
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500", group: "publish" as const },
   { value: "queue", icon: Layers, label: "发布队列", color: "text-purple-500", group: "publish" as const },
@@ -1094,6 +1096,17 @@ export function ContentWorkspace() {
                 {toolTab === "weekly-report" && (
                   <motion.div key="weekly-report-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
                     <AIWeeklyReport />
+                  </motion.div>
+                )}
+
+                {/* ── Content Optimizer Studio Tab ───────────────────────── */}
+                {toolTab === "optimizer" && (
+                  <motion.div key="optimizer-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
+                    <ContentOptimizerStudio
+                      postId={selectedPost?.id}
+                      content={selectedPost?.content}
+                      topic={selectedPost?.topic}
+                    />
                   </motion.div>
                 )}
 

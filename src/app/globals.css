@@ -9180,3 +9180,171 @@ textarea,
   background: linear-gradient(90deg, var(--platform-color, #8b5cf6), transparent);
   transition: background 0.3s ease;
 }
+
+/* ─── Round 54: Optimizer Studio + Visual Polish ──────────────────────────── */
+
+/* Split panel divider */
+.split-divider {
+  width: 4px;
+  cursor: col-resize;
+  background: linear-gradient(180deg, transparent, rgba(139,92,246,0.3), rgba(16,185,129,0.3), transparent);
+  transition: background 0.2s ease, width 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+.split-divider:hover,
+.split-divider:active {
+  width: 5px;
+  background: linear-gradient(180deg, transparent, rgba(139,92,246,0.6), rgba(16,185,129,0.6), transparent);
+}
+.split-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 40px;
+  border-radius: 4px;
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.15);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.split-divider:hover::after {
+  opacity: 1;
+}
+
+/* Diff highlight animations */
+.diff-added {
+  background: rgba(34, 197, 94, 0.15);
+  border-radius: 2px;
+  padding: 0 2px;
+  animation: diff-add-pulse 0.6s ease-out;
+}
+.diff-removed {
+  background: rgba(239, 68, 68, 0.15);
+  border-radius: 2px;
+  padding: 0 2px;
+  text-decoration: line-through;
+  opacity: 0.7;
+  animation: diff-remove-pulse 0.6s ease-out;
+}
+@keyframes diff-add-pulse {
+  0% { background: rgba(34, 197, 94, 0.4); }
+  100% { background: rgba(34, 197, 94, 0.15); }
+}
+@keyframes diff-remove-pulse {
+  0% { background: rgba(239, 68, 68, 0.4); }
+  100% { background: rgba(239, 68, 68, 0.15); }
+}
+
+/* Score comparison bar */
+.score-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(100, 116, 139, 0.15);
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.score-bar-fill-violet { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+.score-bar-fill-emerald { background: linear-gradient(90deg, #10b981, #34d399); }
+.score-bar-fill-amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.score-bar-fill-rose { background: linear-gradient(90deg, #f43f5e, #fb7185); }
+
+/* Optimization mode button */
+.opt-mode-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.opt-mode-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  border-radius: inherit;
+}
+.opt-mode-btn:hover::before {
+  opacity: 1;
+}
+.opt-mode-btn.active {
+  box-shadow: 0 0 0 2px currentColor, 0 4px 12px rgba(0,0,0,0.1);
+  transform: scale(1.02);
+}
+
+/* History timeline dot */
+.history-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+.history-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  opacity: 0.3;
+}
+
+/* Platform adapter card */
+.platform-adapter {
+  background: linear-gradient(135deg, rgba(139,92,246,0.05), rgba(16,185,129,0.05));
+  border: 1px solid rgba(139,92,246,0.1);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+}
+.platform-adapter:hover {
+  border-color: rgba(139,92,246,0.2);
+  background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(16,185,129,0.08));
+}
+
+/* Content panel textarea */
+.content-panel-textarea {
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  width: 100%;
+  min-height: 200px;
+}
+.content-panel-textarea:focus {
+  outline: none;
+}
+.content-panel-textarea::placeholder {
+  color: rgba(100, 116, 139, 0.5);
+}
+
+/* Score delta badge */
+.score-delta-positive {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.score-delta-negative {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Loading dots animation for optimizer */
+.opt-loading-dot {
+  animation: opt-dot-bounce 1.4s ease-in-out infinite both;
+}
+.opt-loading-dot:nth-child(1) { animation-delay: -0.32s; }
+.opt-loading-dot:nth-child(2) { animation-delay: -0.16s; }
+@keyframes opt-dot-bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}

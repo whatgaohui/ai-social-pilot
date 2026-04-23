@@ -172,7 +172,7 @@ function AnimatedCounter({
   className?: string;
 }) {
   const [count, setCount] = useState(0);
-  const animFrameRef = useRef<number>();
+  const animFrameRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const start = performance.now();

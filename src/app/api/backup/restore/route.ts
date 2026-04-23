@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(data.knowledgeItems) && data.knowledgeItems.length > 0) {
       const count = await db.knowledgeItem.createMany({
-        data: data.knowledgeItems as Parameters<typeof db.knowledgeItem.createMany>[0]["data"],
+        data: data.knowledgeItems as any,
         skipDuplicates: true,
       });
       restoredCounts.knowledgeItems = count.count;
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(data.personas) && data.personas.length > 0) {
       const count = await db.persona.createMany({
-        data: data.personas as Parameters<typeof db.persona.createMany>[0]["data"],
+        data: data.personas as any,
         skipDuplicates: true,
       });
       restoredCounts.personas = count.count;
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(data.contentPlans) && data.contentPlans.length > 0) {
       const count = await db.contentPlan.createMany({
-        data: data.contentPlans as Parameters<typeof db.contentPlan.createMany>[0]["data"],
+        data: data.contentPlans as any,
         skipDuplicates: true,
       });
       restoredCounts.contentPlans = count.count;
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(data.aiConfigs) && data.aiConfigs.length > 0) {
       const count = await db.aIConfig.createMany({
-        data: data.aiConfigs as Parameters<typeof db.aIConfig.createMany>[0]["data"],
+        data: data.aiConfigs as any,
         skipDuplicates: true,
       });
       restoredCounts.aiConfigs = count.count;
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(data.materials) && data.materials.length > 0) {
       const count = await db.material.createMany({
-        data: data.materials as Parameters<typeof db.material.createMany>[0]["data"],
+        data: data.materials as any,
         skipDuplicates: true,
       });
       restoredCounts.materials = count.count;
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(data.platformAccounts) && data.platformAccounts.length > 0) {
       const count = await db.platformAccount.createMany({
-        data: data.platformAccounts as Parameters<typeof db.platformAccount.createMany>[0]["data"],
+        data: data.platformAccounts as any,
         skipDuplicates: true,
       });
       restoredCounts.platformAccounts = count.count;
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(data.notifications) && data.notifications.length > 0) {
       const count = await db.notification.createMany({
-        data: data.notifications as Parameters<typeof db.notification.createMany>[0]["data"],
+        data: data.notifications as any,
         skipDuplicates: true,
       });
       restoredCounts.notifications = count.count;
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(data.trackedAccounts) && data.trackedAccounts.length > 0) {
       const count = await db.trackedAccount.createMany({
-        data: data.trackedAccounts as Parameters<typeof db.trackedAccount.createMany>[0]["data"],
+        data: data.trackedAccounts as any,
         skipDuplicates: true,
       });
       restoredCounts.trackedAccounts = count.count;
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
         return rest;
       });
       const count = await db.contentPost.createMany({
-        data: cleanPosts as Parameters<typeof db.contentPost.createMany>[0]["data"],
+        data: cleanPosts as any,
         skipDuplicates: true,
       });
       restoredCounts.contentPosts = count.count;
@@ -136,10 +136,28 @@ export async function POST(req: NextRequest) {
     // Restore content versions
     if (Array.isArray(data.contentVersions) && data.contentVersions.length > 0) {
       const count = await db.contentVersion.createMany({
-        data: data.contentVersions as Parameters<typeof db.contentVersion.createMany>[0]["data"],
+        data: data.contentVersions as any,
         skipDuplicates: true,
       });
       restoredCounts.contentVersions = count.count;
+    }
+
+    // Restore content interactions (if available in backup)
+    if (Array.isArray((data as Record<string, unknown>).contentInteractions) && (data as Record<string, unknown>).contentInteractions!.length > 0) {
+      const count = await db.contentInteraction.createMany({
+        data: (data as Record<string, unknown>).contentInteractions as any,
+        skipDuplicates: true,
+      });
+      restoredCounts.contentInteractions = count.count;
+    }
+
+    // Restore analytics summaries (if available in backup)
+    if (Array.isArray((data as Record<string, unknown>).analyticsSummaries) && (data as Record<string, unknown>).analyticsSummaries!.length > 0) {
+      const count = await db.analyticsSummary.createMany({
+        data: (data as Record<string, unknown>).analyticsSummaries as any,
+        skipDuplicates: true,
+      });
+      restoredCounts.analyticsSummaries = count.count;
     }
 
     return NextResponse.json({

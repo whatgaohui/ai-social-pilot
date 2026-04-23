@@ -324,8 +324,7 @@ function StatCardGrid({ stats, platformAccent }: { stats: ReportStats; platformA
   );
 }
 
-function RankedPostCard({ post, rank }: { post: RankedPost; rank: number }) {
-  const maxEngagement = 1;
+function RankedPostCard({ post, rank, maxEngagement }: { post: RankedPost; rank: number; maxEngagement: number }) {
 
   return (
     <motion.div
@@ -1167,7 +1166,7 @@ export function AIWeeklyReport() {
                     </motion.div>
                     <div className="space-y-2">
                       {reportData.rankedPosts.map((post, idx) => (
-                        <RankedPostCard key={post.id} post={post} rank={idx} />
+                        <RankedPostCard key={post.id} post={post} rank={idx} maxEngagement={reportData.rankedPosts[0]?.engagementScore || 1} />
                       ))}
                     </div>
                   </section>
