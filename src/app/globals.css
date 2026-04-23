@@ -9703,3 +9703,52 @@ html {
   0%, 100% { box-shadow: 0 0 6px rgba(244, 63, 94, 0.5); }
   50% { box-shadow: 0 0 12px rgba(244, 63, 94, 0.8), 0 0 20px rgba(244, 63, 94, 0.3); }
 }
+
+/* ── Round 65: Additional UI polish utilities ── */
+
+/* Subtle inner glow for active/focused inputs (parent focus-within) */
+.input-glow:focus-within {
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15), 0 0 12px rgba(139, 92, 246, 0.08);
+}
+.dark .input-glow:focus-within {
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25), 0 0 16px rgba(139, 92, 246, 0.12);
+}
+
+/* Smooth appear animation for dropdowns/popovers */
+.popover-enter {
+  animation: popover-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes popover-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Platform-aware accent line — XHS variant */
+.platform-accent-line-xhs {
+  height: 2px;
+  background: linear-gradient(to right, rgba(244, 63, 94, 0.6), rgba(236, 72, 153, 0.3), transparent);
+}
+
+/* Card content area padding consistency */
+.card-content-consistent {
+  padding: 1rem;
+}
+@media (min-width: 640px) {
+  .card-content-consistent {
+    padding: 1.25rem;
+  }
+}
+
+/* Subtle text gradient for section headers */
+.text-gradient-subtle {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(168, 85, 247, 0.7));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.dark .text-gradient-subtle {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.9), rgba(196, 181, 253, 0.7));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

@@ -95,6 +95,10 @@ import {
 } from "@/components/left-panel/content-hover-preview";
 import { CalendarDndReorder } from "@/components/left-panel/calendar-dnd-reorder";
 import { ContentHeatmap } from "@/components/left-panel/content-heatmap";
+import {
+  useContentContextMenu,
+  ContentContextMenu,
+} from "@/components/content-context-menu";
 
 // Dynamically import QuickCreatePopup to avoid SSR issues with dialog/focus
 const QuickCreatePopup = dynamic(
@@ -264,9 +268,10 @@ interface DragPostCardProps {
   onDragStart: (e: React.DragEvent<HTMLElement>, post: ContentPost) => void;
   onDragEnd: () => void;
   onClick: () => void;
+  onContextMenu?: (e: React.MouseEvent, post: ContentPost) => void;
 }
 
-function DragPostCard({ post, isDragged, onDragStart, onDragEnd, onClick }: DragPostCardProps) {
+function DragPostCard({ post, isDragged, onDragStart, onDragEnd, onClick, onContextMenu }: DragPostCardProps) {
   const didDragRef = useRef(false);
 
   const handleDragStart = useCallback(
@@ -316,6 +321,7 @@ function DragPostCard({ post, isDragged, onDragStart, onDragEnd, onClick }: Drag
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onClick={handleClick}
+        onContextMenu={onContextMenu ? (e) => onContextMenu(e, post) : undefined}
         className={`
           group relative flex items-center gap-1.5 rounded-md border border-l-[3px]
           ${platformColor}
@@ -382,6 +388,7 @@ interface DraggableListItemProps {
   onDoubleClick: (post: ContentPost) => void;
   onContextMenuAction: (action: string, post: ContentPost) => void;
   isDragged: boolean;
+  onCustomContextMenu?: (e: React.MouseEvent, post: ContentPost) => void;
 }
 
 function DraggableListItem({
@@ -394,8 +401,12 @@ function DraggableListItem({
   onDoubleClick,
   onContextMenuAction,
   isDragged,
+  onCustomContextMenu,
 }: DraggableListItemProps) {
   const didDragRef = useRef(false);
+
+  // If custom context menu is provided, use it instead of shadcn ContextMenu
+  const useCustomMenu = !!onCustomContextMenu;
 
   const handleDragStart = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -428,6 +439,75 @@ function DraggableListItem({
     ? "border-l-rose-400 dark:border-l-rose-400"
     : "border-l-green-400 dark:border-l-green-400";
 
+  const cardDiv = (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      onContextMenu={useCustomMenu ? (e) => onCustomContextMenu(e, post) : undefined}
+      className={`
+        group relative w-full rounded-md border border-l-[3px] p-1.5 text-left
+        transition-all duration-150 cursor-grab active:cursor-grabbing
+        hover:border-primary/30 hover:bg-muted/50 hover:shadow-sm
+        ${platformColor}
+        ${isSelected ? "ring-1.5 ring-primary bg-primary/[0.05] border-primary/40" : "border-border"}
+        ${isDragged ? "opacity-50 scale-95 z-50" : ""}
+      `}
+    >
+      <div className="flex items-center gap-1.5">
+        {/* Drag handle */}
+        <div className="flex-shrink-0 flex items-center justify-center w-3.5 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground">
+          <GripVertical className="h-3 w-3" />
+        </div>
+        {/* Date */}
+        <span className="text-[9px] text-muted-foreground tabular-nums flex-shrink-0 w-[48px] leading-tight">
+          {formattedDate}
+        </span>
+        {/* Dots */}
+        <div className="flex items-center gap-[2px] flex-shrink-0">
+          <span className={`h-[4px] w-[4px] rounded-full ${PLATFORM_DOT_COLORS[post.platform || "wechat"]}`} />
+          <span className={`h-[4px] w-[4px] rounded-full ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
+        </div>
+        {/* Content type badge */}
+        <Badge className={`text-[7px] px-1 py-0 h-3 leading-3 flex-shrink-0 ${getContentTypeColorForPost(post)}`} variant="secondary">
+          {getContentTypeLabelForPost(post)}
+        </Badge>
+        {/* Topic */}
+        <span className="text-[10px] font-medium truncate flex-1 leading-tight">
+          {post.topic}
+        </span>
+        {/* Status badge */}
+        <Badge className={`text-[7px] px-1 py-0 h-3 leading-3 flex-shrink-0 ${STATUS_BADGE_COLORS[post.status as PostStatus]}`} variant="secondary">
+          {POST_STATUS_LABELS[post.status as PostStatus]}
+        </Badge>
+        {/* Inline status switcher for selected post */}
+        {isSelected && <PostStatusSwitcher post={post} />}
+      </div>
+      {/* Content preview */}
+      {post.content && (
+        <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight line-clamp-1 pl-[62px]">
+          {post.content.length > 50 ? post.content.slice(0, 50) + "…" : post.content}
+        </p>
+      )}
+    </div>
+  );
+
+  // Use the custom ContentContextMenu if provided, otherwise fall back to shadcn ContextMenu
+  if (useCustomMenu) {
+    return (
+      <motion.div
+        variants={staggerChild}
+        initial="hidden"
+        animate="show"
+        layout
+      >
+        {cardDiv}
+      </motion.div>
+    );
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -437,57 +517,7 @@ function DraggableListItem({
           animate="show"
           layout
         >
-          <div
-            draggable
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onClick={handleClick}
-            onDoubleClick={handleDoubleClick}
-            className={`
-              group relative w-full rounded-md border border-l-[3px] p-1.5 text-left
-              transition-all duration-150 cursor-grab active:cursor-grabbing
-              hover:border-primary/30 hover:bg-muted/50 hover:shadow-sm
-              ${platformColor}
-              ${isSelected ? "ring-1.5 ring-primary bg-primary/[0.05] border-primary/40" : "border-border"}
-              ${isDragged ? "opacity-50 scale-95 z-50" : ""}
-            `}
-          >
-            <div className="flex items-center gap-1.5">
-              {/* Drag handle */}
-              <div className="flex-shrink-0 flex items-center justify-center w-3.5 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground">
-                <GripVertical className="h-3 w-3" />
-              </div>
-              {/* Date */}
-              <span className="text-[9px] text-muted-foreground tabular-nums flex-shrink-0 w-[48px] leading-tight">
-                {formattedDate}
-              </span>
-              {/* Dots */}
-              <div className="flex items-center gap-[2px] flex-shrink-0">
-                <span className={`h-[4px] w-[4px] rounded-full ${PLATFORM_DOT_COLORS[post.platform || "wechat"]}`} />
-                <span className={`h-[4px] w-[4px] rounded-full ${STATUS_DOT_COLORS[post.status as PostStatus]}`} />
-              </div>
-              {/* Content type badge */}
-              <Badge className={`text-[7px] px-1 py-0 h-3 leading-3 flex-shrink-0 ${getContentTypeColorForPost(post)}`} variant="secondary">
-                {getContentTypeLabelForPost(post)}
-              </Badge>
-              {/* Topic */}
-              <span className="text-[10px] font-medium truncate flex-1 leading-tight">
-                {post.topic}
-              </span>
-              {/* Status badge */}
-              <Badge className={`text-[7px] px-1 py-0 h-3 leading-3 flex-shrink-0 ${STATUS_BADGE_COLORS[post.status as PostStatus]}`} variant="secondary">
-                {POST_STATUS_LABELS[post.status as PostStatus]}
-              </Badge>
-              {/* Inline status switcher for selected post */}
-              {isSelected && <PostStatusSwitcher post={post} />}
-            </div>
-            {/* Content preview */}
-            {post.content && (
-              <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight line-clamp-1 pl-[62px]">
-                {post.content.length > 50 ? post.content.slice(0, 50) + "…" : post.content}
-              </p>
-            )}
-          </div>
+          {cardDiv}
         </motion.div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-44">
@@ -804,8 +834,12 @@ export function CompactCalendar() {
     platform,
     updateContentPost,
     addContentPost,
+    deleteContentPost,
     leftPanelTab,
   } = useAppStore();
+
+  // --- Content Context Menu (custom glass-morphism menu) ---
+  const { contextMenu, handleContextMenu, closeContextMenu } = useContentContextMenu();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewMode, setViewMode] = useState<"grid" | "list" | "week" | "drag">("grid");
@@ -1015,6 +1049,71 @@ export function CompactCalendar() {
 
   const isDragMode = viewMode === "drag";
 
+  // --- Context menu action handler for ContentContextMenu ---
+  const handleCustomMenuAction = useCallback(
+    (actionId: string, post: ContentPost) => {
+      switch (actionId) {
+        case "copy":
+          if (post.content) {
+            navigator.clipboard.writeText(post.content).then(
+              () => toast.success("文案已复制到剪贴板"),
+              () => toast.error("复制失败"),
+            );
+          } else {
+            toast.info("该内容暂无文案");
+          }
+          break;
+        case "ai-optimize":
+          setSelectedDate(post.scheduledDate);
+          setSelectedPostId(post.id);
+          toast.info("请在右侧面板使用 AI智能优化");
+          break;
+        case "ai-polish":
+          setSelectedDate(post.scheduledDate);
+          setSelectedPostId(post.id);
+          toast.info("请在右侧面板使用 AI润色功能");
+          break;
+        case "quality-score":
+          setSelectedDate(post.scheduledDate);
+          setSelectedPostId(post.id);
+          break;
+        case "version-history":
+          setSelectedDate(post.scheduledDate);
+          setSelectedPostId(post.id);
+          break;
+        case "cross-platform":
+          setSelectedDate(post.scheduledDate);
+          setSelectedPostId(post.id);
+          toast.info("跨平台发布功能开发中");
+          break;
+        case "edit":
+          setSelectedDate(post.scheduledDate);
+          setSelectedPostId(post.id);
+          break;
+        case "duplicate": {
+          const duplicated: ContentPost = {
+            ...post,
+            id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          addContentPost(duplicated);
+          toast.success("已复制", { description: post.topic });
+          break;
+        }
+        case "move":
+          setMovePost(post);
+          setMoveToDateOpen(true);
+          break;
+        case "mark-published":
+          updateContentPost(post.id, { status: "published", publishedAt: new Date().toISOString() });
+          toast.success("已标记为已发布", { description: post.topic });
+          break;
+      }
+    },
+    [setSelectedDate, setSelectedPostId, updateContentPost, addContentPost],
+  );
+
   // --- Hover preview action handlers ---
   const handlePreviewEdit = useCallback(
     (post: ContentPost) => {
@@ -1089,6 +1188,14 @@ export function CompactCalendar() {
       setSelectedPostId(post.id);
     },
     [setSelectedDate, setSelectedPostId, isDragMode],
+  );
+
+  // Context menu handler for the list view and drag view items
+  const handleItemContextMenu = useCallback(
+    (e: React.MouseEvent, post: ContentPost) => {
+      handleContextMenu(e, post);
+    },
+    [handleContextMenu],
   );
 
   // --- Context menu action handler ---
@@ -1587,6 +1694,7 @@ export function CompactCalendar() {
                                   setSelectedDate(post.scheduledDate);
                                   setSelectedPostId(post.id);
                                 }}
+                                onContextMenu={handleItemContextMenu}
                               />
                             ))}
                           </div>
@@ -1938,6 +2046,7 @@ export function CompactCalendar() {
                         onDoubleClick={handleDayDoubleClick}
                         onContextMenuAction={handleContextMenuAction}
                         isDragged={calDragState.draggedPostId === post.id}
+                        onCustomContextMenu={handleItemContextMenu}
                       />
                     ))}
                   </motion.div>
@@ -2077,6 +2186,13 @@ export function CompactCalendar() {
           onCopy={handlePreviewCopy}
         />
       )}
+
+      {/* ====== Content Context Menu (glass-morphism) ====== */}
+      <ContentContextMenu
+        contextMenu={contextMenu}
+        closeContextMenu={closeContextMenu}
+        onAction={handleCustomMenuAction}
+      />
     </div>
   );
 }

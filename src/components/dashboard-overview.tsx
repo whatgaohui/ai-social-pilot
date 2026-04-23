@@ -174,17 +174,6 @@ interface ActivityItem {
   time: string;
 }
 
-const MOCK_ACTIVITIES: ActivityItem[] = [
-  { id: "1", type: "ai-generate", description: "AI生成了3条朋友圈内容", time: "5分钟前" },
-  { id: "2", type: "publish", description: "发布了「周末摄影分享」", time: "1小时前" },
-  { id: "3", type: "score-update", description: "「职场干货」AI评分提升至92", time: "2小时前" },
-  { id: "4", type: "template-use", description: "使用了「知识分享」模板", time: "3小时前" },
-  { id: "5", type: "ai-generate", description: "AI优化了2条待发布内容", time: "5小时前" },
-  { id: "6", type: "publish", description: "发布了「读书笔记」系列", time: "昨天" },
-  { id: "7", type: "score-update", description: "本周平均AI评分达到88", time: "昨天" },
-  { id: "8", type: "template-use", description: "收藏了「产品推广」模板", time: "2天前" },
-];
-
 const ACTIVITY_ICONS = {
   "ai-generate": Bot,
   "publish": Bell,
@@ -605,7 +594,151 @@ export function DashboardOverview() {
     return Array.from(map.keys()).sort();
   }, [contentPosts]);
 
-  // ── Compute todo reminders ───────────────────────────────────────────
+  // ── Compute real activity feed from store data ─────────────────────
+  const activities = useMemo(() => {
+    const items: ActivityItem[] = [];
+    const now = Date.now();
+
+    // Helper: relative time label from ISO string
+    const timeLabel = (iso: string): string => {
+      const diff = now - new Date(iso).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return "刚刚";
+      if (mins < 60) return `${mins}分钟前`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}小时前`;
+      const days = Math.floor(hours / 24);
+      if (days < 2) return "昨天";
+      if (days < 7) return `${days}天前`;
+      return safeFormat(iso, "M月d日");
+    };
+
+    // 1. Recently published posts
+    const publishedPosts = contentPosts
+      .filter((p) => p.status === "published" && p.publishedAt)
+      .sort((a, b) => new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime());
+    for (const p of publishedPosts.slice(0, 2)) {
+      items.push({
+        id: `pub-${p.id}`,
+        type: "publish",
+        description: `发布了「${p.topic}」`,
+        time: timeLabel(p.publishedAt!),
+      });
+    }
+
+    // 2. AI-generated posts (status = generated or optimized)
+    const aiPosts = contentPosts
+      .filter((p) => (p.status === "generated" || p.status === "optimized") && p.content)
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    const generatedCount = contentPosts.filter((p) => p.status === "generated").length;
+    if (generatedCount > 0) {
+      items.push({
+        id: "ai-gen-batch",
+        type: "ai-generate",
+        description: `AI生成了${generatedCount}条内容`,
+        time: aiPosts[0] ? timeLabel(aiPosts[0].updatedAt) : "今天",
+      });
+    }
+    // Individual optimized posts
+    const optimizedPosts = aiPosts.filter((p) => p.status === "optimized");
+    for (const p of optimizedPosts.slice(0, 1)) {
+      items.push({
+        id: `opt-${p.id}`,
+        type: "ai-generate",
+        description: `AI优化了「${p.topic}」`,
+        time: timeLabel(p.updatedAt),
+      });
+    }
+
+    // 3. High AI-score posts
+    const highScorePosts = contentPosts
+      .filter((p) => p.aiScore > 0)
+      .sort((a, b) => b.aiScore - a.aiScore);
+    if (highScorePosts.length > 0) {
+      const top = highScorePosts[0];
+      items.push({
+        id: `score-${top.id}`,
+        type: "score-update",
+        description: `「${top.topic}」AI评分 ${top.aiScore}`,
+        time: timeLabel(top.updatedAt),
+      });
+    }
+    // Average score entry
+    const scoredPosts = contentPosts.filter((p) => p.aiScore > 0);
+    if (scoredPosts.length >= 3) {
+      const avg = Math.round(scoredPosts.reduce((s, p) => s + p.aiScore, 0) / scoredPosts.length);
+      items.push({
+        id: "avg-score",
+        type: "score-update",
+        description: `平均AI评分达到${avg}`,
+        time: "本周",
+      });
+    }
+
+    // 4. Knowledge base entry count
+    if (knowledgeItems.length > 0) {
+      const latestKnowledge = [...knowledgeItems].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )[0];
+      items.push({
+        id: "kb-count",
+        type: "template-use",
+        description: `知识库已录入${knowledgeItems.length}条内容`,
+        time: latestKnowledge ? timeLabel(latestKnowledge.updatedAt) : "最近",
+      });
+    }
+
+    // 5. Plan info
+    if (currentPlan) {
+      items.push({
+        id: "plan-info",
+        type: "template-use",
+        description: `${currentPlan.month}内容计划已创建`,
+        time: timeLabel(currentPlan.updatedAt || currentPlan.createdAt),
+      });
+    }
+
+    // 6. Scheduled posts
+    const scheduledPosts = contentPosts.filter((p) => p.status === "scheduled");
+    if (scheduledPosts.length > 0) {
+      items.push({
+        id: "scheduled-info",
+        type: "publish",
+        description: `${scheduledPosts.length}条内容已排期待发布`,
+        time: "今天",
+      });
+    }
+
+    // Sort by most recent (approximation)
+    items.sort((a, b) => {
+      // Simple heuristic: “刚刚" > "分钟前" > "小时前" > "昨天" > "天前" > "本周" > "M月d日"
+      const order: Record<string, number> = { "刚刚": 0, "分钟前": 1, "小时前": 2, "昨天": 3, "天前": 4, "本周": 5, "今天": 2.5 };
+      const getOrder = (t: string) => {
+        for (const [key, val] of Object.entries(order)) {
+          if (t.includes(key)) return val;
+        }
+        return 6;
+      };
+      return getOrder(a.time) - getOrder(b.time);
+    });
+
+    // Pad with generic activities if fewer than 4
+    const GENERIC: ActivityItem[] = [
+      { id: "gen-1", type: "template-use" as const, description: "欢迎使用朋友圈AI运营助手", time: "今天" },
+      { id: "gen-2", type: "ai-generate" as const, description: "开始创建你的第一条内容", time: "今天" },
+    ];
+    while (items.length < 4) {
+      const next = GENERIC[items.length % GENERIC.length];
+      if (!items.find((i) => i.id === next.id)) {
+        items.push(next);
+      } else {
+        break;
+      }
+    }
+
+    return items.slice(0, 4);
+  }, [contentPosts, knowledgeItems, currentPlan]);
+
 
   const reminders = useMemo(() => {
     const now = new Date();
@@ -861,12 +994,12 @@ export function DashboardOverview() {
                         animate="show"
                         className="px-1"
                       >
-                        {MOCK_ACTIVITIES.slice(0, 4).map((activity, i) => (
+                        {activities.slice(0, 4).map((activity, i) => (
                           <ActivityTimelineItem
                             key={activity.id}
                             activity={activity}
                             index={i}
-                            isLast={i === MOCK_ACTIVITIES.slice(0, 4).length - 1}
+                            isLast={i === activities.slice(0, 4).length - 1}
                           />
                         ))}
                       </motion.div>

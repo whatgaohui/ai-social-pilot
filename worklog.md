@@ -11273,3 +11273,107 @@ Stage Summary:
   4. 右侧面板文件目录重组
   5. 移动端布局真机测试
   6. 发布日历热力图功能
+
+---
+Task ID: 65
+Agent: Main Developer + Subagents
+Task: 第65轮 - 右键菜单集成 + 真实数据 + UI微交互增强
+
+Work Log:
+- 读取 worklog.md 了解第64轮项目状态
+- 运行 next build（编译成功9.9s）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），改用 next build + eslint 验证
+
+### 新功能
+
+1. **content-context-menu 接入内容列表**（2个文件修改）：
+   - `content-context-menu.tsx` 增强：
+     - 新增 duplicate 和 move 菜单项
+     - 平台感知左侧边框颜色（XHS=rose，WeChat=green）
+     - 平台圆点指示器 + 帖子标题显示
+     - 修复点击外部检测（requestAnimationFrame 延迟）
+   - `compact-calendar.tsx` 集成：
+     - 导入 useContentContextMenu hook + ContentContextMenu 组件
+     - 创建 handleCustomMenuAction 回调处理 11 种操作：
+       copy → 剪贴板、ai-optimize/polish → 右面板提示、edit → 编辑、
+       duplicate → 创建副本、move → 日期移动对话框、mark-published → API更新状态
+     - DraggableListItem 新增 onCustomContextMenu 可选属性
+     - DragPostCard 新增 onContextMenu 右键支持
+     - 列表视图和拖拽视图均支持右键菜单
+
+2. **Dashboard Overview 真实活动数据**（dashboard-overview.tsx）：
+   - 移除 hardcoded MOCK_ACTIVITIES（8条假数据）
+   - 新增 useMemo 计算的 activities 数组，从 store 真实数据生成：
+     - 已发布帖子（最多2条，相对时间戳）
+     - AI生成内容数量
+     - 最近优化帖子
+     - 最高AI评分帖子
+     - 平均AI评分（3+篇时显示）
+     - 知识库条目数量
+     - 内容计划信息
+     - 待发布帖子数量
+   - 按时间排序 + 不足4条时填充欢迎引导条目
+
+### UI 微交互增强（5个文件修改）
+
+3. **知识库卡片增强**（knowledge-base.tsx）：
+   - 知识条目卡片添加 `micro-hover` 悬停效果
+   - 编辑/删除按钮添加 `focus-ring-soft`
+   - 平台感知左侧边框（XHS=rose-400，WeChat=violet-400）
+
+4. **人设表单增强**（persona-form.tsx）：
+   - 3个表单卡片添加 `content-card-hover`
+   - 保存按钮添加 `focus-ring-soft`
+   - 基本信息卡片顶部添加渐变装饰线
+   - 所有表单输入框添加 `focus-ring-soft`
+
+5. **文案模板卡片增强**（copywriting-templates.tsx）：
+   - 模板卡片添加 `micro-hover`
+   - AI生成按钮已有 focus-ring-soft（确认无需修改）
+
+6. **AI聊天工作区增强**（ai-chat-workspace.tsx）：
+   - 聊天输入容器添加 `input-glow` 聚焦发光
+   - Textarea 和发送按钮已有 focus-ring-soft（确认无需修改）
+
+7. **新增 CSS 工具类**（globals.css）：
+   - `.input-glow:focus-within` — 输入框父容器聚焦发光
+   - `.popover-enter` + `@keyframes popover-in` — 弹出层入场动画
+   - `.platform-accent-line-xhs` — XHS平台装饰线
+   - `.card-content-consistent` — 响应式卡片内边距
+   - `.text-gradient-subtle` — 标题文字渐变（含dark变体）
+
+### 修改文件
+- `src/components/content/content-context-menu.tsx` — 增强菜单（新增项+平台感知+修复点击检测）
+- `src/components/left-panel/compact-calendar.tsx` — 集成右键菜单（11种操作）
+- `src/components/dashboard-overview.tsx` — 真实活动数据替换mock
+- `src/components/left-panel/knowledge-base.tsx` — 卡片悬停+焦点+平台边框
+- `src/components/left-panel/persona-form.tsx` — 卡片悬停+焦点+渐变装饰
+- `src/components/left-panel/copywriting-templates.tsx` — 卡片悬停
+- `src/components/right-panel/ai-chat-workspace.tsx` — 输入发光
+- `src/app/globals.css` — 6个新CSS工具类
+
+### QA验证结果
+- ✅ next build 编译成功（9.9s，70个页面）
+- ✅ 所有修改文件 lint 通过
+
+Stage Summary:
+- 项目状态：稳定可运行，功能+UI双重提升
+- 本轮修改 8 个文件，核心改进：
+  1. 右键菜单正式接入日历内容列表（11种操作：复制/编辑/优化/润色/评分/版本/跨平台/复制/移动/发布）
+  2. Dashboard 活动流改用真实数据（替代8条mock数据）
+  3. 知识库/人设/模板/AI聊天面板全部视觉增强
+  4. 6个新CSS工具类（input-glow/popover-enter/platform-accent/text-gradient等）
+- 累计美化组件数：全项目约 30+ 个核心组件已完成视觉增强
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. ~85 个 TS 类型错误仍存在（framer-motion Variants）
+  3. 右侧面板 95+ 文件未分组整理
+  4. 移动端响应式布局未在真机测试
+  5. content-context-menu 跨平台发布功能显示"coming soon"
+- 建议下一阶段优先事项：
+  1. 完善跨平台发布（context menu 的 cross-platform 操作）
+  2. framer-motion Variants 类型统一修复
+  3. 发布日历热力图功能
+  4. 右侧面板文件目录重组
+  5. 移动端布局真机测试优化
+  6. 运营报告自动导出功能

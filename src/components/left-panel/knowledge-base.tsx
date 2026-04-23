@@ -325,6 +325,8 @@ function KnowledgeCard({
   setExpandedId: (id: string | null) => void;
   relatedItems: KnowledgeItem[];
 }) {
+  const platform = useAppStore((s) => s.platform);
+  const isXHS = platform === 'xiaohongshu';
   const isExpanded = expandedId === item.id;
   const showRelated = relatedItems.length > 0 && onFindRelated !== undefined;
 
@@ -342,7 +344,7 @@ function KnowledgeCard({
       transition={{ duration: 0.2 }}
       layout
     >
-      <Card className="knowledge-card content-card-hover card-spotlight border-0 shadow-sm hover:shadow-md hover:border-primary/10 transition-all duration-200 group card-enter list-item-enter">
+      <Card className={`knowledge-card content-card-hover micro-hover card-spotlight border-0 shadow-sm hover:shadow-md hover:border-primary/10 transition-all duration-200 group card-enter list-item-enter rounded-lg ${isXHS ? 'border-l-2 border-l-rose-400' : 'border-l-2 border-l-violet-400'}`}>
         <CardContent className="p-3">
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
@@ -375,7 +377,7 @@ function KnowledgeCard({
               </Button>
               <Button
                 variant="ghost" size="sm"
-                className="h-7 w-7 p-0"
+                className="h-7 w-7 p-0 focus-ring-soft"
                 onClick={() => onEdit(item)}
                 title="编辑"
               >
@@ -391,7 +393,7 @@ function KnowledgeCard({
               </Button>
               <Button
                 variant="ghost" size="sm"
-                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                className="h-7 w-7 p-0 text-destructive hover:text-destructive focus-ring-soft"
                 onClick={() => onDelete(item.id)}
                 title="删除"
               >

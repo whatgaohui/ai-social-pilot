@@ -13,6 +13,8 @@ import {
   Pencil,
   CheckCircle2,
   Trash2,
+  CalendarClock,
+  ClipboardCopy,
   type LucideIcon,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -50,6 +52,8 @@ const GROUP_2: MenuItem[] = [
 
 const GROUP_3: MenuItem[] = [
   { id: "edit", label: "编辑详情", icon: Pencil, shortcut: "⌘E" },
+  { id: "duplicate", label: "复制一条", icon: ClipboardCopy },
+  { id: "move", label: "移动到日期…", icon: CalendarClock },
   { id: "mark-published", label: "标记已发布", icon: CheckCircle2 },
   { id: "delete", label: "删除", icon: Trash2, destructive: true },
 ];
@@ -57,6 +61,22 @@ const GROUP_3: MenuItem[] = [
 const ALL_ITEMS: MenuItem[] = [...GROUP_1, ...GROUP_2, ...GROUP_3];
 
 const SEPARATOR_AFTER = new Set([GROUP_1.length, GROUP_1.length + GROUP_2.length]);
+
+/* ─── Platform color accent helpers ──────────────────────────── */
+
+function getPlatformAccentClass(platform?: string): string {
+  if (platform === "xiaohongshu") {
+    return "border-l-rose-500/60";
+  }
+  return "border-l-green-500/60";
+}
+
+function getPlatformDotClass(platform?: string): string {
+  if (platform === "xiaohongshu") {
+    return "bg-rose-500";
+  }
+  return "bg-green-500";
+}
 
 /* ─── Hook ────────────────────────────────────────────────────── */
 
@@ -71,7 +91,7 @@ export function useContentContextMenu() {
     e.preventDefault();
     e.stopPropagation();
     const x = Math.min(e.clientX, window.innerWidth - 220);
-    const y = Math.min(e.clientY, window.innerHeight - 320);
+    const y = Math.min(e.clientY, window.innerHeight - 360);
     setContextMenu({ x, y, post });
   }, []);
 
@@ -110,9 +130,14 @@ export function ContentContextMenu({
       if (e.key === "Escape") closeContextMenu();
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
+    // Delay listener attachment by 1 frame to avoid the right-click event itself closing the menu
+    const rafId = requestAnimationFrame(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
+    });
+
     return () => {
+      cancelAnimationFrame(rafId);
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
@@ -131,40 +156,57 @@ export function ContentContextMenu({
       onAction?.(item.id, contextMenu.post);
       closeContextMenu();
     },
-    [contextMenu.post, onAction, closeContextMenu, deleteContentPost]
+    [contextMenu.post, onAction, closeContextMenu, deleteContentPost],
   );
 
   if (!contextMenu.post) return null;
 
+  const post = contextMenu.post;
+  const platformAccent = getPlatformAccentClass(post.platform);
+  const platformDot = getPlatformDotClass(post.platform);
+
   return (
     <div
       ref={menuRef}
-      className="context-menu-enter fixed z-[9999] w-52 rounded-xl glass-card p-1.5 shadow-xl"
+      className={cn(
+        "context-menu-enter fixed z-[9999] w-52 rounded-xl glass-card p-1.5 shadow-xl",
+        "border-l-[3px]",
+        platformAccent,
+      )}
       style={{ left: contextMenu.x, top: contextMenu.y }}
       role="menu"
       aria-orientation="vertical"
     >
+      {/* Post topic header */}
+      <div className="flex items-center gap-1.5 px-2 py-1 mb-0.5">
+        <span className={cn("h-2 w-2 rounded-full shrink-0", platformDot)} />
+        <span className="text-[11px] font-medium text-foreground/80 truncate max-w-[160px]">
+          {post.topic}
+        </span>
+      </div>
+      <Separator className="my-0.5 opacity-40" />
+
       {ALL_ITEMS.map((item, index) => {
         const Icon = item.icon;
         const showSeparator = SEPARATOR_AFTER.has(index);
 
         return (
           <div key={item.id}>
-            {showSeparator && <Separator className="my-1 opacity-50" />}
+            {showSeparator && <Separator className="my-1 opacity-40" />}
             <button
               role="menuitem"
               onClick={() => handleItemClick(item)}
               className={cn(
-                "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
+                "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] transition-colors cursor-pointer",
                 item.destructive
                   ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-                  : "hover:bg-accent/60"
+                  : "hover:bg-accent/60",
               )}
             >
               <Icon className="h-4 w-4 shrink-0 opacity-70" />
               <span className="flex-1 text-left truncate">{item.label}</span>
               {item.shortcut && (
-                <span className="ml-auto text-[11px] text-muted-foreground/60 tabular-nums">
+                <span className="ml-auto text-[10px] text-muted-foreground/50 tabular-nums">
                   {item.shortcut}
                 </span>
               )}

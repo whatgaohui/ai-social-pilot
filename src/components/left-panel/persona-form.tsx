@@ -144,7 +144,8 @@ export function PersonaForm() {
       )}
 
       {/* Basic Info */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-card to-card/80 card-glass-enhanced">
+      <Card className="border-0 shadow-sm bg-gradient-to-br from-card to-card/80 card-glass-enhanced content-card-hover">
+        <div className="h-0.5 bg-gradient-to-r from-violet-500/60 via-purple-500/40 to-transparent rounded-t-xl -mt-4 -mx-4 mb-0" />
         <CardHeader className="pb-3 px-4 pt-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -160,7 +161,7 @@ export function PersonaForm() {
               placeholder="输入您的姓名"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="h-9 text-sm input-glow"
+              className="h-9 text-sm input-glow focus-ring-soft"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -170,7 +171,7 @@ export function PersonaForm() {
                 placeholder="如：产品经理"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="h-9 text-sm"
+                className="h-9 text-sm focus-ring-soft"
               />
             </div>
             <div className="space-y-1.5 min-w-0">
@@ -179,7 +180,7 @@ export function PersonaForm() {
                 placeholder="如：互联网"
                 value={form.industry}
                 onChange={(e) => setForm({ ...form, industry: e.target.value })}
-                className="h-9 text-sm"
+                className="h-9 text-sm focus-ring-soft"
               />
             </div>
           </div>
@@ -187,7 +188,7 @@ export function PersonaForm() {
       </Card>
 
       {/* Style Settings */}
-      <Card className="border-0 shadow-sm card-glass-enhanced">
+      <Card className="border-0 shadow-sm card-glass-enhanced content-card-hover">
         <CardHeader className="pb-3 px-4 pt-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
@@ -244,7 +245,7 @@ export function PersonaForm() {
               placeholder="如：AI,产品,创业,成长"
               value={form.keywords}
               onChange={(e) => handleKeywordsChange(e.target.value)}
-              className="h-9 text-sm"
+              className="h-9 text-sm focus-ring-soft"
             />
             {form.keywords && (
               <div className="flex flex-wrap gap-1 mt-1">
@@ -260,7 +261,7 @@ export function PersonaForm() {
       </Card>
 
       {/* Bio & Audience */}
-      <Card className="border-0 shadow-sm card-glass-enhanced">
+      <Card className="border-0 shadow-sm card-glass-enhanced content-card-hover">
         <CardHeader className="pb-3 px-4 pt-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
@@ -276,7 +277,7 @@ export function PersonaForm() {
               placeholder="简单介绍自己..."
               value={form.bio}
               onChange={(e) => setForm({ ...form, bio: e.target.value })}
-              className="text-sm min-h-[60px] resize-none"
+              className="text-sm min-h-[60px] resize-none focus-ring-soft"
             />
           </div>
           <div className="space-y-1.5 min-w-0">
@@ -285,13 +286,13 @@ export function PersonaForm() {
               placeholder="描述您的目标读者..."
               value={form.targetAudience}
               onChange={(e) => setForm({ ...form, targetAudience: e.target.value })}
-              className="text-sm min-h-[60px] resize-none"
+              className="text-sm min-h-[60px] resize-none focus-ring-soft"
             />
           </div>
         </CardContent>
       </Card>
 
-      <Button onClick={handleSave} disabled={saving} className={`w-full h-10 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/40 ${saving ? 'btn-loading' : ''}`} size="sm">
+      <Button onClick={handleSave} disabled={saving} className={`w-full h-10 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/40 focus-ring-soft ${saving ? 'btn-loading' : ''}`} size="sm">
         {saving ? (
           <span>保存中...</span>
         ) : (

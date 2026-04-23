@@ -756,7 +756,7 @@ export function AIChatWorkspace() {
 
       {/* Input Area */}
       <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-sm flex-shrink-0">
-        <div className="flex gap-2 items-end">
+        <div className="flex gap-2 items-end input-glow">
           <Textarea
             ref={textareaRef}
             value={inputValue}
@@ -767,7 +767,7 @@ export function AIChatWorkspace() {
             }
             disabled={isLoading}
             rows={1}
-            className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border-border/60 bg-muted/30 text-sm focus-visible:ring-violet-400/40 focus-visible:border-violet-300/60 transition-all focus-ring-soft"
+            className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border-border/60 bg-muted/30 text-sm focus-visible:ring-violet-400/40 focus-visible:border-violet-300/60 transition-all input-glow focus-ring-soft"
           />
           <Button
             size="icon"
