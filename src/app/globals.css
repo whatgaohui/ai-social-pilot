@@ -3,6 +3,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Prevent browser CJK font synthesis for consistent Chinese text rendering */
+* {
+  -webkit-font-synthesis: none;
+  font-synthesis: none;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -44,17 +50,14 @@
 }
 
 
-/* ====== Design Token System ====== */
-
-/* ====== Global Scrollbar ====== */
-
-/* ====== Reduced Motion ====== */
-
-/* ====== Selection Color ====== */
-
 /* Animated gradient background */
 .bg-gradient-animated {
   background: linear-gradient(-45deg, #fafafa, #f8f9fa, #fdfcff, #fafafa, #ffffff);
+  background-size: 400% 400%;
+  animation: gradient-shift 20s ease infinite;
+}
+.dark .bg-gradient-animated {
+  background: linear-gradient(-45deg, #0f0f14, #12121a, #0d0d18, #0f0f14, #111118);
   background-size: 400% 400%;
   animation: gradient-shift 20s ease infinite;
 }
@@ -66,10 +69,12 @@
   -webkit-backdrop-filter: blur(12px);
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.3);
+  color: inherit;
 }
 .dark .glass {
   background: rgba(15, 15, 20, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  color: oklch(0.9 0 0);
 }
 
 /* Pulse ring animation */
@@ -656,8 +661,6 @@ textarea {
   --skeleton-shimmer: rgba(139, 92, 246, 0.1);
 }
 
-/* Scroll area edge fade effects */
-
 /* Smooth transitions for all interactive elements */
 .interactive-transition {
   transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
@@ -683,21 +686,6 @@ textarea {
 }
 .logo-hover-spin:hover {
   transform: rotate(8deg) scale(1.05);
-}
-
-/* Footer gradient border top */
-
-/* AI badge animated pulse glow */
-@keyframes ai-badge-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.25); }
-  50% { box-shadow: 0 0 0 4px rgba(139, 92, 246, 0); }
-}
-.dark .ai-badge-pulse {
-  animation-name: ai-badge-pulse-dark;
-}
-@keyframes ai-badge-pulse-dark {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.35); }
-  50% { box-shadow: 0 0 0 5px rgba(139, 92, 246, 0); }
 }
 
 /* ====== Visual Polish Utilities ====== */
@@ -2229,13 +2217,6 @@ textarea {
   border-color: rgba(139, 92, 246, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(139, 92, 246, 0.08);
 }
-.dark .animate-breathe {
-  animation-name: breathe-dark;
-}
-@keyframes breathe-dark {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
-  50% { box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.25); }
-}
 .dark .skeleton-shine::after {
   background: linear-gradient(
     90deg,
@@ -2621,12 +2602,6 @@ textarea {
 
 /* ─── 2. Card Hover Enhancements ─── */
 
-/* .card-spotlight — mouse-following spotlight on card top via radial-gradient */
-.card-spotlight > * {
-  position: relative;
-  z-index: 1;
-}
-
 /* .card-tilt — subtle 3D perspective tilt on hover, smooth return on leave */
 .card-tilt {
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
@@ -2720,23 +2695,6 @@ textarea {
 }
 
 /* ─── 4. Input Focus Effects ─── */
-
-/* .input-glow — focus border glow */
-.input-glow {
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
-}
-.input-glow:focus {
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow:
-    0 0 0 3px rgba(139, 92, 246, 0.1),
-    0 0 12px rgba(139, 92, 246, 0.06);
-}
-.dark .input-glow:focus {
-  border-color: rgba(139, 92, 246, 0.6);
-  box-shadow:
-    0 0 0 3px rgba(139, 92, 246, 0.15),
-    0 0 16px rgba(139, 92, 246, 0.08);
-}
 
 /* .input-label-float — label floats up and shrinks on focus */
 .input-label-float {
@@ -3174,24 +3132,10 @@ textarea {
 .loading-dots span:nth-child(2) { animation-delay: 0.16s; }
 .loading-dots span:nth-child(3) { animation-delay: 0.32s; }
 
-/* 页面顶部进度条（不确定态） */
-.loading-bar-top::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.6), transparent);
-  animation: loading-bar-sweep 1.5s ease-in-out infinite;
-}
-
 /* 扩散环脉冲效果 */
 @keyframes pulse-ring-expand {
   0% { transform: scale(0.8); opacity: 1; }
   100% { transform: scale(1.6); opacity: 0; }
-}
-
-/* CSS-only 旋转加载圈 */
-@keyframes spinner-rotate {
-  to { transform: rotate(360deg); }
 }
 
 /* 骨架屏微光效果（改进版移动渐变） */
@@ -3223,15 +3167,6 @@ textarea {
 }
 
 /* 增强型毛玻璃效果（带动画模糊） */
-
-/* 旋转锥形渐变边框 */
-.card-gradient-border > * {
-  background: var(--background);
-  border-radius: calc(var(--radius) - 1.5px);
-}
-@keyframes border-angle-spin {
-  to { --border-angle: 360deg; }
-}
 
 /* 堆叠卡片深度效果 */
 .card-stack::before,
@@ -3276,22 +3211,6 @@ textarea {
 /* 流动渐变文字 */
 
 /* ─── Button & Interactive（按钮与交互） ─── */
-
-/* 按钮加载状态（含旋转器） */
-.btn-loading::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 16px;
-  height: 16px;
-  margin-top: -8px;
-  margin-left: -8px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  animation: spinner-rotate 0.7s linear infinite;
-}
 
 /* 按钮成功状态（绿色对勾） */
 
@@ -3511,16 +3430,6 @@ textarea {
 }
 .dark .card-glass-enhanced:hover {
   box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15), 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-/* .card-gradient-border — Animated gradient border (rotating conic-gradient) */
-@keyframes card-border-rotate {
-  from { --border-angle: 0deg; }
-  to { --border-angle: 360deg; }
-}
-.dark .card-gradient-border::before {
-  background: conic-gradient(from var(--border-angle), #7c3aed, #db2777, #d97706, #059669, #7c3aed);
-  opacity: 0.5;
 }
 
 /* .card-stack — Stacked card effect with depth */
@@ -5037,12 +4946,6 @@ textarea {
 }
 .retry-button-pulse {
   animation: retry-pulse 2s ease-in-out infinite;
-}
-
-/* Loading bar top — for page-level loading indicator */
-@keyframes loading-bar-sweep {
-  0% { left: -40%; }
-  100% { left: 100%; }
 }
 
 /* Error details collapse transition */
@@ -7895,16 +7798,6 @@ textarea,
   }
 }
 
-/* ── e. card-spotlight : Mouse-following spotlight for cards ── */
-
-.dark .card-spotlight::before {
-  background: radial-gradient(
-    350px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(167, 139, 250, 0.1),
-    transparent 60%
-  );
-}
-
 /* ── f. text-balance : Better text wrapping for headings ── */
 
 .text-balance {
@@ -8339,25 +8232,6 @@ textarea,
 }
 
 /* Number count-up animation helper */
-
-/* Smooth card border gradient */
-.card-gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(236, 72, 153, 0.5), rgba(16, 185, 129, 0.5));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-.card-gradient-border:hover::before {
-  opacity: 1;
-}
 
 /* ====== Round 50: Animation Enhancements ====== */
 
@@ -8866,19 +8740,6 @@ textarea,
 
 /* ====== Round 57: UI Beautification & Design System ====== */
 
-/* --- Loading screen top progress bar --- */
-.loading-bar-top::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.5), rgba(168, 85, 247, 0.3), transparent);
-  animation: loading-bar-top-move 1.5s ease-in-out infinite;
-}
-@keyframes loading-bar-top-move {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
-}
-
 /* --- Refined focus ring for primary elements --- */
 .focus-primary:focus-visible {
   outline: none;
@@ -9057,22 +8918,6 @@ textarea,
 }
 .tab-active-glow[data-state="active"]::before {
   opacity: 1;
-}
-
-/* Card spotlight hover effect */
-.card-spotlight::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
-  transition: left 0.6s ease;
-  pointer-events: none;
-}
-.card-spotlight:hover::after {
-  left: 100%;
 }
 
 /* Subtle breathing border animation for active items */
@@ -9707,6 +9552,21 @@ html {
 /* ── Round 65: Additional UI polish utilities ── */
 
 /* Subtle inner glow for active/focused inputs (parent focus-within) */
+.input-glow {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.input-glow:focus {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(139, 92, 246, 0.1),
+    0 0 12px rgba(139, 92, 246, 0.06);
+}
+.dark .input-glow:focus {
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow:
+    0 0 0 3px rgba(139, 92, 246, 0.15),
+    0 0 16px rgba(139, 92, 246, 0.08);
+}
 .input-glow:focus-within {
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15), 0 0 12px rgba(139, 92, 246, 0.08);
 }

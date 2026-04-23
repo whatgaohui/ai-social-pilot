@@ -271,13 +271,15 @@ function LeftSidebar() {
     <div className="flex flex-col h-full">
       {/* Left Panel Tab Bar */}
       <div className="px-3 pt-3 pb-2">
-        <div className="flex gap-1">
+        <div className="flex gap-1" role="tablist">
           {LEFT_TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = leftPanelTab === tab.value;
             return (
               <button
                 key={tab.value}
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setLeftPanelTab(tab.value)}
                 className={`relative flex-1 h-8 text-xs gap-1 rounded-md flex items-center justify-center transition-colors duration-200 cursor-pointer ${
                   isActive
@@ -634,7 +636,7 @@ export default function Home() {
             <div
               className={`h-9 w-9 rounded-xl bg-gradient-to-br flex items-center justify-center ${platform === 'wechat' ? 'from-violet-600 to-purple-600' : 'from-red-500 to-rose-600'}`}
             >
-              <Sparkles className="h-4.5 w-4.5 text-white" />
+              <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
               <h1 className="text-sm font-bold">
@@ -658,14 +660,14 @@ export default function Home() {
                 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               >
-                <div className={`h-full w-full rounded-md shadow-sm transition-colors duration-300 ${platform === 'wechat' ? 'bg-green-500' : 'bg-rose-500'}`} />
+                <div className={`h-full w-full rounded-md shadow-sm transition-colors duration-300 ${platform === 'wechat' ? 'bg-violet-500' : 'bg-rose-500'}`} />
               </motion.div>
               <button
                 onClick={() => setPlatform('wechat')}
                 className={`relative z-10 flex items-center gap-1.5 px-3 h-7 rounded-md text-xs font-medium transition-colors duration-200 ${platform === 'wechat' ? 'text-white' : 'text-muted-foreground hover:text-foreground'}`}
                 aria-label="切换到朋友圈模式"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
                 朋友圈
               </button>
               <button
@@ -696,7 +698,7 @@ export default function Home() {
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShortcutsOpen(true)}
@@ -704,7 +706,7 @@ export default function Home() {
                     aria-label="快捷键帮助"
                   >
                     <HelpCircle className="h-3.5 w-3.5" />
-                  </button>
+                  </motion.button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs">
                   <p>快捷键 (⌘/)</p>
@@ -822,8 +824,8 @@ export default function Home() {
             >
               <span className={`h-3 w-3 rounded-full transition-all duration-200 ${
                 platform === 'wechat'
-                  ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] ring-2 ring-green-500/30 animate-breathe'
-                  : 'bg-green-400/40'
+                  ? 'bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)] ring-2 ring-violet-500/30'
+                  : 'bg-violet-400/40'
               }`} />
             </button>
             <button
@@ -833,8 +835,8 @@ export default function Home() {
             >
               <span className={`h-3 w-3 rounded-full transition-all duration-200 ${
                 platform === 'xiaohongshu'
-                  ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] ring-2 ring-red-500/30 animate-breathe'
-                  : 'bg-red-400/40'
+                  ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)] ring-2 ring-rose-500/30'
+                  : 'bg-rose-400/40'
               }`} />
             </button>
           </div>
@@ -890,12 +892,8 @@ export default function Home() {
                   )}
 
                   <span className="relative z-10">
-                    <motion.div
-                      animate={isActive ? { scale: [1, 1.12, 1] } : { scale: 1 }}
-                      transition={{ duration: 0.5, ease: "easeInOut", repeat: isActive ? Infinity : 0, repeatDelay: 1.5 }}
-                    >
-                      <Icon className="h-[18px] w-[18px] mx-auto" />
-                    </motion.div>
+                    <Icon className="h-[18px] w-[18px] mx-auto" />
+                  </span>
                     {/* Haptic pulse ring on double-tap */}
                     <AnimatePresence>
                       {hapticPulse === tab.key && (
@@ -908,7 +906,6 @@ export default function Home() {
                         />
                       )}
                     </AnimatePresence>
-                  </span>
                   <span className="relative z-10 mt-0.5 leading-none">{tab.label}</span>
 
                   {/* Small colored indicator dot for active tab */}

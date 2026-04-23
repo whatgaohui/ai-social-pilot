@@ -724,7 +724,7 @@ export function DashboardOverview() {
 
     // Pad with generic activities if fewer than 4
     const GENERIC: ActivityItem[] = [
-      { id: "gen-1", type: "template-use" as const, description: "欢迎使用朋友圈AI运营助手", time: "今天" },
+      { id: "gen-1", type: "template-use" as const, description: `欢迎使用${platform === 'wechat' ? '朋友圈' : '小红书'}AI运营助手`, time: "今天" },
       { id: "gen-2", type: "ai-generate" as const, description: "开始创建你的第一条内容", time: "今天" },
     ];
     while (items.length < 4) {
@@ -737,7 +737,7 @@ export function DashboardOverview() {
     }
 
     return items.slice(0, 4);
-  }, [contentPosts, knowledgeItems, currentPlan]);
+  }, [contentPosts, knowledgeItems, currentPlan, platform]);
 
 
   const reminders = useMemo(() => {
@@ -810,7 +810,7 @@ export function DashboardOverview() {
   return (
     <TooltipProvider delayDuration={300}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="mx-4 mt-3 mb-2">
+        <div className="mx-3 mt-3 mb-2">
           <CollapsibleTrigger asChild>
             <motion.button
               whileHover={{ scale: 1.002 }}
