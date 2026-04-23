@@ -9848,3 +9848,109 @@ Stage Summary:
   4. 移动端响应式深度优化
   5. 运营报告自动生成功能完善（PDF/图片导出）
   6. 内容发布自动化工作流（定时发布 + 自动优化循环）
+---
+Task ID: 52
+Agent: Main Orchestrator + Subagents
+Task: 第五十二轮开发 - 排期时间线 + AI创意生成器 + 死代码清理 + CSS增强
+
+Work Log:
+- 运行 eslint（零错误）和 next build（编译成功）确认项目状态稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），使用 lint + build 验证
+- 使用 Explore agent 全面扫描代码质量（新组件导入、CSS类定义、tab集成、残留catch模式、TODO/FIXME）
+- 并行启动两个子任务：代码质量修复 + 新功能开发
+
+### Bug修复与代码质量
+
+1. **死代码清理**（ai-content-review.tsx）：
+   - 问题：`expandedDimensions` state 和 `toggleDimension` 函数已定义但从未被调用
+   - 修复：移除未使用的 state（useState<Record<string, boolean>>({})）、toggleDimension 函数
+   - 修复：DimensionCard 的 defaultOpen 改为固定 false
+
+### 代码质量扫描结果
+- ✅ ai-content-review.tsx 和 content-style-dna.tsx 无未使用导入
+- ✅ hover-glow-violet CSS 类已正确定义（上一轮 Explore 扫描误报）
+- ✅ "review" 和 "style-dna" tab 渲染正确集成到 content-workspace.tsx
+- ✅ 全项目仅剩 5 处 `.catch(() => {})`（均为 fire-and-forget 通知发送，风险可接受）
+- ✅ 新组件无 TODO/FIXME 残留
+
+### 新功能组件
+
+1. **内容排期时间线**（content-scheduler-timeline.tsx）：
+   - 垂直时间线视图：日期节点（M月d日 + 星期）+ 帖子卡片分组
+   - 帖子卡片：主题（2行截断）、内容类型Badge、AI评分Badge（绿≥80/琥珀≥60/红<60）、状态Badge、平台指示器
+   - 状态流转可视化：planned→generated→optimized→scheduled→published 水平迷你流程，当前位置高亮
+   - GripVertical 拖拽手柄（预留 dnd-kit 集成）
+   - 三维筛选器：状态/平台/评分，可折叠面板 + 一键清除
+   - 顶部统计栏：各状态彩色圆点 + 计数 + 总数
+   - 未排期帖子独立分组显示在底部
+   - 空状态（Calendar 图标 + 引导文字）
+   - framer-motion 交错入场 + AnimatePresence 筛选动画
+
+2. **AI 创意生成器**（ai-idea-generator.tsx）：
+   - 种子关键词输入 + 6 个热门种子快捷 Chips
+   - 8 个垂直领域选择器（个人成长/职场干货/生活方式/好物分享/知识科普/情感共鸣/行业洞察/创业副业）
+   - 4 个目标受众按钮（职场新人/宝妈群体/大学生/创业者）
+   - 调用 /api/ai/generate type="idea-brief" 生成 3 个详细创意简报
+   - 简报卡片：渐变头部 + 互动潜力Badge + 标题（点击复制）+ 角度描述 + 可勾选要点列表 + 内容类型/情感Badge
+   - "使用此创意"按钮（填充帖子主题 + 内容大纲）
+   - "精细化"按钮（发送回 AI 进一步完善）
+   - 生成历史面板（localStorage 存储，最近 5 组）
+   - API 不可用时自动回退生成
+   - 平台自适应（朋友圈/小红书格式差异）
+   - AI JSON 解析 + markdown 代码块处理 + 容错回退
+
+### CSS 增强（globals.css）
+新增 8 个 CSS 工具类：
+- .timeline-node-active：时间线节点脉冲动画（violet 发光）
+- .timeline-connector：时间线连接线渐变
+- .brief-card-shine：简报卡片微光扫过效果
+- .niche-chip-active：领域选中发光效果
+- .status-flow-dot / .status-flow-dot-active：状态流转圆点
+- .filter-bar-scroll：筛选栏隐藏滚动条
+- .engagement-high/medium/low：互动潜力颜色类
+- .idea-history-item：创意历史悬浮效果
+
+### 集成到 content-workspace.tsx
+- 新增 GitBranch 图标导入
+- 新增 ContentSchedulerTimeline、AIIdeaGenerator 组件导入
+- TOOL_TABS 新增 2 个 tab：
+  - "排期时间线"（GitBranch 图标，publish 组，位于发布流程之后）
+  - "创意生成"（Lightbulb 图标，create 组，位于 AI评审之后）
+- Tab 渲染区域添加对应的条件渲染分支
+- Tab 总数从 17 个扩展到 19 个（create=7, publish=5, insights=7）
+
+### 新增文件
+- `src/components/right-panel/content-scheduler-timeline.tsx` — 内容排期时间线
+- `src/components/right-panel/ai-idea-generator.tsx` — AI 创意生成器
+
+### 修改文件
+- `src/components/right-panel/ai-content-review.tsx` — 清理死代码（expandedDimensions + toggleDimension）
+- `src/components/right-panel/content-workspace.tsx` — 新增2个tab + 图标 + 组件导入 + 渲染分支
+- `src/app/globals.css` — 8个新 CSS 工具类
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ next build 编译成功（所有动态路由正常）
+
+Stage Summary:
+- 项目状态：稳定可运行，功能持续丰富
+- 本轮新增 2 个文件，修改 3 个文件，清理 1 处死代码
+- 核心成果：
+  1. 内容排期时间线（垂直时间线 + 状态流转 + 三维筛选 + 统计栏）
+  2. AI 创意生成器（种子关键词 + 8领域 + 4受众 + 详细简报 + 历史记录）
+  3. 8 个新 CSS 动画/视觉效果工具类
+  4. 死代码清理（ai-content-review.tsx 未使用 state 和函数）
+  5. Tab 系统扩展至 19 个（create=7, publish=5, insights=7）
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. AI 创意生成依赖 AI 服务可用性（有回退机制）
+  3. Tab 数量持续增长（19个），分组导航有效但 insights 组仍有 7 个子 tab
+  4. 排期时间线拖拽功能预留手柄但未实现 dnd-kit 集成
+  5. 5 处 fire-and-forget 静默 catch（通知发送类，风险可接受）
+- 建议下一阶段优先事项：
+  1. 内容排期拖拽排序功能实现（已有 @dnd-kit 依赖 + 预留拖拽手柄）
+  2. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
+  3. 大组件拆分重构（analytics-panel.tsx 1500+ 行、content-workspace.tsx 持续增长）
+  4. 移动端响应式深度优化
+  5. 运营报告自动生成功能完善（PDF/图片导出）
+  6. 内容发布自动化工作流（定时发布 + 自动优化循环）

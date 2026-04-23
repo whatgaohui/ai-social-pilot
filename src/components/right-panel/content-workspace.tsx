@@ -36,6 +36,7 @@ import {
   Shield,
   Dna,
   Eye,
+  GitBranch,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -93,6 +94,8 @@ import { QualityTimeline } from "@/components/right-panel/quality-timeline";
 import { AIContentReview } from "@/components/right-panel/ai-content-review";
 import { ContentStyleDNA } from "@/components/right-panel/content-style-dna";
 import { CalendarMiniHeatmap } from "@/components/left-panel/calendar-mini-heatmap";
+import { ContentSchedulerTimeline } from "@/components/right-panel/content-scheduler-timeline";
+import { AIIdeaGenerator } from "@/components/right-panel/ai-idea-generator";
 
 // ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
 
@@ -293,10 +296,12 @@ const TOOL_TABS = [
   { value: "writing", icon: PenLine, label: "写作助手", color: "text-emerald-500", group: "create" as const },
   { value: "review", icon: Shield, label: "AI评审", color: "text-violet-500", group: "create" as const },
   { value: "chat", icon: MessageSquare, label: "AI对话", color: "text-sky-500", group: "create" as const },
+  { value: "ideas", icon: Lightbulb, label: "创意生成", color: "text-amber-500", group: "create" as const },
   { value: "schedule", icon: CalendarClock, label: "智能排期", color: "text-cyan-500", group: "publish" as const },
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500", group: "publish" as const },
   { value: "queue", icon: Layers, label: "发布队列", color: "text-purple-500", group: "publish" as const },
   { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500", group: "publish" as const },
+  { value: "timeline", icon: GitBranch, label: "排期时间线", color: "text-cyan-500", group: "publish" as const },
   { value: "history", icon: History, label: "版本记录", color: "text-violet-500", group: "insights" as const },
   { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500", group: "insights" as const },
   { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500", group: "insights" as const },
@@ -1083,6 +1088,20 @@ export function ContentWorkspace() {
                 {toolTab === "quality-timeline" && (
                   <motion.div key="quality-timeline-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
                     <QualityTimeline posts={contentPosts} />
+                  </motion.div>
+                )}
+
+                {/* ── Content Scheduler Timeline Tab ──────────────────────── */}
+                {toolTab === "timeline" && (
+                  <motion.div key="timeline-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
+                    <ContentSchedulerTimeline />
+                  </motion.div>
+                )}
+
+                {/* ── AI Idea Generator Tab ──────────────────────────────── */}
+                {toolTab === "ideas" && (
+                  <motion.div key="ideas-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
+                    <AIIdeaGenerator />
                   </motion.div>
                 )}
 

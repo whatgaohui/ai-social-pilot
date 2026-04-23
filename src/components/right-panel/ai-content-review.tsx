@@ -232,8 +232,6 @@ export function AIContentReview() {
 
   const [loading, setLoading] = useState(false);
   const [review, setReview] = useState<ReviewResult | null>(null);
-  const [expandedDimensions, setExpandedDimensions] = useState<Record<string, boolean>>({});
-
   const selectedPost = contentPosts.find((p) => p.id === selectedPostId) ?? null;
   const platformLabel = platform === "wechat" ? "朋友圈" : "小红书";
 
@@ -339,10 +337,6 @@ ${persona ? `人设信息：${persona.name}，${persona.title}，风格：${pers
       toast.error("应用改写建议失败");
     }
   }, [review, selectedPost, updateContentPost]);
-
-  const toggleDimension = (key: string) => {
-    setExpandedDimensions((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   const getScoreLabel = (score: number) => {
     if (score >= 90) return { text: "优秀", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" };
@@ -467,7 +461,7 @@ ${persona ? `人设信息：${persona.name}，${persona.title}，风格：${pers
                     key={dim.key}
                     config={dim}
                     data={dimData}
-                    defaultOpen={expandedDimensions[dim.key] ?? false}
+                    defaultOpen={false}
                   />
                 );
               })}
