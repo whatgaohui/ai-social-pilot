@@ -1693,6 +1693,27 @@ export function CompactCalendar() {
                       const isFlashCell = droppedDate === dateStr;
                       const isReorderActive = isDndReorderActive;
 
+                      // Volume-based heatmap intensity
+                      const postCount = posts?.length || 0;
+                      const isXhsPlatform = platform === "xiaohongshu";
+                      const heatmapBg = !isOverThisCell && postCount > 0
+                        ? isXhsPlatform
+                          ? postCount >= 4
+                            ? "bg-rose-300 dark:bg-rose-700/60"
+                            : postCount === 3
+                              ? "bg-rose-200 dark:bg-rose-800/50"
+                              : postCount === 2
+                                ? "bg-rose-100 dark:bg-rose-900/40"
+                                : "bg-rose-50 dark:bg-rose-950/30"
+                          : postCount >= 4
+                            ? "bg-violet-300 dark:bg-violet-700/60"
+                            : postCount === 3
+                              ? "bg-violet-200 dark:bg-violet-800/50"
+                              : postCount === 2
+                                ? "bg-violet-100 dark:bg-violet-900/40"
+                                : "bg-violet-50 dark:bg-violet-950/30"
+                        : "";
+
                       return (
                         <motion.button
                           key={dateStr}
@@ -1719,6 +1740,7 @@ export function CompactCalendar() {
                               : "hover:bg-muted/40"
                             }
                             ${isOverThisCell && !isSelected ? "ring-2 ring-violet-500 bg-violet-500/10 scale-105 shadow-lg shadow-violet-500/20" : ""}
+                            ${heatmapBg}
                           `}
                         >
                           {/* Drop flash overlay */}

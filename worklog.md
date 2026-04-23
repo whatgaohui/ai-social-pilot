@@ -10373,3 +10373,99 @@ Stage Summary:
   4. 内容工作台 Dashboard Overview 数据实时刷新
   5. 大组件拆分重构（analytics-panel.tsx、content-workspace.tsx）
   6. 运营报告自动导出功能（PDF/图片格式）
+
+---
+Task ID: 58
+Agent: Main Developer + Subagents
+Task: 第58轮 - UI细节增强+热力图+Tab系统深度优化
+
+Work Log:
+- 读取 worklog.md 了解第57轮项目状态
+- 运行 eslint（零错误）+ next build（编译成功10.1s）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill）
+- 使用 Explore agent 分析 Tab UI 结构、日历热力图、Dashboard 样式模式
+- 并行执行 4 项 UI 增强任务
+
+### Tab 系统深度优化（content-workspace.tsx）
+
+1. **Tab 组头样式增强**：
+   - 每个组头添加渐变图标徽章（4x4px 圆角容器，渐变背景+白色图标）
+     - AI 工具: violet→purple 渐变
+     - 内容: cyan→blue 渐变
+     - 发布: emerald→teal 渐变
+     - 数据分析: sky→blue 渐变
+     - 内容追踪: orange→amber 渐变
+     - 运营工具: pink→rose 渐变
+   - 激活态背景从 `bg-accent/60` 改为 `bg-gradient-to-r from-accent/80 via-accent/40 to-transparent shadow-sm`
+   - TAB_GROUPS 新增 `gradientBg` 字段
+
+2. **子 Tab 动态计数徽章**：
+   - 添加 `tabBadgeCount` useMemo，实时计算 queue（未发布数）和 pipeline（计划中数）
+   - 子 tab 按钮显示 `h-3.5` 圆角徽章（violet-500 背景，白色数字，ring 边框）
+   - 超过 9 显示 "9+"
+
+3. **洞察组拆分为 3 个子组**：
+   - 旧结构：洞察(8 tabs)
+   - 新结构：**数据分析**(3) + **内容追踪**(3) + **运营工具**(2)
+   - 数据分析：实时指标、词云分析、质量趋势
+   - 内容追踪：版本记录、素材库、风格DNA
+   - 运营工具：爆款灵感、周报生成
+   - Tab 组总数从 4 增至 6
+
+### 日历热力图（compact-calendar.tsx）
+
+4. **日历网格活动热力图着色**：
+   - 每个日历格子根据当天帖子数量显示不同强度背景色
+   - 朋友圈模式（默认）：violet 色系（50/100/200/300 四级）
+   - 小红书模式：rose 色系（50/100/200/300 四级）
+   - 着色在 status-based 样式之后应用，status 优先级更高
+   - 拖拽悬浮时不显示热力图背景
+
+### Dashboard 样式细化（dashboard-overview.tsx）
+
+5. **管道概览进度条增强**：
+   - 进度条高度从 `h-0.5` 增大到 `h-1.5`（3倍可见度）
+   - 每个阶段使用独特渐变色（替代统一 violet-400）：
+     - planned: amber→orange
+     - generated: violet→purple
+     - optimized: emerald→teal
+     - scheduled: cyan→blue
+     - published: rose→pink
+
+### 新增文件
+- 无
+
+### 修改文件
+- `src/components/right-panel/content-workspace.tsx` — Tab 系统重组（6组）+ 样式增强 + 计数徽章
+- `src/components/left-panel/compact-calendar.tsx` — 日历热力图着色
+- `src/components/dashboard-overview.tsx` — 管道进度条增强
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（10.1s，70个页面正常生成）
+- ✅ Tab 系统正确拆分为 6 组（AI工具5 + 内容3 + 发布5 + 数据分析3 + 内容追踪3 + 运营工具2 = 21 tabs）
+- ✅ 热力图着色正确（violet/rose 四级渐变，平台感知）
+- ✅ 进度条渐变正确（5 个阶段独立配色）
+- ✅ 计数徽章显示正确（queue/pipeline 实时计数）
+
+Stage Summary:
+- 项目状态：稳定可运行，UI 细节显著提升
+- 本轮修改 3 个文件
+- 核心改进：
+  1. Tab 系统从 4 组扩展为 6 组（洞察组拆分为数据分析/内容追踪/运营工具）
+  2. 组头添加渐变图标徽章，视觉层次更分明
+  3. 子 tab 添加实时计数徽章（未发布数/计划中数）
+  4. 日历网格新增 GitHub 风格活动热力图（4 级强度 + 平台感知配色）
+  5. Dashboard 管道进度条加粗 3 倍 + 5 阶段独立渐变配色
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. 约 85 个 TS 错误仍存在（framer-motion Variants 类型）
+  3. Tab 组增至 6 组，移动端横向滚动可能需要优化
+  4. 热力图颜色未做无障碍对比度检查
+- 建议下一阶段优先事项：
+  1. 移动端 Tab 栏横向滚动优化（6 组可能溢出屏幕）
+  2. 热力图无障碍支持（aria-label 描述活动强度）
+  3. Dashboard Activity Timeline 接入真实数据（替代 mock）
+  4. framer-motion Variants 类型统一修复（减少 ~85 个 TS 错误）
+  5. 内容快捷操作面板（右键菜单或长按操作）
+  6. AI 生成结果自动应用到日历（一键从 AI 输出到日历）

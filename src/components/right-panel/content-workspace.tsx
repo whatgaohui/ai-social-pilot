@@ -39,6 +39,7 @@ import {
   Eye,
   GitBranch,
   FileBarChart,
+  Wrench,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -283,10 +284,12 @@ const STATUS_BORDER_COLORS: Record<PostStatus, string> = {
 // ─── Tab Group Definitions ─────────────────────────────────────────────────
 
 const TAB_GROUPS = [
-  { id: "ai-tools", label: "AI 工具", icon: Sparkles, color: "text-violet-500" },
-  { id: "content", label: "内容", icon: Pencil, color: "text-cyan-500" },
-  { id: "publish", label: "发布", icon: Rocket, color: "text-emerald-500" },
-  { id: "insights", label: "洞察", icon: BarChart3, color: "text-amber-500" },
+  { id: "ai-tools", label: "AI 工具", icon: Sparkles, color: "text-violet-500", gradientBg: "bg-gradient-to-br from-violet-500 to-purple-600" },
+  { id: "content", label: "内容", icon: Pencil, color: "text-cyan-500", gradientBg: "bg-gradient-to-br from-cyan-500 to-blue-600" },
+  { id: "publish", label: "发布", icon: Rocket, color: "text-emerald-500", gradientBg: "bg-gradient-to-br from-emerald-500 to-teal-600" },
+  { id: "data-analysis", label: "数据分析", icon: TrendingUp, color: "text-sky-500", gradientBg: "bg-gradient-to-br from-sky-500 to-blue-600" },
+  { id: "content-tracking", label: "内容追踪", icon: History, color: "text-orange-500", gradientBg: "bg-gradient-to-br from-orange-500 to-amber-600" },
+  { id: "ops-tools", label: "运营工具", icon: Wrench, color: "text-pink-500", gradientBg: "bg-gradient-to-br from-pink-500 to-rose-600" },
 ] as const;
 
 type TabGroup = (typeof TAB_GROUPS)[number]["id"];
@@ -310,15 +313,17 @@ const TOOL_TABS = [
   { value: "queue", icon: ListOrdered, label: "发布队列", color: "text-purple-500", group: "publish" as const },
   { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500", group: "publish" as const },
   { value: "timeline", icon: GitBranch, label: "排期时间线", color: "text-cyan-500", group: "publish" as const },
-  // ── 洞察 ────────────────────────────────────────────────
-  { value: "history", icon: History, label: "版本记录", color: "text-violet-500", group: "insights" as const },
-  { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500", group: "insights" as const },
-  { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500", group: "insights" as const },
-  { value: "metrics", icon: Activity, label: "实时指标", color: "text-teal-500", group: "insights" as const },
-  { value: "wordcloud", icon: Cloud, label: "词云分析", color: "text-fuchsia-500", group: "insights" as const },
-  { value: "style-dna", icon: Dna, label: "风格DNA", color: "text-teal-500", group: "insights" as const },
-  { value: "quality-timeline", icon: TrendingUp, label: "质量趋势", color: "text-emerald-500", group: "insights" as const },
-  { value: "weekly-report", icon: FileBarChart, label: "周报生成", color: "text-amber-500", group: "insights" as const },
+  // ── 数据分析 ──────────────────────────────────────────────
+  { value: "metrics", icon: Activity, label: "实时指标", color: "text-teal-500", group: "data-analysis" as const },
+  { value: "wordcloud", icon: Cloud, label: "词云分析", color: "text-fuchsia-500", group: "data-analysis" as const },
+  { value: "quality-timeline", icon: TrendingUp, label: "质量趋势", color: "text-emerald-500", group: "data-analysis" as const },
+  // ── 内容追踪 ──────────────────────────────────────────────
+  { value: "history", icon: History, label: "版本记录", color: "text-violet-500", group: "content-tracking" as const },
+  { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500", group: "content-tracking" as const },
+  { value: "style-dna", icon: Dna, label: "风格DNA", color: "text-teal-500", group: "content-tracking" as const },
+  // ── 运营工具 ──────────────────────────────────────────────
+  { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500", group: "ops-tools" as const },
+  { value: "weekly-report", icon: FileBarChart, label: "周报生成", color: "text-amber-500", group: "ops-tools" as const },
 ] as const;
 
 type ToolTab = (typeof TOOL_TABS)[number]["value"];
@@ -430,6 +435,14 @@ export function ContentWorkspace() {
       }
     }
   }, [selectedPost, loadSaved, clearSaved, updateContentPost]);
+
+  // Compute badge counts for specific sub-tabs
+  const tabBadgeCount = useMemo(() => {
+    const counts: Partial<Record<ToolTab, number>> = {};
+    counts.queue = contentPosts.filter((p) => p.status !== 'published').length;
+    counts.pipeline = contentPosts.filter((p) => p.status === 'planned').length;
+    return counts;
+  }, [contentPosts]);
 
   // Compute visible tabs based on active group
   const groupTabs = useMemo(
@@ -809,11 +822,13 @@ export function ContentWorkspace() {
                       onClick={() => handleGroupChange(group.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 relative ${
                         isActive
-                          ? `${group.color} bg-accent/60`
+                          ? `${group.color} bg-gradient-to-r from-accent/80 via-accent/40 to-transparent shadow-sm`
                           : "text-muted-foreground hover:text-foreground/70 hover:bg-muted/40"
                       }`}
                     >
-                      <Icon className="h-3.5 w-3.5" />
+                      <span className={`flex h-4 w-4 items-center justify-center rounded-md ${group.gradientBg} shadow-sm`}>
+                        <Icon className="h-2.5 w-2.5 text-white" />
+                      </span>
                       {group.label}
                       {isActive && (
                         <motion.div
@@ -847,6 +862,7 @@ export function ContentWorkspace() {
                     {groupTabs.map((tab) => {
                       const Icon = tab.icon;
                       const isActive = toolTab === tab.value;
+                      const tabCount = tabBadgeCount[tab.value as ToolTab] ?? 0;
                       return (
                         <button
                           key={tab.value}
@@ -860,6 +876,11 @@ export function ContentWorkspace() {
                         >
                           <Icon className="h-3.5 w-3.5" />
                           {tab.label}
+                          {tabCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-violet-500 text-[8px] font-bold text-white ring-1 ring-background">
+                              {tabCount > 9 ? '9+' : tabCount}
+                            </span>
+                          )}
                           {isActive && (
                             <motion.div
                               layoutId="tool-tab-indicator"

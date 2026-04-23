@@ -378,11 +378,11 @@ function TodoReminder({ icon: Icon, label, count, colorClass, onClick }: TodoRem
 // ─── Pipeline Overview Mini Component ─────────────────────────────────────
 
 const PIPELINE_OVERVIEW_STAGES = [
-  { id: "planned", label: "待生成", emoji: "💡", color: "text-amber-500" },
-  { id: "generated", label: "已生成", emoji: "🤖", color: "text-violet-500" },
-  { id: "optimized", label: "已优化", emoji: "✨", color: "text-emerald-500" },
-  { id: "scheduled", label: "已排期", emoji: "📅", color: "text-cyan-500" },
-  { id: "published", label: "已发布", emoji: "🚀", color: "text-rose-500" },
+  { id: "planned", label: "待生成", emoji: "💡", color: "text-amber-500", gradient: "bg-gradient-to-r from-amber-500 to-orange-500" },
+  { id: "generated", label: "已生成", emoji: "🤖", color: "text-violet-500", gradient: "bg-gradient-to-r from-violet-500 to-purple-500" },
+  { id: "optimized", label: "已优化", emoji: "✨", color: "text-emerald-500", gradient: "bg-gradient-to-r from-emerald-500 to-teal-500" },
+  { id: "scheduled", label: "已排期", emoji: "📅", color: "text-cyan-500", gradient: "bg-gradient-to-r from-cyan-500 to-blue-500" },
+  { id: "published", label: "已发布", emoji: "🚀", color: "text-rose-500", gradient: "bg-gradient-to-r from-rose-500 to-pink-500" },
 ];
 
 function DashboardPipelineOverview() {
@@ -436,9 +436,9 @@ function DashboardPipelineOverview() {
                 </div>
                 <div className="text-[9px] text-muted-foreground/60">{stage.label}</div>
                 {count > 0 && (
-                  <div className="w-full h-0.5 rounded-full bg-muted overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
                     <motion.div
-                      className="h-full rounded-full bg-violet-400"
+                      className={`h-full rounded-full ${stage.gradient}`}
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.max(pct, 8)}%` }}
                       transition={{ duration: 0.5, delay: i * 0.1 }}
