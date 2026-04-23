@@ -329,7 +329,7 @@ export function ContentPipeline() {
           setWorkflowRuns(data.recentRuns.slice(0, 5));
         }
       })
-      .catch(() => {});
+      .catch((e) => console.error('[pipeline] data load failed:', e));
   }, []);
 
   // ── Stage click handler ──

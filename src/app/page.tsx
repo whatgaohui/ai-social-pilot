@@ -361,7 +361,7 @@ function MainContentPanel() {
       .then((data) => {
         setTrackedAccountsCount(Array.isArray(data) ? data.length : 0);
       })
-      .catch(() => {});
+      .catch((e) => console.error('[tracked-accounts] load failed:', e));
   }, []);
 
   // Map old tab values to new ones for backward compatibility
@@ -596,7 +596,7 @@ export default function Home() {
           const count = Array.isArray(data) ? data.filter((a: { status: string }) => a.status === "connected").length : 0;
           setConnectedPlatforms(count);
         })
-        .catch(() => {});
+        .catch((e) => console.error('[platform-accounts] load failed:', e));
     }
     checkStatus();
     const interval = setInterval(checkStatus, 30000);

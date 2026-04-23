@@ -334,7 +334,7 @@ function PlatformAccountsSection({ onOpenAccountPanel }: { onOpenAccountPanel: (
     fetch("/api/platform-accounts")
       .then((res) => (res.ok ? res.json() : []))
       .then(setAccounts)
-      .catch(() => {});
+      .catch((e) => console.error('[settings] platform accounts load failed:', e));
   }, []);
 
   const wechatAccount = accounts.find((a) => a.platform === "wechat");
@@ -557,7 +557,7 @@ function DataManagementSection() {
       .then((data) => {
         if (data) setStats(data);
       })
-      .catch(() => {})
+      .catch((e) => console.error('[settings] usage stats load failed:', e))
       .finally(() => setLoadingStats(false));
   }, []);
 

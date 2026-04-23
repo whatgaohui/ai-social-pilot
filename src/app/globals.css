@@ -10449,3 +10449,81 @@ textarea,
 .engagement-metric:hover::before {
   opacity: 1;
 }
+
+/* ── Round 51: New CSS Utilities ──────────────────────────────────────── */
+
+/* Review card gradient borders */
+.review-card-border {
+  position: relative;
+}
+.review-card-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(139,92,246,0.3), rgba(16,185,129,0.3), rgba(245,158,11,0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* DNA helix shimmer animation */
+@keyframes dna-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.dna-shimmer {
+  background: linear-gradient(90deg, rgba(139,92,246,0.1) 0%, rgba(16,185,129,0.15) 25%, rgba(245,158,11,0.1) 50%, rgba(16,185,129,0.15) 75%, rgba(139,92,246,0.1) 100%);
+  background-size: 200% 100%;
+  animation: dna-shimmer 4s ease-in-out infinite;
+}
+
+/* Score ring glow animation */
+@keyframes score-ring-glow {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(139,92,246,0.3)); }
+  50% { filter: drop-shadow(0 0 8px rgba(139,92,246,0.6)); }
+}
+.score-ring-glow {
+  animation: score-ring-glow 2s ease-in-out infinite;
+}
+
+/* Suggestion card hover lift */
+.suggestion-card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.suggestion-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Radar chart axis label */
+.radar-label {
+  font-size: 10px;
+  fill: currentColor;
+  font-weight: 500;
+}
+
+/* Progress bar fill animation */
+@keyframes progress-fill-anim {
+  from { width: 0%; }
+}
+.progress-fill-animate {
+  animation: progress-fill-anim 0.8s ease-out;
+}
+
+/* Style tag floating animation */
+@keyframes tag-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+.tag-float {
+  animation: tag-float 3s ease-in-out infinite;
+}
+
+/* Dimension score bar gradient */
+.dimension-bar {
+  background: linear-gradient(90deg, var(--bar-from), var(--bar-to));
+  transition: width 0.6s ease-out;
+}

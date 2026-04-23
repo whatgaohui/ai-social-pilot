@@ -7,16 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import {
-  Eye,
   Pencil,
   Sparkles,
+  PenLine,
   Rocket,
   Bot,
   History,
   MessageSquare,
   ThumbsUp,
   Repeat2,
-  Eye as EyeIcon,
   Star,
   Loader2,
   FileText,
@@ -34,6 +33,9 @@ import {
   Cloud,
   TrendingUp,
   BarChart3,
+  Shield,
+  Dna,
+  Eye,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -88,6 +90,8 @@ import { PublishToCalendar } from "@/components/right-panel/publish-to-calendar"
 import { AIChatWorkspace } from "@/components/right-panel/ai-chat-workspace";
 import { ContentWordCloud } from "@/components/right-panel/content-word-cloud";
 import { QualityTimeline } from "@/components/right-panel/quality-timeline";
+import { AIContentReview } from "@/components/right-panel/ai-content-review";
+import { ContentStyleDNA } from "@/components/right-panel/content-style-dna";
 import { CalendarMiniHeatmap } from "@/components/left-panel/calendar-mini-heatmap";
 
 // ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
@@ -199,7 +203,7 @@ const InlineEngagementBar = React.memo(function InlineEngagementBar({ post, isXH
 
   const hasData = (post.views || 0) > 0;
   const stats = [
-    { icon: EyeIcon, label: "浏览", value: post.views || 0, color: "text-cyan-500" },
+    { icon: Eye, label: "浏览", value: post.views || 0, color: "text-cyan-500" },
     { icon: ThumbsUp, label: "赞", value: post.likes || 0, color: "text-rose-500" },
     { icon: MessageSquare, label: "评论", value: post.comments || 0, color: "text-amber-500" },
     { icon: Repeat2, label: "转发", value: post.shares || 0, color: "text-emerald-500" },
@@ -286,7 +290,8 @@ const TOOL_TABS = [
   { value: "ai", icon: Sparkles, label: "智能分析", color: "text-amber-500", group: "create" as const },
   { value: "batch", icon: Bot, label: "批量操作", color: "text-violet-500", group: "create" as const },
   { value: "pipeline", icon: Layers, label: "内容流水线", color: "text-cyan-500", group: "create" as const },
-  { value: "writing", icon: Sparkles, label: "写作助手", color: "text-emerald-500", group: "create" as const },
+  { value: "writing", icon: PenLine, label: "写作助手", color: "text-emerald-500", group: "create" as const },
+  { value: "review", icon: Shield, label: "AI评审", color: "text-violet-500", group: "create" as const },
   { value: "chat", icon: MessageSquare, label: "AI对话", color: "text-sky-500", group: "create" as const },
   { value: "schedule", icon: CalendarClock, label: "智能排期", color: "text-cyan-500", group: "publish" as const },
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500", group: "publish" as const },
@@ -297,6 +302,7 @@ const TOOL_TABS = [
   { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500", group: "insights" as const },
   { value: "metrics", icon: Activity, label: "实时指标", color: "text-teal-500", group: "insights" as const },
   { value: "wordcloud", icon: Cloud, label: "词云分析", color: "text-fuchsia-500", group: "insights" as const },
+  { value: "style-dna", icon: Dna, label: "风格DNA", color: "text-teal-500", group: "insights" as const },
   { value: "quality-timeline", icon: TrendingUp, label: "质量趋势", color: "text-emerald-500", group: "insights" as const },
 ] as const;
 
@@ -1077,6 +1083,20 @@ export function ContentWorkspace() {
                 {toolTab === "quality-timeline" && (
                   <motion.div key="quality-timeline-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
                     <QualityTimeline posts={contentPosts} />
+                  </motion.div>
+                )}
+
+                {/* ── AI Content Review Tab ──────────────────────────── */}
+                {toolTab === "review" && (
+                  <motion.div key="review-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
+                    <AIContentReview />
+                  </motion.div>
+                )}
+
+                {/* ── Content Style DNA Tab ──────────────────────────────── */}
+                {toolTab === "style-dna" && (
+                  <motion.div key="style-dna-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
+                    <ContentStyleDNA />
                   </motion.div>
                 )}
 

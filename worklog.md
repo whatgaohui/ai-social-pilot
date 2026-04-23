@@ -9731,3 +9731,120 @@ Stage Summary:
   4. 大组件拆分重构（8个超过1000行的组件）
   5. 静默错误处理优化（添加错误日志或注释说明）
   6. 移动端响应式深度优化
+---
+Task ID: 51
+Agent: Main Orchestrator + Subagents
+Task: 第五十一轮开发 - Bug修复 + AI内容评审 + 风格DNA分析 + CSS增强
+
+Work Log:
+- 运行 eslint（零错误）和 next build（编译成功）确认项目状态稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），使用 lint + build 验证
+- 使用 Explore agent 全面扫描代码质量问题（重复导入、静默catch、tab结构）
+- 并行启动两个子任务代理分别处理 Bug 修复和新功能开发
+
+### Bug修复与代码质量
+
+1. **重复 Eye 图标导入修复**（content-workspace.tsx）：
+   - 问题：Eye 和 Eye as EyeIcon 重复导入，实际两者均被使用
+   - 修复：移除 Eye as EyeIcon 别名，统一使用 Eye 图标
+
+2. **Sparkles 图标重复使用修复**（content-workspace.tsx）：
+   - 问题：Sparkles 同时用于"智能分析"和"写作助手"两个 tab，视觉混淆
+   - 修复：写作助手 tab 改用 PenLine 图标
+
+3. **6处静默错误捕获修复**（console.error 替代空 catch）：
+   - src/app/page.tsx line ~364: tracked-accounts 加载失败
+   - src/app/page.tsx line ~599: platform-accounts 加载失败
+   - src/components/welcome-onboarding.tsx line ~146: onboarding 内容加载失败
+   - src/components/settings-center.tsx line ~337: 设置页平台账户加载失败
+   - src/components/settings-center.tsx line ~560: 设置页使用统计加载失败
+   - src/components/right-panel/content-pipeline.tsx line ~332: 流水线数据加载失败
+   - 所有 .catch(() => {}) 替换为 .catch((e) => console.error('[context] description:', e))
+
+### 新功能组件
+
+1. **AI 内容评审面板**（ai-content-review.tsx）：
+   - 一键 AI 全面评审：调用 /api/ai/generate type="content-review"
+   - 总分环形 SVG 指示器（0-100，渐变描边 + 动画）
+   - 5 维度可折叠分析卡片：
+     - 内容结构：开头吸引力、叙事流畅度、结尾力度
+     - 情感共鸣：情感诉求评分、共情触发、代入感
+     - 平台优化：平台专属建议、标签效果、CTA 强度
+     - 可读性：句子长度、词汇多样性、段落节奏
+     - 互动预测：预估互动潜力、传播系数、可分享性
+   - 优势列表（绿色 CheckCircle 图标）
+   - 改进建议列表（琥珀色 AlertTriangle 图标）
+   - 一键应用 AI 重写建议
+   - AI JSON 响应解析（markdown 代码块处理 + 结构验证 + 容错回退）
+   - framer-motion 交错入场动画
+
+2. **内容风格 DNA 分析**（content-style-dna.tsx）：
+   - 纯前端分析（无需 API，直接分析 store 中所有帖子）
+   - SVG 五边形雷达图（专业性/情感性/简洁度/故事性/互动性）
+   - 8 种写作风格自动检测标签（数据驱动/故事叙述/情感共鸣/干货输出/轻松幽默/深度思考/生活记录/好物种草）
+   - 词汇统计：平均帖子长度、独立词汇数、TOP 10 高频词（带动画进度条）
+   - Emoji 分析：TOP 5 使用频率、每 100 字 emoji 密度
+   - 语气分布：正面/负面/中性/疑问百分比堆叠条
+   - 写作节奏：短/中/长句分布可视化
+   - 平台对比：个人风格 vs 平台平均对比
+   - 中英文停用词过滤
+   - framer-motion 交错入场 + SVG 路径绘制动画
+
+### CSS 增强（globals.css）
+新增 8 个 CSS 工具类：
+- .review-card-border：评审卡片渐变边框（violet→emerald→amber）
+- .dna-shimmer：DNA 双螺旋微光动画（4s 循环）
+- .score-ring-glow：评分环发光脉冲动画
+- .suggestion-card-hover：建议卡片悬浮提升效果
+- .radar-label：雷达图轴标签样式
+- .progress-fill-animate：进度条填充动画
+- .tag-float：风格标签浮动动画
+- .dimension-bar：维度评分条渐变填充
+
+### 集成到 content-workspace.tsx
+- 新增 Shield、Dna 图标导入
+- 新增 AIContentReview、ContentStyleDNA 组件导入
+- TOOL_TABS 新增 2 个 tab：
+  - "AI评审"（Shield 图标，create 组，位于写作助手之后）
+  - "风格DNA"（Dna 图标，insights 组，位于词云分析之后）
+- Tab 渲染区域添加对应的 case 分支
+- Tab 总数从 15 个扩展到 17 个（create=6, publish=4, insights=7）
+
+### 新增文件
+- `src/components/right-panel/ai-content-review.tsx` — AI 内容评审面板
+- `src/components/right-panel/content-style-dna.tsx` — 内容风格 DNA 分析
+
+### 修改文件
+- `src/components/right-panel/content-workspace.tsx` — 修复导入 + 新增2个tab + 图标替换
+- `src/app/page.tsx` — 2处静默 catch 修复
+- `src/components/welcome-onboarding.tsx` — 1处静默 catch 修复
+- `src/components/settings-center.tsx` — 2处静默 catch 修复
+- `src/components/right-panel/content-pipeline.tsx` — 1处静默 catch 修复
+- `src/app/globals.css` — 8个新 CSS 工具类
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ next build 编译成功（所有动态路由正常）
+
+Stage Summary:
+- 项目状态：稳定可运行，功能和分析能力持续丰富
+- 本轮新增 2 个文件，修改 6 个文件
+- 核心成果：
+  1. AI 内容评审面板（5维度分析 + 评分环 + 优势/改进建议 + 一键应用）
+  2. 内容风格 DNA 分析（雷达图 + 风格标签 + 词汇统计 + Emoji分析 + 语气分布）
+  3. 8 个新 CSS 动画工具类
+  4. 3 处代码质量修复（重复导入、图标复用、6处静默catch）
+  5. Tab 系统扩展至 17 个（create=6, publish=4, insights=7）
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. AI 内容评审依赖 AI 服务可用性和响应质量（JSON 解析有容错回退）
+  3. 风格 DNA 中文分词基于 N-gram，精度有限（非专业 NLP 分词）
+  4. Tab 数量持续增长，insights 组已达 7 个子 tab
+  5. 仍有 5 处 fire-and-forget 的静默 catch（通知发送类，风险可接受）
+- 建议下一阶段优先事项：
+  1. 内容排期拖拽排序功能（已有 @dnd-kit 依赖，长期待实现）
+  2. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
+  3. 大组件拆分重构（analytics-panel.tsx 1500+ 行、content-workspace.tsx 持续增长）
+  4. 移动端响应式深度优化
+  5. 运营报告自动生成功能完善（PDF/图片导出）
+  6. 内容发布自动化工作流（定时发布 + 自动优化循环）

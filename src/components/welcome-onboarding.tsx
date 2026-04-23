@@ -143,7 +143,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
           setAiMode("custom");
         }
       })
-      .catch(() => {});
+      .catch((e) => console.error('[onboarding] content load failed:', e));
   }, []);
 
   const goNext = () => { setDirection(1); setStep(s => Math.min(s + 1, TOTAL_STEPS - 1)); };
