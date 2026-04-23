@@ -374,7 +374,7 @@ function MainContentPanel() {
       {/* Main Tab Bar */}
       <div className="px-3 pt-3 pb-2 flex-shrink-0">
         <Tabs value={effectiveTab} onValueChange={setRightPanelTab}>
-          <TabsList className="w-full h-9 bg-muted/40 p-0.5 border border-border/40 rounded-lg">
+          <TabsList className="w-full h-9 bg-muted/40 p-0.5 rounded-lg">
             {MAIN_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -404,11 +404,9 @@ function MainContentPanel() {
         </Tabs>
       </div>
 
-      {/* Dashboard Overview - collapsible, only in workspace tab */}
-      {effectiveTab === 'workspace' && <LazyDashboardOverview />}
-
-      {/* Tab Content - each tab gets full remaining height */}
+      {/* Tab Content - scrollable area with dashboard overview at top */}
       <div className="flex-1 min-h-0 overflow-y-auto">
+        {effectiveTab === 'workspace' && <LazyDashboardOverview />}
         {effectiveTab === 'workspace' && (
           <LazyContentWorkspace />
         )}
@@ -634,7 +632,7 @@ export default function Home() {
       {/* 顶部加载进度条 */}
       <DataInitializer />
       {/* Top Header — Enhanced with gradient accent */}
-      <header role="banner" className="border-b border-border/50 bg-background/95 backdrop-blur-xl sticky top-0 z-50">
+      <header role="banner" className="border-b border-border/30 bg-background/95 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <div
@@ -654,7 +652,7 @@ export default function Home() {
 
           {/* Platform Switcher - Desktop */}
           <div className="hidden sm:flex items-center">
-            <div className="relative flex items-center h-8 rounded-lg bg-muted/60 p-0.5 border border-border/40">
+            <div className="relative flex items-center h-8 rounded-lg bg-muted/60 p-0.5 border border-border/20">
               <motion.div
                 className="absolute h-7 rounded-md"
                 layoutId="platform-indicator"
@@ -689,12 +687,12 @@ export default function Home() {
             {/* Command Palette trigger — ⌘K */}
             <button
               onClick={() => setCommandPaletteOpen(true)}
-              className="group flex items-center gap-2 h-8 px-3 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted/70 hover:border-border text-muted-foreground hover:text-foreground text-xs transition-colors duration-200 cursor-pointer focus-ring-soft"
+              className="group flex items-center gap-2 h-8 px-3 rounded-lg border border-border/30 bg-muted/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground text-xs transition-colors duration-200 cursor-pointer focus-ring-soft"
               aria-label="命令面板"
             >
               <Search className="h-3.5 w-3.5" />
               <span className="hidden md:inline">搜索</span>
-              <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border border-border/50 bg-background/80 px-1 font-mono text-[10px] text-muted-foreground">
+              <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border border-border/30 bg-background/80 px-1 font-mono text-[10px] text-muted-foreground">
                 ⌘K
               </kbd>
             </button>
@@ -706,7 +704,7 @@ export default function Home() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShortcutsOpen(true)}
-                    className="flex items-center justify-center h-7 w-7 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    className="flex items-center justify-center h-7 w-7 rounded-lg bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     aria-label="快捷键帮助"
                   >
                     <HelpCircle className="h-3.5 w-3.5" />
@@ -727,7 +725,7 @@ export default function Home() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Badge variant="outline" className="hidden md:inline-flex items-center text-[10px] gap-1 px-1.5 py-0 border-border/60 bg-background text-muted-foreground">
+            <Badge variant="outline" className="hidden md:inline-flex items-center text-[10px] gap-1 px-1.5 py-0 border-border/30 bg-background text-muted-foreground">
               <Zap className="h-2.5 w-2.5 text-amber-500" />
               <span className="hidden lg:inline font-medium">AI驱动</span>
             </Badge>
@@ -761,10 +759,10 @@ export default function Home() {
           <>
             {/* Desktop: Two-panel resizable layout */}
             <div className="hidden sm:block h-full">
-              <ResizablePanelGroup direction="horizontal" className="h-full card-gradient-border">
+              <ResizablePanelGroup direction="horizontal" className="h-full">
                 {/* Left Sidebar */}
                 <ResizablePanel defaultSize={24} minSize={20} maxSize={32}>
-                  <div className="h-full border-r bg-background/60 backdrop-blur-sm">
+                  <div className="h-full border-r border-border/30 bg-background/60 backdrop-blur-sm">
                     <ErrorBoundary lightweight sectionName="左侧面板">
                       <LeftSidebar />
                     </ErrorBoundary>

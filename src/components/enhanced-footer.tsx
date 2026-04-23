@@ -49,7 +49,7 @@ export function EnhancedFooter() {
       role="contentinfo"
       aria-label="状态栏"
     >
-      <div className="border-t border-border bg-background/60 backdrop-blur-sm">
+      <div className="border-t border-border/30 bg-background/60 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 py-1.5 max-w-screen-2xl mx-auto">
           {/* Left: connection + app info */}
           <div className="flex items-center gap-3">

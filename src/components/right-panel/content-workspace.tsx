@@ -158,7 +158,7 @@ function CollapsibleSectionHeader({
   return (
     <button
       onClick={onToggle}
-      className="w-full flex items-center gap-2.5 py-2.5 px-3 rounded-xl border border-border/60 bg-card/80 hover:bg-muted/40 transition-colors cursor-pointer group hover-glow-violet"
+      className="w-full flex items-center gap-2.5 py-2.5 px-3 rounded-xl bg-card/80 hover:bg-muted/40 transition-colors cursor-pointer group"
     >
       <div className={`h-7 w-7 rounded-lg bg-gradient-to-br ${section.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
         <Icon className="h-3.5 w-3.5 text-white" />
@@ -535,7 +535,7 @@ export function ContentWorkspace() {
 
   // ── Post selected ────────────────────────────────────────────────────────
   return (
-    <div className={`flex flex-col h-full min-h-0 relative border-l-2 ${statusBorderColor} transition-colors duration-300`}>
+    <div className="flex flex-col h-full min-h-0 relative">
 
       <div className="flex-1 overflow-y-auto min-h-0 workspace-scroll">
         <motion.div
@@ -551,7 +551,7 @@ export function ContentWorkspace() {
           </motion.div>
 
           {/* ── Header + engagement bar ─────────────────────────────────── */}
-          <motion.div variants={staggerItem} className="space-y-2 rounded-lg p-3 -mx-3">
+          <motion.div variants={staggerItem} className="rounded-lg p-3 -mx-3">
             <PostDetailHeader post={selectedPost} isXHS={isXHS} />
             <InlineEngagementBar post={selectedPost} isXHS={isXHS} />
           </motion.div>
@@ -562,20 +562,7 @@ export function ContentWorkspace() {
           </motion.div>
 
           {/* ── Editor / Preview ─────────────────────────────────────────── */}
-          <motion.div variants={staggerItem} className="card-shine hover-glow-violet rounded-lg ring-1 ring-violet-500/20 shadow-lg shadow-violet-500/5 relative overflow-hidden">
-            {/* Subtle animated gradient border effect */}
-            <div className="pointer-events-none absolute inset-0 rounded-lg overflow-hidden">
-              <motion.div
-                className="absolute inset-0 rounded-lg"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(139,92,246,0.08) 0%, transparent 40%, transparent 60%, rgba(168,85,247,0.06) 100%)',
-                }}
-                animate={{
-                  opacity: [0.5, 1, 0.5],
-                }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              />
-            </div>
+          <motion.div variants={staggerItem} className="rounded-lg shadow-sm bg-card/60">
             <div className="flex items-center justify-center mb-2">
               <div className="inline-flex items-center rounded-full bg-muted/60 p-0.5">
                 <Button
@@ -638,7 +625,7 @@ export function ContentWorkspace() {
                             {/* Empty Start */}
                             <button
                               onClick={() => {/* just let user type */}}
-                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-border/60 bg-background p-2.5 hover:bg-muted/50 hover:border-border transition-colors"
+                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-border/20 bg-background p-2.5 hover:bg-muted/50 transition-colors"
                             >
                               <div className="h-8 w-8 rounded-lg bg-muted/80 flex items-center justify-center">
                                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -665,7 +652,7 @@ export function ContentWorkspace() {
                               onClick={() => {
                                 toast.info("模板库功能开发中，敬请期待");
                               }}
-                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-border/60 bg-background p-2.5 hover:bg-muted/50 hover:border-border transition-colors"
+                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-border/20 bg-background p-2.5 hover:bg-muted/50 transition-colors"
                             >
                               <div className="h-8 w-8 rounded-lg bg-muted/80 flex items-center justify-center">
                                 <ClipboardList className="h-4 w-4 text-muted-foreground" />
@@ -676,7 +663,7 @@ export function ContentWorkspace() {
                             {/* Import from Clipboard */}
                             <button
                               onClick={handleImportFromClipboard}
-                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-border/60 bg-background p-2.5 hover:bg-muted/50 hover:border-border transition-colors"
+                              className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] rounded-lg border border-border/20 bg-background p-2.5 hover:bg-muted/50 transition-colors"
                             >
                               <div className="h-8 w-8 rounded-lg bg-muted/80 flex items-center justify-center">
                                 <Link2 className="h-4 w-4 text-muted-foreground" />
@@ -689,7 +676,7 @@ export function ContentWorkspace() {
                     )}
                   </AnimatePresence>
 
-                  <div className="card-shine rounded-lg">
+                  <div className="rounded-lg">
                     <PostActions post={selectedPost} isXHS={isXHS} />
                   </div>
 
@@ -853,7 +840,7 @@ export function ContentWorkspace() {
               <div className={`h-0.5 bg-gradient-to-r ${isXHS ? 'from-rose-500/60 via-pink-500/40 to-transparent' : 'from-violet-500/60 via-purple-500/40 to-transparent'} rounded-full`} />
 
               {/* Bottom row: Sub-tabs for the active group (scrollable) */}
-              <div className="relative flex items-center border-b border-border overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_0%,black_85%,transparent)]">
+              <div className="relative flex items-center border-b border-border/30 overflow-x-auto scrollbar-none">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeGroup}

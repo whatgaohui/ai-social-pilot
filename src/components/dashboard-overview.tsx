@@ -304,8 +304,8 @@ function QuickActionCard({ icon, title, subtitle, gradient, onClick, index }: Qu
       onClick={onClick}
       className="group relative flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-accent/50 text-left cursor-pointer w-full transition-all duration-200 hover:shadow-sm focus-ring-soft"
     >
-      <div className="relative flex items-center justify-center h-8 w-8 rounded-lg bg-muted/80 group-hover:bg-muted shrink-0 transition-colors duration-200">
-        <div className={`${gradient} bg-clip-text`}>{icon}</div>
+      <div className={`relative flex items-center justify-center h-8 w-8 rounded-lg shrink-0 transition-colors duration-200 ${gradient}`}>
+        {icon}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-foreground truncate">{title}</p>
