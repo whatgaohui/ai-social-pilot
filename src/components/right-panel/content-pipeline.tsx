@@ -207,7 +207,6 @@ function PipelineVisualization({
                 fill="currentColor"
                 className={`${isActive ? "text-violet-100 dark:text-violet-900/40" : stage.bgClass.includes("dark") ? "text-transparent" : "text-background"}`}
                 stroke="currentColor"
-                className2={isActive ? "text-violet-400" : "text-border"}
                 strokeWidth={isActive ? "2.5" : "1.5"}
                 style={{
                   fill: isActive

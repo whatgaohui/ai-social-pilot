@@ -33,7 +33,7 @@ import {
   Check,
   Heart,
   Eye,
-  Use,
+  User,
   Plus,
   Pencil,
   Trash2,

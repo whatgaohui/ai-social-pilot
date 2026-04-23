@@ -88,6 +88,7 @@ import { PublishToCalendar } from "@/components/right-panel/publish-to-calendar"
 import { AIChatWorkspace } from "@/components/right-panel/ai-chat-workspace";
 import { ContentWordCloud } from "@/components/right-panel/content-word-cloud";
 import { QualityTimeline } from "@/components/right-panel/quality-timeline";
+import { CalendarMiniHeatmap } from "@/components/left-panel/calendar-mini-heatmap";
 
 // ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
 
@@ -266,6 +267,7 @@ const STATUS_BORDER_COLORS: Record<PostStatus, string> = {
   generated: "border-l-violet-500",
   optimized: "border-l-emerald-500",
   published: "border-l-purple-500",
+  scheduled: "border-l-blue-500",
 };
 
 // ─── Tab Group Definitions ─────────────────────────────────────────────────
@@ -307,7 +309,8 @@ export function ContentWorkspace() {
   const persona = useAppStore((s) => s.persona);
   const setAccountPanelOpen = useAppStore((s) => s.setAccountPanelOpen);
   const updateContentPost = useAppStore((s) => s.updateContentPost);
-
+  const selectedDate = useAppStore((s) => s.selectedDate);
+  const setSelectedDate = useAppStore((s) => s.setSelectedDate);
 
   const isXHS = platform === "xiaohongshu";
   const [previewMode, setPreviewMode] = useState(false);
@@ -764,6 +767,15 @@ export function ContentWorkspace() {
           </motion.div>
 
           <Separator />
+
+          {/* ── Calendar Mini Heatmap ──────────────────────────────────── */}
+          <motion.div variants={staggerItem}>
+            <CalendarMiniHeatmap
+              posts={contentPosts}
+              selectedDate={selectedDate || ""}
+              onSelectDate={setSelectedDate}
+            />
+          </motion.div>
 
           {/* ── Tool Tabs (two-level grouping) ──────────────────────────────── */}
           <motion.div variants={staggerItem}>

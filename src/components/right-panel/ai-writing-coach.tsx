@@ -184,7 +184,7 @@ function analyzeEmotion(content: string, _platform: string, _topic?: string): { 
   // Check for emotional keywords
   const positiveWords = ["喜欢", "开心", "幸福", "感动", "温暖", "美好", "收获", "成功", "值得", "推荐", "宝藏", "绝绝子", "冲"];
   const empathyWords = ["我", "我们", "你", "大家", "其实", "以前", "后来", "一直", "每次", "总"];
-  const痛点Words = ["困扰", "烦恼", "焦虑", "迷茫", "纠结", "后悔", "害怕", "压力"];
+  const 痛点Words = ["困扰", "烦恼", "焦虑", "迷茫", "纠结", "后悔", "害怕", "压力"];
 
   const positiveCount = positiveWords.filter((w) => content.includes(w)).length;
   const empathyCount = empathyWords.filter((w) => content.includes(w)).length;

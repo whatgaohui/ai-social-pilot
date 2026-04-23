@@ -134,7 +134,6 @@ function StatChip({
   value,
   label,
   progress,
-  progressColor,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   value: string;
@@ -288,7 +287,7 @@ export function EnhancedFooter() {
     ).size;
 
     const aiGenerated = contentPosts.filter(
-      (p) => p.content?.includes('AI') || p.aiGenerated
+      (p) => p.content?.includes('AI') || p.generationType === 'auto'
     ).length;
 
     return { todayPublished, todayTotal, activeDays, aiGenerated, libraryCount: knowledgeItems.length };

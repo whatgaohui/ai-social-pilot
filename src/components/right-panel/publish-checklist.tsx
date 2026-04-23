@@ -129,7 +129,7 @@ function evaluatePost(post: ContentPost | null, platform: string): CheckItem[] {
       { key: "content", name: "内容完整度", icon: FileText, weight: 25, score: 0, feedback: "暂无内容可检查", status: "fail", fixable: false },
       { key: "timing", name: "发布时机", icon: Clock, weight: 10, score: 0, feedback: "暂无内容可检查", status: "fail", fixable: false },
       { key: "platform", name: "平台适配", icon: Smartphone, weight: 20, score: 0, feedback: "暂无内容可检查", status: "fail", fixable: false },
-      { key: "engagement", name: "互动诱饵", icon: MessageSquareQuestion, weight: 15, score: 0, feedback: "暂无内容可检查", status: "fail", fixable: false },
+      { key: "engagement", name: "互动诱饵", icon: MessageCircleQuestion, weight: 15, score: 0, feedback: "暂无内容可检查", status: "fail", fixable: false },
       { key: "format", name: "格式规范", icon: AlignLeft, weight: 10, score: 0, feedback: "暂无内容可检查", status: "fail", fixable: false },
     ];
   }
@@ -415,7 +415,7 @@ function evaluatePost(post: ContentPost | null, platform: string): CheckItem[] {
     items.push({
       key: "engagement",
       name: "互动诱饵",
-      icon: MessageSquareQuestion,
+      icon: MessageCircleQuestion,
       weight: 15,
       score: Math.min(100, score),
       feedback: feedbacks.length > 0 ? feedbacks.join("；") : "互动设计良好",

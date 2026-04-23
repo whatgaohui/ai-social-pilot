@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { TimeSuggestions } from "@/components/right-panel/time-suggestions";
+import { EngagementFunnel } from "@/components/right-panel/engagement-funnel";
 import type { ContentPost } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1441,6 +1442,22 @@ export function AnalyticsPanel() {
               comments={displayAnalytics.totalComments}
               shares={displayAnalytics.totalShares}
               views={displayAnalytics.totalViews}
+            />
+          </motion.div>
+
+          {/* ── Engagement Funnel ────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <EngagementFunnel
+              views={displayAnalytics.totalViews}
+              likes={displayAnalytics.totalLikes}
+              comments={displayAnalytics.totalComments}
+              shares={displayAnalytics.totalShares}
+              favorites={isXHS ? totalFavorites : undefined}
+              platform={platform}
             />
           </motion.div>
 

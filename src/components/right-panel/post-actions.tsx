@@ -20,7 +20,8 @@ const PREV_STATUS: Record<PostStatus, PostStatus | null> = {
   planned: null,
   generated: "planned",
   optimized: "generated",
-  published: "optimized",
+  scheduled: "optimized",
+  published: "scheduled",
 };
 
 // Status button config: each button maps to a status, but shows "undo" when current

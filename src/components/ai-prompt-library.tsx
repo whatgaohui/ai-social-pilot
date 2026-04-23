@@ -464,7 +464,7 @@ function PromptFormDialog({ open, onOpenChange, editPrompt, onSuccess }: PromptF
               placeholder="输入AI系统提示词... 使用 {变量名} 作为占位符"
               className="text-xs min-h-[150px] resize-none font-mono"
             />
-            <p className="text-[9px] text-muted-foreground">提示: 使用 {topic}、{tone}、{persona} 等占位符，使用时会自动替换</p>
+            <p className="text-[9px] text-muted-foreground">{`提示: 使用 {topic}、{tone}、{persona} 等占位符，使用时会自动替换`}</p>
           </div>
         </div>
 

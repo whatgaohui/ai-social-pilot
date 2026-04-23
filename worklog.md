@@ -9564,3 +9564,170 @@ Stage Summary:
   4. 运营报告自动生成功能完善（PDF/图片导出）
   5. 内容发布自动化工作流（定时发布 + 自动优化）
   6. 数据备份/恢复功能
+
+---
+Task ID: P0-bugfix
+Agent: General Purpose Agent
+Task: Fix P0 critical bugs in 6 component files
+
+Work Log:
+- Read and analyzed all 6 affected component files
+- Applied targeted fixes to each file
+
+### Bug Fixes (6 total)
+
+1. **backup-restore-panel.tsx line 3** — Missing `useEffect` import
+   - Added `useEffect` to the React import statement
+   - File uses `useEffect` at line 170 for initial data fetch
+   - Before: `import { useState, useCallback, useRef } from "react";`
+   - After:  `import { useState, useCallback, useRef, useEffect } from "react";`
+
+2. **theme-customizer.tsx line 3** — Missing `useRef` import
+   - Added `useRef` to the React import statement
+   - File uses `useRef` at line 185 (`const initialized = useRef(false)`)
+   - Before: `import { useState, useEffect, useCallback } from "react";`
+   - After:  `import { useState, useEffect, useCallback, useRef } from "react";`
+
+3. **ai-prompt-library.tsx line 467** — JSX variable references instead of template literal
+   - `{topic}`, `{tone}`, `{persona}` were rendered as JSX expressions (undefined variables)
+   - Wrapped entire text content in backtick template literal
+   - Before: `<p>...{topic}、{tone}、{persona}...</p>`
+   - After:  `<p>{\`...{topic}、{tone}、{persona}...\`}</p>`
+
+4. **template-marketplace.tsx line 36** — Non-existent lucide-react icon `Use`
+   - Changed import to `User` which exists in lucide-react
+   - Before: `Use,` (in lucide-react import block)
+   - After:  `User,`
+
+5. **publish-checklist.tsx lines 132 and 418** — Non-existent lucide-react icon `MessageSquareQuestion`
+   - Changed to `MessageCircleQuestion` (already correctly imported at line 30)
+   - Fixed in the null-post fallback (line 132) and the engagement check evaluation (line 418)
+   - Before: `icon: MessageSquareQuestion`
+   - After:  `icon: MessageCircleQuestion`
+
+6. **ai-writing-coach.tsx line 187** — Missing space between `const` and variable name
+   - Before: `const痛点Words` (invalid JS/TS syntax)
+   - After:  `const 痛点Words`
+
+Stage Summary:
+- 6 P0 critical bugs fixed across 6 files
+- All fixes are single-line or two-line targeted changes
+- No new files created, no lint/build run (as instructed)
+---
+Task ID: 50
+Agent: Main Orchestrator + Subagents
+Task: 第五十轮开发 - 代码质量扫描+P0/P1 Bug修复+新功能组件+视觉CSS增强
+
+Work Log:
+- 读取 worklog.md 了解前49轮开发成果（9566行交接文档）
+- 运行 eslint（零错误）和 next build（编译成功）确认项目状态稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），使用 lint + build 验证
+- 使用 Explore subagent 全面扫描代码质量问题（约200个文件，105,855行代码）
+
+### Bug修复
+
+#### P0 关键 Bug（6个文件）
+1. **backup-restore-panel.tsx** — `useEffect` 已使用但未导入 → 添加到 React import
+2. **theme-customizer.tsx** — `useRef` 已使用但未导入 → 添加到 React import
+3. **ai-prompt-library.tsx** — `{topic}`, `{tone}`, `{persona}` 作为 JSX 变量引用但不存在（ReferenceError）→ 包裹为模板字符串
+4. **template-marketplace.tsx** — `Use` 从 lucide-react 导入但不存在 → 改为 `User`
+5. **publish-checklist.tsx** — `MessageSquareQuestion` 不存在于 lucide-react → 改为 `MessageCircleQuestion`
+6. **ai-writing-coach.tsx** — `const痛点Words` 拼写错误（const 与变量名之间缺少空格）→ 修复为 `const 痛点Words`
+
+#### P1 类型错误（7个文件）
+7. **calendar-dnd-reorder.tsx** — `Record<PostStatus, ...>` 缺少 `scheduled` 键 → 添加 scheduled 条目
+8. **compact-calendar.tsx** — 同上，3处 Record 对象均缺少 scheduled → 全部补齐
+9. **content-workspace.tsx** — 同上 → 添加 scheduled 边框颜色
+10. **post-actions.tsx** — 同上 → 添加 scheduled 状态转换链
+11. **enhanced-footer.tsx** — `progressColor` 和 `aiGenerated` 属性不存在于对应类型 → 修复
+12. **content-pipeline.tsx** — 无效的 `className2` SVG 属性 → 移除
+13. **emoji-picker.tsx** — 对象字面量中重复属性键 → 移除重复项
+
+### 新功能组件
+
+1. **内容互动漏斗**（engagement-funnel.tsx）：
+   - SVG 梯形漏斗可视化（浏览→点赞→评论→转发→收藏）
+   - 渐变填充：violet→rose→amber→emerald→sky
+   - 每层显示计数、标签、转换率百分比
+   - framer-motion 交错入场 + 宽度过渡动画
+   - 朋友圈4层 / 小红书5层自动适配
+   - 空状态（BarChart3 图标 + "暂无互动数据"）
+   - 已集成到 analytics-panel.tsx
+
+2. **AI评分徽章**（score-badge.tsx）：
+   - 可复用的 SVG 圆环进度指示器组件
+   - 4色评分：≥80 emerald, ≥60 amber, ≥40 orange, <40 rose
+   - 3种尺寸：sm(36px), md(52px), lg(72px)
+   - 可选动画（从0到目标分值）和标签（优秀/良好/中等/待改进）
+   - 导出 ScoreBadge
+
+3. **日历迷你热力图**（calendar-mini-heatmap.tsx）：
+   - 紧凑月度热力条（7行 Mon-Sun × 日列数）
+   - 4级 emerald 色阶（0→300/50→500/60→700/80）
+   - 今日高亮（ring-2 ring-violet-500），选中日期高亮
+   - Tooltip 显示日期+帖子数，点击选择日期
+   - framer-motion staggered 入场动画
+   - 底部图例（少→多渐变色条）
+   - 已集成到 content-workspace.tsx
+
+### CSS 增强（globals.css）
+新增约120行 CSS 动画工具类：
+- Toast 通知滑入/滑出动画
+- 通知重要消息发光脉冲（notification-glow）
+- 骨架屏微光增强（skeleton-shine-refined）
+- 数字计数上升过渡（count-up）
+- 评分徽章脉冲光晕（score-badge-glow）
+- 漏斗层级悬浮提升（funnel-level-hover）
+- 热力图单元格悬浮脉冲（heatmap-cell-pulse）
+- 迷你日历卡片左侧强调线（mini-calendar-accent）
+- 互动指标卡片顶部渐变线（engagement-metric）
+
+### 新增文件
+- `src/components/right-panel/engagement-funnel.tsx` — 互动漏斗组件
+- `src/components/ui/score-badge.tsx` — 评分徽章组件
+- `src/components/left-panel/calendar-mini-heatmap.tsx` — 迷你热力图组件
+
+### 修改文件
+- `src/components/backup-restore-panel.tsx` — 修复 useEffect 导入
+- `src/components/theme-customizer.tsx` — 修复 useRef 导入
+- `src/components/ai-prompt-library.tsx` — 修复 JSX 变量 bug
+- `src/components/template-marketplace.tsx` — 修复 lucide 图标
+- `src/components/right-panel/publish-checklist.tsx` — 修复 lucide 图标
+- `src/components/right-panel/ai-writing-coach.tsx` — 修复 const 拼写
+- `src/components/left-panel/calendar-dnd-reorder.tsx` — 添加 scheduled 状态
+- `src/components/left-panel/compact-calendar.tsx` — 添加 scheduled 状态
+- `src/components/right-panel/content-workspace.tsx` — 添加 scheduled + 集成热力图
+- `src/components/right-panel/post-actions.tsx` — 添加 scheduled 状态
+- `src/components/enhanced-footer.tsx` — 修复属性访问错误
+- `src/components/right-panel/content-pipeline.tsx` — 移除无效属性
+- `src/components/right-panel/emoji-picker.tsx` — 移除重复属性键
+- `src/app/globals.css` — 新增 ~120 行 CSS 动画
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ next build 编译成功（所有动态路由正常）
+
+Stage Summary:
+- 项目状态：稳定可运行，代码质量和功能丰富度显著提升
+- 本轮新增 3 个文件，修改 14 个文件
+- 核心成果：
+  1. 全面代码质量扫描（200+文件，发现并修复19个问题）
+  2. P0 关键 Bug 修复（6个：缺失导入、JSX 错误、图标名称、拼写错误）
+  3. P1 类型错误修复（7个：PostStatus 缺 scheduled、属性访问错误）
+  4. 互动漏斗可视化组件（SVG 梯形 + 双平台适配）
+  5. AI 评分徽章组件（可复用、动画、4色评分）
+  6. 日历迷你热力图组件（月度发布热力 + 交互）
+  7. 10个新 CSS 动画工具类
+  8. 3个新组件已集成到现有面板
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. TypeScript 严格类型检查仍有约125个非阻塞类型警告（framer-motion 类型不兼容、API 路由类型安全等）
+  3. 多个组件超过1000行（建议后续拆分）
+  4. 11处静默错误吞没 `.catch(() => {})`（建议添加错误日志）
+- 建议下一阶段优先事项：
+  1. 继续修复剩余 TypeScript 类型警告（API 路由类型安全、framer-motion 类型）
+  2. 内容排期拖拽排序功能（已有 @dnd-kit 依赖）
+  3. AI 对话工作台增强（上下文记忆、人设注入）
+  4. 大组件拆分重构（8个超过1000行的组件）
+  5. 静默错误处理优化（添加错误日志或注释说明）
+  6. 移动端响应式深度优化

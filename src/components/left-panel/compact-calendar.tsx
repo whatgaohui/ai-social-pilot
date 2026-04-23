@@ -101,6 +101,7 @@ const STATUS_DOT_COLORS: Record<PostStatus, string> = {
   generated: "bg-sky-500",
   optimized: "bg-amber-500",
   published: "bg-violet-500",
+  scheduled: "bg-blue-500",
 };
 
 // Day cell background tints per status
@@ -109,6 +110,7 @@ const STATUS_CELL_BG: Record<PostStatus, { bg: string; border: string; dot: stri
   optimized: { bg: "bg-amber-100 dark:bg-amber-950/40", border: "border-l-2 border-l-amber-500", dot: "bg-amber-500" },
   generated: { bg: "bg-sky-100 dark:bg-sky-950/40", border: "border-l-2 border-l-sky-500", dot: "bg-sky-500" },
   planned:   { bg: "bg-gray-100 dark:bg-gray-800/60", border: "border-l-2 border-l-gray-400", dot: "bg-gray-400" },
+  scheduled: { bg: "bg-blue-100 dark:bg-blue-950/40", border: "border-l-2 border-l-blue-500", dot: "bg-blue-500" },
 };
 
 // Platform left-bar accent color
@@ -122,6 +124,7 @@ const STATUS_BADGE_COLORS: Record<PostStatus, string> = {
   generated: "bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300",
   optimized: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300",
   published: "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300",
+  scheduled: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
 };
 
 const PLATFORM_DOT_COLORS: Record<string, string> = {
