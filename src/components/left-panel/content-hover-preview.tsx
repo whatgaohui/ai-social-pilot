@@ -126,11 +126,42 @@ export function ContentHoverPreview({
     }
   }, [visible, anchorRect]);
 
-  // Calculate smart position
-  const positionStyle = useSmartPosition(anchorRect, containerRect);
+  // ── Callbacks must be declared before any conditional return (React hooks rule) ──
+  const handleEdit = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (post) onEdit(post);
+    },
+    [post, onEdit],
+  );
 
-  // Arrow position based on alignment
-  const arrowStyle = useMemoArrowStyle(anchorRect, containerRect);
+  const handleAnalytics = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (post) onViewAnalytics(post);
+    },
+    [post, onViewAnalytics],
+  );
+
+  const handleCopy = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (post) {
+        onCopy(post);
+        toast.success("已复制内容", { description: post.topic });
+      }
+    },
+    [post, onCopy],
+  );
+
+  // ── Early null guard: post may be null from useContentHover() ──
+  if (!post || !showDelay || !anchorRect || !containerRect) return null;
+
+  // Calculate smart position (plain utility, not a React hook despite "use" prefix)
+  const positionStyle = calcSmartPosition(anchorRect, containerRect);
+
+  // Arrow position based on alignment (plain utility, not a React hook)
+  const arrowStyle = calcArrowStyle(anchorRect, containerRect);
 
   const platformLabel = post.platform
     ? PLATFORM_LABELS[post.platform as keyof typeof PLATFORM_LABELS] || post.platform
@@ -141,33 +172,6 @@ export function ContentHoverPreview({
     post.content && post.content.length > 100
       ? post.content.slice(0, 100) + "…"
       : post.content;
-
-  const handleEdit = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      onEdit(post);
-    },
-    [post, onEdit],
-  );
-
-  const handleAnalytics = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      onViewAnalytics(post);
-    },
-    [post, onViewAnalytics],
-  );
-
-  const handleCopy = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      onCopy(post);
-      toast.success("已复制内容", { description: post.topic });
-    },
-    [post, onCopy],
-  );
-
-  if (!post || !showDelay || !anchorRect || !containerRect) return null;
 
   return (
     <AnimatePresence>
@@ -321,7 +325,7 @@ export function ContentHoverPreview({
 
 // --- Hook: smart edge-aware positioning ---
 
-function useSmartPosition(
+function calcSmartPosition(
   anchorRect: DOMRect | null,
   containerRect: DOMRect | null,
 ): CSSProperties {
@@ -371,7 +375,7 @@ function useSmartPosition(
 
 // --- Hook: arrow pointing at anchor ---
 
-function useMemoArrowStyle(
+function calcArrowStyle(
   anchorRect: DOMRect | null,
   _containerRect: DOMRect | null,
 ): CSSProperties | null {
