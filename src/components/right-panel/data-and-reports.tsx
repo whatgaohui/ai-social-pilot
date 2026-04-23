@@ -19,7 +19,7 @@ import { TrendComparisonChart } from "@/components/right-panel/trend-comparison-
 import { CompetitorCalendarView } from "@/components/right-panel/competitor-calendar-view";
 import { CompetitorDashboard } from "@/components/right-panel/competitor-dashboard";
 import { TrendTracker } from "@/components/right-panel/trend-tracker";
-import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity, Radar, Flame, Gauge, Layers, UserCheck } from "lucide-react";
+import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity, Radar, Flame, Gauge, Layers, UserCheck, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
 import { ExecutiveDashboard } from "@/components/right-panel/executive-dashboard";
@@ -27,6 +27,7 @@ import { OpsRhythmDashboard } from "@/components/right-panel/ops-rhythm-dashboar
 import { WeeklyAnalytics } from "@/components/right-panel/weekly-analytics";
 import { ReportTemplateManager } from "@/components/right-panel/report-template-manager";
 import { AudienceInsightsPanel } from "@/components/right-panel/audience-insights-panel";
+import { ExportCenter } from "@/components/right-panel/export-center";
 
 /**
  * DataAndReports — unified "数据与报告" view that merges
@@ -103,6 +104,10 @@ export function DataAndReports() {
               <TabsTrigger value="templates" className={tabTriggerClass("templates")}>
                 <Layers className="h-3.5 w-3.5" />
                 模板
+              </TabsTrigger>
+              <TabsTrigger value="export" className={tabTriggerClass("export")}>
+                <Download className="h-3.5 w-3.5" />
+                导出
               </TabsTrigger>
             </TabsList>
 
@@ -260,6 +265,16 @@ export function DataAndReports() {
             >
               <div className="flex flex-col flex-1 min-h-0">
                 <ReportTemplateManager />
+              </div>
+            </TabsContent>
+
+            {/* ── Export Center Tab ──────────────────────────────── */}
+            <TabsContent
+              value="export"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
+            >
+              <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+                <ExportCenter />
               </div>
             </TabsContent>
           </Tabs>

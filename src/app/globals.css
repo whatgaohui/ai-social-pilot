@@ -76,40 +76,76 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* ── Track D: Extended CSS Variable System ── */
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafafa;
+  --bg-tertiary: #f5f5f5;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-muted: #a1a1aa;
+  --border-default: #e4e4e7;
+  --border-subtle: #f0f0f2;
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-amber: #f59e0b;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --glow-purple: rgba(139, 92, 246, 0.15);
+  --glow-green: rgba(16, 185, 129, 0.15);
+  --glow-amber: rgba(245, 158, 11, 0.15);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: #0a0a0f;
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: #12121a;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: #12121a;
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --primary-foreground: #0a0a0f;
+  --secondary: #1a1a2e;
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  --muted: #1a1a2e;
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: #1a1a2e;
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: #27272a;
+  --input: #1e1e24;
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: #0f0f17;
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent: #1a1a2e;
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: #1e1e24;
   --sidebar-ring: oklch(0.556 0 0);
+  /* ── Track D: Deep Space Dark Theme ── */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a2e;
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-default: #27272a;
+  --border-subtle: #1e1e24;
+  --accent-purple: #a78bfa;
+  --accent-green: #34d399;
+  --accent-amber: #fbbf24;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --glow-purple: rgba(139, 92, 246, 0.25);
+  --glow-green: rgba(16, 185, 129, 0.25);
+  --glow-amber: rgba(245, 158, 11, 0.25);
 }
 
 @layer base {
@@ -9308,4 +9344,273 @@ textarea,
   :focus:not(:focus-visible) {
     outline: none;
   }
+}
+
+/* ====================================================================
+   Round 40 — Track D: Deep Dark Theme + Animation & Visual Polish
+   ==================================================================== */
+
+/* ─── 1. Keyframes: float-gentle — 温和浮动动画 ─────────────── */
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-6px) rotate(0.5deg); }
+  66% { transform: translateY(-3px) rotate(-0.5deg); }
+}
+.animate-float-gentle {
+  animation: float-gentle 5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* ─── 2. Keyframes: glow-pulse — 发光脉冲 ──────────────────── */
+@keyframes glow-pulse-soft {
+  0%, 100% {
+    box-shadow: 0 0 8px var(--glow-purple, rgba(139, 92, 246, 0.15));
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 20px var(--glow-purple, rgba(139, 92, 246, 0.25)),
+                0 0 40px var(--glow-purple, rgba(139, 92, 246, 0.08));
+    opacity: 0.92;
+  }
+}
+.animate-glow-pulse {
+  animation: glow-pulse-soft 3s ease-in-out infinite;
+  will-change: box-shadow, opacity;
+}
+
+/* ─── 3. Keyframes: gradient-shift — 渐变色流动 ────────────── */
+@keyframes gradient-flow {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 50% 0%; }
+  50% { background-position: 100% 50%; }
+  75% { background-position: 50% 100%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-flow {
+  background-size: 300% 300%;
+  animation: gradient-flow 8s ease infinite;
+  will-change: background-position;
+}
+
+/* ─── 4. Keyframes: border-dance — 边框流光 ────────────────── */
+@keyframes border-dance {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+.animate-border-dance {
+  position: relative;
+}
+.animate-border-dance::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    135deg,
+    var(--accent-purple, #8b5cf6),
+    var(--accent-green, #10b981),
+    var(--accent-amber, #f59e0b),
+    var(--accent-purple, #8b5cf6)
+  );
+  background-size: 300% 300%;
+  animation: border-dance 4s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ─── 5. .animate-on-hover — 仅hover时播放动画 ─────────────── */
+.animate-on-hover {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.animate-on-hover:hover {
+  animation: float-gentle 2s ease-in-out infinite;
+}
+.animate-on-hover:active {
+  animation: none;
+}
+
+/* ─── 6. .transition-smooth — 平滑过渡工具类 ───────────────── */
+.transition-smooth {
+  transition: all 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─── 7. .hover-lift-sm / md / lg — 悬浮上浮效果 ─────────── */
+.hover-lift-sm {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.2s ease;
+}
+.hover-lift-sm:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm), var(--shadow-md);
+}
+
+.hover-lift-md {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.25s ease;
+}
+.hover-lift-md:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md), var(--shadow-lg);
+}
+.hover-lift-md:active {
+  transform: translateY(-2px);
+}
+
+.hover-lift-lg {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.3s ease;
+}
+.hover-lift-lg:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg), 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+.hover-lift-lg:active {
+  transform: translateY(-3px);
+}
+.dark .hover-lift-lg:hover {
+  box-shadow: var(--shadow-lg), 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── 8. .press-scale — 按下缩放效果 ─────────────────────── */
+.press-scale-enhanced {
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.12s ease;
+  will-change: transform;
+}
+.press-scale-enhanced:active {
+  transform: scale(0.96);
+  box-shadow: none;
+}
+
+/* ─── 9. .focus-ring-glow — 聚焦发光环 ───────────────────── */
+.focus-ring-glow-enhanced:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-primary, #fff),
+    0 0 0 4px var(--accent-purple, #8b5cf6),
+    0 0 16px var(--glow-purple, rgba(139, 92, 246, 0.15));
+  border-radius: 8px;
+}
+.dark .focus-ring-glow-enhanced:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--bg-primary, #0a0a0f),
+    0 0 0 4px var(--accent-purple, #a78bfa),
+    0 0 20px var(--glow-purple, rgba(139, 92, 246, 0.25));
+}
+
+/* ─── 10. .backdrop-blur-subtle — 微妙背景模糊 ────────────── */
+.backdrop-blur-subtle {
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+}
+.backdrop-blur-medium {
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+}
+
+/* ─── Dark theme deep space background ─────────────────────── */
+.dark .bg-gradient-animated {
+  background: linear-gradient(-45deg, #0a0a0f, #0d0d18, #12121a, #1a1a2e, #0a0a0f);
+  background-size: 400% 400%;
+  animation: gradient-shift 20s ease infinite;
+}
+
+/* ─── Dark theme scrollbar for deep space feel ─────────────── */
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ─── Dark theme selection color ───────────────────────────── */
+.dark ::selection {
+  background: rgba(139, 92, 246, 0.3);
+  color: #e4e4e7;
+}
+
+/* ─── Dark glass card refinement for deep space ────────────── */
+.dark .glass-card {
+  background: rgba(18, 18, 26, 0.7);
+  border-color: rgba(139, 92, 246, 0.08);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.dark .glass-card:hover {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(139, 92, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Dark theme glass panel for deep space ────────────────── */
+.dark .glass-panel {
+  background: rgba(10, 10, 15, 0.7);
+  border-color: rgba(139, 92, 246, 0.06);
+}
+
+/* ─── Dark theme dot/grid patterns ─────────────────────────── */
+.dark .bg-dots-pattern {
+  background-image: radial-gradient(circle, rgba(139, 92, 246, 0.06) 1px, transparent 1px);
+}
+.dark .bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(139, 92, 246, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
+}
+
+/* ─── Dark theme card-clickable ────────────────────────────── */
+.dark .card-clickable:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(139, 92, 246, 0.08);
+}
+
+/* ─── Dark theme shadow-card ───────────────────────────────── */
+.dark .shadow-card {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.dark .shadow-card:hover {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(139, 92, 246, 0.06);
+}
+
+/* ─── Dark theme card-hover-lift ───────────────────────────── */
+.dark .card-hover-lift:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* ─── Deep space ambient glow for .dark body ───────────────── */
+.dark body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(139, 92, 246, 0.03) 0%,
+    transparent 50%
+  ),
+  radial-gradient(
+    ellipse at 70% 80%,
+    rgba(16, 185, 129, 0.02) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+  z-index: 0;
+  animation: gradient-flow 30s ease infinite;
+  background-size: 200% 200%;
 }
