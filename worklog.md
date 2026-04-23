@@ -8572,3 +8572,101 @@ Work Log:
 8. 单元测试 + E2E 测试覆盖
 9. 国际化 (i18n) 支持
 10. WebSocket 实时数据推送
+
+---
+Task ID: 42
+Agent: Main Orchestrator + 3 Parallel full-stack-developer Sub-agents (42-a/b/c)
+Task: 第42轮开发 - 集成第41轮新组件 + 通知中心页面 + 预览修复
+
+Work Log:
+- 读取 worklog.md 了解第41轮状态（209组件，80 API，12 Hooks，41轮迭代）
+- 硬约束：全程未使用 agent-browser（OOM限制），使用 curl 做 QA
+- 修复预览问题：使用 standalone 生产模式启动服务器（node .next/standalone/server.js），Caddy 代理端口81恢复正常
+- 3个并行子代理执行集成任务
+
+### 预览修复
+- 问题：Next.js 生产服务器未运行，Caddy 代理返回502
+- 修复：使用 `NODE_OPTIONS="--max-old-space-size=768" NODE_ENV=production node .next/standalone/server.js -p 3000` 启动
+- 验证：端口3000和81均返回HTTP 200，页面标题正确
+
+### Track A: 竞品分析组件集成（data-and-reports.tsx）
+- 在数据与报告面板添加"竞品分析"Tab
+- 3个竞品组件使用 dynamic import + ssr: false
+- 4个可折叠Section：
+  - 竞品雷达图（Crosshair图标，violet→purple渐变，默认展开）
+  - 趋势对比（TrendingUp图标，emerald→teal渐变，默认展开）
+  - 日历对比（Calendar图标，rose→pink渐变，默认收起）
+  - 竞争分析报告（FileText图标，amber→orange渐变，默认收起）
+- "生成竞争分析报告"按钮调用 /api/competitor-report，结果展示总评分+差距指标+建议
+- 修复了未定义的 OpsDashboardTab 引用
+
+### Track B: AI写作/管线组件集成（content-workspace.tsx）
+- 在内容工作台底部添加"高级工具"分组
+- 4个新组件使用 dynamic import + ssr: false
+- 4个可折叠Section：
+  - 内容管线看板（Layers图标，violet→purple，Badge: {N} 条）
+  - AI批量操作（Bot图标，amber→orange，Badge: 5 项）
+  - 内容健康度（Activity图标，emerald→teal，Badge: 5 维度）
+  - AI写作教练（Wand2图标，rose→pink，Badge: 6 维度）
+- CollapsibleSectionHeader 复用组件：渐变图标+Badge+动画箭头
+- content-workspace.tsx 从851行增加到1059行（+208行）
+
+### Track C: 运营仪表盘集成 + 通知中心页面
+1. **运营仪表盘Tab**（data-and-reports.tsx）：
+   - 重排Tab顺序：数据分析 → 运营仪表盘 → 竞品分析 → 运营报告
+   - 4个可折叠Section：
+     - 运营节奏引擎（OpsRhythmEngine，默认展开）
+     - 实时指标（LiveMetricsMonitor，默认展开）
+     - 发布工作流（PublishWorkflowEnhanced，默认收起）
+     - 周报生成（WeeklyReportGenerator，默认收起）
+   - emerald/amber渐变主题
+
+2. **通知中心页面**（notification-center-page.tsx，~330行）：
+   - 5个分类筛选（全部/AI/系统/发布/提醒）+ 动画渐变pill
+   - 已读/未读切换 + 批量全部已读按钮
+   - 通知列表：分类彩色图标、左边框、相对时间戳、操作按钮、关闭
+   - 特殊成就通知卡片（脉冲奖杯动画）
+   - 上下文感知空状态消息
+   - framer-motion 交错动画
+
+3. **通知铃铛增强**（notification-center-enhanced.tsx）：
+   - 添加"查看全部"按钮
+   - 点击打开 Dialog 显示完整 NotificationCenterPage
+   - 桌面端（Popover）和移动端（Sheet）均支持
+
+### 修改文件
+- `src/components/right-panel/data-and-reports.tsx` — 竞品分析Tab + 运营仪表盘Tab
+- `src/components/right-panel/content-workspace.tsx` — 高级工具分组（+208行）
+- `src/components/notification-center-enhanced.tsx` — "查看全部"按钮 + Dialog
+
+### 新增文件
+- `src/components/notification-center-page.tsx` — 通知中心全页视图（~330行）
+
+### QA验证结果
+- ✅ ESLint 零错误、零警告
+- ✅ Next.js build 成功（9.1s编译，69静态页面）
+- ✅ 210个组件（+1），80个API路由（不变），12个Hooks
+- ✅ 预览恢复：端口3000和81均HTTP 200
+
+### 项目当前状态
+- 42轮迭代完成，极其成熟稳定
+- 所有第41轮新增组件已完全集成到主页面
+- 数据与报告Tab现在有4个子Tab：数据分析、运营仪表盘、竞品分析、运营报告
+- 内容工作台新增4个高级工具Section
+- 通知中心支持完整页面浏览
+
+### 未解决问题或风险
+1. 沙箱内存限制：standalone服务器在多个并发请求时可能OOM（单请求稳定）
+2. agent-browser 不可用（OOM限制）
+3. 备份恢复面板（backup-restore-panel.tsx）和系统设置页面（system-settings-page.tsx）入口尚未集成到Header
+
+### 建议下一阶段优先事项
+1. 备份恢复面板入口集成到设置中心
+2. 系统设置页面入口集成到Header
+3. 内容健康度评分阈值告警
+4. 运营仪表盘数据与真实API对接
+5. 竞品追踪数据源（手动录入/自动抓取）
+6. 通知中心实时推送（WebSocket/SSE）
+7. 单元测试覆盖
+8. PWA离线支持
+9. 国际化(i18n)

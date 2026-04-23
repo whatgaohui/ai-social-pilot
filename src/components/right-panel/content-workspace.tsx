@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
@@ -27,6 +28,9 @@ import {
   ImageIcon,
   Download,
   Layers,
+  ChevronRight,
+  Activity,
+  Wand2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -74,6 +78,76 @@ import { QuickActionsToolbar } from "@/components/right-panel/quick-actions-tool
 import { AIBatchOperations } from "@/components/right-panel/ai-batch-operations";
 import { ContentHealthDashboard } from "@/components/right-panel/content-health-dashboard";
 import { PublishingQueue } from "@/components/right-panel/publishing-queue";
+
+// ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
+
+function SkeletonBox({ className = "" }: { className?: string }) {
+  return <div className={`rounded-xl bg-muted/60 animate-pulse ${className}`} />;
+}
+
+const ContentPipelineKanban = dynamic(
+  () => import("@/components/right-panel/content-pipeline-kanban").then((m) => ({ default: m.ContentPipelineKanban })),
+  { ssr: false, loading: () => <SkeletonBox className="h-64" /> },
+);
+
+const AISmartBatchPanel = dynamic(
+  () => import("@/components/right-panel/ai-smart-batch-panel").then((m) => ({ default: m.AISmartBatchPanel })),
+  { ssr: false, loading: () => <SkeletonBox className="h-64" /> },
+);
+
+const ContentHealthCard = dynamic(
+  () => import("@/components/right-panel/content-health-card").then((m) => ({ default: m.ContentHealthCard })),
+  { ssr: false, loading: () => <SkeletonBox className="h-48" /> },
+);
+
+const AIWritingCoach = dynamic(
+  () => import("@/components/right-panel/ai-writing-coach").then((m) => ({ default: m.AIWritingCoach })),
+  { ssr: false, loading: () => <SkeletonBox className="h-64" /> },
+);
+
+// ─── Collapsible Section Header ────────────────────────────────────────────
+
+interface CollapsibleSectionConfig {
+  id: string;
+  title: string;
+  icon: React.ElementType;
+  gradient: string;
+  badgeText: string;
+  badgeBg: string;
+  badgeTextClass: string;
+}
+
+function CollapsibleSectionHeader({
+  section,
+  isOpen,
+  onToggle,
+}: {
+  section: CollapsibleSectionConfig;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const Icon = section.icon;
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center gap-2.5 py-2.5 px-3 rounded-xl border border-border/60 bg-card/80 hover:bg-muted/40 transition-colors cursor-pointer group"
+    >
+      <div className={`h-7 w-7 rounded-lg bg-gradient-to-br ${section.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+        <Icon className="h-3.5 w-3.5 text-white" />
+      </div>
+      <span className="text-xs font-semibold flex-1 text-left">{section.title}</span>
+      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border-0 ${section.badgeBg} ${section.badgeTextClass}`}>
+        {section.badgeText}
+      </span>
+      <motion.div
+        animate={{ rotate: isOpen ? 90 : 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      >
+        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+      </motion.div>
+    </button>
+  );
+}
 
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
@@ -213,7 +287,17 @@ export function ContentWorkspace() {
   const [toolTab, setToolTab] = useState<ToolTab>("ai");
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    kanban: false,
+    batch: false,
+    health: false,
+    coach: false,
+  });
   const qualityScorerRef = useRef<HTMLDivElement>(null);
+
+  const toggleSection = useCallback((id: string) => {
+    setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
 
   // ── Auto-save draft to localStorage (survives page close) ─────────────────
   const selectedPost = useMemo(
@@ -836,6 +920,130 @@ export function ContentWorkspace() {
                 )}
               </div>
             </Tabs>
+          </motion.div>
+
+          {/* ── Iteration 41: Collapsible Enhancement Sections ──────── */}
+          <motion.div variants={staggerItem} className="space-y-2">
+            <Separator className="my-1" />
+            <p className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase px-1">
+              高级工具
+            </p>
+
+            {/* 内容管线看板 */}
+            <CollapsibleSectionHeader
+              section={{
+                id: "kanban",
+                title: "内容管线看板",
+                icon: Layers,
+                gradient: "from-violet-500 to-purple-600",
+                badgeText: `${contentPosts.length} 条`,
+                badgeBg: "bg-violet-100 dark:bg-violet-900/30",
+                badgeTextClass: "text-violet-600 dark:text-violet-400",
+              }}
+              isOpen={expandedSections.kanban}
+              onToggle={() => toggleSection("kanban")}
+            />
+            <AnimatePresence>
+              {expandedSections.kanban && (
+                <motion.div
+                  key="section-kanban"
+                  variants={expandCollapse}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="overflow-hidden"
+                >
+                  <ContentPipelineKanban />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* AI批量操作 */}
+            <CollapsibleSectionHeader
+              section={{
+                id: "batch",
+                title: "AI批量操作",
+                icon: Bot,
+                gradient: "from-amber-500 to-orange-500",
+                badgeText: "5 项",
+                badgeBg: "bg-amber-100 dark:bg-amber-900/30",
+                badgeTextClass: "text-amber-600 dark:text-amber-400",
+              }}
+              isOpen={expandedSections.batch}
+              onToggle={() => toggleSection("batch")}
+            />
+            <AnimatePresence>
+              {expandedSections.batch && (
+                <motion.div
+                  key="section-batch"
+                  variants={expandCollapse}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="overflow-hidden"
+                >
+                  <AISmartBatchPanel />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* 内容健康度 */}
+            <CollapsibleSectionHeader
+              section={{
+                id: "health",
+                title: "内容健康度",
+                icon: Activity,
+                gradient: "from-emerald-500 to-teal-600",
+                badgeText: "5 维度",
+                badgeBg: "bg-emerald-100 dark:bg-emerald-900/30",
+                badgeTextClass: "text-emerald-600 dark:text-emerald-400",
+              }}
+              isOpen={expandedSections.health}
+              onToggle={() => toggleSection("health")}
+            />
+            <AnimatePresence>
+              {expandedSections.health && (
+                <motion.div
+                  key="section-health"
+                  variants={expandCollapse}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="overflow-hidden"
+                >
+                  <ContentHealthCard />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* AI写作教练 */}
+            <CollapsibleSectionHeader
+              section={{
+                id: "coach",
+                title: "AI写作教练",
+                icon: Wand2,
+                gradient: "from-rose-500 to-pink-600",
+                badgeText: "6 维度",
+                badgeBg: "bg-rose-100 dark:bg-rose-900/30",
+                badgeTextClass: "text-rose-600 dark:text-rose-400",
+              }}
+              isOpen={expandedSections.coach}
+              onToggle={() => toggleSection("coach")}
+            />
+            <AnimatePresence>
+              {expandedSections.coach && (
+                <motion.div
+                  key="section-coach"
+                  variants={expandCollapse}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="overflow-hidden"
+                >
+                  <AIWritingCoach />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           {/* Bottom spacing — extra room for floating bars */}

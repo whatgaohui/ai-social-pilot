@@ -52,10 +52,19 @@ import {
   Info,
   PartyPopper,
   Megaphone,
+  Maximize2,
 } from "lucide-react";
 import type { AppNotification, NotificationType, NotificationCategory } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { NotificationCenterPage } from "@/components/notification-center-page";
 
 // ─── Category config ──────────────────────────────────────────────
 interface CategoryConfig {
@@ -405,8 +414,10 @@ function EmptyState() {
 // ─── Main Enhanced Panel ──────────────────────────────────────────
 function EnhancedNotificationCenterPanel({
   onAction,
+  onOpenFullPage,
 }: {
   onAction?: (notification: AppNotification) => void;
+  onOpenFullPage?: () => void;
 }) {
   const {
     notifications,
@@ -582,6 +593,17 @@ function EnhancedNotificationCenterPanel({
           )}
         </div>
         <div className="flex items-center gap-1">
+          {onOpenFullPage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[10px] gap-1"
+              onClick={onOpenFullPage}
+            >
+              <Maximize2 className="h-3 w-3" />
+              查看全部
+            </Button>
+          )}
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -775,6 +797,7 @@ export function EnhancedNotificationBell() {
   const { notifications } = useAppStore();
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isFullPageOpen, setIsFullPageOpen] = useState(false);
   const isMobile = useIsMobile();
 
   // Hydrate notifications from localStorage on mount
@@ -813,6 +836,17 @@ export function EnhancedNotificationBell() {
 
   return (
     <TooltipProvider delayDuration={300}>
+      {/* Full page notification dialog */}
+      <Dialog open={isFullPageOpen} onOpenChange={setIsFullPageOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] p-0 overflow-hidden flex flex-col">
+          <DialogHeader className="sr-only">
+            <DialogTitle>通知中心</DialogTitle>
+            <DialogDescription>查看所有通知消息</DialogDescription>
+          </DialogHeader>
+          <NotificationCenterPage />
+        </DialogContent>
+      </Dialog>
+
       {isMobile ? (
         /* Mobile: Sheet */
         <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
@@ -839,7 +873,7 @@ export function EnhancedNotificationBell() {
               <SheetTitle>通知中心</SheetTitle>
               <SheetDescription>查看所有通知消息</SheetDescription>
             </SheetHeader>
-            <EnhancedNotificationCenterPanel onAction={handleAction} />
+            <EnhancedNotificationCenterPanel onAction={handleAction} onOpenFullPage={() => { setIsMobileOpen(false); setIsFullPageOpen(true); }} />
           </SheetContent>
         </Sheet>
       ) : (
@@ -869,7 +903,7 @@ export function EnhancedNotificationBell() {
             align="end"
             sideOffset={8}
           >
-            <EnhancedNotificationCenterPanel onAction={handleAction} />
+            <EnhancedNotificationCenterPanel onAction={handleAction} onOpenFullPage={() => setIsFullPageOpen(true)} />
           </PopoverContent>
         </Popover>
       )}
