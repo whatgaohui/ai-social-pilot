@@ -1,734 +1,991 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import {
-  Users, Eye, Heart, TrendingUp, Zap, Clock,
-  BarChart3, Layers, Star, DollarSign, Activity, Settings, Plus, Sparkles,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAppStore } from "@/store/app-store";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const KnowledgeBase = dynamic(() => import("@/components/left-panel/knowledge-base").then(m => ({ default: m.KnowledgeBase })), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const CompactCalendar = dynamic(() => import("@/components/left-panel/compact-calendar").then(m => ({ default: m.CompactCalendar })), { ssr: false, loading: () => <Skeleton className="h-48" /> });
+const CopywritingTemplates = dynamic(() => import("@/components/left-panel/copywriting-templates").then(m => ({ default: m.CopywritingTemplates })), { ssr: false, loading: () => <Skeleton className="h-full" /> });
+const XiaohongshuTemplates = dynamic(() => import("@/components/right-panel/xiaohongshu-templates").then(m => ({ default: m.XiaohongshuTemplates })), { ssr: false, loading: () => <Skeleton className="h-full" /> });
+const TemplateMarketplace = dynamic(() => import("@/components/template-marketplace").then(m => ({ default: m.TemplateMarketplace })), { ssr: false, loading: () => <Skeleton className="h-full" /> });
+const AIPromptLibrary = dynamic(() => import("@/components/ai-prompt-library").then(m => ({ default: m.AIPromptLibrary })), { ssr: false, loading: () => <Skeleton className="h-full" /> });
+const CalendarThemeSelector = dynamic(() => import("@/components/calendar-theme-selector").then(m => ({ default: m.CalendarThemeSelector })), { ssr: false, loading: () => <Skeleton className="h-10 w-full" /> });
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/ui/data-table";
-import { TagInput } from "@/components/ui/tag-input";
+  LazySettingsCenter,
+  LazyCommandPalette,
+  LazyContentSearch,
+  LazyKeyboardShortcutsDialog,
+  LazyPlatformAccountPanel,
+  LazyAIWritingAssistant,
+  LazyWelcomeOnboarding,
+  LazyDashboardOverview,
+  LazyContentWorkspace,
+  LazyDataAndReports,
+  LazyAccountCollector,
+} from "@/components/lazy-components";
 import {
-  StatCard,
-} from "@/components/ui/stat-card";
-import {
-  CircularProgress,
-  LinearProgress,
-  StepProgress,
-  ScoreGauge,
-} from "@/components/ui/progress-indicators";
-import {
-  GlowPanel,
-  GradientDivider,
-  SectionHeader,
-} from "@/components/ui/panel-enhancements";
-import {
-  MorphingButton,
-  StaggerList,
-  RevealOnScroll,
-  NumberRoll,
-  ShimmerOverlay,
-} from "@/components/ui/advanced-animations";
-import { InspirationWaterfall } from "@/components/right-panel/inspiration-waterfall";
-import { CreativeAssetsLibrary } from "@/components/right-panel/creative-assets-library";
-import { Lightbulb, FolderOpen, Sparkles as SparklesIcon } from "lucide-react";
+  Sparkles, BookOpen, PenTool, CalendarDays,
+  BarChart3, Zap, FileText, Wand2,
+  Settings, Globe, User, Check, Search,
+  HelpCircle,
+} from "lucide-react";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+const ErrorBoundary = dynamic(() => import("@/components/error-boundary").then(m => ({ default: m.ErrorBoundary })), { ssr: false });
+const PageTransition = dynamic(() => import("@/components/page-transition").then(m => ({ default: m.PageTransition })), { ssr: false });
+const NotificationPing = dynamic(() => import("@/components/notification-ping").then(m => ({ default: m.NotificationPing })), { ssr: false });
+const EnhancedNotificationBell = dynamic(() => import("@/components/notification-center-enhanced").then(m => ({ default: m.EnhancedNotificationBell })), { ssr: false });
+const QuickStatsFloat = dynamic(() => import("@/components/quick-stats-float").then(m => ({ default: m.QuickStatsFloat })), { ssr: false });
+const EnhancedFooter = dynamic(() => import("@/components/enhanced-footer").then(m => ({ default: m.EnhancedFooter })), { ssr: false });
+import { AccessibilityAnnouncer, announce } from "@/components/ui/accessibility-announcer";
+import { useSmartReminders } from "@/hooks/use-smart-reminders";
+import { useAchievements } from "@/components/achievement-toast";
+import { ShortcutManagerProvider } from "@/hooks/use-keyboard-shortcuts";
 
-// ─── Demo Data ────────────────────────────────────────────────────────────────
-
-interface PostRecord {
-  id: number;
-  title: string;
-  platform: string;
-  likes: number;
-  comments: number;
-  status: string;
-  date: string;
+// ─── Notification Enhancement Hooks ──────────────────────────────────────
+function NotificationHooks() {
+  useSmartReminders();
+  useAchievements();
+  return null;
 }
 
-const generatePosts = (): PostRecord[] => {
-  const titles = [
-    "职场成长心得分享", "周末咖啡探店", "产品思考总结",
-    "设计灵感收藏", "读书笔记分享", "生活小妙招",
-    "年度目标复盘", "团队管理经验", "前端技术分享",
-    "AI工具测评", "健身打卡记录", "旅行攻略整理",
-    "摄影作品展示", "美食制作教程", "理财心得分享",
-    "职场穿搭指南", "时间管理技巧", "数据分析报告",
-    "创意营销案例", "用户体验优化", "社区运营心得",
-    "个人品牌打造", "跨年感悟总结", "新年计划制定",
-    "高效学习方法", "项目管理实践", "远程办公技巧",
-  ];
-  const platforms = ["朋友圈", "小红书", "微博", "抖音"];
-  const statuses = ["已发布", "草稿", "审核中", "定时发布"];
+// ─── Main tabs for the right content area ──────────────────────────────────────
 
-  return Array.from({ length: 25 }, (_, i) => ({
-    id: i + 1,
-    title: titles[i % titles.length],
-    platform: platforms[i % platforms.length],
-    likes: Math.floor(Math.random() * 2000) + 10,
-    comments: Math.floor(Math.random() * 300) + 1,
-    status: statuses[i % statuses.length],
-    date: `2025-01-${String(Math.floor(i / 4) + 1).padStart(2, "0")}`,
-  }));
-};
+const MAIN_TABS = [
+  { value: 'workspace', icon: PenTool, label: '内容工作台' },
+  { value: 'data', icon: BarChart3, label: '数据与报告' },
+  { value: 'collect', icon: Globe, label: '采集中心' },
+] as const;
 
-const posts = generatePosts();
+// ─── Left sidebar tabs ────────────────────────────────────────────────────────
 
-const columns: DataTableColumn<PostRecord>[] = [
-  { key: "id", title: "#", width: "50px", align: "center", sortable: true },
-  {
-    key: "title", title: "标题", sortable: true, width: "200px",
-    render: (_, row) => (
-      <span className="font-medium text-foreground max-w-[180px] truncate block">{row.title}</span>
-    ),
-  },
-  {
-    key: "platform", title: "平台", sortable: true, width: "90px",
-    render: (_, row) => {
-      const colors: Record<string, string> = {
-        "朋友圈": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-        "小红书": "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
-        "微博": "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
-        "抖音": "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
-      };
-      return <Badge variant="secondary" className={colors[row.platform] || ""}>{row.platform}</Badge>;
-    },
-  },
-  {
-    key: "likes", title: "点赞", sortable: true, width: "80px", align: "right",
-    render: (val) => <span className="tabular-nums">{Number(val).toLocaleString()}</span>,
-  },
-  {
-    key: "comments", title: "评论", sortable: true, width: "80px", align: "right",
-    render: (val) => <span className="tabular-nums">{Number(val).toLocaleString()}</span>,
-  },
-  {
-    key: "status", title: "状态", width: "100px",
-    render: (_, row) => {
-      const statusConfig: Record<string, { label: string; className: string }> = {
-        "已发布": { label: "已发布", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
-        "草稿": { label: "草稿", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
-        "审核中": { label: "审核中", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-        "定时发布": { label: "定时", className: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400" },
-      };
-      const config = statusConfig[row.status] || statusConfig["草稿"];
-      return <Badge variant="secondary" className={config.className}>{config.label}</Badge>;
-    },
-  },
-  { key: "date", title: "日期", width: "100px", align: "right" },
+const LEFT_TABS = [
+  { value: 'calendar', icon: CalendarDays, label: '日历' },
+  { value: 'knowledge', icon: BookOpen, label: '知识库' },
+  { value: 'templates', icon: FileText, label: '模板' },
+  { value: 'marketplace', icon: Sparkles, label: '市场' },
+  { value: 'prompts', icon: Wand2, label: '提示词' },
+] as const;
+
+// ─── Mobile bottom navigation tabs ───────────────────────────────────────────
+
+interface MobileTabConfig {
+  key: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  panel: 'left' | 'main';
+  subTab: string;
+}
+
+const MOBILE_TABS: MobileTabConfig[] = [
+  { key: 'persona', label: '人设', icon: User, panel: 'left', subTab: 'knowledge' },
+  { key: 'calendar', label: '日历', icon: CalendarDays, panel: 'left', subTab: 'calendar' },
+  { key: 'marketplace', label: '市场', icon: Sparkles, panel: 'left', subTab: 'marketplace' },
+  { key: 'workspace', label: '工作台', icon: FileText, panel: 'main', subTab: 'workspace' },
+  { key: 'data', label: '数据', icon: BarChart3, panel: 'main', subTab: 'data' },
 ];
 
-// ─── Section Wrapper ──────────────────────────────────────────────────────────
+function DataInitializer() {
+  const { setPersona, setKnowledgeItems, setCurrentPlan, setContentPosts } = useAppStore();
+  const [loadingStage, setLoadingStage] = useState(0); // 0: config, 1: data, 2: ready
+  const [progress, setProgress] = useState(0);
 
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
+  const LOADING_STEPS = [
+    { label: "加载配置...", icon: Settings },
+    { label: "获取数据...", icon: Zap },
+    { label: "准备就绪", icon: Check },
+  ];
+
+  useEffect(() => {
+    const stageTimers = [
+      setTimeout(() => setLoadingStage(1), 400),
+      setTimeout(() => setLoadingStage(2), 900),
+    ];
+    return () => { stageTimers.forEach(clearTimeout); };
+  }, []);
+
+  // Smooth progress animation
+  useEffect(() => {
+    const target = loadingStage === 0 ? 30 : loadingStage === 1 ? 70 : 100;
+    let raf: number;
+    const animate = () => {
+      setProgress((prev) => {
+        if (prev < target) {
+          const next = Math.min(prev + (target - prev) * 0.12 + 0.5, target);
+          raf = requestAnimationFrame(animate);
+          return next;
+        }
+        return target;
+      });
+    };
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [loadingStage]);
+
+  useEffect(() => {
+    async function init() {
+      try {
+        const [personaRes, knowledgeRes, plansRes] = await Promise.all([
+          fetch("/api/persona"),
+          fetch("/api/knowledge"),
+          fetch("/api/plan"),
+        ]);
+
+        if (personaRes.ok) {
+          const persona = await personaRes.json();
+          if (persona) setPersona(persona);
+        }
+        if (knowledgeRes.ok) {
+          const items = await knowledgeRes.json();
+          setKnowledgeItems(items);
+        }
+        if (plansRes.ok) {
+          const plans = await plansRes.json();
+          if (plans.length > 0) {
+            const activePlan = plans.find((p: { status: string }) => p.status === "active") || plans[0];
+            setCurrentPlan(activePlan);
+            if (activePlan.posts) {
+              setContentPosts(activePlan.posts);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to initialize data:", e);
+      } finally {
+        setLoadingStage(2);
+      }
+    }
+    init();
+  }, [setPersona, setKnowledgeItems, setCurrentPlan, setContentPosts]);
+
+  const isReady = loadingStage === 2 && progress >= 98;
+
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative">
+        {/* 顶部加载进度条 */}
+        <div className="loading-bar-top" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" as const }}
+          className="flex flex-col items-center gap-5"
+        >
+          {/* Animated Logo */}
+          <motion.div
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" as const }}
+            className="relative"
+          >
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200 dark:shadow-violet-900/40">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" as const }}
+              >
+                <Sparkles className="h-7 w-7 text-white" />
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Step text with fade transition */}
+          <div className="relative h-5 overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={loadingStage}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="text-sm text-muted-foreground font-medium"
+              >
+                {LOADING_STEPS[loadingStage].label}
+              </motion.p>
+            </AnimatePresence>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-40 h-1.5 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-500"
+              style={{ width: `${progress}%` }}
+              transition={{ duration: 0.15 }}
+            />
+          </div>
+
+          {/* Step dots */}
+          <div className="flex items-center gap-1.5">
+            {LOADING_STEPS.map((step, i) => {
+              const StepIcon = step.icon;
+              const isCompleted = i < loadingStage;
+              const isActive = i === loadingStage;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    transition: { delay: i * 0.1 },
+                  }}
+                >
+                  <div
+                    className={`h-6 w-6 rounded-full flex items-center justify-center transition-colors duration-300 ${
+                      isCompleted
+                        ? "bg-emerald-100 dark:bg-emerald-900/30"
+                        : isActive
+                          ? "bg-violet-100 dark:bg-violet-900/30"
+                          : "bg-muted"
+                    }`}
+                  >
+                    {isCompleted ? (
+                      <Check className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <StepIcon
+                        className={`h-3 w-3 ${
+                          isActive ? "text-violet-500" : "text-muted-foreground/50"
+                        }`}
+                      />
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ─── Left Sidebar ─────────────────────────────────────────────────────────────
+
+function LeftSidebar() {
+  const { leftPanelTab, setLeftPanelTab, platform, knowledgeItems } = useAppStore();
+  const isXHS = platform === 'xiaohongshu';
+
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <SectionHeader
-        title={title}
-        subtitle={description}
-        accentColor="purple"
-        bottomGlow
-      />
-      {children}
-    </motion.section>
+    <div className="flex flex-col h-full">
+      {/* Left Panel Tab Bar with animated underline */}
+      <div className="px-3 pt-3 pb-2 border-b border-border/60">
+        <div className="flex gap-1">
+          {LEFT_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = leftPanelTab === tab.value;
+            return (
+              <motion.button
+                key={tab.value}
+                onClick={() => setLeftPanelTab(tab.value)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className={`relative flex-1 h-8 text-[11px] gap-1 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                  isActive
+                    ? 'text-foreground font-medium bg-muted/80'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                }`}
+              >
+                <Icon className={`h-3 w-3 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
+                {tab.label}
+                {tab.value === 'knowledge' && knowledgeItems.length > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px] tabular-nums">
+                    {knowledgeItems.length}
+                  </Badge>
+                )}
+                {isActive && (
+                  <motion.div
+                    className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-gradient-to-r from-violet-500 to-purple-500 dark:from-violet-400 dark:to-purple-400"
+                    layoutId="left-tab-underline"
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  />
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Left Panel Content */}
+      {leftPanelTab === 'calendar' ? (
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+          <CompactCalendar />
+          <CalendarThemeSelector />
+        </ScrollArea>
+      ) : leftPanelTab === 'knowledge' ? (
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+          <KnowledgeBase />
+        </ScrollArea>
+      ) : leftPanelTab === 'templates' ? (
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+          {isXHS ? <XiaohongshuTemplates /> : <CopywritingTemplates />}
+        </ScrollArea>
+      ) : leftPanelTab === 'marketplace' ? (
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+          <TemplateMarketplace />
+        </ScrollArea>
+      ) : (
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+          <AIPromptLibrary />
+        </ScrollArea>
+      )}
+    </div>
   );
 }
 
-// ─── Main Showcase Page ──────────────────────────────────────────────────────
+// ─── Main Content Panel ───────────────────────────────────────────────────────
 
-export default function Home() {
-  const [tags, setTags] = useState<string[]>(["AI运营", "朋友圈", "内容营销"]);
-  const [step, setStep] = useState(3);
-  const [progressValue, setProgressValue] = useState(72);
-  const [score, setScore] = useState(82);
-  const [showEmpty, setShowEmpty] = useState(false);
-  const [morphState, setMorphState] = useState<"idle" | "loading" | "done">("idle");
-  const [targetNumber, setTargetNumber] = useState(2847);
-  const [shimmerLoading, setShimmerLoading] = useState(true);
+function MainContentPanel() {
+  const { rightPanelTab, setRightPanelTab, platform, contentPosts, selectedPostId } = useAppStore();
+  const [trackedAccountsCount, setTrackedAccountsCount] = useState(0);
 
-  const cycleStep = useCallback(() => setStep((s) => (s >= 5 ? 1 : s + 1)), []);
-  const cycleProgress = useCallback(() => setProgressValue((v) => (v >= 100 ? 10 : v + 15)), []);
-  const cycleScore = useCallback(() => {
-    setScore((s) => { const next = s + 18; return next > 100 ? next - 118 : next; });
+  // Derive selected post from store
+  const selectedPost = selectedPostId
+    ? contentPosts.find((p) => p.id === selectedPostId)
+    : null;
+
+  // Notification badge counts
+  const unpublishedCount = contentPosts.filter((p) => p.status !== 'published').length;
+
+  // Fetch tracked accounts count
+  useEffect(() => {
+    fetch("/api/tracked-accounts")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        setTrackedAccountsCount(Array.isArray(data) ? data.length : 0);
+      })
+      .catch(() => {});
   }, []);
 
-  const handleMorphClick = useCallback(() => {
-    setMorphState("loading");
-    setTimeout(() => setMorphState("done"), 1500);
-    setTimeout(() => setMorphState("idle"), 3000);
-  }, []);
-
-  const cycleNumber = useCallback(() => {
-    setTargetNumber((n) => Math.floor(Math.random() * 9000) + 1000);
-  }, []);
-
-  const toggleShimmer = useCallback(() => {
-    if (shimmerLoading) {
-      setShimmerLoading(false);
-    } else {
-      setShimmerLoading(true);
-      setTimeout(() => setShimmerLoading(false), 3000);
-    }
-  }, [shimmerLoading]);
+  // Map old tab values to new ones for backward compatibility
+  const effectiveTab = ['workspace', 'data', 'collect'].includes(rightPanelTab)
+    ? rightPanelTab
+    : rightPanelTab === 'optimize'
+      ? 'workspace' // redirect old AI tab to workspace
+      : 'workspace';
 
   return (
-    <div className="min-h-screen bg-gradient-animated">
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="text-center space-y-3"
-        >
-          <Badge className="badge-glow badge-glow-violet text-[11px] px-3 py-0.5">
-            Round 40 — Track A
-          </Badge>
-          <h1 className="text-2xl md:text-3xl font-bold">
-            <span className="text-gradient-purple-pink">内容灵感瀑布流</span>
-            <span className="text-muted-foreground font-normal ml-2">+ 创意素材库</span>
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-            30+ 灵感瀑布流 · 分类筛选 · 收藏/AI改写 · 25+ 文案片段 · 40 话题标签 · 拖拽排序 · 暗黑模式
-          </p>
-        </motion.div>
-
-        {/* ─── Section 1: GlowPanel Showcase ────────────────── */}
-        <Section
-          title="发光面板组件"
-          description="GlowPanel: 3种强度 × 3种颜色 · 悬浮增强 · 渐变背景"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Subtle */}
-            <GlowPanel variant="subtle" glowColor="purple" gradient>
-              <p className="text-sm font-semibold">Subtle · Purple</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">微光紫，适合次要面板</p>
-            </GlowPanel>
-
-            {/* Default */}
-            <GlowPanel variant="default" glowColor="green" gradient>
-              <p className="text-sm font-semibold">Default · Green</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">标准绿，适合主要面板</p>
-            </GlowPanel>
-
-            {/* Intense */}
-            <GlowPanel variant="intense" glowColor="amber" gradient>
-              <p className="text-sm font-semibold">Intense · Amber</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">强光琥珀，适合强调区域</p>
-            </GlowPanel>
-
-            {/* Shimmer variant */}
-            <GlowPanel variant="default" glowColor="purple" className="animate-border-dance">
-              <p className="text-sm font-semibold">Border Dance</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">流光边框效果</p>
-            </GlowPanel>
-
-            {/* No gradient */}
-            <GlowPanel variant="subtle" glowColor="green">
-              <p className="text-sm font-semibold">Solid Background</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">纯色背景 + 微光边框</p>
-            </GlowPanel>
-
-            {/* Intense purple */}
-            <GlowPanel variant="intense" glowColor="purple" gradient className="animate-glow-pulse">
-              <p className="text-sm font-semibold">Glow Pulse</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">呼吸发光动画</p>
-            </GlowPanel>
-          </div>
-        </Section>
-
-        {/* ─── Section 2: GradientDivider Showcase ───────────── */}
-        <Section
-          title="渐变分割线"
-          description="GradientDivider: 6种预设 · 水平/垂直 · 可选闪烁动画"
-        >
-          <div className="space-y-4">
-            {(["purple-pink", "green-teal", "amber-orange", "rainbow", "purple-green", "subtle"] as const).map(
-              (preset) => (
-                <div key={preset} className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-[var(--text-muted)] w-24 shrink-0">
-                    {preset}
+    <div className="flex flex-col h-full">
+      {/* Main Tab Bar */}
+      <div className="px-4 pt-3 pb-2 border-b border-border/60 flex-shrink-0">
+        <Tabs value={effectiveTab} onValueChange={setRightPanelTab}>
+          <TabsList className="w-full h-9 bg-muted/50 p-0.5 border border-border/40 shadow-sm">
+            {MAIN_TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="flex-1 h-8 text-xs gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200"
+                >
+                  <span className="relative inline-flex">
+                    <Icon className="h-3.5 w-3.5" />
+                    {tab.value === 'data' && unpublishedCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-violet-500 text-[8px] font-bold text-white ring-1 ring-background">
+                        {unpublishedCount > 9 ? '9+' : unpublishedCount}
+                      </span>
+                    )}
+                    {tab.value === 'collect' && trackedAccountsCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white ring-1 ring-background">
+                        {trackedAccountsCount > 9 ? '9+' : trackedAccountsCount}
+                      </span>
+                    )}
                   </span>
-                  <GradientDivider preset={preset} thickness={1} className="flex-1" />
-                  <GradientDivider preset={preset} thickness={1} direction="vertical" height="24px" shimmer />
-                </div>
-              )
-            )}
-          </div>
-        </Section>
+                  {tab.label}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
+      </div>
 
-        {/* ─── Section 3: SectionHeader Showcase ─────────────── */}
-        <Section
-          title="区域标题组件"
-          description="SectionHeader: 5种色条 · 标题+副标题 · 右侧操作区 · 底部阴影"
-        >
-          <div className="space-y-6">
-            <SectionHeader
-              title="数据分析面板"
-              subtitle="实时追踪核心运营指标"
-              accentColor="purple"
-              bottomGlow
-              actions={
-                <Button variant="outline" size="sm" className="text-xs">
-                  <Settings className="w-3 h-3 mr-1" /> 设置
-                </Button>
-              }
-            />
-            <SectionHeader
-              title="内容创作工作台"
-              subtitle="AI 辅助生成高质量内容"
-              accentColor="green"
-              bottomGlow
-              actions={
-                <Button size="sm" className="text-xs">
-                  <Plus className="w-3 h-3 mr-1" /> 新建
-                </Button>
-              }
-            />
-            <SectionHeader
-              title="灵感收藏夹"
-              subtitle="收集和管理创意素材"
-              accentColor="amber"
-              bottomGlow
-              actions={
-                <Button variant="ghost" size="sm" className="text-xs">
-                  <Sparkles className="w-3 h-3 mr-1" /> AI推荐
-                </Button>
-              }
-            />
-          </div>
-        </Section>
+      {/* Dashboard Overview - collapsible, only in workspace tab */}
+      {effectiveTab === 'workspace' && <LazyDashboardOverview />}
 
-        <Separator />
-
-        {/* ─── Section 4: MorphingButton Showcase ────────────── */}
-        <Section
-          title="形变按钮"
-          description="MorphingButton: idle→hover圆角膨胀 · loading→done勾号绘制动画"
-        >
-          <div className="flex flex-wrap gap-4 items-center">
-            <MorphingButton
-              state={morphState}
-              onClick={handleMorphClick}
-              className="bg-[var(--accent-purple)] text-white hover:bg-[var(--accent-purple)]/90"
-            >
-              发送内容
-            </MorphingButton>
-            <MorphingButton
-              variant="outline"
-              className="border-[var(--accent-green)] text-[var(--accent-green)]"
-              state="idle"
-            >
-              保存草稿
-            </MorphingButton>
-            <span className="text-xs text-[var(--text-muted)]">
-              点击紫色按钮查看 loading → done 动画
-            </span>
-          </div>
-        </Section>
-
-        {/* ─── Section 5: StaggerList & RevealOnScroll ───────── */}
-        <Section
-          title="交错动画与滚动揭示"
-          description="StaggerList: 子项依次入场 · RevealOnScroll: 5种揭示效果"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* StaggerList */}
-            <div>
-              <p className="text-xs text-[var(--text-muted)] mb-3">StaggerList — fade-up</p>
-              <StaggerList animation="fade-up" staggerDelay={80} className="space-y-2">
-                {["内容策略", "视觉设计", "发布时间", "互动数据", "效果复盘"].map(
-                  (item, i) => (
-                    <div
-                      key={i}
-                      className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover-lift-sm press-scale-enhanced cursor-pointer"
-                    >
-                      <span className="text-sm">{item}</span>
-                    </div>
-                  )
-                )}
-              </StaggerList>
-            </div>
-
-            {/* RevealOnScroll */}
-            <div>
-              <p className="text-xs text-[var(--text-muted)] mb-3">RevealOnScroll — 各种效果</p>
-              <div className="space-y-3">
-                {(["fade-up", "slide-left", "scale", "rotate", "fade"] as const).map(
-                  (effect, i) => (
-                    <RevealOnScroll key={effect} effect={effect} delay={i * 80}>
-                      <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                        <span className="text-sm font-medium">{effect}</span>
-                        <span className="text-xs text-[var(--text-muted)] ml-2">← 滚动到此揭示</span>
-                      </div>
-                    </RevealOnScroll>
-                  )
-                )}
-              </div>
-            </div>
-          </div>
-        </Section>
-
-        {/* ─── Section 6: NumberRoll ─────────────────────────── */}
-        <Section
-          title="数字滚动效果"
-          description="NumberRoll: 旧值→新值平滑动画 · 支持小数和千分位"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <GlowPanel variant="subtle" glowColor="purple">
-              <p className="text-xs text-[var(--text-muted)]">粉丝增长</p>
-              <NumberRoll
-                value={targetNumber}
-                thousands
-                decimals={0}
-                prefix=""
-                suffix=""
-                className="text-2xl font-bold text-[var(--accent-purple)]"
-              />
-            </GlowPanel>
-            <GlowPanel variant="subtle" glowColor="green">
-              <p className="text-xs text-[var(--text-muted)]">互动率</p>
-              <NumberRoll
-                value={parseFloat((targetNumber / 420).toFixed(1))}
-                thousands={false}
-                decimals={1}
-                suffix="%"
-                className="text-2xl font-bold text-[var(--accent-green)]"
-              />
-            </GlowPanel>
-            <GlowPanel variant="subtle" glowColor="amber">
-              <p className="text-xs text-[var(--text-muted)]">转化收入</p>
-              <NumberRoll
-                value={targetNumber * 2.8}
-                decimals={2}
-                prefix="¥"
-                thousands
-                className="text-2xl font-bold text-[var(--accent-amber)]"
-              />
-            </GlowPanel>
-          </div>
-          <div className="mt-3">
-            <Button variant="outline" size="sm" onClick={cycleNumber} className="text-xs">
-              刷新数字
-            </Button>
-          </div>
-        </Section>
-
-        {/* ─── Section 7: ShimmerOverlay ────────────────────── */}
-        <Section
-          title="光泽扫过效果"
-          description="ShimmerOverlay: 加载占位 · 对角线渐变动画 · 平滑过渡"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ShimmerOverlay
-              loading={shimmerLoading}
-              rounded="lg"
-              placeholderHeight="100px"
-            >
-              <div className="p-4">
-                <p className="text-sm font-semibold">加载完成的内容</p>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
-                  从光泽占位平滑过渡到实际内容
-                </p>
-              </div>
-            </ShimmerOverlay>
-
-            <ShimmerOverlay
-              loading={shimmerLoading}
-              rounded="lg"
-              placeholderHeight="100px"
-              shimmerColor="rgba(16, 185, 129, 0.08)"
-            >
-              <div className="p-4">
-                <p className="text-sm font-semibold">绿色光泽</p>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
-                  支持自定义光泽颜色
-                </p>
-              </div>
-            </ShimmerOverlay>
-
-            <ShimmerOverlay
-              loading={shimmerLoading}
-              rounded="lg"
-              placeholderHeight="100px"
-              shimmerColor="rgba(245, 158, 11, 0.08)"
-            >
-              <div className="p-4">
-                <p className="text-sm font-semibold">琥珀光泽</p>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
-                  多种配色方案可选
-                </p>
-              </div>
-            </ShimmerOverlay>
-          </div>
-          <div className="mt-3">
-            <Button variant="outline" size="sm" onClick={toggleShimmer} className="text-xs">
-              {shimmerLoading ? "显示内容" : "重新加载"}
-            </Button>
-          </div>
-        </Section>
-
-        <Separator />
-
-        {/* ─── Section 8: CSS Utility Showcase ────────────────── */}
-        <Section
-          title="CSS 工具类展示"
-          description="hover-lift-sm/md/lg · animate-border-dance · animate-glow-pulse · transition-smooth"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] space-y-2 hover-lift-sm press-scale-enhanced cursor-pointer">
-              <p className="text-sm font-semibold">hover-lift-sm</p>
-              <p className="text-xs text-[var(--text-muted)]">轻微上浮 2px</p>
-            </div>
-            <div className="p-5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] space-y-2 hover-lift-md press-scale-enhanced cursor-pointer">
-              <p className="text-sm font-semibold">hover-lift-md</p>
-              <p className="text-xs text-[var(--text-muted)]">中等上浮 4px</p>
-            </div>
-            <div className="p-5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] space-y-2 hover-lift-lg press-scale-enhanced cursor-pointer">
-              <p className="text-sm font-semibold">hover-lift-lg</p>
-              <p className="text-xs text-[var(--text-muted)]">大幅上浮 6px</p>
-            </div>
-            <div className="p-5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] space-y-2 animate-border-dance cursor-pointer">
-              <p className="text-sm font-semibold">animate-border-dance</p>
-              <p className="text-xs text-[var(--text-muted)]">流光边框动画</p>
-            </div>
-            <div className="p-5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] space-y-2 animate-glow-pulse cursor-pointer">
-              <p className="text-sm font-semibold">animate-glow-pulse</p>
-              <p className="text-xs text-[var(--text-muted)]">发光呼吸脉冲</p>
-            </div>
-            <div className="p-5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] space-y-2 animate-float-gentle cursor-pointer">
-              <p className="text-sm font-semibold">animate-float-gentle</p>
-              <p className="text-xs text-[var(--text-muted)]">温和浮动动画</p>
-            </div>
-          </div>
-        </Section>
-
-        {/* ─── Section 9: Stat Cards ─────────────────────────── */}
-        <Section
-          title="统计卡片组件"
-          description="5种变体：default / minimal / glass / gradient / outline"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <StatCard
-              variant="default" title="总粉丝数" value="12,847"
-              change="+8.2%" changeType="increase" icon={Users}
-              iconColor="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
-              description="较上月增长"
-              sparkline={{ values: [40, 55, 48, 62, 58, 72, 68, 85] }}
-              delay={0}
-            />
-            <StatCard
-              variant="glass" title="今日曝光" value="45.2K"
-              change="+12.5%" changeType="increase" icon={Eye}
-              iconColor="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-              sparkline={{ values: [30, 38, 35, 42, 50, 45, 55, 60] }}
-              delay={0.05}
-            />
-            <StatCard
-              variant="gradient" title="互动率" value="6.8%"
-              change="-0.3%" changeType="decrease" icon={Heart}
-              iconColor="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400"
-              description="本周略有下降"
-              delay={0.1}
-            />
-            <StatCard
-              variant="minimal" title="内容发布" value="128"
-              change="+15" changeType="neutral" icon={Layers}
-              iconColor="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-              delay={0.15}
-            />
-            <StatCard
-              variant="outline" title="AI生成次数" value="2,340"
-              change="+23.1%" changeType="increase" icon={Zap}
-              iconColor="bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400"
-              sparkline={{ values: [20, 35, 30, 50, 55, 65, 80, 95] }}
-              delay={0.2}
-            />
-          </div>
-        </Section>
-
-        {/* ─── Section 10: Data Table ────────────────────────── */}
-        <Section
-          title="数据表格组件"
-          description="支持排序、分页、空状态、行hover高亮、响应式滚动"
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Button
-              variant="outline" size="sm" onClick={() => setShowEmpty(!showEmpty)} className="text-xs"
-            >
-              {showEmpty ? "显示数据" : "显示空状态"}
-            </Button>
-            <span className="text-xs text-muted-foreground">点击表头可排序 · 支持分页切换</span>
-          </div>
-          <DataTable
-            columns={columns}
-            data={showEmpty ? [] : posts}
-            pageSizeOptions={[5, 10, 20]}
-            defaultPageSize={5}
-            emptyMessage="暂无内容数据"
-            emptyDescription="点击上方按钮切换数据展示"
-            stickyHeader
-          />
-        </Section>
-
-        {/* ─── Section 11: Tag Input ─────────────────────────── */}
-        <Section
-          title="标签输入组件"
-          description="Enter/逗号添加 · Backspace删除 · 重复检测 · 最大限制"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">基础用法（最大5个）</p>
-              <TagInput
-                value={tags} onChange={setTags} maxTags={5}
-                placeholder="输入标签后按 Enter 添加"
-              />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">带验证（标签至少2个字符）</p>
-              <TagInput
-                defaultValue={["长标签示例", "内容创作"]}
-                maxTags={8}
-                validateTag={(tag) => tag.length >= 2 || "标签至少2个字符"}
-                placeholder="输入至少2个字符的标签"
-              />
-            </div>
-          </div>
-        </Section>
-
-        {/* ─── Section 12: Progress Indicators ───────────────── */}
-        <Section
-          title="进度指示器组件"
-          description="CircularProgress · LinearProgress · StepProgress · ScoreGauge"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="flex flex-col items-center gap-6 p-6 rounded-xl bg-card border border-border/60">
-              <div className="flex items-center gap-8">
-                <CircularProgress
-                  value={progressValue} size={100} strokeWidth={8}
-                  color="#8b5cf6" colorEnd="#ec4899"
-                />
-                <ScoreGauge
-                  score={score} size={120}
-                  description="内容质量评分"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={cycleProgress} className="text-xs">
-                  切换进度 ({progressValue}%)
-                </Button>
-                <Button variant="outline" size="sm" onClick={cycleScore} className="text-xs">
-                  切换评分 ({score})
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-6 p-6 rounded-xl bg-card border border-border/60">
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-medium">完成进度</span>
-                    <span className="text-xs text-muted-foreground tabular-nums">{progressValue}%</span>
-                  </div>
-                  <LinearProgress
-                    value={progressValue} height={10}
-                    color="#8b5cf6" colorEnd="#ec4899" showLabel={false}
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-medium">分段进度</span>
-                    <span className="text-xs text-muted-foreground">任务完成度</span>
-                  </div>
-                  <LinearProgress
-                    value={progressValue} height={12} segments={8}
-                    color="#10b981" colorEnd="#14b8a6" rounded
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-medium">细条进度</span>
-                    <span className="text-xs text-muted-foreground">加载指示</span>
-                  </div>
-                  <LinearProgress value={progressValue} height={4} color="#f59e0b" showLabel />
-                </div>
-              </div>
-              <Separator />
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-medium">发布流程</span>
-                  <Button variant="ghost" size="sm" onClick={cycleStep} className="text-xs h-6">
-                    下一步
-                  </Button>
-                </div>
-                <StepProgress
-                  currentStep={step} totalSteps={5}
-                  labels={["选题", "撰写", "审校", "配图", "发布"]}
-                  color="#8b5cf6" size="md"
-                />
-              </div>
-            </div>
-          </div>
-        </Section>
-
-        {/* ─── Section 13: Inspiration Waterfall + Creative Assets ──────────── */}
-        <Section
-          title="内容灵感瀑布流 & 创意素材库"
-          description="30+ 灵感卡片 · CSS Masonry 布局 · 分类筛选 · 收藏/AI改写 · 拖拽排序素材库"
-        >
-          <Tabs defaultValue="inspiration" className="w-full">
-            <TabsList className="w-full h-9 bg-muted/50 p-0.5 mb-4">
-              <TabsTrigger value="inspiration" className="flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400">
-                <Lightbulb className="h-3.5 w-3.5" />
-                灵感瀑布流
-              </TabsTrigger>
-              <TabsTrigger value="assets" className="flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400">
-                <FolderOpen className="h-3.5 w-3.5" />
-                创意素材库
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="inspiration" className="animate-fade-in-up">
-              <div className="max-w-2xl mx-auto">
-                <InspirationWaterfall />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="assets" className="animate-fade-in-up">
-              <div className="max-w-2xl mx-auto">
-                <CreativeAssetsLibrary />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </Section>
-
-        {/* Footer */}
-        <div className="text-center py-4">
-          <p className="text-xs text-muted-foreground/50">
-            Track A · Round 40 · 内容灵感瀑布流 + 创意素材库
-          </p>
-        </div>
+      {/* Tab Content - each tab gets full remaining height */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {effectiveTab === 'workspace' && (
+          <LazyContentWorkspace />
+        )}
+        {effectiveTab === 'data' && (
+          <LazyDataAndReports />
+        )}
+        {effectiveTab === 'collect' && (
+          <LazyAccountCollector selectedPost={selectedPost ? { id: selectedPost.id, topic: selectedPost.topic, platform: selectedPost.platform || '' } : null} />
+        )}
       </div>
     </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function Home() {
+  const { isGenerating, persona, platform, setPlatform, rightPanelTab, setRightPanelTab, leftPanelTab, setLeftPanelTab, contentPosts, accountPanelOpen, setAccountPanelOpen, onboardingCompleted, setOnboardingCompleted, onboardingInit, setSettingsCenterOpen, commandPaletteOpen, setCommandPaletteOpen, notifications } = useAppStore();
+  const [connectedPlatforms, setConnectedPlatforms] = useState(0);
+  const [mobileTabIndex, setMobileTabIndex] = useState(1); // default: 日历
+  const [swipeDirection, setSwipeDirection] = useState(0);
+  const [contentSearchOpen, setContentSearchOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const mobileTabIndexRef = useRef(mobileTabIndex);
+
+  // Listen for custom shortcuts-help event from command palette
+  useEffect(() => {
+    const handler = () => setShortcutsOpen(true);
+    window.addEventListener("open-shortcuts-help", handler);
+    return () => window.removeEventListener("open-shortcuts-help", handler);
+  }, []);
+
+  // Announce shortcuts dialog state for screen readers
+  useEffect(() => {
+    if (shortcutsOpen) {
+      announce("快捷键帮助面板已打开", "polite");
+    }
+  }, [shortcutsOpen]);
+
+  // Announce command palette state for screen readers
+  useEffect(() => {
+    if (commandPaletteOpen) {
+      announce("命令面板已打开，输入搜索关键词", "polite");
+    }
+  }, [commandPaletteOpen]);
+  const lastTabTapRef = useRef<{ tab: number; time: number }>({ tab: -1, time: 0 });
+  const [hapticPulse, setHapticPulse] = useState<string | null>(null);
+
+  // Keep ref in sync for stable drag handler
+  useEffect(() => { mobileTabIndexRef.current = mobileTabIndex; }, [mobileTabIndex]);
+
+  // Derive effective mobile panel from tab index
+  const currentMobileTab = MOBILE_TABS[mobileTabIndex];
+  const effectiveMobilePanel = currentMobileTab.panel;
+  const unpublishedCount = contentPosts.filter((p) => p.status !== 'published').length;
+
+  // Sync sub-tabs when mobile tab index changes
+  useEffect(() => {
+    const tab = MOBILE_TABS[mobileTabIndex];
+    if (tab.panel === 'left') {
+      setLeftPanelTab(tab.subTab as 'calendar' | 'knowledge' | 'templates' | 'marketplace' | 'prompts');
+    } else {
+      setRightPanelTab(tab.subTab as 'workspace' | 'data' | 'collect');
+    }
+  }, [mobileTabIndex, setLeftPanelTab, setRightPanelTab]);
+
+  const handleMobileTabChange = useCallback((newIndex: number) => {
+    const newTab = MOBILE_TABS[newIndex];
+    const currentIndex = mobileTabIndexRef.current;
+    setSwipeDirection(newIndex > currentIndex ? 1 : -1);
+
+    // Set sub-tabs immediately for correct rendering
+    if (newTab.panel === 'left') {
+      setLeftPanelTab(newTab.subTab as 'calendar' | 'knowledge' | 'templates');
+    } else {
+      setRightPanelTab(newTab.subTab as 'workspace' | 'data' | 'collect');
+    }
+
+    setMobileTabIndex(newIndex);
+  }, [setLeftPanelTab, setRightPanelTab]);
+
+  // Double-tap to scroll top on active mobile tab
+  const handleMobileTabTap = useCallback((index: number) => {
+    const now = Date.now();
+    const last = lastTabTapRef.current;
+
+    if (index === last.tab && now - last.time < 350) {
+      // Double tap on same tab — scroll to top
+      const mainEl = document.getElementById('main-content');
+      if (mainEl) {
+        mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      // Visual haptic pulse feedback
+      setHapticPulse(MOBILE_TABS[index].key);
+      setTimeout(() => setHapticPulse(null), 300);
+      lastTabTapRef.current = { tab: -1, time: 0 };
+      return;
+    }
+
+    lastTabTapRef.current = { tab: index, time: now };
+    handleMobileTabChange(index);
+  }, [handleMobileTabChange]);
+
+  const handleMobileDragEnd = useCallback((
+    _: MouseEvent | TouchEvent | PointerEvent,
+    info: { offset: { x: number }; velocity: { x: number } }
+  ) => {
+    const currentIndex = mobileTabIndexRef.current;
+    const swipeThreshold = 50;
+    const velocityThreshold = 500;
+
+    if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
+      // Swiped left → next tab
+      if (currentIndex < MOBILE_TABS.length - 1) {
+        handleMobileTabChange(currentIndex + 1);
+      }
+    } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
+      // Swiped right → previous tab
+      if (currentIndex > 0) {
+        handleMobileTabChange(currentIndex - 1);
+      }
+    }
+  }, [handleMobileTabChange]);
+
+  // Keyboard shortcuts — Ctrl/Cmd+K opens CommandPalette, ⌘/ opens shortcuts help, etc.
+  useKeyboardShortcuts({
+    onOpenCommandPalette: () => setCommandPaletteOpen(!commandPaletteOpen),
+    onOpenShortcuts: () => setShortcutsOpen(true),
+    onTogglePlatform: () => setPlatform(platform === 'wechat' ? 'xiaohongshu' : 'wechat'),
+  });
+
+  // Open shortcuts help with ? key (when not in an input)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "?" && !["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
+        e.preventDefault();
+        setShortcutsOpen(true);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const showWelcome = !onboardingCompleted;
+
+  // Poll platform account status periodically
+  useEffect(() => {
+    function checkStatus() {
+      fetch("/api/platform-accounts")
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          const count = Array.isArray(data) ? data.filter((a: { status: string }) => a.status === "connected").length : 0;
+          setConnectedPlatforms(count);
+        })
+        .catch(() => {});
+    }
+    checkStatus();
+    const interval = setInterval(checkStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Initialize onboarding state from localStorage (client-side only to avoid hydration mismatch)
+  useEffect(() => {
+    onboardingInit();
+  }, [onboardingInit]);
+
+  return (
+    <ShortcutManagerProvider>
+    <div className="min-h-screen flex flex-col bg-gradient-animated">
+      {/* Accessibility: Screen reader live regions */}
+      <AccessibilityAnnouncer />
+      {/* Skip navigation link for keyboard/screen reader users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:border focus:border-border focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:text-sm"
+      >
+        跳到主要内容
+      </a>
+      {/* Notification enhancement hooks */}
+      <NotificationHooks />
+      {/* 顶部加载进度条 */}
+      <DataInitializer />
+      {/* Top Header */}
+      <header role="banner" className="header-gradient-border border-b border-border/50 bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300">
+        <div className="flex items-center justify-between px-4 h-14">
+          <div className="flex items-center gap-3">
+            <motion.div
+              className={`h-9 w-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg logo-hover-spin animate-breathe ${notifications.filter(n => !n.read).length > 0 ? 'logo-notification-pulse' : ''} ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-300/50 dark:shadow-violet-900/50' : 'from-red-500 to-rose-600 shadow-red-300/50 dark:shadow-red-900/50'}`}
+              whileHover={{ scale: 1.08, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            >
+              <Sparkles className="h-4.5 w-4.5 text-white" />
+            </motion.div>
+            <div>
+              <h1 className="text-base font-bold">
+                <span className="animate-gradient-text text-[15px]">
+                  {platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}
+                </span>
+              </h1>
+              <p className="text-[10px] text-muted-foreground -mt-0.5">{platform === 'wechat' ? '个人IP打造 · 全自动内容规划' : '爆款内容打造 · 全自动笔记生成'}</p>
+            </div>
+          </div>
+
+          {/* Platform Switcher - Desktop */}
+          <div className="hidden sm:flex items-center">
+            <div className="relative flex items-center h-9 rounded-full bg-muted/70 p-0.5 border border-border/50 shadow-sm ambient-glow">
+              {/* Glow backdrop for active platform */}
+              <motion.div
+                className="absolute h-9 w-1/2 rounded-full"
+                layoutId="platform-glow"
+                style={{ left: platform === 'wechat' ? '0' : '50%' }}
+                transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.8 }}
+              >
+                <div className={`h-full w-full rounded-full blur-md ${platform === 'wechat' ? 'bg-green-400/30' : 'bg-red-400/30'}`} />
+              </motion.div>
+              <motion.div
+                className="absolute h-7 rounded-full"
+                layoutId="platform-indicator"
+                style={{
+                  width: 'calc(50% - 2px)',
+                  left: platform === 'wechat' ? '2px' : 'calc(50%)',
+                }}
+                transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.8 }}
+              >
+                <div className={`h-full w-full rounded-full shadow-lg transition-colors duration-500 ${platform === 'wechat' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`} />
+              </motion.div>
+              <button
+                onClick={() => setPlatform('wechat')}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover btn-press btn-shine ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
+              >
+                <motion.span
+                  className="h-2 w-2 rounded-full bg-green-400"
+                  animate={platform === 'wechat' ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                />
+                朋友圈
+              </button>
+              <button
+                onClick={() => setPlatform('xiaohongshu')}
+                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover btn-press btn-shine ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
+              >
+                <motion.span
+                  className="h-2 w-2 rounded-full bg-red-400"
+                  animate={platform === 'xiaohongshu' ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                />
+                小红书
+              </button>
+            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2">
+            {/* Command Palette trigger — ⌘K */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setCommandPaletteOpen(true)}
+              className="flex items-center gap-2 h-8 px-3 rounded-lg border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground text-xs transition-all duration-300 btn-ripple press-scale btn-press btn-shine search-expand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+              aria-label="命令面板"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span className="hidden md:inline">搜索</span>
+              <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border bg-background px-1 font-mono text-[10px] text-muted-foreground">
+                ⌘K
+              </kbd>
+            </motion.button>
+
+            {isGenerating && (
+              <motion.div
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-xs"
+              >
+                <span className="h-2 w-2 rounded-full bg-violet-500 animate-pulse" />
+                AI正在生成内容...
+              </motion.div>
+            )}
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => setShortcutsOpen(true)}
+                    className="flex items-center justify-center h-7 w-7 rounded-full border border-border/60 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="快捷键帮助"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </motion.button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p>快捷键 (⌘/)</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="gear-spin">
+                    <LazySettingsCenter connectedPlatforms={connectedPlatforms} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p>设置中心</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Badge variant="outline" className="hidden md:inline-flex text-[10px] gap-1 px-1.5 py-0 pulse-soft">
+              <Zap className="h-2.5 w-2.5 text-amber-500" />
+              <span className="hidden lg:inline">AI驱动</span>
+            </Badge>
+          </div>
+
+          {/* Visual divider between settings area and notifications */}
+          <div className="hidden sm:block w-px h-5 bg-border/50" />
+
+          {/* Notification Bell - Enhanced with category system */}
+          <div className="relative">
+            <EnhancedNotificationBell />
+            {notifications.filter(n => !n.read).length > 0 && (
+              <div className="absolute -top-1 -right-1 z-10">
+                <NotificationPing />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile: compact header - platform switcher moved to floating nav */}
+      </header>
+
+      {/* Main Content */}
+      <main id="main-content" className="flex-1 overflow-hidden">
+        <PageTransition>
+        {showWelcome ? (
+          <div className="h-full">
+            <LazyWelcomeOnboarding onComplete={() => setOnboardingCompleted(true)} />
+          </div>
+        ) : (
+          <>
+            {/* Desktop: Two-panel resizable layout */}
+            <div className="hidden sm:block h-full">
+              <ResizablePanelGroup direction="horizontal" className="h-full card-gradient-border">
+                {/* Left Sidebar */}
+                <ResizablePanel defaultSize={24} minSize={20} maxSize={32}>
+                  <div className="h-full border-r bg-background/60 backdrop-blur-sm">
+                    <ErrorBoundary lightweight sectionName="左侧面板">
+                      <LeftSidebar />
+                    </ErrorBoundary>
+                  </div>
+                </ResizablePanel>
+
+                <ResizableHandle withHandle className="bg-border/50 hover:bg-primary/20 transition-colors drag-handle" />
+
+                {/* Main Content Area */}
+                <ResizablePanel defaultSize={76} minSize={55}>
+                  <div className="h-full bg-background/95 backdrop-blur-sm">
+                    <ErrorBoundary lightweight sectionName="内容工作台">
+                      <MainContentPanel />
+                    </ErrorBoundary>
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </div>
+
+            {/* Mobile: Swipeable single panel view */}
+            <div className="sm:hidden h-full overflow-hidden">
+              <div className="relative h-full">
+                <motion.div
+                  key={mobileTabIndex}
+                  initial={{ opacity: 0, x: swipeDirection * 200 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: 'spring' as const, stiffness: 400, damping: 35 }}
+                  className="absolute inset-0 pb-24"
+                >
+                  <motion.div
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.15}
+                    onDragEnd={handleMobileDragEnd}
+                    className="h-full"
+                  >
+                    {effectiveMobilePanel === 'left' ? <LeftSidebar /> : <MainContentPanel />}
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </>
+        )}
+        </PageTransition>
+      </main>
+
+      {/* ─── Floating Bottom Navigation (Mobile Only) ────────────────────── */}
+      <div className="sm:hidden fixed z-50 left-1/2 -translate-x-1/2 bottom-[max(env(safe-area-inset-bottom,0px)+0.75rem,0.75rem)]">
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring' as const, stiffness: 300, damping: 30, delay: 0.2 }}
+          className="flex items-center gap-0.5 px-1 py-1 rounded-[1.5rem] bg-background/75 backdrop-blur-2xl saturate-200 border border-white/15 dark:border-white/[0.08] shadow-[0_-1px_8px_rgba(0,0,0,0.06),0_8px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_-1px_8px_rgba(0,0,0,0.15),0_8px_40px_rgba(0,0,0,0.5)]"
+        >
+          {/* Platform switcher dots */}
+          <div className="flex items-center gap-1.5 px-2">
+            <button
+              onClick={() => setPlatform('wechat')}
+              className="relative flex items-center justify-center"
+              aria-label="切换到朋友圈"
+            >
+              <span className={`h-3 w-3 rounded-full transition-all duration-200 ${
+                platform === 'wechat'
+                  ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] ring-2 ring-green-500/30 animate-breathe'
+                  : 'bg-green-400/40'
+              }`} />
+            </button>
+            <button
+              onClick={() => setPlatform('xiaohongshu')}
+              className="relative flex items-center justify-center"
+              aria-label="切换到小红书"
+            >
+              <span className={`h-3 w-3 rounded-full transition-all duration-200 ${
+                platform === 'xiaohongshu'
+                  ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] ring-2 ring-red-500/30 animate-breathe'
+                  : 'bg-red-400/40'
+              }`} />
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-border/40" />
+
+          {/* Tab buttons */}
+          <div className="flex items-center relative">
+            {MOBILE_TABS.map((tab, index) => {
+              const Icon = tab.icon;
+              const isActive = mobileTabIndex === index;
+              return (
+                <motion.button
+                  key={tab.key}
+                  onClick={() => handleMobileTabTap(index)}
+                  whileTap={{ scale: 0.9 }}
+                  className={`relative flex flex-col items-center justify-center w-[3.25rem] h-12 rounded-2xl text-[10px] font-medium transition-colors duration-200 ${
+                    isActive ? 'text-white' : 'text-muted-foreground'
+                  }`}
+                  aria-label={tab.label}
+                >
+                  {/* Animated active indicator pill with glow */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobile-tab-pill"
+                      className="absolute inset-0 rounded-2xl overflow-hidden"
+                      transition={{ type: 'spring' as const, stiffness: 400, damping: 30 }}
+                    >
+                      {/* Soft glow behind the pill */}
+                      <motion.div
+                        className="absolute -inset-1 rounded-3xl blur-md"
+                        animate={{
+                          opacity: 0.5,
+                        }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className={`h-full w-full rounded-3xl ${platform === 'wechat' ? 'bg-violet-400/40' : 'bg-rose-400/40'}`} />
+                      </motion.div>
+                      {/* Wechat gradient */}
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-600"
+                        animate={{ opacity: platform === 'wechat' ? 1 : 0 }}
+                        transition={{ duration: 0.25 }}
+                      />
+                      {/* Xiaohongshu gradient */}
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-br from-rose-500 to-red-600"
+                        animate={{ opacity: platform === 'xiaohongshu' ? 1 : 0 }}
+                        transition={{ duration: 0.25 }}
+                      />
+                    </motion.div>
+                  )}
+
+                  <span className="relative z-10">
+                    <motion.div
+                      animate={isActive ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+                      transition={{ duration: 0.5, ease: "easeInOut", repeat: isActive ? Infinity : 0, repeatDelay: 1.5 }}
+                    >
+                      <Icon className="h-[18px] w-[18px] mx-auto" />
+                    </motion.div>
+                    {/* Haptic pulse ring on double-tap */}
+                    <AnimatePresence>
+                      {hapticPulse === tab.key && (
+                        <motion.div
+                          initial={{ scale: 0.5, opacity: 0.8 }}
+                          animate={{ scale: 2, opacity: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                          className="absolute inset-0 rounded-full border-2 border-primary/60"
+                        />
+                      )}
+                    </AnimatePresence>
+                  </span>
+                  <span className="relative z-10 mt-0.5 leading-none">{tab.label}</span>
+
+                  {/* Small colored indicator dot for active tab */}
+                  {isActive && (
+                    <motion.span
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring' as const, stiffness: 500, damping: 20 }}
+                      className="absolute -top-0.5 left-1/2 -translate-x-1/2 z-20 h-1.5 w-1.5 rounded-full bg-white shadow-sm"
+                    />
+                  )}
+
+                  {/* Notification badge on 数据 tab */}
+                  {tab.key === 'data' && unpublishedCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring' as const, stiffness: 500, damping: 25 }}
+                      className="absolute top-0.5 right-1.5 z-20 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white px-1"
+                    >
+                      {unpublishedCount > 9 ? '9+' : unpublishedCount}
+                    </motion.span>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-border/40" />
+
+          {/* Settings button */}
+          <button
+            onClick={() => setSettingsCenterOpen(true)}
+            className="flex items-center justify-center w-10 h-12 rounded-2xl text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="设置"
+          >
+            {connectedPlatforms > 0 ? (
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+              </span>
+            ) : (
+              <Settings className="h-4 w-4" />
+            )}
+          </button>
+        </motion.div>
+      </div>
+
+      {/* Content Search Dialog */}
+      <LazyContentSearch
+        open={contentSearchOpen}
+        onOpenChange={setContentSearchOpen}
+      />
+
+      {/* Command Palette */}
+      <LazyCommandPalette
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+      />
+
+      {/* Keyboard Shortcuts Dialog */}
+      <LazyKeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+
+      {/* Platform Account Panel Dialog */}
+      <LazyPlatformAccountPanel
+        open={accountPanelOpen}
+        onOpenChange={setAccountPanelOpen}
+        connectedCount={connectedPlatforms}
+        totalCount={2}
+      />
+
+      {/* Floating Quick Stats Widget */}
+      <QuickStatsFloat />
+
+      {/* AI Writing Assistant FAB */}
+      <LazyAIWritingAssistant />
+
+      {/* Footer */}
+      <EnhancedFooter />
+    </div>
+    </ShortcutManagerProvider>
   );
 }
