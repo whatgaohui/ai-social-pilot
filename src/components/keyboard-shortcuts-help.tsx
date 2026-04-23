@@ -342,6 +342,57 @@ function KeyRecorderDialog({
   );
 }
 
+/* ─── Pro Tips Card ──────────────────────────────────────────── */
+
+const PRO_TIPS = [
+  { keys: ["⌘", "K"], tip: "快速搜索任何内容或执行操作" },
+  { keys: ["⌘", "N"], tip: "无需鼠标，快速创建新帖子" },
+  { keys: ["⌘", "⇧", "P"], tip: "一键切换朋友圈和小红书" },
+  { keys: ["⌘", "S"], tip: "随时保存草稿，防止丢失" },
+];
+
+function ProTipsCard() {
+  return (
+    <div className="mx-4 mb-2 p-3.5 rounded-xl
+      bg-gradient-to-br from-amber-50 to-orange-50
+      dark:from-amber-950/30 dark:to-orange-950/30
+      border border-amber-200/60 dark:border-amber-800/30">
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className="h-6 w-6 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+          <Zap className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+        </div>
+        <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+          快捷键提示
+        </span>
+        <span className="text-[10px] text-amber-600/60 dark:text-amber-400/50">
+          提升效率必知
+        </span>
+      </div>
+      <div className="space-y-2">
+        {PRO_TIPS.map((item, i) => (
+          <div key={i} className="flex items-center justify-between gap-3">
+            <span className="text-[11px] text-amber-700/80 dark:text-amber-200/70 leading-tight">
+              {item.tip}
+            </span>
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              {item.keys.map((key, ki) => (
+                <span key={ki} className="flex items-center gap-0.5">
+                  <kbd className="inline-flex items-center justify-center h-5 min-w-[20px] px-1 rounded border border-amber-300/60 dark:border-amber-700/40 bg-white/80 dark:bg-amber-900/20 text-[10px] font-mono font-medium text-amber-700 dark:text-amber-300 shadow-[0_1px_0_1px] shadow-amber-200/50 dark:shadow-amber-900/30">
+                    {key}
+                  </kbd>
+                  {ki < item.keys.length - 1 && (
+                    <span className="text-[9px] text-amber-500/50 mx-0.5">+</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── KeyboardShortcutsHelp Component ─────────────────────────── */
 
 interface KeyboardShortcutsHelpProps {
@@ -353,6 +404,7 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showTips, setShowTips] = useState(true);
   const { setShortcut, resetShortcut, getKeys } = useCustomShortcuts();
 
   const filteredShortcuts = useMemo(() => {
@@ -444,8 +496,8 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
                 ref={searchInputRef}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索快捷键..."
-                className="pl-9 h-9 text-xs bg-muted/30"
+                placeholder="搜索快捷键（如：命令面板、保存、AI...）"
+                className="pl-9 h-9 text-xs bg-muted/30 dark:bg-muted/10"
                 aria-label="搜索快捷键"
               />
               {searchQuery && (
@@ -477,6 +529,7 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
               </button>
               {CATEGORIES.map((cat) => {
                 const CatIcon = cat.icon;
+                const catCount = DEFAULT_SHORTCUTS.filter(s => s.category === cat.id).length;
                 return (
                   <button
                     key={cat.id}
@@ -491,6 +544,7 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
                   >
                     <CatIcon className="h-3 w-3" />
                     {cat.label}
+                    <span className="text-[9px] opacity-60">{catCount}</span>
                   </button>
                 );
               })}
@@ -498,8 +552,21 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
           )}
 
           {/* Shortcut groups */}
-          <ScrollArea className="max-h-[50vh]">
+          <ScrollArea className="max-h-[45vh]">
             <div className="px-4 py-3" role="tabpanel">
+              {/* Pro Tips Card — shown when no search and no category filter */}
+              {!searchQuery && !activeCategory && showTips && (
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                  >
+                    <ProTipsCard />
+                  </motion.div>
+                </AnimatePresence>
+              )}
+
               {Array.from(groupedShortcuts.entries()).map(([catId, shortcuts], catIndex) => {
                 const cat = CATEGORIES.find((c) => c.id === catId);
                 if (!cat) return null;
@@ -507,8 +574,11 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
                 return (
                   <div key={catId}>
                     {catIndex > 0 && <Separator className="my-3" />}
-                    <div className="flex items-center gap-2 mb-2.5 px-2">
-                      <CatIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    {/* Category header with card background */}
+                    <div className="flex items-center gap-2.5 mb-2.5 px-2 py-1.5 rounded-lg bg-muted/40 dark:bg-muted/10">
+                      <div className="h-6 w-6 rounded-md bg-card dark:bg-card border border-border dark:border-border/60 flex items-center justify-center">
+                        <CatIcon className="h-3.5 w-3.5 text-foreground/70 dark:text-foreground/60" />
+                      </div>
                       <Badge
                         variant="outline"
                         className={`text-[10px] px-2 py-0 font-semibold border ${cat.color}`}
@@ -516,7 +586,7 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
                         {cat.label}
                       </Badge>
                       <span className="text-[10px] text-muted-foreground/60">
-                        {shortcuts.length} 个
+                        {shortcuts.length} 个快捷键
                       </span>
                     </div>
                     <div className="space-y-0.5">
@@ -537,29 +607,41 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
                 <div className="flex flex-col items-center py-8 text-muted-foreground">
                   <Search className="h-6 w-6 mb-2 opacity-30" />
                   <span className="text-xs">未找到匹配的快捷键</span>
+                  <span className="text-[10px] text-muted-foreground/50 mt-1">试试其他关键词</span>
                 </div>
               )}
             </div>
           </ScrollArea>
 
-          {/* Footer */}
-          <div className="px-6 py-3 border-t bg-muted/30">
+          {/* Footer with improved dark mode styling */}
+          <div className="px-6 py-3 border-t bg-muted/30 dark:bg-muted/10">
             <div className="flex items-center justify-between">
               <p className="text-[10px] text-muted-foreground">
                 macOS: <kbd className="keyboard-key text-[9px]">⌘</kbd> · Windows: <kbd className="keyboard-key text-[9px]">Ctrl</kbd>
               </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-[10px] text-amber-600 dark:text-amber-400"
-                onClick={() => {
-                  localStorage.removeItem(CUSTOM_SHORTCUTS_KEY);
-                  window.location.reload();
-                }}
-              >
-                <Sliders className="h-3 w-3 mr-1" />
-                重置所有
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowTips(!showTips)}
+                >
+                  <Zap className="h-3 w-3 mr-1" />
+                  {showTips ? "隐藏提示" : "显示提示"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[10px] text-amber-600 dark:text-amber-400"
+                  onClick={() => {
+                    localStorage.removeItem(CUSTOM_SHORTCUTS_KEY);
+                    window.location.reload();
+                  }}
+                >
+                  <Sliders className="h-3 w-3 mr-1" />
+                  重置所有
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>

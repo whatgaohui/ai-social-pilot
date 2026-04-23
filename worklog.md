@@ -8670,3 +8670,112 @@ Work Log:
 7. 单元测试覆盖
 8. PWA离线支持
 9. 国际化(i18n)
+
+---
+Task ID: 43
+Agent: Main Orchestrator + 3 Parallel full-stack-developer Sub-agents (43-a/b/c)
+Task: 第43轮开发 - 设置集成+CSS细节增强+拖拽排序+快捷键面板增强
+
+Work Log:
+- 读取 worklog.md 了解第42轮状态（210组件，80 API，12 Hooks，42轮迭代）
+- 硬约束：全程未使用 agent-browser（OOM限制），使用 curl 做 QA
+- 验证：ESLint 零错误，Build 9.2s成功，69静态页面
+- 预览服务器启动成功（standalone模式，端口3000+81均HTTP 200）
+- 3个并行子代理执行开发任务
+
+### Track A: 备份恢复与系统设置集成到设置中心
+- 在 settings-center.tsx 添加两个新入口卡片：
+  - "数据备份与恢复"（HardDrive图标，amber→orange渐变）
+  - "系统设置"（Cog图标，slate渐变）
+- 两个子面板均使用 dynamic import + ssr: false
+- 子面板包含返回按钮 + 可滚动内容区域
+- 修复了重复的 dynamic import 声明
+
+### Track B: CSS细节增强 - 22个新工具类
+新增 globals.css 末尾 +258 行 CSS 工具类：
+
+| 类别 | 类名 | 说明 |
+|------|------|------|
+| hover-glow | hover-glow-violet/emerald/rose/amber | 悬停发光效果（box-shadow过渡） |
+| press-effect | .press-effect | 按下缩放(0.97)+阴影减少 |
+| shimmer | .shimmer-loading | 1.2s快速微光扫描动画 |
+| tooltip | .tooltip-fade | 0.15s淡入+上移动画 |
+| spotlight | .card-spotlight | CSS鼠标跟随径向渐变（--mouse-x/y） |
+| text | .text-balance | text-wrap:balance 更好换行 |
+| focus-ring | focus-ring-violet/emerald/rose | 焦点环颜色变体 |
+| scroll | .scroll-indicator | 顶部滚动进度条（--scroll-progress） |
+| badge | badge-dot + dot-violet/emerald/rose/amber | 脉冲点指示器 |
+| input | .input-focus-glow | 输入框聚焦发光动画 |
+
+应用到现有组件：
+- content-workspace.tsx: hover-glow-violet 到折叠Section头部
+- data-and-reports.tsx: badge-dot 到13个Tab图标
+- page.tsx: input-focus-glow 到搜索按钮
+
+### Track C: 内容拖拽排序 + 快捷键面板增强 + 快捷统计
+1. **内容排期拖拽排序**（content-calendar.tsx）：
+   - @dnd-kit集成：DndContext + SortableContext + useSortable
+   - GripVertical拖拽手柄（hover时显示）
+   - 拖拽视觉反馈：85%透明度+1.02倍缩放+提升阴影
+   - KeyboardSensor键盘支持
+   - 仅在列表视图启用，网格视图不受影响
+   - app-store.ts 新增 reorderPosts() 方法
+
+2. **快捷键面板增强**（keyboard-shortcuts-help.tsx）：
+   - "快捷键提示"Pro Tips卡片（4个核心快捷键，amber渐变）
+   - 分类计数Badge（如"全局 5"）
+   - 卡片式分类头部（图标+边框）
+   - 显示/隐藏Tips切换
+   - 改进暗黑模式样式
+   - 自动聚焦搜索框
+
+3. **快捷统计浮窗增强**（quick-stats-float.tsx + /api/quick-stats）：
+   - 总内容数 + 趋势箭头（对比上周）
+   - SVG迷你折线图（7天内容量）
+   - 未发布数3级紧急度：zinc(<5) / amber(5-10) / rose(>10脉冲⚠️)
+   - AI评分色码：green≥80 / amber≥60 / rose<60
+   - 7天柱状图（展开后显示）
+   - 紧急FAB指示器：红色ring+"!"Badge
+
+### 修改文件
+- `src/components/settings-center.tsx` — 备份恢复+系统设置入口+子面板
+- `src/app/globals.css` — 22个新CSS工具类（+258行）
+- `src/components/right-panel/content-workspace.tsx` — hover-glow样式
+- `src/components/right-panel/data-and-reports.tsx` — badge-dot样式
+- `src/app/page.tsx` — input-focus-glow样式
+- `src/store/app-store.ts` — reorderPosts方法
+- `src/components/center-panel/content-calendar.tsx` — 拖拽排序
+- `src/components/keyboard-shortcuts-help.tsx` — Pro Tips+增强
+- `src/components/quick-stats-float.tsx` — 统计增强+迷你图表
+- `src/app/api/quick-stats/route.ts` — 扩展API
+
+### QA验证结果
+- ✅ ESLint 零错误、零警告
+- ✅ Next.js build 成功（9.2s编译，69静态页面）
+- ✅ 210个组件，80个API路由，12个Hooks
+
+### 项目当前状态
+- 43轮迭代完成，极其成熟稳定
+- 设置中心完整集成4大模块：AI模型配置、人设管理、数据备份与恢复、系统设置
+- CSS工具类库扩展至40+个工具类，覆盖发光/按压/微光/聚光灯/焦点环/滚动指示/脉冲点
+- 日历列表视图支持拖拽排序
+- 快捷键面板更加丰富实用
+- 快捷统计浮窗支持7天趋势图和紧急度指示
+
+### 未解决问题或风险
+1. 沙箱内存限制：服务器单请求后可能OOM（非代码问题，已知限制）
+2. agent-browser 不可用（OOM限制）
+3. 拖拽排序仅在客户端生效，刷新后恢复原序（未持久化）
+4. 快捷统计的"上周对比"数据基于简单计数，无历史数据存储
+
+### 建议下一阶段优先事项
+1. 拖拽排序结果持久化（API保存排序）
+2. 运营仪表盘数据与真实数据源对接
+3. 竞品追踪支持手动录入竞品数据
+4. 内容健康度告警阈值配置
+5. 通知中心WebSocket实时推送
+6. PWA离线支持 + Service Worker
+7. 单元测试覆盖
+8. 国际化(i18n)多语言支持
+9. 性能优化：组件代码分割、虚拟滚动
+10. 可访问性(A11y)审计

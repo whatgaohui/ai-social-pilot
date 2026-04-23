@@ -6,11 +6,16 @@ import { useAppStore } from "@/store/app-store";
 import {
   Send,
   TrendingUp,
+  TrendingDown,
   Star,
   Flame,
   ArrowRight,
+  ChevronDown,
   X,
   BarChart3,
+  FileStack,
+  Clock,
+  AlertTriangle,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -23,6 +28,10 @@ interface QuickStatsData {
   bestStreak: number;
   weeklyData: { day: string; date: string; count: number; score: number; isToday: boolean }[];
   recentScores: number[];
+  totalContent: number;
+  unpublishedCount: number;
+  lastWeekTotal: number;
+  sevenDaySparkline: { day: string; date: string; count: number }[];
 }
 
 interface StatRowProps {
@@ -150,6 +159,58 @@ function MiniProgressRing({ value }: { value: number }) {
 
 // ─── Gradient Ring Indicator ─────────────────────────────────────────────────
 
+function getAIScoreColor(score: number): string {
+  if (score >= 80) return "text-emerald-500";
+  if (score >= 60) return "text-amber-500";
+  return "text-rose-500";
+}
+
+function getAIScoreBg(score: number): string {
+  if (score >= 80) return "from-emerald-500 to-teal-600";
+  if (score >= 60) return "from-amber-500 to-orange-600";
+  return "from-rose-500 to-red-600";
+}
+
+// ─── SVG Sparkline ───────────────────────────────────────────────────────
+
+function SVGSparkline({ values, color = "#8b5cf6" }: { values: number[]; color?: string }) {
+  if (!values || values.length < 2) return null;
+  const max = Math.max(...values, 1);
+  const width = 80;
+  const height = 24;
+  const padding = 2;
+  const usableWidth = width - padding * 2;
+  const usableHeight = height - padding * 2;
+
+  const points = values.map((v, i) => {
+    const x = padding + (i / (values.length - 1)) * usableWidth;
+    const y = padding + usableHeight - (v / max) * usableHeight;
+    return { x, y };
+  });
+
+  const pathD = points
+    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(" ");
+
+  const areaD = `${pathD} L${points[points.length - 1].x.toFixed(1)},${height} L${padding},${height} Z`;
+
+  return (
+    <svg width={width} height={height} className="overflow-visible" aria-hidden="true">
+      <defs>
+        <linearGradient id={`spark-grad-${color.replace("#", "")}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#spark-grad-${color.replace("#", "")})`} />
+      <path d={pathD} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r={2} fill={color} />
+    </svg>
+  );
+}
+
+// ─── Gradient Ring Indicator ─────────────────────────────────────────────────
+
 function getGradientRingClass(pending: number): string {
   if (pending === 0) return "from-emerald-400 to-emerald-500";
   if (pending <= 3) return "from-amber-400 to-orange-500";
@@ -249,6 +310,7 @@ export function QuickStatsFloat() {
 
   const gradientRing = getGradientRingClass(stats?.todayPending ?? 0);
   const hasPending = (stats?.todayPending ?? 0) > 0;
+  const hasUrgent = (stats?.unpublishedCount ?? 0) > 10;
 
   // Trend arrow for AI score
   const scoreTrend =
@@ -322,58 +384,96 @@ export function QuickStatsFloat() {
                 </div>
               ) : stats ? (
                 <div className="space-y-0.5">
-                  {/* Row 1: Today Pending */}
+                  {/* Row 1: Total Content Count with trend */}
+                  <div className="flex items-center gap-2.5 py-1.5 group">
+                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shrink-0 transition-transform duration-200 group-hover:scale-110">
+                      <FileStack className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-muted-foreground leading-none">内容总数</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <p className="text-sm font-bold tabular-nums leading-tight">
+                          {stats.totalContent}
+                        </p>
+                        <span className="text-[10px] font-normal text-muted-foreground ml-0.5">篇</span>
+                        {(stats.lastWeekTotal ?? 0) > 0 && (
+                          <motion.span
+                            initial={{ opacity: 0, x: -4 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className={`text-[10px] font-semibold inline-flex items-center gap-0.5 ${
+                              (stats.totalContent ?? 0) >= (stats.lastWeekTotal ?? 0)
+                                ? "text-emerald-500"
+                                : "text-rose-500"
+                            }`}
+                          >
+                            {(stats.totalContent ?? 0) >= (stats.lastWeekTotal ?? 0)
+                              ? <TrendingUp className="h-3 w-3" />
+                              : <TrendingDown className="h-3 w-3" />
+                            }
+                            vs上周
+                          </motion.span>
+                        )}
+                      </div>
+                    </div>
+                    <SVGSparkline
+                      values={(stats.sevenDaySparkline || []).map(d => d.count)}
+                      color="#8b5cf6"
+                    />
+                  </div>
+
+                  {/* Row 2: Today Pending */}
                   <StatRow
                     icon={<Send className="h-3.5 w-3.5 text-white" />}
                     label="今日待发布"
                     value={stats.todayPending}
                     suffix="条"
-                    color="bg-gradient-to-br from-violet-500 to-purple-600"
+                    color="bg-gradient-to-br from-sky-500 to-cyan-600"
                   />
 
-                  {/* Row 2: Weekly Completion Rate */}
-                  <div className="flex items-center gap-2.5 py-1.5">
-                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shrink-0">
-                      <TrendingUp className="h-3.5 w-3.5 text-white" />
+                  {/* Row 3: Unpublished with urgency */}
+                  <div className="flex items-center gap-2.5 py-1.5 group">
+                    <div className={`flex items-center justify-center h-7 w-7 rounded-lg shrink-0 transition-transform duration-200 group-hover:scale-110 bg-gradient-to-br ${stats.unpublishedCount > 10 ? 'from-rose-500 to-red-600' : stats.unpublishedCount > 5 ? 'from-amber-500 to-orange-600' : 'from-zinc-400 to-zinc-500'}`}>
+                      <Clock className="h-3.5 w-3.5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-muted-foreground leading-none">
-                        本周完成率
-                      </p>
-                      <p className="text-sm font-bold tabular-nums leading-tight mt-0.5">
-                        {stats.weeklyCompletionRate}
-                        <span className="text-[10px] font-normal text-muted-foreground ml-0.5">
-                          %
-                        </span>
-                      </p>
+                      <p className="text-[10px] text-muted-foreground leading-none">未发布</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <p className="text-sm font-bold tabular-nums leading-tight">
+                          {stats.unpublishedCount ?? 0}
+                        </p>
+                        <span className="text-[10px] font-normal text-muted-foreground ml-0.5">篇</span>
+                        {(stats.unpublishedCount ?? 0) > 10 && (
+                          <motion.span
+                            animate={{ scale: [1, 1.15, 1] }}
+                            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <AlertTriangle className="h-3 w-3 text-rose-500" />
+                          </motion.span>
+                        )}
+                      </div>
                     </div>
-                    <MiniProgressRing value={stats.weeklyCompletionRate} />
                   </div>
 
-                  {/* Row 3: Average AI Score */}
-                  <div className="flex items-center gap-2.5 py-1.5">
-                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 shrink-0">
+                  {/* Row 4: Average AI Score with color coding */}
+                  <div className="flex items-center gap-2.5 py-1.5 group">
+                    <div className={`flex items-center justify-center h-7 w-7 rounded-lg shrink-0 transition-transform duration-200 group-hover:scale-110 bg-gradient-to-br ${getAIScoreBg(stats.avgAIScore)}`}>
                       <Star className="h-3.5 w-3.5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-muted-foreground leading-none">
-                        AI评分均值
-                      </p>
+                      <p className="text-[10px] text-muted-foreground leading-none">AI评分均值</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <p className="text-sm font-bold tabular-nums leading-tight">
+                        <p className={`text-sm font-bold tabular-nums leading-tight ${getAIScoreColor(stats.avgAIScore)}`}>
                           {stats.avgAIScore}
                         </p>
                         {scoreTrend !== 0 && (
                           <motion.span
                             initial={{ opacity: 0, x: -4 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className={`text-[10px] font-semibold ${
-                              scoreTrend > 0
-                                ? "text-emerald-500"
-                                : "text-rose-500"
+                            className={`text-[10px] font-semibold inline-flex items-center gap-0.5 ${
+                              scoreTrend > 0 ? "text-emerald-500" : "text-rose-500"
                             }`}
                           >
-                            {scoreTrend > 0 ? "↑" : "↓"}
+                            {scoreTrend > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                             {Math.abs(scoreTrend)}
                           </motion.span>
                         )}
@@ -381,62 +481,65 @@ export function QuickStatsFloat() {
                     </div>
                     <MicroSparkline
                       values={stats.recentScores}
-                      color="bg-amber-400/60 dark:bg-amber-300/50"
+                      color={stats.avgAIScore >= 80 ? "bg-emerald-400/60 dark:bg-emerald-300/50" : stats.avgAIScore >= 60 ? "bg-amber-400/60 dark:bg-amber-300/50" : "bg-rose-400/60 dark:bg-rose-300/50"}
                     />
                   </div>
 
-                  {/* Row 4: Content Streak */}
-                  <div className="flex items-center gap-2.5 py-1.5">
-                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 shrink-0">
+                  {/* Row 5: Content Streak */}
+                  <div className="flex items-center gap-2.5 py-1.5 group">
+                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 shrink-0 transition-transform duration-200 group-hover:scale-110">
                       <Flame className="h-3.5 w-3.5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-muted-foreground leading-none">
-                        内容连续天数
-                      </p>
+                      <p className="text-[10px] text-muted-foreground leading-none">连续发布</p>
                       <div className="flex items-center gap-1 mt-0.5">
                         <p className="text-sm font-bold tabular-nums leading-tight">
                           {stats.currentStreak}
                         </p>
-                        <span className="text-[10px] text-muted-foreground">
-                          天
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">天</span>
                         {stats.currentStreak >= 7 && (
                           <motion.span
                             animate={{ scale: [1, 1.2, 1] }}
-                            transition={{
-                              duration: 0.8,
-                              repeat: Infinity,
-                              ease: "easeInOut",
-                            }}
+                            transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
                           >
                             🔥
                           </motion.span>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-end gap-[2px] h-4">
-                      {stats.weeklyData.slice(0, 3).map((d, i) => (
-                        <motion.div
-                          key={d.date}
-                          className={`w-[3px] rounded-full ${
-                            d.count > 0
-                              ? "bg-rose-400/60 dark:bg-rose-300/50"
-                              : "bg-muted/40"
-                          }`}
-                          initial={{ height: 0 }}
-                          animate={{
-                            height: d.count > 0 ? Math.max(2, d.count * 8) : 2,
-                          }}
-                          transition={{
-                            delay: i * 0.1 + 0.3,
-                            duration: 0.4,
-                            ease: "easeOut",
-                          }}
-                        />
-                      ))}
-                    </div>
+                    <MiniProgressRing value={stats.weeklyCompletionRate} />
                   </div>
+
+                  {/* 7-day sparkline mini chart */}
+                  {stats.sevenDaySparkline && stats.sevenDaySparkline.length > 0 && (
+                    <div className="mt-1.5 pt-2 border-t border-border/50">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[9px] text-muted-foreground/60">近7天内容量</span>
+                        <span className="text-[9px] text-muted-foreground/60 tabular-nums">
+                          共{stats.sevenDaySparkline.reduce((s, d) => s + d.count, 0)}篇
+                        </span>
+                      </div>
+                      <div className="flex items-end gap-1 h-6">
+                        {stats.sevenDaySparkline.map((d, i) => {
+                          const maxCount = Math.max(...stats.sevenDaySparkline.map(x => x.count), 1);
+                          const barHeight = Math.max(2, (d.count / maxCount) * 24);
+                          return (
+                            <div key={d.date} className="flex-1 flex flex-col items-center gap-0.5">
+                              <motion.div
+                                className={`w-full rounded-sm ${d.isToday ? 'bg-violet-500' : d.count > 0 ? 'bg-violet-400/40 dark:bg-violet-300/30' : 'bg-muted/30'}`}
+                                initial={{ height: 0 }}
+                                animate={{ height: barHeight }}
+                                transition={{ delay: i * 0.05 + 0.3, duration: 0.3, ease: "easeOut" }}
+                              />
+                              <span className="text-[7px] text-muted-foreground/40 leading-none">
+                                {d.day.slice(0, 1)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : null}
 
@@ -476,20 +579,20 @@ export function QuickStatsFloat() {
       >
         {/* Gradient ring indicator */}
         <div
-          className={`absolute inset-0 rounded-full bg-gradient-to-r ${gradientRing} opacity-20`}
+          className={`absolute inset-0 rounded-full bg-gradient-to-r ${hasUrgent && !expanded ? "from-rose-400 to-red-500" : gradientRing} opacity-20`}
         />
         <div
-          className={`absolute -inset-[2px] rounded-full bg-gradient-to-r ${gradientRing} opacity-0 group-hover:opacity-30 transition-opacity duration-300`}
+          className={`absolute -inset-[2px] rounded-full bg-gradient-to-r ${hasUrgent && !expanded ? "from-rose-400 to-red-500" : gradientRing} opacity-0 group-hover:opacity-30 transition-opacity duration-300`}
         />
 
-        {/* Pulse animation when there are pending tasks */}
-        {hasPending && !expanded && (
+        {/* Pulse animation when there are pending tasks or urgent items */}
+        {(hasPending || hasUrgent) && !expanded && (
           <>
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white px-1 shadow-lg">
-              {stats?.todayPending ?? 0}
+            <span className={`absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full text-[9px] font-bold text-white px-1 shadow-lg ${hasUrgent ? 'bg-rose-500' : 'bg-violet-500'}`}>
+              {hasUrgent ? "!" : (stats?.todayPending ?? 0)}
             </span>
             <motion.span
-              className="absolute inset-0 rounded-full bg-violet-500"
+              className={`absolute inset-0 rounded-full ${hasUrgent ? 'bg-rose-500' : 'bg-violet-500'}`}
               animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0, 0.4] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             />

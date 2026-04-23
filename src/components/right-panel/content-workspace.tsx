@@ -130,7 +130,7 @@ function CollapsibleSectionHeader({
   return (
     <button
       onClick={onToggle}
-      className="w-full flex items-center gap-2.5 py-2.5 px-3 rounded-xl border border-border/60 bg-card/80 hover:bg-muted/40 transition-colors cursor-pointer group"
+      className="w-full flex items-center gap-2.5 py-2.5 px-3 rounded-xl border border-border/60 bg-card/80 hover:bg-muted/40 transition-colors cursor-pointer group hover-glow-violet"
     >
       <div className={`h-7 w-7 rounded-lg bg-gradient-to-br ${section.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
         <Icon className="h-3.5 w-3.5 text-white" />

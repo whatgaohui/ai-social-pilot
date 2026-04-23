@@ -528,6 +528,13 @@ export function DataAndReports() {
         : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
     }`;
 
+  const badgeDotVariant = (value: string) => {
+    if (value === "analytics" || value === "intelligence") return "dot-violet";
+    if (value === "ops" || value === "rhythm") return "dot-emerald";
+    if (value === "competitor" || value === "trends") return "dot-rose";
+    return "dot-amber";
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* ── Tab Bar ────────────────────────────────────────────────── */}
@@ -540,55 +547,81 @@ export function DataAndReports() {
           <Tabs defaultValue="analytics" className="w-full">
             <TabsList className="w-full h-8 bg-muted/50 p-0.5">
               <TabsTrigger value="analytics" className={tabTriggerClass("analytics")}>
-                <BarChart3 className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-violet">
+                  <BarChart3 className="h-3.5 w-3.5" />
+                </span>
                 数据分析
               </TabsTrigger>
               <TabsTrigger value="ops" className={tabTriggerClass("ops")}>
-                <TrendingUp className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-emerald">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                </span>
                 运营仪表盘
               </TabsTrigger>
               <TabsTrigger value="competitor" className={tabTriggerClass("competitor")}>
-                <Users className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-rose">
+                  <Users className="h-3.5 w-3.5" />
+                </span>
                 竞品分析
               </TabsTrigger>
               <TabsTrigger value="report" className={tabTriggerClass("report")}>
-                <FileBarChart className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-amber">
+                  <FileBarChart className="h-3.5 w-3.5" />
+                </span>
                 运营报告
               </TabsTrigger>
               <TabsTrigger value="intelligence" className={tabTriggerClass("intelligence")}>
-                <Radar className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-violet">
+                  <Radar className="h-3.5 w-3.5" />
+                </span>
                 竞品看板
               </TabsTrigger>
               <TabsTrigger value="trends" className={tabTriggerClass("trends")}>
-                <Flame className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-rose">
+                  <Flame className="h-3.5 w-3.5" />
+                </span>
                 趋势追踪
               </TabsTrigger>
               <TabsTrigger value="dashboard" className={tabTriggerClass("dashboard")}>
-                <LayoutDashboard className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-amber">
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                </span>
                 看板
               </TabsTrigger>
               <TabsTrigger value="executive" className={tabTriggerClass("executive")}>
-                <Gauge className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-amber">
+                  <Gauge className="h-3.5 w-3.5" />
+                </span>
                 执行看板
               </TabsTrigger>
               <TabsTrigger value="rhythm" className={tabTriggerClass("rhythm")}>
-                <Activity className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-emerald">
+                  <Activity className="h-3.5 w-3.5" />
+                </span>
                 节奏
               </TabsTrigger>
               <TabsTrigger value="weekly" className={tabTriggerClass("weekly")}>
-                <FileBarChart2 className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-amber">
+                  <FileBarChart2 className="h-3.5 w-3.5" />
+                </span>
                 周报分析
               </TabsTrigger>
               <TabsTrigger value="audience" className={tabTriggerClass("audience")}>
-                <UserCheck className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-violet">
+                  <UserCheck className="h-3.5 w-3.5" />
+                </span>
                 受众洞察
               </TabsTrigger>
               <TabsTrigger value="templates" className={tabTriggerClass("templates")}>
-                <Layers className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-amber">
+                  <Layers className="h-3.5 w-3.5" />
+                </span>
                 模板
               </TabsTrigger>
               <TabsTrigger value="export" className={tabTriggerClass("export")}>
-                <Download className="h-3.5 w-3.5" />
+                <span className="badge-dot dot-amber">
+                  <Download className="h-3.5 w-3.5" />
+                </span>
                 导出
               </TabsTrigger>
             </TabsList>

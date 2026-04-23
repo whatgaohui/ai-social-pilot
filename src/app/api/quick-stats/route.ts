@@ -118,14 +118,46 @@ export async function GET() {
       });
     }
 
-    // ── 7. Recent 3 scores for sparkline ──
+    // ── 7. Recent 7 scores for sparkline ──
     const recentScored = await db.contentPost.findMany({
       where: { aiScore: { gt: 0 } },
       orderBy: { updatedAt: 'desc' },
-      take: 3,
+      take: 7,
       select: { aiScore: true },
     });
     const recentScores = recentScored.map((p) => Math.round(p.aiScore));
+
+    // ── 8. Total content count ──
+    const totalContent = await db.contentPost.count();
+
+    // ── 9. Unpublished count ──
+    const unpublishedCount = await db.contentPost.count({
+      where: { status: { not: 'published' } },
+    });
+
+    // ── 10. Last week total for trend ──
+    const lastWeekStart = format(startOfWeek(subDays(now, 7), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const lastWeekEnd = format(endOfWeek(subDays(now, 7), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const lastWeekTotal = await db.contentPost.count({
+      where: {
+        scheduledDate: { gte: lastWeekStart, lte: lastWeekEnd },
+      },
+    });
+
+    // ── 11. 7-day content sparkline ──
+    const sevenDaySparkline: { day: string; date: string; count: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const day = subDays(now, i);
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const dayCount = await db.contentPost.count({
+        where: { scheduledDate: dayStr },
+      });
+      sevenDaySparkline.push({
+        day: format(day, 'EEE'),
+        date: dayStr,
+        count: dayCount,
+      });
+    }
 
     return NextResponse.json({
       todayPending,
@@ -135,6 +167,10 @@ export async function GET() {
       bestStreak,
       weeklyData,
       recentScores,
+      totalContent,
+      unpublishedCount,
+      lastWeekTotal,
+      sevenDaySparkline,
     });
   } catch (error) {
     console.error('Failed to fetch quick stats:', error);

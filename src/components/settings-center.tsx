@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, type ComponentType } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -61,6 +62,8 @@ import {
   WifiOff,
   Check,
   ChevronRight,
+  HardDrive,
+  Cog,
 } from "lucide-react";
 import { useAppStore } from "@/store/app-store";
 import { toast } from "sonner";
@@ -74,6 +77,34 @@ import { DataImport } from "@/components/data-import";
 import { BackupManager } from "@/components/backup-manager";
 import { SystemHealthDashboard } from "@/components/system-health";
 import type { Platform } from "@/types";
+
+/* ================================================================
+   Dynamic imports for heavy sub-panel components
+   ================================================================ */
+
+const LazyBackupRestorePanel = dynamic(
+  () => import("@/components/backup-restore-panel").then((m) => ({ default: m.BackupRestorePanel })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+const LazySystemSettingsPage = dynamic(
+  () => import("@/components/system-settings-page").then((m) => ({ default: m.SystemSettingsPage })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 /* ================================================================
    Types
@@ -97,7 +128,7 @@ interface ConfigRecord {
   createdAt: string;
 }
 
-type SectionId = "ai" | "accounts" | "notifications" | "data" | "system" | "display" | "about";
+type SectionId = "ai" | "accounts" | "notifications" | "data" | "system" | "display" | "about" | "backup" | "sysSettings";
 
 interface NotificationSettings {
   publishReminder: boolean;
@@ -129,6 +160,8 @@ const SECTIONS: Array<{
   { id: "data", icon: Database, label: "数据管理", gradient: "from-violet-500 to-purple-600", description: "备份恢复和数据管理" },
   { id: "system", icon: Activity, label: "系统状态", gradient: "from-emerald-500 to-teal-600", description: "系统健康和性能监控" },
   { id: "display", icon: Palette, label: "显示偏好", gradient: "from-pink-500 to-rose-500", description: "主题和界面设置" },
+  { id: "backup", icon: HardDrive, label: "数据备份与恢复", gradient: "from-amber-500 to-orange-600", description: "管理数据备份与恢复" },
+  { id: "sysSettings", icon: Cog, label: "系统设置", gradient: "from-slate-500 to-slate-700", description: "应用配置和高级设置" },
   { id: "about", icon: Info, label: "关于", gradient: "from-slate-400 to-slate-600", description: "应用信息和版本" },
 ];
 
@@ -1487,7 +1520,7 @@ function FullAISettings() {
 export function SettingsCenter({ connectedPlatforms }: SettingsCenterProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>("ai");
-  const [subPanel, setSubPanel] = useState<"main" | "ai" | "persona">("main");
+  const [subPanel, setSubPanel] = useState<"main" | "ai" | "persona" | "backup" | "sysSettings">("main");
   const [resetting, setResetting] = useState(false);
 
   const {
@@ -1560,6 +1593,46 @@ export function SettingsCenter({ connectedPlatforms }: SettingsCenterProps) {
         return <DisplayPreferencesSection />;
       case "about":
         return <AboutSection />;
+      case "backup":
+        return (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <HardDrive className="h-4 w-4 text-amber-500" />
+                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">数据备份与恢复</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-3">管理数据备份、恢复和自动备份设置，确保数据安全</p>
+              <Button
+                onClick={() => setSubPanel("backup")}
+                className="w-full h-9 text-xs bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
+              >
+                <HardDrive className="h-3.5 w-3.5 mr-1.5" />
+                打开备份管理
+                <ArrowRight className="h-3 w-3 ml-auto" />
+              </Button>
+            </div>
+          </div>
+        );
+      case "sysSettings":
+        return (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/20 dark:to-slate-800/20 border border-slate-200 dark:border-slate-700 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Cog className="h-4 w-4 text-slate-500" />
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">系统设置</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-3">通用设置、通知配置、数据管理和系统信息</p>
+              <Button
+                onClick={() => setSubPanel("sysSettings")}
+                className="w-full h-9 text-xs bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white"
+              >
+                <Cog className="h-3.5 w-3.5 mr-1.5" />
+                打开系统设置
+                <ArrowRight className="h-3 w-3 ml-auto" />
+              </Button>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
@@ -1634,6 +1707,68 @@ export function SettingsCenter({ connectedPlatforms }: SettingsCenterProps) {
                 <ScrollArea className="h-full">
                   <div className="p-4">
                     <PersonaForm />
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          )}
+
+          {/* Sub-panels: Backup & Restore */}
+          {subPanel === "backup" && (
+            <div className="h-[90vh] flex flex-col">
+              <div className="flex items-center gap-2 px-5 pt-4 pb-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() => setSubPanel("main")}
+                >
+                  ← 返回
+                </Button>
+                <Separator orientation="vertical" className="h-5" />
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                  <HardDrive className="h-3.5 w-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">数据备份与恢复</p>
+                  <p className="text-[10px] text-muted-foreground">管理数据备份、恢复和自动备份设置</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="p-4 max-w-2xl mx-auto">
+                    <LazyBackupRestorePanel />
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          )}
+
+          {/* Sub-panels: System Settings */}
+          {subPanel === "sysSettings" && (
+            <div className="h-[90vh] flex flex-col">
+              <div className="flex items-center gap-2 px-5 pt-4 pb-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() => setSubPanel("main")}
+                >
+                  ← 返回
+                </Button>
+                <Separator orientation="vertical" className="h-5" />
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center">
+                  <Cog className="h-3.5 w-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">系统设置</p>
+                  <p className="text-[10px] text-muted-foreground">通用设置、通知配置和高级选项</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="px-2 pb-4">
+                    <LazySystemSettingsPage />
                   </div>
                 </ScrollArea>
               </div>

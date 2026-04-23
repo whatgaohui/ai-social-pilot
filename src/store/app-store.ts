@@ -20,6 +20,7 @@ interface AppState {
   setContentPosts: (posts: ContentPost[]) => void;
   addContentPost: (post: ContentPost) => void;
   updateContentPost: (id: string, data: Partial<ContentPost>) => void;
+  reorderPosts: (activeId: string, overId: string) => void;
 
   // Materials
   materials: Material[];
@@ -99,6 +100,15 @@ export const useAppStore = create<AppState>((set) => ({
   updateContentPost: (id, data) => set((state) => ({
     contentPosts: state.contentPosts.map(p => p.id === id ? { ...p, ...data } : p)
   })),
+  reorderPosts: (activeId, overId) => set((state) => {
+    const oldIndex = state.contentPosts.findIndex(p => p.id === activeId);
+    const newIndex = state.contentPosts.findIndex(p => p.id === overId);
+    if (oldIndex === -1 || newIndex === -1) return state;
+    const updated = [...state.contentPosts];
+    const [moved] = updated.splice(oldIndex, 1);
+    updated.splice(newIndex, 0, moved);
+    return { contentPosts: updated };
+  }),
 
   // Materials
   materials: [],

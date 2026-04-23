@@ -1,6 +1,22 @@
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import type { ContentPost, PostStatus } from "@/types";
@@ -462,10 +478,27 @@ function ListItem({
       ? "border-l-rose-400 dark:border-l-rose-400"
       : "border-l-green-400 dark:border-l-green-400";
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: post.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.85 : 1,
+    scale: isDragging ? 1.02 : 1,
+  };
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <motion.div variants={staggerChild} initial="hidden" animate="show" layout>
+        <motion.div variants={staggerChild} initial="hidden" animate="show" layout ref={setNodeRef} style={style}>
           <div
             onClick={() => onClick(post)}
             className={`
@@ -477,9 +510,25 @@ function ListItem({
                 ? "ring-2 ring-primary bg-primary/[0.05] border-primary/40 shadow-md"
                 : "border-border"
               }
+              ${isDragging
+                ? "shadow-xl ring-2 ring-primary/50 border-primary/30"
+                : ""
+              }
             `}
           >
             <div className="flex items-center gap-2">
+              {/* Drag handle */}
+              <button
+                className="flex items-center justify-center h-5 w-5 rounded flex-shrink-0
+                  text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/80
+                  cursor-grab active:cursor-grabbing transition-colors"
+                {...attributes}
+                {...listeners}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="拖拽排序"
+              >
+                <GripVertical className="h-3.5 w-3.5" />
+              </button>
               <span className="text-[10px] text-muted-foreground tabular-nums flex-shrink-0 w-[70px]">
                 {formattedDate}
               </span>
@@ -498,7 +547,7 @@ function ListItem({
               </Badge>
             </div>
             {post.content && (
-              <p className="text-[10px] text-muted-foreground mt-1 leading-tight line-clamp-1 pl-[82px]">
+              <p className="text-[10px] text-muted-foreground mt-1 leading-tight line-clamp-1 pl-[98px]">
                 {post.content.length > 60
                   ? post.content.slice(0, 60) + "…"
                   : post.content}
@@ -506,7 +555,7 @@ function ListItem({
             )}
             {/* Mini stats */}
             {post.status === "published" && (post.likes || post.comments || post.views) > 0 && (
-              <div className="flex items-center gap-3 mt-1.5 pl-[82px] text-[9px] text-muted-foreground tabular-nums">
+              <div className="flex items-center gap-3 mt-1.5 pl-[98px] text-[9px] text-muted-foreground tabular-nums">
                 {post.views > 0 && <span>浏览 {post.views}</span>}
                 {post.likes > 0 && <span className="text-rose-400">点赞 {post.likes}</span>}
                 {post.comments > 0 && <span className="text-amber-400">评论 {post.comments}</span>}
@@ -557,6 +606,7 @@ export function ContentCalendar() {
     setSelectedPostId,
     platform: currentPlatform,
     addContentPost,
+    reorderPosts,
   } = useAppStore();
 
   const [viewMode, setViewMode] = useState<ViewMode>("week");
@@ -635,6 +685,27 @@ export function ContentCalendar() {
       .filter((p) => p.scheduledDate)
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
   }, [filteredPosts]);
+
+  // ─── DnD sensors for list view ──────────────────────────────
+
+  const listViewSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleListDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        reorderPosts(String(active.id), String(over.id));
+      }
+    },
+    [reorderPosts],
+  );
 
   // ─── Handlers ──────────────────────────────────────────────
 
@@ -965,23 +1036,34 @@ export function ContentCalendar() {
                   </p>
                 </div>
               ) : (
-                <motion.div
-                  variants={staggerContainer}
-                  initial="hidden"
-                  animate="show"
-                  className="space-y-1.5"
+                <DndContext
+                  sensors={listViewSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleListDragEnd}
                 >
-                  {sortedPosts.map((post, index) => (
-                    <ListItem
-                      key={post.id}
-                      post={post}
-                      index={index}
-                      isSelected={selectedPostId === post.id}
-                      onClick={handlePostClick}
-                      onContextMenuAction={handleContextMenuAction}
-                    />
-                  ))}
-                </motion.div>
+                  <SortableContext
+                    items={sortedPosts.map(p => p.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <motion.div
+                      variants={staggerContainer}
+                      initial="hidden"
+                      animate="show"
+                      className="space-y-1.5"
+                    >
+                      {sortedPosts.map((post, index) => (
+                        <ListItem
+                          key={post.id}
+                          post={post}
+                          index={index}
+                          isSelected={selectedPostId === post.id}
+                          onClick={handlePostClick}
+                          onContextMenuAction={handleContextMenuAction}
+                        />
+                      ))}
+                    </motion.div>
+                  </SortableContext>
+                </DndContext>
               )}
             </motion.div>
           )}
