@@ -222,7 +222,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     this.autoRetryTimerId = setTimeout(() => {
       this.setState({ hasError: false, error: null, showDetails: false });
-      console.log("[ErrorBoundary] Auto-retry triggered after", interval, "seconds");
+      console.warn("[ErrorBoundary] Auto-retry triggered after", interval, "seconds");
     }, interval * 1000);
 
     // Start countdown display

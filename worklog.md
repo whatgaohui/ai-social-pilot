@@ -9954,3 +9954,137 @@ Stage Summary:
   4. 移动端响应式深度优化
   5. 运营报告自动生成功能完善（PDF/图片导出）
   6. 内容发布自动化工作流（定时发布 + 自动优化循环）
+
+---
+Task ID: 53
+Agent: Main Orchestrator + Subagents
+Task: 第五十三轮开发 - Bug修复 + CSS去重 + AI周报生成器
+
+Work Log:
+- 读取 worklog.md 了解第52轮项目状态（19个tab，功能丰富）
+- 运行 eslint（零错误）+ next build（编译成功）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill）
+- 使用 Explore agent 全面扫描代码质量问题（导入、类型、CSS重复、console日志）
+- 并行启动子任务：AI周报生成器组件开发 + CSS去重优化
+
+### Bug修复与代码质量
+
+1. **未使用导入清理**（content-workspace.tsx）：
+   - 问题：`useSuccessToast` 从 `@/hooks/use-toast-operations` 导入但从未使用
+   - 修复：移除未使用的导入语句
+
+2. **死代码清理**（content-workspace.tsx）：
+   - 问题：`showHistory` state 已定义但从未在渲染中使用，仅在 tab 切换时设置 false
+   - 修复：移除 `useState(false)` 和 2 处 `setShowHistory(false)` 调用
+
+3. **ContentPost.title 类型错误**（content-workspace.tsx）：
+   - 问题：`selectedPost.title` 不存在于 ContentPost 接口（正确字段为 `topic`）
+   - 修复：`selectedPost.title` → `selectedPost.topic`（draftData useMemo）
+
+4. **PublishToCalendar mode 类型不匹配**（content-workspace.tsx）：
+   - 问题：`mode="inline"` 不在 `PublishToCalendarProps` 的类型定义中（接受 "standalone" | "collapsible"）
+   - 修复：`mode="inline"` → `mode="collapsible"`
+
+5. **RewriteConfig 接口缺少 bg 属性**（ai-content-rewriter.tsx）：
+   - 问题：代码访问 `modeConfig.bg` 但接口定义中无此字段
+   - 修复：添加 `bg?: string` 到 RewriteConfig 接口
+
+6. **TrendDataPoint 接口缺少 postCount**（competitor-trends-enhanced.tsx）：
+   - 问题：16 处访问 `d.postCount` 但接口无此字段
+   - 修复：添加 `postCount?: number` 到 TrendDataPoint 接口
+
+7. **console.log 规范化**（reschedule/route.ts）：
+   - 问题：审计日志使用 `console.log` 应为 `console.info`
+   - 修复：`console.log` → `console.info`
+
+### CSS 去重优化（globals.css）
+
+- **Python 脚本自动去重**：精确匹配 CSS 选择器，保留最后出现（CSS 层叠规则）
+- **移除 170 个完全重复的选择器块**：
+  - @media (prefers-reduced-motion: reduce) ×34
+  - 滚动条相关样式 ×30+
+  - .dark 变体 ×20+
+  - @keyframes ×15+
+  - 组件级重复 ×70+
+- **文件大小**：10,603 行 → 9,096 行（减少 1,507 行，14.2%）
+- 所有现有样式保持不变（保留最后出现的定义）
+
+### 新功能组件
+
+**AI 运营周报生成器**（ai-weekly-report.tsx）：
+- **报告配置**：
+  - 4 种周期选择：本周/上周/本月/自定义日期范围
+  - 报告范围：当前平台/全平台
+  - 渐变"生成周报"按钮
+- **报告预览**：
+  - 头部：运营数据周报 + 日期范围 + 平台 Badge + AI 生成脉冲标签
+  - 核心数据概览：4 个 glass-card 统计卡（发布总数/平均互动率/最佳表现帖/AI平均分）
+  - 内容表现排行：Top 5 帖子排行（奖牌 Badge + 互动迷你进度条）
+  - 内容类型分析：水平条形图 + 最佳类型高亮
+  - AI 运营建议：3-5 条可展开的建议卡片（分类图标 + 颜色编码）
+  - 下周计划建议：内容类型分布 + 推荐发布时间
+  - 操作栏：复制报告文本 + 重新生成
+- **技术实现**：
+  - `useAnimatedCounter` 自定义 Hook（数字计数动画）
+  - framer-motion 交错入场 + AnimatePresence
+  - 从 store 的 contentPosts 本地计算统计数据（无需 API）
+  - AI 增强调用 /api/ai/generate type="weekly-report-analysis"（带容错回退）
+  - 平台自适应（朋友圈绿/小红书红）
+  - 暗黑模式 + 响应式设计
+  - 约 650 行
+
+### CSS 增强（globals.css）
+新增 8 个 CSS 工具类：
+- `.report-stat-shimmer`：报告统计卡微光加载动画
+- `.report-card-glow`：报告卡片渐变边框发光效果
+- `.engagement-bar-fill`：互动迷你条填充动画
+- `.counter-roll`：数字翻滚过渡效果
+- `.recommendation-card`：建议卡片悬浮位移效果
+- `.period-chip` / `.period-chip-active`：周期选择芯片样式
+- `.ai-badge-pulse`：AI 标签脉冲动画
+- `.platform-accent-line`：平台主题色线条
+
+### 集成到 content-workspace.tsx
+- 新增 FileBarChart 图标导入
+- 新增 AIWeeklyReport 组件导入
+- TOOL_TABS 新增 1 个 tab：
+  - "周报生成"（FileBarChart 图标，insights 组，位于质量趋势之后）
+- Tab 渲染区域添加 weekly-report case 分支
+- Tab 总数从 19 个扩展到 20 个（create=7, publish=5, insights=8）
+
+### 新增文件
+- `src/components/right-panel/ai-weekly-report.tsx` — AI 运营周报生成器
+
+### 修改文件
+- `src/components/right-panel/content-workspace.tsx` — 清理死代码 + 修复类型 + 新增tab + 图标 + 组件导入 + 渲染分支
+- `src/components/right-panel/ai-content-rewriter.tsx` — RewriteConfig 接口添加 bg 字段
+- `src/components/right-panel/competitor-trends-enhanced.tsx` — TrendDataPoint 接口添加 postCount 字段
+- `src/app/api/content/[id]/reschedule/route.ts` — console.log → console.info
+- `src/app/globals.css` — CSS 去重（-1507行）+ 8 个新工具类
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（所有动态路由正常，编译耗时 9.2s）
+
+Stage Summary:
+- 项目状态：稳定可运行，功能和分析能力持续丰富
+- 本轮新增 1 个文件，修改 5 个文件
+- 核心成果：
+  1. 7 处代码质量修复（未使用导入/死代码/类型错误/console规范化）
+  2. CSS 全局去重（10,603→9,096 行，14.2% 减少）
+  3. AI 运营周报生成器（配置+预览+排行+分析+建议+下周计划）
+  4. 8 个新 CSS 动画/视觉效果工具类
+  5. Tab 系统扩展至 20 个（create=7, publish=5, insights=8）
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. AI 周报生成依赖 AI 服务可用性（有本地计算回退）
+  3. Tab 数量持续增长（20 个），insights 组已达 8 个子 tab
+  4. 约 110 个 TypeScript 错误仍存在（被 next.config 的 ignoreBuildErrors: true 跳过）
+  5. 5 处 fire-and-forget 静默 catch（通知发送类，风险可接受）
+- 建议下一阶段优先事项：
+  1. TypeScript 类型错误逐步修复（减少对 ignoreBuildErrors 的依赖）
+  2. 大组件拆分重构（analytics-panel.tsx、content-workspace.tsx 持续增长）
+  3. 内容排期拖拽排序功能实现（已有 @dnd-kit 依赖）
+  4. 移动端响应式深度优化
+  5. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
+  6. 运营报告自动导出功能（PDF/图片格式）

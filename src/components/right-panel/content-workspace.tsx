@@ -37,6 +37,7 @@ import {
   Dna,
   Eye,
   GitBranch,
+  FileBarChart,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,7 +46,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { useSuccessToast } from "@/hooks/use-toast-operations";
 import { useAutoSave, formatRelativeTime } from "@/hooks/use-auto-save";
 import { useAppStore } from "@/store/app-store";
 import type { PostStatus } from "@/types";
@@ -96,6 +96,7 @@ import { ContentStyleDNA } from "@/components/right-panel/content-style-dna";
 import { CalendarMiniHeatmap } from "@/components/left-panel/calendar-mini-heatmap";
 import { ContentSchedulerTimeline } from "@/components/right-panel/content-scheduler-timeline";
 import { AIIdeaGenerator } from "@/components/right-panel/ai-idea-generator";
+import { AIWeeklyReport } from "@/components/right-panel/ai-weekly-report";
 
 // ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
 
@@ -309,6 +310,7 @@ const TOOL_TABS = [
   { value: "wordcloud", icon: Cloud, label: "词云分析", color: "text-fuchsia-500", group: "insights" as const },
   { value: "style-dna", icon: Dna, label: "风格DNA", color: "text-teal-500", group: "insights" as const },
   { value: "quality-timeline", icon: TrendingUp, label: "质量趋势", color: "text-emerald-500", group: "insights" as const },
+  { value: "weekly-report", icon: FileBarChart, label: "周报生成", color: "text-amber-500", group: "insights" as const },
 ] as const;
 
 type ToolTab = (typeof TOOL_TABS)[number]["value"];
@@ -328,7 +330,6 @@ export function ContentWorkspace() {
   const [toolTab, setToolTab] = useState<ToolTab>("ai");
   const [activeGroup, setActiveGroup] = useState<TabGroup>("create");
   const [tabTransitioning, setTabTransitioning] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     kanban: false,
     batch: false,
@@ -348,7 +349,7 @@ export function ContentWorkspace() {
   );
 
   const draftData = useMemo(
-    () => (selectedPost ? { id: selectedPost.id, content: selectedPost.content, title: selectedPost.title } : null),
+    () => (selectedPost ? { id: selectedPost.id, content: selectedPost.content, title: selectedPost.topic } : null),
     [selectedPost],
   );
 
@@ -436,7 +437,6 @@ export function ContentWorkspace() {
     if (firstTab) {
       setTabTransitioning(true);
       setToolTab(firstTab.value as ToolTab);
-      setShowHistory(false);
       setTimeout(() => setTabTransitioning(false), 150);
     }
   }, [activeGroup]);
@@ -446,7 +446,6 @@ export function ContentWorkspace() {
     if (newTab !== toolTab) {
       setTabTransitioning(true);
       setToolTab(newTab);
-      setShowHistory(false);
       setTimeout(() => setTabTransitioning(false), 150);
     }
   }, [toolTab]);
@@ -923,7 +922,7 @@ export function ContentWorkspace() {
                     <SchedulingAssistantEnhanced />
                     <Separator className="my-1" />
                     <AISchedulingAssistant />
-                    <PublishToCalendar isXHS={isXHS} mode="inline" />
+                    <PublishToCalendar isXHS={isXHS} mode="collapsible" />
                   </motion.div>
                 )}
 
@@ -1088,6 +1087,13 @@ export function ContentWorkspace() {
                 {toolTab === "quality-timeline" && (
                   <motion.div key="quality-timeline-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
                     <QualityTimeline posts={contentPosts} />
+                  </motion.div>
+                )}
+
+                {/* ── AI Weekly Report Tab ────────────────────────────────── */}
+                {toolTab === "weekly-report" && (
+                  <motion.div key="weekly-report-panel" variants={expandCollapse} initial="hidden" animate="visible" exit="exit">
+                    <AIWeeklyReport />
                   </motion.div>
                 )}
 

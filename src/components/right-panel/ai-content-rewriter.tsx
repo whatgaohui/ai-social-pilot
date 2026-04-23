@@ -43,6 +43,7 @@ interface RewriteConfig {
   icon: React.ElementType;
   color: string;
   gradient: string;
+  bg?: string;
   description: string;
 }
 

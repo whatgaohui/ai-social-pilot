@@ -25,6 +25,7 @@ interface TrendDataPoint {
   shares: number;
   favorites: number;
   engagementRate: number;
+  postCount?: number;
 }
 
 interface CompetitorTrendSeries {

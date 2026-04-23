@@ -127,7 +127,7 @@ export async function POST(
     });
 
     // Build audit info (logged in console; could also write to a dedicated audit table)
-    console.log(`[Reschedule Audit] Post ${id}: ${oldDate} → ${newDate}${reason ? ` (reason: ${reason})` : ''}`);
+    console.info(`[Reschedule Audit] Post ${id}: ${oldDate} → ${newDate}${reason ? ` (reason: ${reason})` : ''}`);
 
     return NextResponse.json({
       post: updatedPost,
