@@ -274,7 +274,7 @@ function OptimizationPreview({
         </div>
       </div>
 
-      <Separator />
+      <Separator className="divider-gradient" />
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ function OptimizationPreview({
           onClick={onApply}
           disabled={applying}
           size="sm"
-          className="flex-1 h-9 text-xs gap-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-sm btn-press"
+          className="flex-1 h-9 text-xs gap-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-sm btn-press focus-ring-soft"
         >
           {applying ? (
             <>
@@ -301,7 +301,7 @@ function OptimizationPreview({
           disabled={applying}
           variant="outline"
           size="sm"
-          className="h-9 text-xs gap-1.5 text-muted-foreground hover:text-foreground btn-press"
+          className="h-9 text-xs gap-1.5 text-muted-foreground hover:text-foreground btn-press focus-ring-soft"
         >
           <XCircle className="h-3.5 w-3.5" />
           放弃
@@ -483,11 +483,11 @@ ${weakDimensions ? `需重点改进的维度：\n${weakDimensions}` : ""}
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className="border-0 shadow-sm">
+      <Card className="border-0 shadow-sm content-card-hover micro-hover">
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full h-auto p-4 hover:bg-muted/50 rounded-lg"
+            className="w-full h-auto p-4 hover:bg-muted/50 rounded-lg focus-ring-soft"
             onClick={(e) => {
               // First click: auto-trigger scoring (when no result yet and not already scoring)
               if (!isOpen && !result && !scoring && !optimizedContent) {
@@ -587,7 +587,7 @@ ${weakDimensions ? `需重点改进的维度：\n${weakDimensions}` : ""}
                   className="space-y-4"
                 >
                   {/* Overall Score Card */}
-                  <div className="flex flex-col items-center py-2 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-950/10 dark:to-transparent rounded-xl">
+                  <div className="flex flex-col items-center py-2 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-950/10 dark:to-transparent rounded-xl content-card-hover">
                     <CircularProgress score={result.overallScore} />
                     <div className="flex items-center gap-1.5 mt-3">
                       <Award className="h-4 w-4 text-amber-500" />
@@ -611,7 +611,7 @@ ${weakDimensions ? `需重点改进的维度：\n${weakDimensions}` : ""}
                   {/* Strengths & Improvements */}
                   <div className="grid grid-cols-1 gap-3">
                     {/* Strengths */}
-                    <div className="bg-emerald-50/60 dark:bg-emerald-950/20 rounded-lg p-3 space-y-2">
+                    <div className="bg-emerald-50/60 dark:bg-emerald-950/20 rounded-lg p-3 space-y-2 content-card-hover micro-hover">
                       <div className="flex items-center gap-1.5">
                         <Check className="h-4 w-4 text-emerald-500" />
                         <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
@@ -635,7 +635,7 @@ ${weakDimensions ? `需重点改进的维度：\n${weakDimensions}` : ""}
                     </div>
 
                     {/* Improvements */}
-                    <div className="bg-amber-50/60 dark:bg-amber-950/20 rounded-lg p-3 space-y-2">
+                    <div className="bg-amber-50/60 dark:bg-amber-950/20 rounded-lg p-3 space-y-2 content-card-hover micro-hover">
                       <div className="flex items-center gap-1.5">
                         <AlertTriangle className="h-4 w-4 text-amber-500" />
                         <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
@@ -666,7 +666,7 @@ ${weakDimensions ? `需重点改进的维度：\n${weakDimensions}` : ""}
                       onClick={handleGenerateOptimization}
                       disabled={result.improvements.length === 0}
                       size="sm"
-                      className="w-full h-9 text-xs gap-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-sm btn-press"
+                      className="w-full h-9 text-xs gap-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-sm btn-press focus-ring-soft"
                     >
                       <Wand2 className="h-3.5 w-3.5" />
                       根据改进建议生成优化方案
@@ -677,7 +677,7 @@ ${weakDimensions ? `需重点改进的维度：\n${weakDimensions}` : ""}
                       onClick={handleScore}
                       variant="ghost"
                       size="sm"
-                      className="w-full h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                      className="w-full h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground focus-ring-soft"
                     >
                       <RefreshCw className="h-3 w-3" />
                       重新评分
@@ -713,7 +713,7 @@ ${weakDimensions ? `需重点改进的维度：\n${weakDimensions}` : ""}
                 <Button
                   onClick={handleScore}
                   size="sm"
-                  className="h-8 text-xs gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white btn-press"
+                  className="h-8 text-xs gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white btn-press focus-ring-soft"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   开始AI评分

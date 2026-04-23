@@ -210,7 +210,7 @@ function ChatBubble({
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+      className={`flex gap-2.5 content-card-hover micro-hover ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
       {/* Avatar */}
       <Avatar className="h-8 w-8 flex-shrink-0 mt-0.5">
@@ -261,7 +261,7 @@ function ChatBubble({
                 <TooltipTrigger asChild>
                   <button
                     onClick={handleCopy}
-                    className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted/60 text-muted-foreground/60 hover:text-foreground transition-colors"
+                    className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted/60 text-muted-foreground/60 hover:text-foreground transition-colors focus-ring-soft"
                     aria-label="复制消息"
                   >
                     {copied ? (
@@ -322,7 +322,7 @@ function EmptyState({ onQuickAction }: { onQuickAction: (msg: string) => void })
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
               onClick={() => onQuickAction(action.message)}
-              className={`flex items-center gap-2 p-3 rounded-xl border border-border/60 bg-background hover:bg-muted/40 transition-all duration-200 hover:shadow-sm group text-left`}
+              className={`flex items-center gap-2 p-3 rounded-xl border border-border/60 bg-background hover:bg-muted/40 transition-all duration-200 hover:shadow-sm group text-left content-card-hover micro-hover focus-ring-soft`}
             >
               <div
                 className={`h-7 w-7 rounded-lg ${action.bg} flex items-center justify-center flex-shrink-0`}
@@ -662,7 +662,7 @@ export function AIChatWorkspace() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-rose-500"
+                    className="h-8 w-8 text-muted-foreground hover:text-rose-500 focus-ring-soft"
                     onClick={handleClear}
                     aria-label="清空对话"
                   >
@@ -695,7 +695,7 @@ export function AIChatWorkspace() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex gap-2.5"
+                className="flex gap-2.5 content-card-hover micro-hover"
               >
                 <Avatar className="h-8 w-8 flex-shrink-0 mt-0.5">
                   <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-xs">
@@ -716,7 +716,7 @@ export function AIChatWorkspace() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex gap-2.5"
+                className="flex gap-2.5 content-card-hover micro-hover"
               >
                 <Avatar className="h-8 w-8 flex-shrink-0 mt-0.5">
                   <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-xs">
@@ -743,7 +743,7 @@ export function AIChatWorkspace() {
                   key={action.label}
                   onClick={() => handleQuickAction(action.message)}
                   disabled={isLoading}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap border border-border/50 bg-background hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap border border-border/50 bg-background hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 focus-ring-soft"
                 >
                   <Icon className="h-3 w-3" />
                   {action.label}
@@ -767,11 +767,11 @@ export function AIChatWorkspace() {
             }
             disabled={isLoading}
             rows={1}
-            className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border-border/60 bg-muted/30 text-sm focus-visible:ring-violet-400/40 focus-visible:border-violet-300/60 transition-all"
+            className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border-border/60 bg-muted/30 text-sm focus-visible:ring-violet-400/40 focus-visible:border-violet-300/60 transition-all focus-ring-soft"
           />
           <Button
             size="icon"
-            className="h-10 w-10 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-sm disabled:opacity-40 transition-all"
+            className="h-10 w-10 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-sm disabled:opacity-40 transition-all focus-ring-soft"
             onClick={() => handleSend()}
             disabled={!inputValue.trim() || isLoading}
             aria-label="发送消息"

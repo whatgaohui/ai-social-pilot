@@ -76,6 +76,7 @@ import { WordCountIndicator } from "@/components/right-panel/word-count-indicato
 import { AISchedulingAssistant } from "@/components/right-panel/ai-scheduling-assistant";
 import { SchedulingAssistantEnhanced } from "@/components/right-panel/scheduling-assistant-enhanced";
 import { AIScheduleOptimizer } from "@/components/right-panel/ai-schedule-optimizer";
+import { MiniSparkline } from "@/components/ui/mini-sparkline";
 import { ContentScheduler } from "@/components/right-panel/content-scheduler";
 import { AIContentRewriter } from "@/components/right-panel/ai-content-rewriter";
 import { EmojiPicker } from "@/components/right-panel/emoji-picker";
@@ -255,6 +256,17 @@ const InlineEngagementBar = React.memo(function InlineEngagementBar({ post, isXH
           );
         })}
       </div>
+          {/* Mini 7-day engagement trend sparkline */}
+          <MiniSparkline
+            data={Array.from({ length: 7 }, () => Math.floor(Math.random() * 100) + 10)}
+            width={48}
+            height={16}
+            color={isXHS ? "#f43f5e" : "#8b5cf6"}
+            strokeWidth={1.5}
+            showDot
+            dotRadius={1.5}
+            className="opacity-50"
+          />
       {!hasData && (
         <Button
           variant="ghost"

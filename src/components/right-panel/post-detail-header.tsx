@@ -29,7 +29,7 @@ function getContentTypeLabel(ct: string, isXHS: boolean) {
 export function PostDetailHeader({ post, isXHS }: PostDetailHeaderProps) {
   return (
     <>
-      <div className="space-y-2 relative pl-3">
+      <div className="space-y-2 relative pl-3 content-card-hover">
         {/* Gradient left border accent */}
         <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-full bg-gradient-to-b from-violet-500 via-purple-500 to-fuchsia-500" />
 
@@ -62,7 +62,7 @@ export function PostDetailHeader({ post, isXHS }: PostDetailHeaderProps) {
         <h3 className="text-base font-semibold">{post.topic}</h3>
       </div>
 
-      <Separator />
+      <Separator className="divider-gradient" />
     </>
   );
 }

@@ -574,7 +574,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
       {/* ── Context-Aware Suggestions ── */}
       {contextInfo.length > 0 && (
         <motion.div variants={staggerItem}>
-          <div className="rounded-lg border border-violet-200/60 dark:border-violet-800/40 bg-violet-50/50 dark:bg-violet-950/10 p-3">
+          <div className="rounded-lg border border-violet-200/60 dark:border-violet-800/40 bg-violet-50/50 dark:bg-violet-950/10 p-3 content-card-hover micro-hover">
             <div className="flex items-center gap-1.5 mb-2">
               <Sparkles className="h-3.5 w-3.5 text-violet-500" />
               <span className="text-[11px] font-semibold text-violet-700 dark:text-violet-300">
@@ -620,7 +620,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
 
       {/* ── Tone Selector ── */}
       <motion.div variants={staggerItem}>
-        <div className="rounded-lg border border-border/60 bg-card/80 p-3">
+        <div className="rounded-lg border border-border/60 bg-card/80 p-3 content-card-hover micro-hover">
           <div className="flex items-center gap-1.5 mb-2">
             <Type className="h-3.5 w-3.5 text-violet-500" />
             <span className="text-[11px] font-semibold">语气风格</span>
@@ -688,7 +688,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
 
       {/* ── Multi-Step Generation ── */}
       <motion.div variants={staggerItem}>
-        <div className="rounded-lg border border-border/60 bg-card/80 p-3">
+        <div className="rounded-lg border border-border/60 bg-card/80 p-3 content-card-hover micro-hover">
           <div className="flex items-center gap-1.5 mb-3">
             <Sparkles className="h-3.5 w-3.5 text-violet-500" />
             <span className="text-[11px] font-semibold">分步生成</span>
@@ -793,7 +793,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
               </Button>
               <Button
                 size="sm"
-                className="flex-1 h-7 text-[10px] bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white btn-ripple press-scale"
+                className="flex-1 h-7 text-[10px] bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white btn-ripple press-scale focus-ring-soft"
                 onClick={() => handleGenerateStep(currentStep)}
                 disabled={isGenerating}
               >
@@ -837,7 +837,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
             {stepResults.polish && currentStep === "polish" && (
               <Button
                 size="sm"
-                className="w-full h-7 text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white btn-ripple press-scale"
+                className="w-full h-7 text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white btn-ripple press-scale focus-ring-soft"
                 onClick={() => handleApplyContent(stepResults.polish)}
               >
                 <Check className="h-3 w-3 mr-1" />
@@ -850,7 +850,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
 
       {/* ── Content Variations ── */}
       <motion.div variants={staggerItem}>
-        <div className="rounded-lg border border-border/60 bg-card/80 p-3">
+        <div className="rounded-lg border border-border/60 bg-card/80 p-3 content-card-hover micro-hover">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
               <RotateCcw className="h-3.5 w-3.5 text-violet-500" />
@@ -949,7 +949,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
 
       {/* ── Quick Templates ── */}
       <motion.div variants={staggerItem}>
-        <div className="rounded-lg border border-border/60 bg-card/80 p-3">
+        <div className="rounded-lg border border-border/60 bg-card/80 p-3 content-card-hover micro-hover">
           <div className="flex items-center gap-1.5 mb-2">
             <FileText className="h-3.5 w-3.5 text-violet-500" />
             <span className="text-[11px] font-semibold">快速模板</span>

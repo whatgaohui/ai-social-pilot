@@ -449,7 +449,7 @@ const EngagementRateCard = React.memo(function EngagementRateCard({
   const rateInfo = getRateLabel(displayRate);
 
   return (
-    <Card className="border-0 shadow-sm overflow-hidden relative">
+    <Card className="border-0 shadow-sm overflow-hidden relative content-card-hover micro-hover">
       {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-violet-50/80 via-background to-emerald-50/60 dark:from-violet-950/20 dark:via-background dark:to-emerald-950/10" />
       <CardContent className="p-4 relative">
@@ -1258,7 +1258,7 @@ export function AnalyticsPanel() {
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`text-[10px] px-2.5 py-1 rounded-md transition-all duration-200 font-medium flex-1 text-center ${
+                  className={`text-[10px] px-2.5 py-1 rounded-md transition-all duration-200 font-medium flex-1 text-center focus-ring-soft ${
                     period === p
                       ? "bg-violet-500 text-white shadow-sm shadow-violet-500/20"
                       : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -1281,7 +1281,7 @@ export function AnalyticsPanel() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-8 text-xs gap-1.5"
+                    className="flex-1 h-8 text-xs gap-1.5 focus-ring-soft"
                     onClick={() => handleExport("json")}
                   >
                     <FileJson className="h-3.5 w-3.5" />
@@ -1298,7 +1298,7 @@ export function AnalyticsPanel() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 h-8 text-xs gap-1.5"
+                        className="flex-1 h-8 text-xs gap-1.5 focus-ring-soft"
                       >
                         <Download className="h-3.5 w-3.5" />
                         更多导出
@@ -1391,7 +1391,7 @@ export function AnalyticsPanel() {
                 whileHover={{ y: -2, transition: { duration: 0.2 } }}
                 transition={{ duration: 0.3, delay: idx * 0.06 }}
               >
-                <Card className="border-0 shadow-sm stat-card-hover card-glass-hover">
+                <Card className="border-0 shadow-sm stat-card-hover card-glass-hover content-card-hover micro-hover">
                   <CardContent className="p-3 flex items-center gap-3">
                     <div
                       className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center flex-shrink-0`}
@@ -1413,7 +1413,7 @@ export function AnalyticsPanel() {
           </div>
 
           {/* ── Average Score ───────────────────────────────────────── */}
-          <Card className="border-0 shadow-sm bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
+          <Card className="border-0 shadow-sm bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 content-card-hover micro-hover card-glass-hover">
             <CardContent className="p-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-amber-500" />
@@ -1463,7 +1463,7 @@ export function AnalyticsPanel() {
 
           {/* ── Content Type Distribution (Donut Chart) ────────────── */}
           {Object.keys(displayAnalytics.typeDistribution).length > 0 && (
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm content-card-hover micro-hover">
             <CardHeader className="pb-2 px-4 pt-4">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
@@ -1483,7 +1483,7 @@ export function AnalyticsPanel() {
 
           {/* ── Status Distribution Ring ────────────────────────────── */}
           {Object.keys(displayAnalytics.statusDistribution).length > 0 && (
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm content-card-hover micro-hover">
               <CardHeader className="pb-2 px-4 pt-4">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-violet-500/10 flex items-center justify-center">
@@ -1502,7 +1502,7 @@ export function AnalyticsPanel() {
 
           {/* ── Top Posts (Horizontal Bar Chart) ────────────────────── */}
           {displayAnalytics.topPosts.length > 0 && (
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm content-card-hover micro-hover card-glass-hover">
               <CardHeader className="pb-2 px-4 pt-4">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-amber-500/10 flex items-center justify-center">
@@ -1524,7 +1524,7 @@ export function AnalyticsPanel() {
           )}
 
           {/* ── Platform Comparison Chart ───────────────────────────── */}
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm content-card-hover micro-hover">
             <CardHeader className="pb-2 px-4 pt-4">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <div className="h-6 w-6 rounded bg-emerald-500/10 flex items-center justify-center">
@@ -1539,7 +1539,7 @@ export function AnalyticsPanel() {
           </Card>
 
           {/* ── Content Trend Line Chart ────────────────────────────── */}
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm content-card-hover micro-hover">
             <CardHeader className="pb-2 px-4 pt-4">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <div className="h-6 w-6 rounded bg-violet-500/10 flex items-center justify-center">
@@ -1560,7 +1560,7 @@ export function AnalyticsPanel() {
           <TimeSuggestions />
 
           {/* ── AI Analysis ────────────────────────────────────────── */}
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20">
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 content-card-hover micro-hover card-glass-hover">
             <CardHeader className="pb-2 px-4 pt-4">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <div className="h-6 w-6 rounded bg-violet-500/10 flex items-center justify-center">
@@ -1577,7 +1577,7 @@ export function AnalyticsPanel() {
                 onClick={handleAIAnalysis}
                 disabled={analyzing}
                 variant="outline"
-                className="w-full border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-950/30"
+                className="w-full border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-950/30 focus-ring-soft"
                 size="sm"
               >
                 {analyzing ? (
@@ -1597,7 +1597,7 @@ export function AnalyticsPanel() {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-lg bg-background p-3 border text-sm leading-relaxed whitespace-pre-wrap"
+                  className="rounded-lg bg-background p-3 border text-sm leading-relaxed whitespace-pre-wrap content-card-hover micro-hover"
                 >
                   {aiAnalysis}
                 </motion.div>
