@@ -66,6 +66,8 @@ import { toast } from "sonner";
 import { useSuccessToast, useErrorToast, useInfoToast } from "@/hooks/use-toast-operations";
 import { PRESET_PROVIDERS } from "@/lib/ai-providers";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeCustomizer } from "@/components/theme-customizer";
+import { RestartTourButton } from "@/components/onboarding-tour";
 import { PersonaForm } from "@/components/left-panel/persona-form";
 import { DataImport } from "@/components/data-import";
 import type { Platform } from "@/types";
@@ -706,6 +708,22 @@ function DisplayPreferencesSection() {
           onCheckedChange={(checked) => setDisplayPrefs((prev) => ({ ...prev, compactMode: checked }))}
           aria-label="紧凑模式"
         />
+      </div>
+
+      <Separator />
+
+      {/* Theme Customizer */}
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground mb-3 block">主题自定义</Label>
+        <ThemeCustomizer />
+      </div>
+
+      <Separator />
+
+      {/* Restart Tour */}
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground mb-3 block">新手引导</Label>
+        <RestartTourButton />
       </div>
     </div>
   );

@@ -55,6 +55,8 @@ import { ContentSpellcheck } from "@/components/right-panel/content-spellcheck";
 import { ContentHistory } from "@/components/right-panel/content-history";
 import { ViralInspiration } from "@/components/right-panel/viral-inspiration";
 import { PublishWorkflow } from "@/components/right-panel/publish-workflow";
+import { AIWritingAssistantEnhanced } from "@/components/right-panel/ai-writing-assistant-enhanced";
+import { ContentPipeline } from "@/components/right-panel/content-pipeline";
 import { ContentQuickActions } from "@/components/right-panel/content-quick-actions";
 import { AIQuickActionsBar } from "@/components/right-panel/ai-quick-actions-bar";
 import { WorkspaceQuickBar } from "@/components/right-panel/workspace-quick-bar";
@@ -187,6 +189,9 @@ const TOOL_TABS = [
   { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500" },
   { value: "queue", icon: Layers, label: "发布队列", color: "text-purple-500" },
   { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500" },
+  { value: "ai-workflow", icon: Bot, label: "AI工作流", color: "text-violet-500" },
+  { value: "pipeline", icon: Layers, label: "内容流水线", color: "text-cyan-500" },
+  { value: "writing", icon: Sparkles, label: "写作助手", color: "text-emerald-500" },
   { value: "history", icon: History, label: "版本记录", color: "text-violet-500" },
   { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500" },
 ] as const;
@@ -772,6 +777,45 @@ export function ContentWorkspace() {
                     exit="exit"
                   >
                     <ContentHistory post={selectedPost} />
+                  </motion.div>
+                )}
+
+                {/* ── AI Workflow Tab ────────────────────────────────────── */}
+                {toolTab === "ai-workflow" && (
+                  <motion.div
+                    key="ai-workflow-panel"
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <ContentPipeline />
+                  </motion.div>
+                )}
+
+                {/* ── Pipeline Tab ───────────────────────────────────────── */}
+                {toolTab === "pipeline" && (
+                  <motion.div
+                    key="pipeline-panel"
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <ContentPipeline />
+                  </motion.div>
+                )}
+
+                {/* ── Writing Assistant Tab ─────────────────────────────── */}
+                {toolTab === "writing" && (
+                  <motion.div
+                    key="writing-panel"
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <AIWritingAssistantEnhanced />
                   </motion.div>
                 )}
 

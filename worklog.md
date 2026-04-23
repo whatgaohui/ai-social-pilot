@@ -6968,3 +6968,463 @@ Work Log:
 8. 数据备份/恢复功能
 9. 内容发布到真实社交平台 API 对接
 10. 性能监控 + 错误追踪（Sentry集成）
+
+## Iteration 36 — Micro-Interaction Polish + Theme System Enhancement + UX Details
+
+### New Files Created
+
+1. **`src/components/notification-enhancements.tsx`** — Enhanced notification center with:
+   - Smart notification batching (groups similar notifications within 5 min window)
+   - Batch toggle ("展开全部" / "收起")
+   - Inline action buttons (查看结果, 重试, 忽略) per notification
+   - Priority-based visual urgency (high=red border, medium=amber, low=transparent)
+   - Batch actions (mark all as read in group)
+   - Beautiful animated empty state with floating illustration
+
+2. **`src/components/keyboard-shortcuts-enhanced.tsx`** — Enhanced keyboard shortcuts system:
+   - Floating "?" button (bottom-right) with first-time onboarding tips
+   - Context-aware category filtering (General, Content, AI, View, Analytics, Platform, Nav, Calendar)
+   - Search/filter shortcuts in dialog
+   - Custom shortcut binding with key recorder dialog
+   - Visual keyboard key caps (`.keyboard-key` CSS)
+   - Reset individual or all shortcuts
+   - Custom shortcut persistence in localStorage
+
+3. **`src/components/onboarding-tour.tsx`** — Step-by-step onboarding tour:
+   - 10 tour steps covering all key features (welcome, platform switcher, left panel, calendar, workspace, AI features, analytics, search, settings, shortcuts)
+   - Spotlight overlay (dim everything except target element)
+   - Pulsing highlight border on target element
+   - Step progress dots (animated)
+   - Skip/Next/Back navigation controls
+   - localStorage persistence (tour completed flag)
+   - RestartTourButton component for settings page
+
+4. **`src/components/context-menu.tsx`** — Custom right-click context menu system:
+   - Post context menu (edit/copy/delete, AI optimize/score/alt version, schedule/move date, add tag/view related)
+   - Calendar context menu (new content, AI generate, view stats)
+   - Knowledge context menu (edit/copy/delete, AI generate, find related)
+   - Keyboard navigation (↑↓ arrows, Enter to select, ←→ for submenu)
+   - Submenu support with chevron indicators
+   - Disabled state, shortcut display, destructive variant
+   - Scale-from-origin animation
+
+5. **`src/components/tooltip-enhancements.tsx`** — Enhanced tooltip/popover system:
+   - RichTooltip with title + description + icon, variant styling (default/info/success/warning/error)
+   - Configurable show delay (300ms default)
+   - Cursor-following mode for certain tooltips
+   - PopoverCard (click-triggered info cards with header + body)
+   - TourTooltip (spotlight-aware positioning)
+   - DelayedTooltip wrapper for simple use cases
+
+6. **`src/components/theme-customizer.tsx`** — Theme customization panel:
+   - Accent color picker (6 presets: violet, rose, emerald, amber, cyan, fuchsia)
+   - Font size adjustment (small/medium/large with scale values)
+   - Border radius slider (0–2x)
+   - Compact/comfortable spacing toggle
+   - Real-time preview card showing all changes
+   - CSS variable updates via DOM manipulation
+   - localStorage persistence
+   - Reset to defaults button
+
+7. **`src/components/tag-manager.tsx`** — Stub component for pre-existing dependency
+
+### Modified Files
+
+1. **`src/app/globals.css`** — Added ~280 lines of CSS:
+   - Theme custom properties (`--accent-color`, `--accent-hover`, `--radius-scale`, `--spacing-scale`, `--font-size-scale`)
+   - `.context-menu-enter` animation (scale from origin)
+   - `.spotlight-overlay` and `.spotlight-highlight` (tour darkening)
+   - `.tour-highlight` pulsing border animation
+   - `.notification-batch` stack animation
+   - `.notification-priority-*` border styling
+   - `.keyboard-key` styled keycap appearance (light + dark mode)
+   - `.tooltip-rich` multi-line tooltip
+   - `.shortcut-badge` (⌘K style badge, light + dark mode)
+   - `.onboarding-progress` step dots
+   - `.theme-preview-card` and `.preview-*` styles
+   - `.color-swatch` circular picker items
+   - `.notification-sound-pulse` animation
+   - `.fab-shortcuts` floating button
+   - `.ctx-separator` context menu separator
+   - All with `prefers-reduced-motion: reduce` support and dark mode
+
+2. **`src/components/settings-center.tsx`** — Enhanced display preferences section:
+   - Added ThemeCustomizer integration
+   - Added RestartTourButton for onboarding restart
+
+### Verification
+- All new files pass ESLint (`--max-warnings 0`)
+- `npx next build` succeeds
+- All components support both light and dark modes
+- All animations use framer-motion or CSS transitions
+- `prefers-reduced-motion: reduce` respected
+
+---
+
+## Iteration 36 — Knowledge Base Enhancement + Smart Tag System
+
+### Created Files
+1. **`/api/knowledge/tags/route.ts`** — Smart Tag API
+   - GET: All tags with counts, popular tags, AI-suggested tags
+   - POST: Merge tags, rename tag, AI suggest tags for content
+   - PUT: Add tag to specific knowledge item
+   - DELETE: Remove tag from all knowledge items
+2. **`/api/knowledge/search/route.ts`** — Knowledge Search API
+   - GET: Full-text search (title + content + tags), category/tag filters, pagination
+   - Relevance scoring (title=10, tags=7, content=2 per occurrence)
+   - Highlight matching text, find related items by tag overlap
+3. **`/api/knowledge/stats/route.ts`** — Knowledge Stats API
+   - Total items, category breakdown, tag cloud data, recent additions (7 days)
+   - Coverage analysis (12 expected topic areas), weekly growth trend
+4. **`/api/knowledge/import/route.ts`** — Import/Export API
+   - POST: Import JSON/CSV with proper header parsing
+   - GET: Download CSV import template
+5. **`/components/tag-manager.tsx`** — Tag Manager Component
+   - Full tag list with search, sort by name/count
+   - Inline rename with keyboard shortcuts (Enter/Escape)
+   - Bulk merge: select multiple tags → merge into one target
+   - Delete tag from all items, export tag config as JSON
+   - Usage analytics (total tags, total references)
+6. **CSS additions to `globals.css`** (~190 lines)
+   - `.tag-cloud`, `.tag-cloud-item`, `.tag-pill` styles
+   - `.knowledge-card`, `.knowledge-card-expanded` styles
+   - `.knowledge-graph`, `.graph-node`, `.graph-edge` SVG styles
+   - `.tag-color-picker`, `.tag-manager-dialog` styles
+   - `.coverage-indicator`, `.coverage-gap` with pulse animation
+   - `.import-dropzone` with hover/drag states
+   - `.highlight-match` for search highlighting
+   - `prefers-reduced-motion` support
+
+### Modified Files
+1. **`/components/left-panel/knowledge-base.tsx`** — Major enhancement
+   - **Smart Tag System**: Tag Cloud with size/frequency visualization, right-click context menu, click-to-filter
+   - **Auto-Tagging**: "AI建议标签" button using `/api/knowledge/tags` POST with AI analysis, clickable tag chips
+   - **Tag Color Coding**: Deterministic color from tag name hash, category-inherited colors
+   - **Knowledge Cards**: Rich preview (title, category badge, colored tag pills, 100-char preview, last updated), Quick actions (Copy, Edit, Find Related, Delete), Expand/Collapse with full content, Related Items section
+   - **Knowledge Graph View**: SVG visualization (nodes=tags, edges=shared category), node size=frequency, click-to-filter, hover states
+   - **View Toggle**: Switch between list and graph views
+   - **Import/Export Dialog**: Export JSON/CSV, Import with file upload, Download template
+   - **Coverage Analysis**: Progress bar, gap indicators with pulse animation, topic area analysis
+   - **Edit Dialog**: Enhanced with AI tag suggestions, tag chip selection
+   - **Active Filters**: Badge display with clear actions
+
+### Database
+- No schema changes needed — works with existing `KnowledgeItem.tags` (comma-separated string)
+
+### Verification
+- All 6 new/modified files pass ESLint (`--max-warnings 0`)
+- `npx next build` succeeds — all routes compiled
+- Pre-existing ESLint errors in `charts/index.tsx` and `weekly-analytics.tsx` are unrelated
+
+## Iteration 36: Content Workflow Automation + AI Writing Assistant Enhancement
+
+### New Files Created
+1. **`src/app/api/content-workflow/engine.ts`** — Workflow Engine (server-side)
+   - 4 workflow templates: 草稿自动排期, 创意全流程, 快速润色, 批量优化评分
+   - Step types: ai-generate, ai-optimize, schedule, score
+   - Conditional branching (if aiScore < 60, re-optimize loop)
+   - JSON file-based run tracking (db/workflow-runs.json)
+   - Sequential execution with error handling, max 20 iterations to prevent infinite loops
+   - Auto-creates content versions and notifications
+
+2. **`src/app/api/content-workflow/route.ts`** — Content Workflow API
+   - POST: Execute workflow by templateId with context
+   - GET: Returns available templates + recent workflow runs
+
+3. **`src/components/right-panel/ai-writing-assistant-enhanced.tsx`** — Enhanced Writing Assistant
+   - Context-Aware Writing: detects selected post, calendar date, knowledge items
+   - 8 Tone Presets with preview: 专业严谨, 轻松幽默, 温馨治愈, 励志正能量, 干货分享, 故事叙述, 互动提问, 情感共鸣
+   - Tone persists in localStorage
+   - Multi-Step AI Generation: outline → expand → polish with visual stepper
+   - Editable intermediate results between steps
+   - Word Count Target: platform-aware (朋友圈 200-500, 小红书 300-800) with visual progress bar
+   - Content Variations: generate 3 versions, compare tabs, merge best parts button
+   - 10 Quick Templates: 早安打卡, 知识分享, 好物测评, 日常分享, 职场干货, 旅行日志, 周总结, 话题讨论, 美食分享, 深夜走心
+
+4. **`src/components/right-panel/content-pipeline.tsx`** — Content Pipeline Visualization
+   - SVG pipeline visualization: 💡创意 → ✍️草稿 → 🤖已生成 → ✨AI优化 → 📅排期 → 🚀发布
+   - Each stage shows count, click to filter content by stage
+   - Bottleneck detection (stage with most items, animated indicator)
+   - "一键推进" button to advance all items to next stage
+   - AI workflow triggers per stage (AI全流程, 优化排期)
+   - Recent workflow runs display with status indicators
+
+### Modified Files
+5. **`src/components/right-panel/content-workspace.tsx`** — Added 3 new tabs
+   - "AI工作流" tab → ContentPipeline component
+   - "内容流水线" tab → ContentPipeline component (duplicate accessible from both)
+   - "写作助手" tab → AIWritingAssistantEnhanced component
+
+6. **`src/components/dashboard-overview.tsx`** — Added pipeline mini overview
+   - DashboardPipelineOverview component showing 5-stage pipeline with counts
+   - Animated progress bars per stage
+   - "管理" button links to workspace panel
+
+7. **`src/app/globals.css`** — Added Round 36 CSS classes
+   - .workflow-step, .workflow-connector, .tone-chip, .tone-preview
+   - .variation-tab, .variation-content, .pipeline-visual, .bottleneck-indicator
+   - .content-template-card, .quick-template, .step-progress-bar
+   - .workflow-run-dot (status colors), .workflow-skeleton
+   - All with dark mode support + framer-motion animations
+
+### Verification
+- ESLint: 0 errors, 0 warnings on all 6 files
+- Next.js build: Successful
+
+---
+
+### Iteration 36: Reusable SVG Chart Component Library + Analytics Dashboards
+
+**Date**: $(date +%Y-%m-%d)
+
+#### New Files
+1. **`src/components/charts.tsx`** — Reusable inline SVG chart component library
+   - `SparkLine`: Mini sparkline with gradient fill + trend arrow
+   - `MiniBarChart`: Compact horizontal bars with animated width
+   - `ProgressRing`: Animated circular progress with gradient stroke
+   - `MiniPieChart`: Donut chart with center text + hover expand
+   - `TrendChart`: Full line chart with area fill, grid, labels, tooltip
+   - `ComparisonBar`: Dual horizontal bars (current vs previous) with % change
+
+2. **`src/components/realtime-metrics-widget.tsx`** — Real-time metrics widget
+   - 4 animated counter cards (posts, engagement, views, likes) with SparkLine trends
+   - Quick stats row (comments, shares, completion ring)
+   - Activity feed with last 5 actions
+   - Auto-refresh button + 30s polling
+   - Compact design for dashboard embedding
+
+#### Modified Files
+3. **`src/lib/chart-utils.ts`** — Added new utility functions
+   - `getTrendDirectionFull()`: Returns direction + percentage change
+   - `generateSmoothPath()`: Alias for generatePath with smooth=true
+
+4. **`src/components/right-panel/weekly-analytics.tsx`** — Complete rewrite
+   - Weekly engagement trend: TrendChart (7-day daily engagement)
+   - Platform split: MiniPieChart (朋友圈 vs 小红书)
+   - Performance comparison: ComparisonBar (4 metrics, this week vs last week)
+   - Day-by-day posts: MiniBarChart
+   - Top content types: horizontal bars
+   - 3 AI insight cards with hover effects
+   - Weekly summary sparkline cards
+
+5. **`src/components/right-panel/data-and-reports.tsx`** — Added "周报分析" tab
+   - New TabsTrigger with FileBarChart icon
+   - TabsContent rendering WeeklyAnalytics component
+
+6. **`src/app/globals.css`** — Added chart-focused CSS classes
+   - `.chart-tooltip`, `.chart-legend-item`
+   - `.trend-chart-grid`, `.trend-chart-label`
+   - `.comparison-bar`, `.comparison-bar-dual`
+   - `.metric-counter`, `.metric-sparkline`
+   - `.activity-feed-item`, `.insight-card`
+   - `.metric-card` (shared card style)
+   - `.chart-entrance` animation
+   - All with dark mode variants
+
+#### Key Design Decisions
+- All charts use pure inline SVG (no external chart libraries)
+- framer-motion for all animations (line drawing, bar growth, fade-in)
+- Reused existing `generatePath`, `formatNumber`, `CHART_PALETTE` from chart-utils
+- Components are self-contained with minimal external dependencies
+- CSS classes follow existing project patterns (muted colors, card shadows, glass effects)
+
+### Verification
+- ESLint: 0 errors, 0 warnings on all 5 modified files
+- Next.js build: Successful (all pages compiled)
+---
+Task ID: 36
+Agent: Main Orchestrator + 4 Parallel full-stack-developer Sub-agents (36-a/b/c/d)
+Task: 第36轮开发 - 内容工作流+图表库+知识库增强+微交互主题
+
+Work Log:
+- 读取 worklog.md 了解第35轮完整状态（35轮迭代，145组件，56API）
+- 硬约束：全程未使用 agent-browser（OOM限制）
+- 验证项目状态：ESLint零错误，clean build成功
+- 4个并行 full-stack-developer 子代理（Track B重跑1次）
+- 修复 charts/index.tsx 中2个ESLint错误（hook顺序+变量重赋值）
+
+### 项目当前状态
+- 项目极其成熟稳定，36轮迭代完成
+- 159个自定义组件（~60K行代码），61个API路由
+- 双平台运营：朋友圈 + 小红书
+- 零 lint 错误、零 TypeScript 错误、生产构建稳定
+
+### Track A: 内容工作流自动化 + AI写作助手
+
+1. **内容工作流 API**（`/api/content-workflow/route.ts`）：
+   - POST 执行工作流（draft-to-scheduled, idea-to-content等）
+   - GET 获取模板 + 最近运行记录
+
+2. **工作流引擎**（`/api/content-workflow/engine.ts`）：
+   - 4个模板：草稿自动排期、创意全流程、快速润色、批量优化评分
+   - 步骤类型：ai-generate/optimize/schedule/score
+   - 条件分支（aiScore<60 → 重新优化）
+   - JSON文件持久化
+
+3. **增强AI写作助手**（`ai-writing-assistant-enhanced.tsx`）：
+   - 上下文感知建议
+   - 8个语气预设（专业严谨/轻松幽默/温馨治愈/励志正能量等）
+   - 3步生成流程（大纲→展开→润色）可编辑中间结果
+   - 3个内容变体对比 + 合并功能
+   - 10个快捷模板
+   - 平台感知字数目标
+
+4. **内容流水线**（`content-pipeline.tsx`）：
+   - SVG可视化（💡→✍️→🤖→✨→📅→🚀）
+   - 各阶段内容计数 + 瓶颈检测
+   - "一键推进"按钮 + AI工作流触发
+
+### Track B: SVG图表组件库 + 分析仪表盘
+
+1. **图表工具库**（`src/lib/chart-utils.ts`）：
+   - formatNumber, getColorScale, generatePath, calculatePercentage
+   - getTrendDirection, niceScale, clamp, uniqueGradId
+   - CHART_PALETTE 配色方案
+
+2. **图表组件库**（`src/components/charts/index.tsx`, ~1250行）：
+   - SparkLine — 迷你趋势线 + 渐变填充
+   - LineChart — 多系列折线图 + 网格 + 交互tooltip
+   - AreaChart — 堆叠/叠加面积图
+   - BarChart — 垂直柱状图 + 动画
+   - PieChart — 饼图/环形图 + hover展开
+   - RadarChart — 雷达图 + 多数据集
+   - Heatmap — 热力图 + tooltip
+   - ProgressChart — 半圆仪表盘
+
+3. **周报分析仪表盘**（`weekly-analytics.tsx`）：
+   - TrendChart 7天趋势、MiniPieChart 平台分布
+   - ProgressRing 完成度、ComparisonBar 周对比
+   - MiniBarChart 每日发布 + 内容类型分布
+   - 3个AI洞察卡片 + SparkLine摘要
+
+4. **实时指标组件**（`realtime-metrics-widget.tsx`）：
+   - 4个动画计数器 + SparkLine趋势
+   - 活动流 + 自动刷新
+
+### Track C: 知识库增强 + 智能标签
+
+1. **标签 API**（`/api/knowledge/tags/route.ts`）：
+   - GET 全部/热门/AI建议标签
+   - POST 合并/重命名/AI建议
+   - PUT 添加标签到条目
+   - DELETE 全局删除标签
+
+2. **知识搜索 API**（`/api/knowledge/search/route.ts`）：
+   - 全文搜索（标题+内容）
+   - 分类/标签过滤 + 分页 + 高亮
+
+3. **知识统计 API**（`/api/knowledge/stats/route.ts`）：
+   - 总数/分类分布/标签云/7天趋势
+   - 12个主题领域覆盖率分析
+
+4. **知识库导入**（`/api/knowledge/import/route.ts`）：
+   - JSON/CSV导入 + 模板下载
+
+5. **知识库组件重写**（`knowledge-base.tsx`）：
+   - 标签云（动画大小+右键菜单）
+   - AI自动标签（可点击chips）
+   - 增强知识卡片（展开/折叠+快捷操作+相关推荐）
+   - SVG知识图谱视图（节点大小=频率，边=共现）
+   - 导入/导出 + 覆盖率分析
+
+6. **标签管理器**（`tag-manager.tsx`）：
+   - 完整标签管理对话框
+   - 内联重命名 + 批量合并 + 删除
+
+### Track D: 微交互 + 主题系统
+
+1. **通知增强**（`notification-enhancements.tsx`）：
+   - 智能批量（5分钟窗口分组）
+   - 内联操作按钮（查看/重试/忽略）
+   - 优先级视觉紧急度
+
+2. **快捷键增强**（`keyboard-shortcuts-enhanced.tsx`）：
+   - 浮动"?"按钮 + 首次提示
+   - 可搜索快捷键对话框 + 8个分类
+   - 自定义快捷键绑定（key recorder）
+   - 键帽样式显示
+
+3. **引导游览**（`onboarding-tour.tsx`）：
+   - 10步引导（聚光灯效果）
+   - 脉冲高亮边框 + 进度点
+   - localStorage持久化
+   - 设置中"重新开始引导"按钮
+
+4. **右键菜单**（`context-menu.tsx`）：
+   - 帖子/日历/知识库上下文菜单
+   - 键盘导航 + 子菜单
+   - scale动画
+
+5. **Tooltip增强**（`tooltip-enhancements.tsx`）：
+   - 富提示（标题+描述+图标）
+   - 光标跟随模式 + TourTooltip
+
+6. **主题定制器**（`theme-customizer.tsx`）：
+   - 6个强调色预设（violet/rose/emerald/amber/cyan/fuchsia）
+   - 字号3级调整 + 圆角滑块 + 紧凑间距
+   - 实时预览 + CSS变量更新
+
+7. **CSS变量系统**（globals.css）：
+   - --accent-color, --accent-muted, --radius-scale, --spacing-scale, --font-size-scale
+   - ~280行新CSS类（context-menu, spotlight, tour, keyboard-key, theme-preview等）
+
+### 新增文件 (20个)
+- `src/app/api/content-workflow/route.ts`
+- `src/app/api/content-workflow/engine.ts`
+- `src/lib/chart-utils.ts`
+- `src/components/charts/index.tsx`
+- `src/components/right-panel/weekly-analytics.tsx`
+- `src/components/realtime-metrics-widget.tsx`
+- `src/app/api/knowledge/tags/route.ts`
+- `src/app/api/knowledge/search/route.ts`
+- `src/app/api/knowledge/stats/route.ts`
+- `src/app/api/knowledge/import/route.ts`
+- `src/components/tag-manager.tsx`
+- `src/components/right-panel/ai-writing-assistant-enhanced.tsx`
+- `src/components/right-panel/content-pipeline.tsx`
+- `src/components/notification-enhancements.tsx`
+- `src/components/keyboard-shortcuts-enhanced.tsx`
+- `src/components/onboarding-tour.tsx`
+- `src/components/context-menu.tsx`
+- `src/components/tooltip-enhancements.tsx`
+- `src/components/theme-customizer.tsx`
+
+### 修改文件
+- `src/app/globals.css` — ~470行新CSS + CSS变量系统
+- `src/components/right-panel/content-workspace.tsx` — 3个新Tab
+- `src/components/dashboard-overview.tsx` — 流水线小部件
+- `src/components/right-panel/data-and-reports.tsx` — 周报分析Tab
+- `src/components/left-panel/knowledge-base.tsx` — 完全重写
+- `src/components/settings-center.tsx` — 主题定制器+重启引导
+
+### Bug修复
+- charts/index.tsx: 嵌套模板字符串解析错误 → 字符串拼接
+- charts/index.tsx: useMemo在条件返回后调用 → 移至early return之前
+- charts/index.tsx: 变量渲染期重赋值 → useMemo内部for循环
+
+### QA验证结果
+- ✅ ESLint 零错误、零警告
+- ✅ Next.js clean build 成功
+- ✅ 61 个 API 路由全部正确注册
+- ✅ 159 个组件文件
+- ✅ 无 agent-browser 使用
+
+### 未解决问题或风险
+1. Dev server 在沙箱环境中因内存限制不稳定
+2. agent-browser 不可用（OOM限制）
+3. 工作流引擎的AI步骤依赖外部AI服务可用性
+4. 知识图谱为简单SVG实现，大规模数据可能需要专门的图可视化库
+5. 主题定制器的CSS变量方案需要测试所有组件的兼容性
+6. 右键菜单在移动端触摸设备上不可用
+
+### 建议下一阶段优先事项
+1. WebSocket 实时数据推送（替代轮询）
+2. PWA 离线支持 + Service Worker
+3. 单元测试 + E2E 测试覆盖
+4. 国际化 (i18n) 支持
+5. 多人协作/团队账号管理
+6. 移动端真机测试和适配优化
+7. API Key 加密存储
+8. 数据备份/恢复
+9. 内容发布到真实社交平台API
+10. 性能监控集成

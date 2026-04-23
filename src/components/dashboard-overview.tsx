@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef, Fragment } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import type { ContentPost } from "@/types";
@@ -422,6 +422,87 @@ function TodoReminder({ icon: Icon, label, count, colorClass, onClick }: TodoRem
   );
 }
 
+// ─── Pipeline Overview Mini Component ─────────────────────────────────────
+
+const PIPELINE_OVERVIEW_STAGES = [
+  { id: "planned", label: "待生成", emoji: "💡", color: "text-amber-500" },
+  { id: "generated", label: "已生成", emoji: "🤖", color: "text-violet-500" },
+  { id: "optimized", label: "已优化", emoji: "✨", color: "text-emerald-500" },
+  { id: "scheduled", label: "已排期", emoji: "📅", color: "text-cyan-500" },
+  { id: "published", label: "已发布", emoji: "🚀", color: "text-rose-500" },
+];
+
+function DashboardPipelineOverview() {
+  const { contentPosts, setRightPanelTab } = useAppStore();
+
+  const stageCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const stage of PIPELINE_OVERVIEW_STAGES) {
+      counts[stage.id] = contentPosts.filter((p) => p.status === stage.id).length;
+    }
+    return counts;
+  }, [contentPosts]);
+
+  const total = contentPosts.length;
+
+  return (
+    <motion.div
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+    >
+      <div className="flex items-center justify-between px-1 mb-2">
+        <div className="flex items-center gap-1.5">
+          <BarChart3 className="h-3.5 w-3.5 text-violet-500" />
+          <span className="text-xs font-semibold text-foreground/80">内容流水线</span>
+          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">
+            {total} 条
+          </Badge>
+        </div>
+        <button
+          onClick={() => setRightPanelTab("workspace")}
+          className="text-[10px] text-violet-500 hover:text-violet-600 dark:text-violet-400 dark:hover:text-violet-300 font-medium flex items-center gap-0.5 transition-colors"
+        >
+          管理
+          <ArrowRight className="h-3 w-3" />
+        </button>
+      </div>
+      <div className="flex items-center gap-0.5">
+        {PIPELINE_OVERVIEW_STAGES.map((stage, i) => {
+          const count = stageCounts[stage.id] || 0;
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+          return (
+            <Fragment key={stage.id}>
+              {i > 0 && (
+                <div className="w-3 flex-shrink-0 flex items-center">
+                  <div className="w-full h-px bg-border" />
+                </div>
+              )}
+              <div className="flex-1 flex flex-col items-center gap-1 cursor-pointer group" onClick={() => setRightPanelTab("workspace")}>
+                <div className="text-sm">{stage.emoji}</div>
+                <div className={`text-[10px] font-bold tabular-nums ${count > 0 ? "text-foreground" : "text-muted-foreground/40"}`}>
+                  {count}
+                </div>
+                <div className="text-[8px] text-muted-foreground">{stage.label}</div>
+                {count > 0 && (
+                  <div className="w-full h-1 rounded-full bg-muted overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-violet-500"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.max(pct, 8)}%` }}
+                      transition={{ duration: 0.5, delay: i * 0.1 }}
+                    />
+                  </div>
+                )}
+              </div>
+            </Fragment>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Main DashboardOverview ─────────────────────────────────────────────────
 
 export function DashboardOverview() {
@@ -818,6 +899,9 @@ export function DashboardOverview() {
                         index={3}
                       />
                     </motion.div>
+
+                    {/* ── Pipeline Overview Mini ── */}
+                    <DashboardPipelineOverview />
 
                     {/* ── Todo Reminders ── */}
                     {(reminders.overdue > 0 || reminders.toOptimize > 0 || reminders.emptyDays > 0) && (

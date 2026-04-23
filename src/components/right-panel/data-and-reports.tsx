@@ -19,6 +19,7 @@ import { TrendTracker } from "@/components/right-panel/trend-tracker";
 import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity, Radar, Flame } from "lucide-react";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
 import { OpsRhythmDashboard } from "@/components/right-panel/ops-rhythm-dashboard";
+import { WeeklyAnalytics } from "@/components/right-panel/weekly-analytics";
 
 /**
  * DataAndReports — unified "数据与报告" view that merges
@@ -79,6 +80,10 @@ export function DataAndReports() {
               <TabsTrigger value="rhythm" className={tabTriggerClass("rhythm")}>
                 <Activity className="h-3.5 w-3.5" />
                 节奏
+              </TabsTrigger>
+              <TabsTrigger value="weekly" className={tabTriggerClass("weekly")}>
+                <FileBarChart className="h-3.5 w-3.5" />
+                周报分析
               </TabsTrigger>
             </TabsList>
 
@@ -194,6 +199,16 @@ export function DataAndReports() {
             >
               <div className="flex flex-col flex-1 min-h-0">
                 <OpsRhythmDashboard />
+              </div>
+            </TabsContent>
+
+            {/* ── Weekly Analytics Tab ──────────────────────────── */}
+            <TabsContent
+              value="weekly"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
+            >
+              <div className="flex flex-col flex-1 min-h-0">
+                <WeeklyAnalytics />
               </div>
             </TabsContent>
           </Tabs>

@@ -6976,3 +6976,1018 @@ textarea {
 .dark .heatmap-cell-5 {
   fill: rgba(16, 185, 129, 0.9);
 }
+
+/* ================================================================
+   Micro-Interaction Animations & Theme Variables
+   Iteration 36 — Enhancement Layer
+   ================================================================ */
+
+/* ─── Theme Custom Properties ────────────────────────────────── */
+:root {
+  --accent-color: hsl(262, 83%, 58%);
+  --accent-hover: hsl(262, 83%, 52%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --accent-muted: hsl(262, 83%, 58%, 0.12);
+  --radius-scale: 1;
+  --spacing-scale: 1;
+  --font-size-scale: 1;
+}
+
+/* ─── Context Menu Enter Animation ───────────────────────────── */
+.context-menu-enter {
+  animation: ctx-menu-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: var(--ctx-origin-x, center) var(--ctx-origin-y, top);
+}
+
+@keyframes ctx-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ─── Spotlight Overlay ──────────────────────────────────────── */
+.spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: auto;
+  transition: box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.spotlight-highlight {
+  position: relative;
+  z-index: 9999;
+  box-shadow: 0 0 0 4px var(--accent-color), 0 0 24px 4px hsla(262, 83%, 58%, 0.25);
+  border-radius: calc(8px * var(--radius-scale));
+  transition: box-shadow 0.3s ease;
+}
+
+/* ─── Tour Highlight Pulsing Border ──────────────────────────── */
+.tour-highlight {
+  position: relative;
+  border-radius: calc(8px * var(--radius-scale));
+}
+
+.tour-highlight::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 2px solid var(--accent-color);
+  animation: tour-pulse-border 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes tour-pulse-border {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 hsla(262, 83%, 58%, 0.3);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 6px hsla(262, 83%, 58%, 0);
+  }
+}
+
+/* ─── Notification Batch Stack Animation ─────────────────────── */
+.notification-batch {
+  animation: notif-batch-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes notif-batch-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.notification-priority-high {
+  border-left: 3px solid hsl(0, 84%, 60%);
+}
+
+.notification-priority-medium {
+  border-left: 3px solid hsl(38, 92%, 50%);
+}
+
+.notification-priority-low {
+  border-left: 3px solid transparent;
+}
+
+/* ─── Keyboard Key (Styled Keycap) ───────────────────────────── */
+.keyboard-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: inherit;
+  background: linear-gradient(180deg, hsl(0, 0%, 97%) 0%, hsl(0, 0%, 91%) 100%);
+  border: 1px solid hsl(0, 0%, 82%);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  box-shadow: 0 1px 0 1px hsla(0, 0%, 0%, 0.06);
+  white-space: nowrap;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.keyboard-key:active,
+.keyboard-key.pressed {
+  transform: translateY(1px);
+  border-bottom-width: 1px;
+  box-shadow: none;
+}
+
+.dark .keyboard-key {
+  background: linear-gradient(180deg, hsl(240, 6%, 22%) 0%, hsl(240, 6%, 16%) 100%);
+  border-color: hsl(240, 5%, 32%);
+  box-shadow: 0 1px 0 1px hsla(0, 0%, 0%, 0.2);
+}
+
+/* ─── Rich Tooltip ───────────────────────────────────────────── */
+.tooltip-rich {
+  max-width: 260px;
+  padding: 8px 12px;
+}
+
+.tooltip-rich .tooltip-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: inherit;
+  margin-bottom: 2px;
+}
+
+.tooltip-rich .tooltip-desc {
+  font-size: 11px;
+  opacity: 0.7;
+  line-height: 1.5;
+}
+
+/* ─── Shortcut Badge (⌘K style) ─────────────────────────────── */
+.shortcut-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10px;
+  color: hsl(0, 0%, 46%);
+  background: hsl(0, 0%, 96%);
+  border: 1px solid hsl(0, 0%, 88%);
+  border-radius: 4px;
+  padding: 1px 5px;
+  line-height: 1.6;
+}
+
+.dark .shortcut-badge {
+  color: hsl(0, 0%, 64%);
+  background: hsl(240, 5%, 18%);
+  border-color: hsl(240, 5%, 28%);
+}
+
+/* ─── Onboarding Progress Dots ───────────────────────────────── */
+.onboarding-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.onboarding-progress .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(0, 0%, 80%);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .onboarding-progress .dot {
+  background: hsl(240, 5%, 35%);
+}
+
+.onboarding-progress .dot.active {
+  width: 20px;
+  border-radius: 3px;
+  background: var(--accent-color);
+}
+
+.onboarding-progress .dot.completed {
+  background: var(--accent-color);
+  opacity: 0.5;
+}
+
+/* ─── Theme Preview Card ─────────────────────────────────────── */
+.theme-preview-card {
+  border-radius: calc(12px * var(--radius-scale));
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.theme-preview-card .preview-header {
+  height: 40px;
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+}
+
+.theme-preview-card .preview-body {
+  padding: calc(8px * var(--spacing-scale));
+  background: hsl(0, 0%, 100%);
+  font-size: calc(12px * var(--font-size-scale));
+}
+
+.dark .theme-preview-card .preview-body {
+  background: hsl(240, 6%, 10%);
+}
+
+/* ─── Color Swatch ───────────────────────────────────────────── */
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.color-swatch:hover {
+  transform: scale(1.15);
+}
+
+.color-swatch.selected {
+  border-color: currentColor;
+  box-shadow: 0 0 0 2px hsla(0, 0%, 0%, 0.1);
+}
+
+.color-swatch.selected::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.dark .color-swatch.selected::after {
+  border-color: hsl(0, 0%, 20%);
+}
+
+/* ─── Notification Sound Animation (CSS-only) ────────────────── */
+.notification-sound-pulse {
+  animation: notif-sound 0.6s ease-out;
+}
+
+@keyframes notif-sound {
+  0% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.08);
+  }
+  30% {
+    transform: scale(0.98);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ─── Floating Action Button ─────────────────────────────────── */
+.fab-shortcuts {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.12), 0 1px 3px hsla(0, 0%, 0%, 0.08);
+}
+
+.fab-shortcuts:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px hsla(0, 0%, 0%, 0.16);
+}
+
+.dark .fab-shortcuts {
+  box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.3), 0 1px 3px hsla(0, 0%, 0%, 0.2);
+}
+
+/* ─── Context Menu Separator ─────────────────────────────────── */
+.ctx-separator {
+  height: 1px;
+  margin: 4px 8px;
+  background: hsl(0, 0%, 92%);
+}
+
+.dark .ctx-separator {
+  background: hsl(240, 5%, 20%);
+}
+
+/* ─── Reduced Motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .context-menu-enter,
+  .notification-batch,
+  .notification-sound-pulse,
+  .tour-highlight::after,
+  .fab-shortcuts {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .onboarding-progress .dot {
+    transition: none !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Chart Component Library Styles (Iteration 36)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Chart container wrapper */
+.chart-container {
+  position: relative;
+  --chart-bg: var(--background);
+}
+.dark .chart-container {
+  --chart-bg: var(--card);
+}
+
+/* Chart tooltip overlay */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 20;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--popover);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.dark .chart-tooltip {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Chart legend */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Chart legend item */
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.chart-legend-item:hover {
+  opacity: 0.7;
+}
+.chart-legend-item.disabled {
+  opacity: 0.35;
+}
+
+/* Grid lines */
+.chart-grid-line {
+  stroke: var(--border);
+  stroke-opacity: 0.3;
+  stroke-width: 0.5;
+}
+.dark .chart-grid-line {
+  stroke-opacity: 0.15;
+}
+
+/* Axis labels */
+.chart-axis-label {
+  fill: var(--muted-foreground);
+  font-size: 8px;
+}
+
+/* Bar segment */
+.chart-bar {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.chart-bar:hover {
+  opacity: 0.85;
+  transform: scaleY(1.02);
+  transform-origin: bottom;
+}
+
+/* Pie/donut segment */
+.chart-segment {
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+.chart-segment:hover {
+  filter: brightness(1.1);
+}
+
+/* Data point marker */
+.chart-point {
+  transition: r 0.2s ease;
+  cursor: pointer;
+}
+
+/* Sparkline container */
+.sparkline-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Heatmap cell */
+.heatmap-cell {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.heatmap-cell:hover {
+  opacity: 0.8;
+  transform: scale(1.15);
+}
+
+/* Gauge container */
+.gauge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Radar axis */
+.radar-axis {
+  stroke: var(--border);
+  stroke-opacity: 0.2;
+  stroke-width: 0.5;
+}
+
+/* Metric card */
+.metric-card {
+  position: relative;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.metric-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.dark .metric-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+/* Activity feed item */
+.activity-feed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  border-bottom-opacity: 0.4;
+  transition: background-color 0.15s ease;
+}
+.activity-feed-item:last-child {
+  border-bottom: none;
+}
+
+/* Chart entrance animation (staggered) */
+.chart-entrance > * {
+  opacity: 0;
+  animation: chart-stagger-in 0.4s ease-out forwards;
+}
+.chart-entrance > *:nth-child(1) { animation-delay: 0ms; }
+.chart-entrance > *:nth-child(2) { animation-delay: 60ms; }
+.chart-entrance > *:nth-child(3) { animation-delay: 120ms; }
+.chart-entrance > *:nth-child(4) { animation-delay: 180ms; }
+.chart-entrance > *:nth-child(5) { animation-delay: 240ms; }
+.chart-entrance > *:nth-child(6) { animation-delay: 300ms; }
+.chart-entrance > *:nth-child(7) { animation-delay: 360ms; }
+.chart-entrance > *:nth-child(8) { animation-delay: 420ms; }
+
+@keyframes chart-stagger-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* prefers-reduced-motion: disable chart entrance animations */
+@media (prefers-reduced-motion: reduce) {
+  .chart-entrance > * {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .chart-bar,
+  .chart-segment,
+  .heatmap-cell {
+    transition: none !important;
+  }
+}
+
+/* ================================================================
+   Knowledge Base & Tag System Styles
+   Iteration 36 — Knowledge Enhancement
+   ================================================================ */
+
+/* ─── Tag Cloud ──────────────────────────────────────────────── */
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.tag-cloud-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.tag-cloud-item:hover {
+  transform: translateY(-1px);
+}
+
+.tag-cloud-item:active {
+  transform: scale(0.95);
+}
+
+/* ─── Tag Pills ──────────────────────────────────────────────── */
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  line-height: 1;
+  padding: 0.125rem 0.5rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tag-pill:hover {
+  opacity: 0.85;
+}
+
+/* ─── Knowledge Cards ────────────────────────────────────────── */
+.knowledge-card {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  overflow: hidden;
+}
+
+.knowledge-card:hover {
+  transform: translateY(-1px);
+}
+
+.knowledge-card-expanded {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08),
+              0 2px 4px -1px rgba(0, 0, 0, 0.04);
+}
+
+.dark .knowledge-card-expanded {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.3),
+              0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* ─── Knowledge Graph ────────────────────────────────────────── */
+.knowledge-graph {
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg,
+    hsl(var(--muted) / 0.3),
+    hsl(var(--background)));
+}
+
+.dark .knowledge-graph {
+  background: linear-gradient(135deg,
+    hsl(var(--muted) / 0.15),
+    hsl(var(--background)));
+}
+
+.graph-node {
+  transition: all 0.2s ease;
+}
+
+.graph-node:hover circle {
+  filter: brightness(1.2);
+  transform-origin: center;
+}
+
+.graph-edge {
+  transition: stroke-opacity 0.2s ease;
+}
+
+/* ─── Tag Manager Dialog ─────────────────────────────────────── */
+.tag-manager-dialog {
+  max-height: 85vh;
+}
+
+.tag-color-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.375rem;
+  padding: 0.5rem;
+}
+
+.tag-color-picker button {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.375rem;
+  border: 2px solid transparent;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+  cursor: pointer;
+}
+
+.tag-color-picker button:hover {
+  transform: scale(1.15);
+}
+
+.tag-color-picker button.active {
+  border-color: var(--foreground);
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--foreground);
+}
+
+/* ─── Coverage Analysis ──────────────────────────────────────── */
+.coverage-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.625rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+.coverage-gap {
+  animation: coverage-pulse 2s ease-in-out infinite;
+}
+
+@keyframes coverage-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ─── Import Dropzone ────────────────────────────────────────── */
+.import-dropzone {
+  border: 2px dashed hsl(var(--border));
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.import-dropzone:hover {
+  border-color: hsl(var(--primary) / 0.5);
+  background: hsl(var(--primary) / 0.03);
+}
+
+.dark .import-dropzone:hover {
+  border-color: hsl(var(--primary) / 0.4);
+  background: hsl(var(--primary) / 0.05);
+}
+
+.import-dropzone.dragging {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.08);
+  transform: scale(1.01);
+}
+
+/* ─── Search highlight ───────────────────────────────────────── */
+.highlight-match {
+  background: hsl(var(--primary) / 0.15);
+  color: hsl(var(--primary));
+  border-radius: 0.125rem;
+  padding: 0 0.125rem;
+  font-weight: 500;
+}
+
+.dark .highlight-match {
+  background: hsl(var(--primary) / 0.25);
+  color: hsl(var(--primary-foreground));
+}
+
+/* ─── Reduced Motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .tag-cloud-item,
+  .knowledge-card,
+  .graph-node,
+  .coverage-gap,
+  .import-dropzone {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ====== Round 36: Content Workflow + AI Writing Assistant ====== */
+
+/* Workflow step indicator */
+.workflow-step {
+  transition: all 0.2s ease;
+}
+.workflow-step:hover {
+  transform: scale(1.05);
+}
+
+/* Workflow connector line */
+.workflow-connector {
+  transition: background-color 0.3s ease;
+}
+
+/* Tone selector chip */
+.tone-chip {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.06));
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+/* Tone preview tooltip */
+.tone-preview {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(139, 92, 246, 0.12);
+  animation: tone-preview-in 0.15s ease-out;
+}
+.dark .tone-preview {
+  border-color: rgba(139, 92, 246, 0.2);
+}
+@keyframes tone-preview-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Variation tab */
+.variation-tab {
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.variation-tab:hover {
+  transform: translateY(-1px);
+}
+
+/* Variation content area */
+.variation-content {
+  border: 1px solid rgba(139, 92, 246, 0.1);
+  border-radius: var(--radius);
+  background: rgba(139, 92, 246, 0.02);
+  transition: border-color 0.2s ease;
+}
+.dark .variation-content {
+  border-color: rgba(139, 92, 246, 0.15);
+  background: rgba(139, 92, 246, 0.04);
+}
+
+/* Pipeline SVG visualization */
+.pipeline-visual {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.04));
+}
+.dark .pipeline-visual {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* Pipeline stage node hover */
+.pipeline-visual g[class="cursor-pointer"]:hover text {
+  transition: opacity 0.2s ease;
+}
+
+/* Bottleneck indicator pulse */
+.bottleneck-indicator {
+  animation: bottleneck-pulse 2s ease-in-out infinite;
+}
+@keyframes bottleneck-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Content template card */
+.content-template-card {
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  border: 1px solid rgba(139, 92, 246, 0.08);
+}
+.content-template-card:hover {
+  border-color: rgba(139, 92, 246, 0.2);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08);
+  transform: translateY(-1px);
+}
+.dark .content-template-card:hover {
+  border-color: rgba(139, 92, 246, 0.25);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.12);
+}
+
+/* Quick template card */
+.quick-template {
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.quick-template:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.04), rgba(236, 72, 153, 0.03));
+  border-color: rgba(139, 92, 246, 0.2);
+}
+.dark .quick-template:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.05));
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Pipeline stage panel animation */
+@keyframes stage-panel-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Workflow run status dot */
+.workflow-run-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.workflow-run-dot.completed { background: rgb(16 185 129); }
+.workflow-run-dot.running { background: rgb(245 158 11); animation: pulse-dot 1.5s ease-in-out infinite; }
+.workflow-run-dot.error { background: rgb(239 68 68); }
+.workflow-run-dot.partial { background: rgb(245 158 11); }
+
+/* Multi-step generation progress bar */
+@keyframes step-progress-fill {
+  from { width: 0; }
+  to { width: var(--step-progress, 0%); }
+}
+.step-progress-bar {
+  animation: step-progress-fill 0.5s ease-out forwards;
+}
+
+/* Workspace scroll area custom */
+.workspace-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Loading skeleton shimmer for workflow */
+@keyframes workflow-skeleton {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.workflow-skeleton {
+  background: linear-gradient(90deg, transparent 25%, rgba(139, 92, 246, 0.06) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: workflow-skeleton 1.8s ease-in-out infinite;
+  border-radius: 4px;
+}
+.dark .workflow-skeleton {
+  background: linear-gradient(90deg, transparent 25%, rgba(139, 92, 246, 0.1) 50%, transparent 75%);
+  background-size: 200% 100%;
+}
+
+/* ====== Iteration 36: Chart Component Library Styles ====== */
+
+/* Chart tooltip */
+.chart-tooltip {
+  position: relative;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Chart legend item */
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.15s ease;
+  cursor: default;
+}
+.chart-legend-item:hover {
+  opacity: 0.7;
+}
+
+/* Trend chart grid lines */
+.trend-chart-grid {
+  stroke: rgba(0, 0, 0, 0.06);
+  stroke-dasharray: none;
+}
+.dark .trend-chart-grid {
+  stroke: rgba(255, 255, 255, 0.06);
+}
+
+/* Trend chart axis label */
+.trend-chart-label {
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Comparison bar group */
+.comparison-bar {
+  transition: opacity 0.2s ease;
+}
+.comparison-bar:hover {
+  opacity: 0.85;
+}
+
+/* Dual comparison bars with gap */
+.comparison-bar-dual {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Animated metric counter */
+.metric-counter {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.02em;
+}
+
+/* Metric sparkline container */
+.metric-sparkline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Activity feed item */
+.activity-feed-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+.activity-feed-item:hover {
+  background-color: rgba(139, 92, 246, 0.04);
+}
+.dark .activity-feed-item:hover {
+  background-color: rgba(139, 92, 246, 0.08);
+}
+
+/* AI insight card */
+.insight-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.04), rgba(236, 72, 153, 0.03));
+  border: 1px solid rgba(139, 92, 246, 0.08);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.insight-card:hover {
+  border-color: rgba(139, 92, 246, 0.18);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.08);
+}
+.dark .insight-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.05));
+  border-color: rgba(139, 92, 246, 0.15);
+}
+.dark .insight-card:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.12);
+}
+
+/* Metric card reusable style */
+.metric-card {
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.metric-card:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+.dark .metric-card {
+  background: rgba(255, 255, 255, 0.03);
+}
+.dark .metric-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Chart entrance animation */
+.chart-entrance {
+  animation: fade-slide-up 0.4s ease-out;
+}
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
