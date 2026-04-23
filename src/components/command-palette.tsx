@@ -61,6 +61,7 @@ import {
   Bell,
   Database,
   Trash2,
+  Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -214,15 +215,42 @@ interface CommandDef {
 
 const COMMAND_GROUPS = [
   {
+    id: "navigation",
+    label: "导航",
+    icon: Compass,
+    iconColor: "text-sky-500",
+    commands: [
+      { id: "view-calendar", label: "切换到日历视图", icon: CalendarRange, iconColor: "text-violet-500", action: "_left-calendar", shortcut: "⌘2" },
+      { id: "view-data", label: "切换到数据分析", icon: BarChart3, iconColor: "text-emerald-500", action: "data", shortcut: "⌘4" },
+      { id: "view-workspace", label: "切换到内容工作台", icon: Briefcase, iconColor: "text-amber-500", action: "_workspace", shortcut: "⌘3" },
+      { id: "view-knowledge", label: "切换到知识库", icon: User, iconColor: "text-sky-500", action: "knowledge", shortcut: "⌘1" },
+      { id: "view-templates", label: "切换到模板市场", icon: LayoutTemplate, iconColor: "text-rose-500", action: "_templates" },
+    ],
+  },
+  {
     id: "content",
     label: "内容",
     icon: PenTool,
     iconColor: "text-violet-500",
     commands: [
-      { id: "new-content", label: "新建内容", icon: FileText, iconColor: "text-violet-500", action: "generate", shortcut: "⌘N" },
-      { id: "ai-today", label: "AI生成今日", icon: Sparkles, iconColor: "text-amber-500", action: "generate", shortcut: "⌘G" },
-      { id: "batch-optimize", label: "批量优化", icon: Zap, iconColor: "text-sky-500", action: "batch" },
-      { id: "publish-queue", label: "发布队列", icon: List, iconColor: "text-emerald-500", action: "data" },
+      { id: "new-content", label: "创建新内容", icon: FileText, iconColor: "text-violet-500", action: "generate", shortcut: "⌘N" },
+      { id: "ai-today", label: "AI生成今日内容", icon: Sparkles, iconColor: "text-amber-500", action: "generate", shortcut: "⌘G" },
+      { id: "batch-generate", label: "批量生成内容", icon: Zap, iconColor: "text-sky-500", action: "batch" },
+      { id: "batch-optimize", label: "批量优化内容", icon: RefreshCcw, iconColor: "text-teal-500", action: "batch" },
+      { id: "publish-queue", label: "发布队列", icon: List, iconColor: "text-emerald-500", action: "_publish-queue" },
+    ],
+  },
+  {
+    id: "ai-tools",
+    label: "AI 工具",
+    icon: BrainCircuit,
+    iconColor: "text-emerald-500",
+    commands: [
+      { id: "ai-optimize", label: "AI优化选中内容", icon: Sparkles, iconColor: "text-violet-500", action: "_workspace" },
+      { id: "ai-score", label: "AI质量评分", icon: BarChart3, iconColor: "text-amber-500", action: "_workspace" },
+      { id: "ai-spellcheck", label: "AI错别字检查", icon: Check, iconColor: "text-emerald-500", action: "_workspace" },
+      { id: "ai-schedule", label: "AI智能排期", icon: Clock, iconColor: "text-sky-500", action: "_workspace" },
+      { id: "ai-cover", label: "AI封面生成", icon: Sparkles, iconColor: "text-rose-500", action: "_workspace" },
     ],
   },
   {
@@ -238,13 +266,15 @@ const COMMAND_GROUPS = [
   },
   {
     id: "analytics",
-    label: "数据",
+    label: "数据与报告",
     icon: BarChart3,
     iconColor: "text-emerald-500",
     commands: [
-      { id: "view-data", label: "查看数据", icon: BarChart3, iconColor: "text-emerald-500", action: "data", shortcut: "⌘3" },
-      { id: "rhythm", label: "运营节奏", icon: Activity, iconColor: "text-rose-500", action: "data" },
-      { id: "health-report", label: "健康度报告", icon: Heart, iconColor: "text-pink-500", action: "data" },
+      { id: "view-analytics", label: "查看数据分析", icon: BarChart3, iconColor: "text-emerald-500", action: "data", shortcut: "⌘4" },
+      { id: "rhythm", label: "运营节奏仪表板", icon: Activity, iconColor: "text-rose-500", action: "data" },
+      { id: "health-report", label: "内容健康度报告", icon: Heart, iconColor: "text-pink-500", action: "data" },
+      { id: "weekly-report", label: "生成周报", icon: TrendingUp, iconColor: "text-violet-500", action: "data" },
+      { id: "export-data", label: "导出数据", icon: Download, iconColor: "text-sky-500", action: "_export" },
     ],
   },
   {
@@ -255,8 +285,8 @@ const COMMAND_GROUPS = [
     commands: [
       { id: "ai-config", label: "AI模型配置", icon: BrainCircuit, iconColor: "text-violet-500", action: "settings", shortcut: "⌘," },
       { id: "notifications", label: "通知设置", icon: Bell, iconColor: "text-amber-500", action: "settings" },
-      { id: "import-data", label: "导入数据", icon: Download, iconColor: "text-sky-500", action: "settings" },
-      { id: "export-data", label: "导出数据", icon: Upload, iconColor: "text-emerald-500", action: "settings" },
+      { id: "import-data", label: "导入数据", icon: Upload, iconColor: "text-sky-500", action: "_import" },
+      { id: "database", label: "数据库管理", icon: Database, iconColor: "text-zinc-500", action: "settings" },
     ],
   },
   {
@@ -265,8 +295,9 @@ const COMMAND_GROUPS = [
     icon: Zap,
     iconColor: "text-amber-500",
     commands: [
-      { id: "toggle-dark", label: "切换暗黑模式", icon: Moon, iconColor: "text-violet-400", action: "_toggle-dark" },
+      { id: "toggle-dark", label: "切换暗黑模式", icon: Moon, iconColor: "text-violet-400", action: "_toggle-dark", shortcut: "⌘D" },
       { id: "toggle-platform", label: "切换平台", icon: MessageCircle, iconColor: "text-emerald-500", action: "_toggle-platform", shortcut: "⇧⌘P" },
+      { id: "show-shortcuts", label: "显示快捷键帮助", icon: Keyboard, iconColor: "text-sky-500", action: "_show-shortcuts", shortcut: "⌘/" },
       { id: "clear-cache", label: "清空缓存", icon: Trash2, iconColor: "text-red-400", action: "_clear-cache" },
     ],
   },
@@ -409,6 +440,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     setSelectedDate,
     setSettingsCenterOpen,
   } = useAppStore();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
@@ -749,6 +781,34 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             toast.success("缓存已清空");
           }
           break;
+        case "_left-calendar":
+          setLeftPanelTab("calendar");
+          break;
+        case "_workspace":
+          setRightPanelTab("workspace");
+          break;
+        case "_templates":
+          setLeftPanelTab("templates");
+          break;
+        case "_publish-queue":
+          setRightPanelTab("data");
+          break;
+        case "_export":
+          // Trigger export
+          fetch("/api/export")
+            .then((res) => {
+              if (res.ok) toast.success("数据导出成功");
+              else toast.error("导出失败");
+            })
+            .catch(() => toast.error("导出失败"));
+          break;
+        case "_import":
+          setSettingsCenterOpen(true);
+          break;
+        case "_show-shortcuts":
+          // Emit custom event for shortcuts dialog
+          window.dispatchEvent(new CustomEvent("open-shortcuts-help"));
+          return; // don't close palette, let shortcuts dialog open
         default:
           return;
       }

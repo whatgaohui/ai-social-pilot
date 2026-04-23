@@ -252,6 +252,36 @@ model ContentComment {
   @@index([authorName])
 }
 
+// ─── 报告模板 ──────────────────────────────────────────────────────────
+
+model ReportTemplate {
+  id          String   @id @default(cuid())
+  name        String   // 模板名称
+  description String   @default("") // 模板描述
+  icon        String   @default("📊") // 模板图标
+  color       String   @default("violet") // 主题色: violet, rose, amber, emerald, cyan
+  isPreset    Boolean  @default(false) // 是否为预设模板
+  sections    String   // JSON: 报告章节列表，有序
+  lastUsedAt  DateTime? // 最后使用时间
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── 报告生成历史 ──────────────────────────────────────────────────────
+
+model ReportHistory {
+  id            String   @id @default(cuid())
+  templateId    String   @default("") // 使用的模板ID
+  templateName  String   @default("") // 模板名称快照
+  title         String   // 报告标题
+  periodType    String   @default("week") // week, month, quarter, custom
+  startDate     String   // 起始日期
+  endDate       String   // 结束日期
+  reportData    String   // JSON: 完整报告数据
+  aiSummary     String   @default("") // AI 摘要
+  createdAt     DateTime @default(now())
+}
+
 // ─── 互动数据：转发/分享记录 ──────────────────────────────────────────────
 
 model ContentInteraction {

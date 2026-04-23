@@ -63,6 +63,7 @@ import { WorkspaceQuickBar } from "@/components/right-panel/workspace-quick-bar"
 import { WorkspaceEmptyState } from "@/components/right-panel/workspace-empty-state";
 import { WordCountIndicator } from "@/components/right-panel/word-count-indicator";
 import { AISchedulingAssistant } from "@/components/right-panel/ai-scheduling-assistant";
+import { SchedulingAssistantEnhanced } from "@/components/right-panel/scheduling-assistant-enhanced";
 import { AIScheduleOptimizer } from "@/components/right-panel/ai-schedule-optimizer";
 import { ContentScheduler } from "@/components/right-panel/content-scheduler";
 import { AIContentRewriter } from "@/components/right-panel/ai-content-rewriter";
@@ -693,6 +694,8 @@ export function ContentWorkspace() {
                   >
                     <ContentScheduler />
                     <AIScheduleOptimizer />
+                    <SchedulingAssistantEnhanced />
+                    <Separator className="my-1" />
                     <AISchedulingAssistant />
                   </motion.div>
                 )}

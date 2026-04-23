@@ -88,8 +88,8 @@ export const LazyContentSearch = dynamic(
 
 export const LazyKeyboardShortcutsDialog = dynamic(
   () =>
-    import("./keyboard-shortcuts-dialog").then((mod) => ({
-      default: mod.KeyboardShortcutsDialog,
+    import("./keyboard-shortcuts-help").then((mod) => ({
+      default: mod.KeyboardShortcutsHelp,
     })),
   { ssr: false, loading: () => null }
 );

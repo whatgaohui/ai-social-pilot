@@ -11,15 +11,21 @@ import { CompetitorAnalysis } from "@/components/right-panel/competitor-analysis
 import { ReportGenerator } from "@/components/right-panel/report-generator";
 import { WeeklyReport } from "@/components/right-panel/weekly-report";
 import { WeeklyStatsCard } from "@/components/right-panel/weekly-stats-card";
+import { KpiOverviewCards } from "@/components/right-panel/kpi-overview-cards";
+import { TrendLineChart } from "@/components/charts/trend-line-chart";
+import { TrendLineChartPanel } from "@/components/right-panel/trend-line-chart-panel";
 import ContentCompetitionPanel from "@/components/right-panel/content-competition-panel";
 import { TrendComparisonChart } from "@/components/right-panel/trend-comparison-chart";
 import { CompetitorCalendarView } from "@/components/right-panel/competitor-calendar-view";
 import { CompetitorDashboard } from "@/components/right-panel/competitor-dashboard";
 import { TrendTracker } from "@/components/right-panel/trend-tracker";
-import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity, Radar, Flame } from "lucide-react";
+import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity, Radar, Flame, Gauge, Layers } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
+import { ExecutiveDashboard } from "@/components/right-panel/executive-dashboard";
 import { OpsRhythmDashboard } from "@/components/right-panel/ops-rhythm-dashboard";
 import { WeeklyAnalytics } from "@/components/right-panel/weekly-analytics";
+import { ReportTemplateManager } from "@/components/right-panel/report-template-manager";
 
 /**
  * DataAndReports — unified "数据与报告" view that merges
@@ -77,6 +83,10 @@ export function DataAndReports() {
                 <LayoutDashboard className="h-3.5 w-3.5" />
                 看板
               </TabsTrigger>
+              <TabsTrigger value="executive" className={tabTriggerClass("executive")}>
+                <Gauge className="h-3.5 w-3.5" />
+                执行看板
+              </TabsTrigger>
               <TabsTrigger value="rhythm" className={tabTriggerClass("rhythm")}>
                 <Activity className="h-3.5 w-3.5" />
                 节奏
@@ -84,6 +94,10 @@ export function DataAndReports() {
               <TabsTrigger value="weekly" className={tabTriggerClass("weekly")}>
                 <FileBarChart className="h-3.5 w-3.5" />
                 周报分析
+              </TabsTrigger>
+              <TabsTrigger value="templates" className={tabTriggerClass("templates")}>
+                <Layers className="h-3.5 w-3.5" />
+                模板
               </TabsTrigger>
             </TabsList>
 
@@ -111,6 +125,8 @@ export function DataAndReports() {
                     exit={{ opacity: 0 }}
                     className="flex flex-col flex-1 min-h-0 space-y-3"
                   >
+                    <KpiOverviewCards />
+                    <TrendLineChartPanel />
                     <WeeklyStatsCard />
                     <OperationReport />
                     <WeeklyReport />
@@ -192,6 +208,16 @@ export function DataAndReports() {
               </div>
             </TabsContent>
 
+            {/* ── Executive Dashboard Tab ────────────────────────────── */}
+            <TabsContent
+              value="executive"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
+            >
+              <div className="flex flex-col flex-1 min-h-0">
+                <ExecutiveDashboard />
+              </div>
+            </TabsContent>
+
             {/* ── Rhythm Tab ────────────────────────────────────── */}
             <TabsContent
               value="rhythm"
@@ -209,6 +235,16 @@ export function DataAndReports() {
             >
               <div className="flex flex-col flex-1 min-h-0">
                 <WeeklyAnalytics />
+              </div>
+            </TabsContent>
+
+            {/* ── Report Templates Tab ──────────────────────────────── */}
+            <TabsContent
+              value="templates"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
+            >
+              <div className="flex flex-col flex-1 min-h-0">
+                <ReportTemplateManager />
               </div>
             </TabsContent>
           </Tabs>

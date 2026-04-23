@@ -7856,3 +7856,191 @@ Work Log:
 8. 内容发布到真实社交平台API
 9. 性能监控集成(Sentry)
 10. 用户反馈/评价系统
+---
+Task ID: 38
+Agent: Main Orchestrator + 4 Parallel full-stack-developer Sub-agents (38-a/b/c/d)
+Task: 第38轮开发 - 拖拽排序增强+报告模板系统+趋势折线图+快捷键/无障碍
+
+Work Log:
+- 读取 worklog.md 了解第37轮状态（37轮，173组件，68API）
+- 硬约束：全程未使用 agent-browser（OOM限制）
+- 验证项目状态：ESLint零错误，clean build成功
+- 4个并行子代理（Track C首次空响应，重试成功）
+
+### 项目当前状态
+- 项目极其成熟稳定，38轮迭代完成
+- 182个自定义组件，73个API路由，12个Hooks
+- 双平台运营：朋友圈 + 小红书
+- 零 lint 错误、零 TypeScript 错误、生产构建稳定
+- 63个静态页面
+
+### Track A: 内容排期拖拽排序 + 内容智能推荐
+
+1. **拖拽排序增强**（`drag-sort-calendar.tsx`）：
+   - DragPlaceholder 虚线占位符（呼吸动画）
+   - DropIndicatorLine 发光放置指示线 + 滑动光点
+   - SortHintBadge 排序确认标签（"已移动"）
+   - CrossDateDragOverlay 跨日期拖拽浮动卡片
+   - DragModeBanner 拖拽模式激活横幅
+   - CalendarDateDropZone 增强（放置预览+成功闪光+冲突警告）
+   - useDragSort hook 增强（reorderedIds + clearReorderHints）
+   - useCalendarDragSort hook 增强（justDropped 闪光状态）
+
+2. **内容智能推荐 API**（`/api/content/recommendations/route.ts`）：
+   - GET: 基于 platform/days/planId 参数分析历史数据
+   - 5类智能建议：内容类型优化/发布时间/最佳星期/空缺填充/内容多样性
+   - 8个时间段互动表现排名
+   - 星期一至日表现对比
+   - 未来14天空缺日期检测 + 建议内容类型
+   - 各内容类型互动率排名
+
+3. **增强版排期助手**（`scheduling-assistant-enhanced.tsx`）：
+   - AI智能建议面板（5条建议+置信度标签）
+   - 最佳发布时间时间轴柱状图 + 星期热力图（7色梯度）
+   - 空缺日期检测（可展开空白日列表+建议类型标签）
+   - 排期冲突检测（同天≥3条内容自动标记）
+   - 内容类型表现互动率排名对比柱状图
+   - "AI一键排期"按钮 → 调用 /api/ai/batch-generate
+
+### Track B: 运营报告增强 + 报告模板系统
+
+1. **报告生成器重写**（`report-generator.tsx`）：
+   - 本周/本月/本季度/自定义时间范围选择
+   - 5大报告章节：概览摘要/内容TOP5/互动趋势/平台对比/运营建议
+   - 渐变预览卡片（微信紫/小红书玫红）+ 关键指标高亮
+   - AI摘要分析（调用 /api/ai/analyze）
+   - 文本格式导出（复制到剪贴板，Markdown格式）
+
+2. **报告模板系统 API**：
+   - `GET /api/report-templates` — 获取所有模板（预设自动初始化）
+   - `POST /api/report-templates` — 创建自定义模板
+   - `PUT /api/report-templates/[id]` — 更新模板
+   - `DELETE /api/report-templates/[id]` — 删除模板（预设不可删）
+   - `POST /api/report-generate` — 根据模板+时间范围+平台生成报告
+
+3. **报告模板管理 UI**（`report-template-manager.tsx`）：
+   - 5个预设模板：周报/月报/季度报告/竞品对比/内容效果分析
+   - 模板卡片：名称/描述/颜色条/图标/章节预览/最后使用时间
+   - "使用模板" → 时间范围选择 → 生成报告
+   - "新建模板" → 表单编辑（名称/描述/图标/主题色/章节启用）
+   - 历史记录 Tab 展示已生成报告
+
+4. **数据库变更**：
+   - ReportTemplate 模型（name, description, icon, color, isPreset, sections, lastUsedAt）
+   - ReportHistory 模型（templateId, templateName, title, periodType, reportData, aiSummary）
+
+### Track C: 数据看板增强 + 趋势折线图
+
+1. **SVG 折线图组件**（`trend-line-chart.tsx`）：
+   - 纯 SVG 实现，零外部图表库依赖
+   - Catmull-Rom → cubicBezier 平滑曲线
+   - 多数据系列支持（点赞/评论/转发/浏览）
+   - X 轴日期标签 + Y 轴自动缩放（niceScale）
+   - hover tooltip + 十字准星数据点
+   - 线条下方渐变半透明区域填充
+   - 数据点圆点 + framer-motion pathLength 入场动画
+   - 图例点击显示/隐藏系列
+   - reduce/map 预计算 SVG path 数据，零变量突变
+
+2. **趋势数据 API**（`/api/analytics/trends/route.ts`）：
+   - GET: 支持 7d/30d/90d 时间范围
+   - 可选 metrics 参数
+   - 从 Prisma ContentPost 按日期聚合
+   - 真正的周对周对比（当前 vs 前一个同等范围）
+   - 返回 dates + series + totals + changes + summary
+   - 空数据返回合理零值
+
+3. **KPI 概览卡片**（`kpi-overview-cards.tsx`）：
+   - 4卡片网格：总互动量/本月发布/平均互动率/最佳表现
+   - NumberCounter 数字滚动动画
+   - 趋势指示器（↑绿/↓红/→灰）
+   - framer-motion stagger 入场动画
+   - 骨架屏 + 错误/空状态处理
+
+4. **趋势图面板**（`trend-line-chart-panel.tsx`）：
+   - 数据获取 + 时间范围切换器
+   - 骨架屏 + 空状态
+
+5. **集成**：
+   - KPI 卡片和趋势折线图集成到 data-and-reports.tsx 运营报告 Tab 顶部
+
+### Track D: 键盘快捷键系统 + 命令面板增强 + 无障碍优化
+
+1. **全局快捷键系统**（`use-keyboard-shortcuts.tsx`）：
+   - Context 架构快捷键注册
+   - 组合键支持（Ctrl/Cmd + Key）
+   - 冲突检测
+   - 自定义快捷键录制
+
+2. **快捷键帮助面板**（`keyboard-shortcuts-help.tsx`）：
+   - 26个快捷键 / 7个分类
+   - 分类显示：全局/日历/编辑/导航/AI工具/设置/无障碍
+   - 搜索过滤
+   - 模糊搜索功能
+
+3. **命令面板增强**（`command-palette.tsx`）：
+   - 命令从15→30个
+   - 新增导航/AI工具分类
+   - 新增8个 action 处理
+   - 模糊搜索 + 最近使用 + 键盘导航
+
+4. **无障碍组件**：
+   - `accessibility-announcer.tsx` — ARIA Live Region + announce API + 21个无障碍消息
+   - `use-focus-trap.ts` — 焦点陷阱（Tab循环/Escape关闭/焦点恢复）
+   - `use-screen-reader.ts` — 5个检测Hook（屏读/高对比/减少动画/键盘导航/跳过导航）
+
+5. **主页面集成**（`page.tsx`）：
+   - ShortcutManagerProvider
+   - AccessibilityAnnouncer
+   - Skip navigation 链接
+
+### 新增文件 (约15个)
+- `src/app/api/content/recommendations/route.ts` — 内容推荐API
+- `src/app/api/report-templates/route.ts` — 报告模板CRUD
+- `src/app/api/report-templates/[id]/route.ts` — 单模板操作
+- `src/app/api/report-generate/route.ts` — 报告生成
+- `src/components/right-panel/scheduling-assistant-enhanced.tsx` — 增强排期助手
+- `src/components/right-panel/report-template-manager.tsx` — 报告模板管理
+- `src/components/right-panel/kpi-overview-cards.tsx` — KPI卡片
+- `src/components/right-panel/trend-line-chart-panel.tsx` — 趋势图面板
+- `src/components/charts/trend-line-chart.tsx` — SVG折线图
+- `src/hooks/use-keyboard-shortcuts.tsx` — 快捷键系统
+- `src/components/keyboard-shortcuts-help.tsx` — 快捷键帮助
+- `src/components/ui/accessibility-announcer.tsx` — A11y播报
+- `src/hooks/use-focus-trap.ts` — 焦点陷阱
+- `src/hooks/use-screen-reader.ts` — 屏读检测
+
+### 修改文件 (约6个)
+- `src/components/center-panel/drag-sort-calendar.tsx` — 拖拽增强
+- `src/components/right-panel/content-workspace.tsx` — 集成排期助手
+- `src/components/right-panel/report-generator.tsx` — 完全重写
+- `src/components/right-panel/data-and-reports.tsx` — 集成KPI+趋势图+模板
+- `src/components/command-palette.tsx` — 命令增强
+- `src/app/page.tsx` — 快捷键+无障碍集成
+- `prisma/schema.prisma` — ReportTemplate + ReportHistory
+
+### QA验证结果
+- ✅ ESLint 零错误、零警告
+- ✅ Next.js clean build 成功（9.6s编译）
+- ✅ 63 个静态页面成功生成
+- ✅ 73 个 API 路由全部正确注册
+- ✅ 182 个组件文件 + 12 个 Hooks
+
+### 未解决问题或风险
+1. Dev server 因沙箱内存限制不稳定（生产构建稳定）
+2. agent-browser 不可用（OOM限制）
+3. db:push 需要手动执行以同步 ReportTemplate/ReportHistory 模型
+4. 趋势折线图在数据量很大时可能需要分页
+5. 报告模板自定义编辑体验可进一步优化
+
+### 建议下一阶段优先事项
+1. 执行 `bun run db:push` 同步新数据库模型
+2. PWA 离线支持 + Service Worker
+3. 单元测试 + E2E 测试覆盖
+4. 国际化 (i18n) 支持
+5. 多人协作/团队账号管理
+6. WebSocket 实时数据推送
+7. 内容发布到真实社交平台 API 集成
+8. 性能监控集成 (Sentry)
+9. 用户反馈/评价系统
+10. 移动端真机测试

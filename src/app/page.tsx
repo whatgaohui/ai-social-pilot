@@ -44,6 +44,8 @@ import { useSmartReminders } from "@/hooks/use-smart-reminders";
 import { useAchievements } from "@/components/achievement-toast";
 import { QuickStatsFloat } from "@/components/quick-stats-float";
 import { EnhancedFooter } from "@/components/enhanced-footer";
+import { AccessibilityAnnouncer, announce } from "@/components/ui/accessibility-announcer";
+import { ShortcutManagerProvider } from "@/hooks/use-keyboard-shortcuts";
 
 // ─── Notification Enhancement Hooks ──────────────────────────────────────
 function NotificationHooks() {
@@ -430,6 +432,27 @@ export default function Home() {
   const [contentSearchOpen, setContentSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const mobileTabIndexRef = useRef(mobileTabIndex);
+
+  // Listen for custom shortcuts-help event from command palette
+  useEffect(() => {
+    const handler = () => setShortcutsOpen(true);
+    window.addEventListener("open-shortcuts-help", handler);
+    return () => window.removeEventListener("open-shortcuts-help", handler);
+  }, []);
+
+  // Announce shortcuts dialog state for screen readers
+  useEffect(() => {
+    if (shortcutsOpen) {
+      announce("快捷键帮助面板已打开", "polite");
+    }
+  }, [shortcutsOpen]);
+
+  // Announce command palette state for screen readers
+  useEffect(() => {
+    if (commandPaletteOpen) {
+      announce("命令面板已打开，输入搜索关键词", "polite");
+    }
+  }, [commandPaletteOpen]);
   const lastTabTapRef = useRef<{ tab: number; time: number }>({ tab: -1, time: 0 });
   const [hapticPulse, setHapticPulse] = useState<string | null>(null);
 
@@ -552,7 +575,17 @@ export default function Home() {
   }, [onboardingInit]);
 
   return (
+    <ShortcutManagerProvider>
     <div className="min-h-screen flex flex-col bg-gradient-animated">
+      {/* Accessibility: Screen reader live regions */}
+      <AccessibilityAnnouncer />
+      {/* Skip navigation link for keyboard/screen reader users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:border focus:border-border focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:text-sm"
+      >
+        跳到主要内容
+      </a>
       {/* Notification enhancement hooks */}
       <NotificationHooks />
       {/* 顶部加载进度条 */}
@@ -950,5 +983,6 @@ export default function Home() {
       {/* Footer */}
       <EnhancedFooter />
     </div>
+    </ShortcutManagerProvider>
   );
 }
