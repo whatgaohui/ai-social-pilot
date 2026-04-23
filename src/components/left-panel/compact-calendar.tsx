@@ -79,6 +79,7 @@ import {
   subWeeks,
   isSameDay,
   addDays,
+  isValid,
 } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import {
@@ -214,7 +215,7 @@ function QuickCreateDialog({ open, onOpenChange, defaultDate }: QuickCreateDialo
         updatedAt: new Date().toISOString(),
       };
       addContentPost(newPost);
-      toast.success("已添加新内容", { description: `${format(parseISO(defaultDate), "M月d日")} - ${topic.trim()}` });
+      toast.success("已添加新内容", { description: `${defaultDate && isValid(parseISO(defaultDate)) ? format(parseISO(defaultDate), "M月d日") : defaultDate} - ${topic.trim()}` });
       onOpenChange(false);
     } catch {
       toast.error("创建失败");
@@ -232,7 +233,7 @@ function QuickCreateDialog({ open, onOpenChange, defaultDate }: QuickCreateDialo
             快速创建内容
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            排期：{format(parseISO(defaultDate), "yyyy年M月d日 EEEE", { locale: zhCN })}
+            排期：{defaultDate && isValid(parseISO(defaultDate)) ? format(parseISO(defaultDate), "yyyy年M月d日 EEEE", { locale: zhCN }) : "请选择日期"}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">

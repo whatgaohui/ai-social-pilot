@@ -9049,3 +9049,35 @@ Work Log:
 8. 国际化(i18n)多语言支持
 9. 性能优化：虚拟滚动长列表
 10. 可访问性(A11y)审计 + 键盘导航增强
+
+---
+Task ID: 42
+Agent: Main Developer
+Task: 修复 QuickCreateDialog "Invalid time value" 运行时错误
+
+Work Log:
+- 分析用户报告的运行时错误：RangeError: Invalid time value at QuickCreateDialog
+- 定位根因：quickCreateDate 状态初始化为空字符串 ""，而 QuickCreateDialog 在 Dialog 渲染时（即使 open=false）会执行 format(parseISO(""), ...) 导致 Invalid Date 错误
+- 确认三个文件中存在相同问题：
+  1. src/components/left-panel/compact-calendar.tsx (line 235, 217)
+  2. src/components/center-panel/content-calendar.tsx (line 274, 253)
+  3. src/components/center-panel/calendar-week-view.tsx (line 226, 206)
+- 修复方案：在每个文件中添加 isValid() 日期验证守卫
+  - 从 date-fns 导入 isValid
+  - 在 format(parseISO(defaultDate), ...) 前检查 defaultDate 非空且 parseISO 结果有效
+  - 无效日期时显示 "请选择日期" 占位文本
+
+### 修改文件
+- `src/components/left-panel/compact-calendar.tsx` - 添加 isValid 导入 + 2处 format 调用守卫
+- `src/components/center-panel/content-calendar.tsx` - 添加 isValid 导入 + 2处 format 调用守卫
+- `src/components/center-panel/calendar-week-view.tsx` - 添加 isValid 导入 + 2处 format 调用守卫
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ dev server 编译成功（✓ Compiled in 376ms）
+- ✅ API路由正常响应（200）
+
+Stage Summary:
+- 修复了 QuickCreateDialog 中的 "Invalid time value" 运行时崩溃错误
+- 三个 QuickCreateDialog 实例均已添加日期有效性检查
+- 当 defaultDate 为空字符串或无效日期时，显示友好占位文本而非崩溃

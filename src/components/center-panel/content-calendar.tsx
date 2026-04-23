@@ -90,6 +90,7 @@ import {
   endOfWeek,
   addWeeks,
   subWeeks,
+  isValid,
 } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { CalendarWeekView } from "@/components/center-panel/calendar-week-view";
@@ -251,7 +252,7 @@ function QuickCreateDialog({
       };
       addContentPost(newPost);
       toast.success("已添加新内容", {
-        description: `${format(parseISO(defaultDate), "M月d日")} - ${topic.trim()}`,
+        description: `${defaultDate && isValid(parseISO(defaultDate)) ? format(parseISO(defaultDate), "M月d日") : defaultDate} - ${topic.trim()}`,
       });
       onOpenChange(false);
     } catch {
@@ -271,7 +272,9 @@ function QuickCreateDialog({
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             排期：
-            {format(parseISO(defaultDate), "yyyy年M月d日 EEEE", { locale: zhCN })}
+            {defaultDate && isValid(parseISO(defaultDate))
+              ? format(parseISO(defaultDate), "yyyy年M月d日 EEEE", { locale: zhCN })
+              : "请选择日期"}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
