@@ -778,8 +778,8 @@ function UnreadBadge({ count }: { count: number }) {
     <motion.span
       key={count}
       initial={{ scale: 0 }}
-      animate={{ scale: [1, 1.3, 1] }}
-      transition={{ type: "spring", stiffness: 500, damping: 15, duration: 0.4 }}
+      animate={{ scale: [1, 1.2, 1] }}
+      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
     >
       {count > 9 ? "9+" : count}

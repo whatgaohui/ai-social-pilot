@@ -9,6 +9,7 @@ import {
   ContentType, PostStatus, XHSContentType,
 } from "@/types";
 import { Calendar, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface PostDetailHeaderProps {
   post: ContentPost;
@@ -28,7 +29,10 @@ function getContentTypeLabel(ct: string, isXHS: boolean) {
 export function PostDetailHeader({ post, isXHS }: PostDetailHeaderProps) {
   return (
     <>
-      <div className="space-y-2">
+      <div className="space-y-2 relative pl-3">
+        {/* Gradient left border accent */}
+        <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-full bg-gradient-to-b from-violet-500 via-purple-500 to-fuchsia-500" />
+
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-3.5 w-3.5" />
           <span>{post.scheduledDate}</span>
@@ -37,7 +41,12 @@ export function PostDetailHeader({ post, isXHS }: PostDetailHeaderProps) {
           <Badge className={getContentTypeColor(post.contentType, isXHS)} variant="secondary">
             {getContentTypeLabel(post.contentType, isXHS)}
           </Badge>
-          <Badge variant="outline">{POST_STATUS_LABELS[post.status as PostStatus]}</Badge>
+          <motion.div
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Badge variant="outline">{POST_STATUS_LABELS[post.status as PostStatus]}</Badge>
+          </motion.div>
           {post.generationType === "auto" && (
             <Badge variant="outline" className="text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-800">
               <Sparkles className="h-3 w-3 mr-0.5" />

@@ -83,6 +83,7 @@ import { CreativeAssetsLibrary } from "@/components/right-panel/creative-assets-
 import { RealtimeMetrics } from "@/components/right-panel/realtime-metrics";
 import { InspirationWaterfall } from "@/components/right-panel/inspiration-waterfall";
 import { PublishToCalendar } from "@/components/right-panel/publish-to-calendar";
+import { AIChatWorkspace } from "@/components/right-panel/ai-chat-workspace";
 
 // ─── Dynamic Imports (iteration 41 components, ssr:false to avoid OOM) ──────
 
@@ -281,6 +282,7 @@ const TOOL_TABS = [
   { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500" },
   { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500" },
   { value: "metrics", icon: Activity, label: "实时指标", color: "text-teal-500" },
+  { value: "chat", icon: MessageSquare, label: "AI对话", color: "text-sky-500" },
 ] as const;
 
 type ToolTab = (typeof TOOL_TABS)[number]["value"];
@@ -720,15 +722,16 @@ export function ContentWorkspace() {
           <motion.div variants={staggerItem}>
             <Tabs value={toolTab} onValueChange={(v) => { handleToolTabChange(v as ToolTab); }}>
               {/* Underline-style tab bar — visually distinct from the pill buttons above */}
-              <div className="relative flex items-center border-b border-border">
+              <div className="relative flex items-center border-b border-border overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_0%,black_85%,transparent)]">
                 {TOOL_TABS.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = toolTab === tab.value;
                   return (
                     <button
                       key={tab.value}
+                      title={tab.label}
                       onClick={() => setToolTab(tab.value as ToolTab)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
+                      className={`flex-shrink-0 min-w-[4.5rem] flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
                         isActive
                           ? `text-foreground ${tab.color}`
                           : "text-muted-foreground hover:text-foreground/70"
@@ -962,6 +965,20 @@ export function ContentWorkspace() {
                     exit="exit"
                   >
                     <RealtimeMetrics />
+                  </motion.div>
+                )}
+
+                {/* ── AI Chat Tab ────────────────────────────────────────── */}
+                {toolTab === "chat" && (
+                  <motion.div
+                    key="chat-panel"
+                    variants={expandCollapse}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="h-[400px]"
+                  >
+                    <AIChatWorkspace />
                   </motion.div>
                 )}
               </div>

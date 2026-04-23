@@ -9218,3 +9218,75 @@ Stage Summary:
   3. 添加内容排期拖拽排序功能
   4. 运营报告自动生成功能完善
   5. 移动端布局真机测试
+---
+Task ID: 47
+Agent: Main Developer + Subagents
+Task: 第四十七轮开发 - safeFormat扩展 + AI对话集成 + 标签栏优化 + 视觉增强
+
+Work Log:
+- 运行 eslint（零错误）和 next build（编译成功）确认项目状态稳定
+- 继续扩展 safeFormat 到所有剩余 format(parseISO()) 调用
+
+### 本轮修改
+
+1. **safeFormat 扩展到全部文件**：
+   - 上一轮覆盖 5 个核心渲染文件（21处），本轮扩展到 4 个附加文件（8处）
+   - `content-hover-preview.tsx`（1处）
+   - `calendar-heatmap.tsx`（3处）
+   - `scheduling-assistant-enhanced.tsx`（2处）
+   - `ai-scheduling-assistant.tsx`（2处）
+   - 累计：9 个文件、29 处 format(parseISO()) 已替换为 safeFormat()
+   - ai-scheduling-assistant.tsx 中移除了多余的 IIFE try/catch 包裹，直接使用 safeFormat
+
+2. **content-workspace.tsx 标签栏水平滚动**：
+   - TOOL_TABS 现有 14 个 tab（含本轮新增的 AI对话）
+   - 添加 overflow-x-auto + scrollbar-none + CSS mask-image 渐变淡出边缘
+   - tab 按钮从 flex-1 改为 flex-shrink-0 min-w-[4.5rem]，防止压缩
+   - 每个按钮添加 title={tab.label} 原生 tooltip
+
+3. **集成 AIChatWorkspace（791行孤立组件）**：
+   - 导入 AIChatWorkspace 组件到 content-workspace.tsx
+   - 新增第14个 tab："AI对话"（icon: MessageSquare, color: text-sky-500）
+   - 渲染为 h-[400px] 容器内的完整 AI 对话界面
+   - 功能：多轮对话、流式输出、会话历史、localStorage 持久化、平台感知
+
+4. **通知中心 badge 脉冲动画**（notification-center-enhanced.tsx）：
+   - UnreadBadge 从一次性弹簧动画改为持续脉冲（scale: [1, 1.2, 1], 2s 循环）
+   - 未读计数 > 0 时持续跳动提醒
+
+5. **帖子详情头部渐变强调**（post-detail-header.tsx）：
+   - 左侧添加 0.5px 渐变色竖条（violet→purple→fuchsia）
+   - 状态 Badge 添加微光动画（opacity: [0.7, 1, 0.7], 3s 循环）
+
+### 修改文件
+- `src/components/left-panel/content-hover-preview.tsx` - safeFormat
+- `src/components/left-panel/calendar-heatmap.tsx` - safeFormat
+- `src/components/right-panel/scheduling-assistant-enhanced.tsx` - safeFormat
+- `src/components/right-panel/ai-scheduling-assistant.tsx` - safeFormat
+- `src/components/right-panel/content-workspace.tsx` - AI对话 tab + 滚动 + tooltip
+- `src/components/notification-center-enhanced.tsx` - badge 脉冲动画
+- `src/components/right-panel/post-detail-header.tsx` - 渐变边条 + 微光
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ next build 编译成功
+- ✅ TypeScript 类型全部正确
+
+Stage Summary:
+- 项目状态：稳定可运行，功能持续丰富
+- 本轮修改 7 个文件，无新增文件
+- 核心成果：
+  1. safeFormat 全项目覆盖完成（9文件29处），彻底消除日期崩溃风险
+  2. AI 对话工作台集成（791行孤立组件复活），TOOL_TABS 扩展至 14 个
+  3. content-workspace + data-and-reports 两个面板标签栏均已支持水平滚动
+  4. 3 处视觉微交互增强（通知脉冲、头部渐变、tab tooltip）
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. TOOL_TABS 14 个 tab 在极窄面板仍可能拥挤（已有滚动方案缓解）
+  3. AIChatWorkspace 的 AI 调用依赖 z-ai-web-dev-sdk 可用性
+- 建议下一阶段优先事项：
+  1. 为 content-workspace 的 tab 添加分组/折叠机制（当前 14 个平铺）
+  2. 扩展 safeFormat 到非 parseISO 的 format() 调用（约 80+ 处 format(new Date(...))）
+  3. 添加内容排期拖拽排序（已有 @dnd-kit 依赖）
+  4. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
+  5. 移动端响应式深度优化

@@ -40,10 +40,10 @@ import {
   format,
   addDays,
   startOfWeek,
-  parseISO,
   isWithinInterval,
   isSameDay,
 } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { zhCN } from "date-fns/locale";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -205,10 +205,7 @@ export function SchedulingAssistantEnhanced() {
     const result: ConflictInfo[] = [];
     for (const [date, posts] of dateMap) {
       if (posts.length >= 3) {
-        let label = date;
-        try {
-          label = format(parseISO(date), "M月d日 EEEE", { locale: zhCN });
-        } catch { /* use raw date */ }
+        const label = safeFormat(date, "M月d日 EEEE", "--", { locale: zhCN });
         result.push({
           date,
           label,
@@ -239,7 +236,7 @@ export function SchedulingAssistantEnhanced() {
         body: JSON.stringify({
           planId: currentPlan?.id || "",
           startDate: gapDates[0],
-          month: format(parseISO(gapDates[0]), "yyyy-MM"),
+          month: safeFormat(gapDates[0], "yyyy-MM"),
           platform,
           persona: useAppStore.getState().persona,
           knowledgeItems: useAppStore.getState().knowledgeItems,

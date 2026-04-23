@@ -26,7 +26,7 @@ import {
   Eye as EyeIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, parseISO } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 
 // --- Helpers ---
 
@@ -236,15 +236,7 @@ export function ContentHoverPreview({
               <div className="flex items-center gap-1 text-[9px] text-muted-foreground/70">
                 <span>排期：</span>
                 <span className="tabular-nums font-medium text-muted-foreground">
-                  {(() => {
-                    try {
-                      return format(parseISO(post.scheduledDate), "yyyy年M月d日 EEEE", {
-                        locale: undefined,
-                      });
-                    } catch {
-                      return post.scheduledDate;
-                    }
-                  })()}
+                  {safeFormat(post.scheduledDate, "yyyy年M月d日 EEEE")}
                 </span>
               </div>
 

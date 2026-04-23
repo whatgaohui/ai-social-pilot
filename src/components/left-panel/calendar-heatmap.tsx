@@ -16,7 +16,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, Flame, Calendar } from "lucide-react";
-import { format, subDays, startOfDay, differenceInDays, parseISO, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays, startOfDay, differenceInDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { zhCN } from "date-fns/locale";
 
 // ─── Heatmap Constants ───────────────────────────────────────────────────────
@@ -153,7 +154,7 @@ export function CalendarHeatmap({ posts }: CalendarHeatmapProps) {
     const labels: { label: string; column: number }[] = [];
     let lastMonth = "";
     days.forEach((d) => {
-      const monthStr = format(parseISO(d.date), "M月");
+      const monthStr = safeFormat(d.date, "M月");
       if (monthStr !== lastMonth) {
         labels.push({ label: monthStr, column: d.weekColumn });
         lastMonth = monthStr;
@@ -263,7 +264,7 @@ export function CalendarHeatmap({ posts }: CalendarHeatmapProps) {
                             }}
                           >
                             <title>
-                              {format(parseISO(day.date), "M月d日 EEEE", { locale: zhCN })}
+                              {safeFormat(day.date, "M月d日 EEEE", "--", { locale: zhCN })}
                               {" · "}
                               {day.count > 0 ? `${day.count} 篇内容` : "无发布"}
                             </title>
@@ -271,7 +272,7 @@ export function CalendarHeatmap({ posts }: CalendarHeatmapProps) {
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-[10px] px-2 py-1">
                           <p className="font-medium">
-                            {format(parseISO(day.date), "M月d日 EEEE", { locale: zhCN })}
+                            {safeFormat(day.date, "M月d日 EEEE", "--", { locale: zhCN })}
                           </p>
                           <p className="text-muted-foreground">
                             {day.count > 0 ? `${day.count} 篇内容` : "无发布"}

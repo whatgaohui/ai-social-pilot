@@ -50,6 +50,7 @@ import {
   parseISO,
   isWithinInterval,
 } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { zhCN } from "date-fns/locale";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -609,15 +610,9 @@ export function AISchedulingAssistant() {
               <ScrollArea className="max-h-52">
                 <div className="space-y-1.5">
                   {scheduleSlots.map((slot, idx) => {
-                    const dateLabel = (() => {
-                      try {
-                        return format(parseISO(slot.day), "MM/dd EEE", {
-                          locale: zhCN,
-                        });
-                      } catch {
-                        return slot.day;
-                      }
-                    })();
+                    const dateLabel = safeFormat(slot.day, "MM/dd EEE", "--", {
+                      locale: zhCN,
+                    });
 
                     return (
                       <motion.div
@@ -726,15 +721,9 @@ export function AISchedulingAssistant() {
                   <ScrollArea className="max-h-52">
                     <div className="space-y-1">
                       {batchItems.map((item, idx) => {
-                        const dateLabel = (() => {
-                          try {
-                            return format(parseISO(item.day), "MM/dd EEE", {
-                              locale: zhCN,
-                            });
-                          } catch {
-                            return item.day;
-                          }
-                        })();
+                        const dateLabel = safeFormat(item.day, "MM/dd EEE", "--", {
+                          locale: zhCN,
+                        });
 
                         return (
                           <motion.div
