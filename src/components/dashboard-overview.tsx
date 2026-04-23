@@ -227,8 +227,6 @@ function MetricCard({
   trend,
   index,
 }: MetricCardProps) {
-  const isHovered = useRef(false);
-
   return (
     <motion.div
       variants={staggerChild}
@@ -236,17 +234,15 @@ function MetricCard({
       className="group relative"
     >
       <div
-        className={`relative rounded-xl border p-4 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 stat-card-shine ${gradientBorder}`}
-        onMouseEnter={() => { isHovered.current = true; }}
-        onMouseLeave={() => { isHovered.current = false; }}
+        className={`relative rounded-xl border p-4 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border-border/60 hover:border-border ${gradientBorder}`}
       >
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground font-medium mb-1 truncate">
+            <p className="text-[11px] text-muted-foreground font-medium mb-1.5 truncate">
               {label}
             </p>
             <motion.p
-              className="text-2xl font-bold tabular-nums tracking-tight"
+              className="text-xl font-bold tabular-nums tracking-tight"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: index * 0.08 + 0.2, type: "spring", stiffness: 300 }}
@@ -255,26 +251,26 @@ function MetricCard({
             </motion.p>
           </div>
           <motion.div
-            className={`flex items-center justify-center h-10 w-10 rounded-lg ${iconBg} transition-transform duration-300 group-hover:scale-110`}
-            whileHover={{ rotate: 8 }}
+            className={`flex items-center justify-center h-9 w-9 rounded-lg ${iconBg} shadow-sm transition-transform duration-300 group-hover:scale-105`}
+            whileHover={{ rotate: 5 }}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-4 w-4" />
           </motion.div>
         </div>
-        <div className="mt-2 flex items-center gap-1.5">
+        <div className="mt-2.5 flex items-center gap-1.5">
           {trend.value !== 0 && (
             <Badge
               variant="secondary"
-              className={`text-[10px] px-1.5 py-0 h-5 font-semibold tabular-nums ${
+              className={`text-[10px] px-1.5 py-0 h-4 font-semibold tabular-nums ${
                 trend.isPositive
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                  : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                  ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                  : "bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400"
               }`}
             >
-              {trend.isPositive ? "▲" : "▼"}{Math.abs(trend.value)}%
+              {trend.isPositive ? "↑" : "↓"}{Math.abs(trend.value)}%
             </Badge>
           )}
-          <span className="text-[10px] text-muted-foreground">较上周</span>
+          <span className="text-[10px] text-muted-foreground/70">较上周</span>
         </div>
       </div>
     </motion.div>
@@ -327,23 +323,19 @@ function QuickActionCard({ icon, title, subtitle, gradient, onClick, index }: Qu
     <motion.button
       variants={staggerChild}
       custom={index}
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.96 }}
+      whileHover={{ scale: 1.02, y: -1 }}
+      whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className={`quick-action-card group relative flex items-start gap-3 p-3.5 rounded-xl border border-border/40 bg-card/80 backdrop-blur-sm text-left cursor-pointer w-full overflow-hidden transition-all duration-200`}
+      className="group relative flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-accent/50 text-left cursor-pointer w-full transition-all duration-200 hover:shadow-sm"
     >
-      {/* Gradient background accent */}
-      <div className={`absolute inset-0 ${gradient} opacity-[0.04] group-hover:opacity-[0.08] transition-opacity duration-300`} />
-      <div className="relative flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br shrink-0 shadow-sm">
-        {icon}
+      <div className="relative flex items-center justify-center h-8 w-8 rounded-lg bg-muted/80 group-hover:bg-muted shrink-0 transition-colors duration-200">
+        <div className={`${gradient} bg-clip-text`}>{icon}</div>
       </div>
-      <div className="relative flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold text-foreground truncate">{title}</p>
-          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-foreground/70 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
-        </div>
-        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{subtitle}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-foreground truncate">{title}</p>
+        <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">{subtitle}</p>
       </div>
+      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-foreground/50 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
     </motion.button>
   );
 }
@@ -358,34 +350,26 @@ interface ActivityTimelineItemProps {
 
 function ActivityTimelineItem({ activity, index, isLast }: ActivityTimelineItemProps) {
   const colorClass = getActivityColor(activity.type);
-  // Use static component mapping to avoid creating components during render
   const Icon = ACTIVITY_ICONS[activity.type];
 
   return (
     <motion.div
       variants={activityChild}
       custom={index}
-      className="relative flex items-start gap-3 group"
+      className="relative flex items-center gap-2.5 group py-1.5"
     >
       {/* Timeline line */}
       {!isLast && (
-        <div className="absolute left-[7px] top-[22px] bottom-0 w-px bg-border/50" />
+        <div className="absolute left-[11px] top-[26px] bottom-0 w-px bg-border/30" />
       )}
       {/* Timeline dot */}
-      <div className="relative z-10 mt-0.5">
-        <div className={`flex items-center justify-center h-[15px] w-[15px] rounded-full ${index === 0 ? 'activity-dot' : ''} ${colorClass.replace('100', '200').replace('text', 'bg').split(' ')[0]}`}>
-          <div className={`h-[7px] w-[7px] rounded-full ${colorClass.replace('100', '400').replace('dark:bg-violet-900/30 dark:text-violet-400', 'bg-violet-400').split(' ')[0]}`} />
-        </div>
+      <div className={`relative z-10 flex items-center justify-center h-[22px] w-[22px] rounded-full shrink-0 ${colorClass}`}>
+        <Icon className="h-3 w-3" />
       </div>
       {/* Content */}
-      <div className="flex-1 min-w-0 pb-3">
-        <div className="flex items-center gap-2">
-          <div className={`flex items-center justify-center h-5 w-5 rounded ${colorClass}`}>
-            <Icon className="h-3 w-3" />
-          </div>
-          <p className="text-[11px] text-foreground/80 truncate flex-1">{activity.description}</p>
-        </div>
-        <p className="text-[10px] text-muted-foreground/60 mt-0.5 pl-7">{activity.time}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] text-foreground/75 truncate">{activity.description}</p>
+        <p className="text-[10px] text-muted-foreground/50 mt-0.5">{activity.time}</p>
       </div>
     </motion.div>
   );
@@ -454,41 +438,39 @@ function DashboardPipelineOverview() {
     >
       <div className="flex items-center justify-between px-1 mb-2">
         <div className="flex items-center gap-1.5">
-          <BarChart3 className="h-3.5 w-3.5 text-violet-500" />
-          <span className="text-xs font-semibold text-foreground/80">内容流水线</span>
-          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">
-            {total} 条
-          </Badge>
+          <BarChart3 className="h-3 w-3 text-muted-foreground" />
+          <span className="text-[11px] font-medium text-foreground/70">内容流水线</span>
+          <span className="text-[10px] text-muted-foreground/50 tabular-nums">{total} 条</span>
         </div>
         <button
           onClick={() => setRightPanelTab("workspace")}
-          className="text-[10px] text-violet-500 hover:text-violet-600 dark:text-violet-400 dark:hover:text-violet-300 font-medium flex items-center gap-0.5 transition-colors"
+          className="text-[10px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-0.5 transition-colors"
         >
           管理
-          <ArrowRight className="h-3 w-3" />
+          <ArrowRight className="h-2.5 w-2.5" />
         </button>
       </div>
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center gap-1">
         {PIPELINE_OVERVIEW_STAGES.map((stage, i) => {
           const count = stageCounts[stage.id] || 0;
           const pct = total > 0 ? Math.round((count / total) * 100) : 0;
           return (
             <Fragment key={stage.id}>
               {i > 0 && (
-                <div className="w-3 flex-shrink-0 flex items-center">
-                  <div className="w-full h-px bg-border" />
+                <div className="w-2 flex-shrink-0 flex items-center">
+                  <div className="w-full h-px bg-border/40" />
                 </div>
               )}
-              <div className="flex-1 flex flex-col items-center gap-1 cursor-pointer group" onClick={() => setRightPanelTab("workspace")}>
-                <div className="text-sm">{stage.emoji}</div>
-                <div className={`text-[10px] font-bold tabular-nums ${count > 0 ? "text-foreground" : "text-muted-foreground/40"}`}>
+              <div className="flex-1 flex flex-col items-center gap-0.5 cursor-pointer group py-1 rounded-lg hover:bg-muted/50 transition-colors" onClick={() => setRightPanelTab("workspace")}>
+                <div className="text-xs">{stage.emoji}</div>
+                <div className={`text-[11px] font-semibold tabular-nums ${count > 0 ? "text-foreground" : "text-muted-foreground/40"}`}>
                   {count}
                 </div>
-                <div className="text-[8px] text-muted-foreground">{stage.label}</div>
+                <div className="text-[9px] text-muted-foreground/60">{stage.label}</div>
                 {count > 0 && (
-                  <div className="w-full h-1 rounded-full bg-muted overflow-hidden">
+                  <div className="w-full h-0.5 rounded-full bg-muted overflow-hidden">
                     <motion.div
-                      className="h-full rounded-full bg-violet-500"
+                      className="h-full rounded-full bg-violet-400"
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.max(pct, 8)}%` }}
                       transition={{ duration: 0.5, delay: i * 0.1 }}
@@ -679,11 +661,11 @@ export function DashboardOverview() {
         <div className="mx-4 mt-3 mb-2">
           <CollapsibleTrigger asChild>
             <motion.button
-              whileHover={{ scale: 1.005 }}
-              whileTap={{ scale: 0.995 }}
-              className="w-full flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-500/5 via-purple-500/5 to-rose-500/5 dark:from-violet-500/10 dark:via-purple-500/10 dark:to-rose-500/10 border border-border/50 hover:border-border transition-all duration-200 cursor-pointer group"
+              whileHover={{ scale: 1.002 }}
+              whileTap={{ scale: 0.998 }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border/50 hover:border-border transition-all duration-200 cursor-pointer group"
             >
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30">
+              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div className="flex-1 text-left">
@@ -695,14 +677,14 @@ export function DashboardOverview() {
                     variant="secondary"
                     className={`text-[9px] px-1.5 py-0 h-4 font-medium ${
                       platform === "wechat"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                        ? "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
+                        : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
                     }`}
                   >
                     {platformLabel}
                   </Badge>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   {getFormattedDate()}
                 </p>
               </div>
@@ -790,9 +772,9 @@ export function DashboardOverview() {
 
                     {/* ── Quick Action Cards (Enhanced 2x2 Grid) ── */}
                     <div>
-                      <div className="flex items-center gap-1.5 px-1 mb-2">
-                        <Activity className="h-3.5 w-3.5 text-violet-500" />
-                        <span className="text-xs font-semibold text-foreground/80">快速操作</span>
+                      <div className="flex items-center gap-1.5 px-1 mb-1.5">
+                        <Activity className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-[11px] font-medium text-foreground/70">快速操作</span>
                       </div>
                       <motion.div
                         variants={staggerContainer}
@@ -837,69 +819,28 @@ export function DashboardOverview() {
 
                     {/* ── Activity Feed Mini Timeline ── */}
                     <div>
-                      <div className="flex items-center justify-between px-1 mb-2">
+                      <div className="flex items-center justify-between px-1 mb-1.5">
                         <div className="flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5 text-violet-500" />
-                          <span className="text-xs font-semibold text-foreground/80">最近动态</span>
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-[11px] font-medium text-foreground/70">最近动态</span>
                         </div>
-                        <button className="text-[10px] text-violet-500 hover:text-violet-600 dark:text-violet-400 dark:hover:text-violet-300 font-medium flex items-center gap-0.5 transition-colors">
-                          查看全部
-                          <ArrowRight className="h-3 w-3" />
-                        </button>
                       </div>
                       <motion.div
                         variants={activityContainer}
                         initial="hidden"
                         animate="show"
-                        className="px-1 space-y-0"
+                        className="px-1"
                       >
-                        {MOCK_ACTIVITIES.slice(0, 6).map((activity, i) => (
+                        {MOCK_ACTIVITIES.slice(0, 4).map((activity, i) => (
                           <ActivityTimelineItem
                             key={activity.id}
                             activity={activity}
                             index={i}
-                            isLast={i === MOCK_ACTIVITIES.slice(0, 6).length - 1}
+                            isLast={i === MOCK_ACTIVITIES.slice(0, 4).length - 1}
                           />
                         ))}
                       </motion.div>
                     </div>
-
-                    {/* ── Original Quick Actions (horizontal scroll) ── */}
-                    <motion.div
-                      variants={staggerContainer}
-                      initial="hidden"
-                      animate="show"
-                      className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-none"
-                    >
-                      <QuickAction
-                        icon={isGenerating ? Sparkles : Sparkles}
-                        label="生成今日内容"
-                        gradient="bg-gradient-to-br from-violet-500 to-purple-600"
-                        onClick={handleGenerateContent}
-                        index={0}
-                      />
-                      <QuickAction
-                        icon={BarChart3}
-                        label="查看运营报告"
-                        gradient="bg-gradient-to-br from-rose-500 to-pink-600"
-                        onClick={handleViewReports}
-                        index={1}
-                      />
-                      <QuickAction
-                        icon={BookOpen}
-                        label="管理知识库"
-                        gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
-                        onClick={handleManageKnowledge}
-                        index={2}
-                      />
-                      <QuickAction
-                        icon={Lightbulb}
-                        label="AI灵感推荐"
-                        gradient="bg-gradient-to-br from-amber-500 to-orange-600"
-                        onClick={handleAIInspiration}
-                        index={3}
-                      />
-                    </motion.div>
 
                     {/* ── Pipeline Overview Mini ── */}
                     <DashboardPipelineOverview />
@@ -913,8 +854,8 @@ export function DashboardOverview() {
                         className="space-y-2"
                       >
                         <div className="flex items-center gap-1.5 px-1">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                          <span className="text-xs font-semibold text-foreground/80">待办提醒</span>
+                          <AlertTriangle className="h-3 w-3 text-amber-500" />
+                          <span className="text-[11px] font-medium text-foreground/70">待办提醒</span>
                         </div>
                         <div className="space-y-1.5">
                           <TodoReminder
