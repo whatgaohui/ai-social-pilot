@@ -8999,3 +8999,313 @@ textarea,
 .usage-count {
   font-variant-numeric: tabular-nums;
 }
+
+/* ====== Round 39: CSS Style Polish — Advanced Utility Classes ====== */
+
+/* ─── Enhanced Tooltip ───────────────────────────────────── */
+.tooltip-enhanced {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.tooltip-enhanced::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: oklch(0.15 0 0);
+  color: oklch(0.95 0 0);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 60;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.tooltip-enhanced::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 8px;
+  height: 8px;
+  background: oklch(0.15 0 0);
+  border-radius: 2px;
+  transform: translateX(-50%) rotate(45deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 59;
+}
+.tooltip-enhanced:hover::after,
+.tooltip-enhanced:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.tooltip-enhanced::before {
+  bottom: calc(100% + 1px);
+}
+.tooltip-enhanced:hover::before {
+  transform: translateX(-50%) rotate(45deg) translateY(0);
+}
+.dark .tooltip-enhanced::after {
+  background: oklch(0.25 0 0);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+.dark .tooltip-enhanced::before {
+  background: oklch(0.25 0 0);
+}
+
+/* ─── Enhanced Skeleton Shimmer ──────────────────────────── */
+.skeleton-shimmer-enhanced {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    oklch(0.95 0 0) 0%,
+    oklch(0.95 0 0) 30%,
+    oklch(0.92 0.01 290) 50%,
+    oklch(0.95 0 0) 70%,
+    oklch(0.95 0 0) 100%
+  );
+  background-size: 300% 100%;
+  animation: skeleton-shimmer-enhanced 2s ease-in-out infinite;
+  border-radius: 6px;
+}
+.dark .skeleton-shimmer-enhanced {
+  background: linear-gradient(
+    90deg,
+    oklch(0.25 0 0) 0%,
+    oklch(0.25 0 0) 30%,
+    oklch(0.30 0.02 290) 50%,
+    oklch(0.25 0 0) 70%,
+    oklch(0.25 0 0) 100%
+  );
+  background-size: 300% 100%;
+}
+@keyframes skeleton-shimmer-enhanced {
+  0% { background-position: 200% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ─── Badge Glow Effect ─────────────────────────────────── */
+.badge-glow {
+  position: relative;
+}
+.badge-glow::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+.badge-glow:hover::after {
+  opacity: 1;
+  animation: badge-glow-pulse 2s ease-in-out infinite;
+}
+.badge-glow-violet::after {
+  background: rgba(139, 92, 246, 0.25);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+}
+.badge-glow-emerald::after {
+  background: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+.badge-glow-amber::after {
+  background: rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+.badge-glow-rose::after {
+  background: rgba(244, 63, 94, 0.25);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.3);
+}
+@keyframes badge-glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* ─── 3D Card Tilt ──────────────────────────────────────── */
+.card-3d {
+  perspective: 800px;
+  transform-style: preserve-3d;
+}
+.card-3d-inner {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.card-3d-inner:hover {
+  transform: rotateY(-3deg) rotateX(2deg) translateZ(8px);
+  box-shadow:
+    8px 8px 20px rgba(0, 0, 0, 0.08),
+    -2px -2px 8px rgba(0, 0, 0, 0.03);
+}
+.dark .card-3d-inner:hover {
+  box-shadow:
+    8px 8px 24px rgba(0, 0, 0, 0.3),
+    -2px -2px 8px rgba(0, 0, 0, 0.15);
+}
+/* Mouse-driven tilt (set via JS: --tilt-x, --tilt-y) */
+.card-3d-tilt {
+  transform: perspective(800px) rotateY(var(--tilt-x, 0deg)) rotateX(var(--tilt-y, 0deg)) scale3d(1.02, 1.02, 1.02);
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+}
+
+/* ─── Text Gradient Presets ─────────────────────────────── */
+.text-gradient-purple-pink {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-green-teal {
+  background: linear-gradient(135deg, #10b981, #14b8a6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-amber-orange {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-rose-red {
+  background: linear-gradient(135deg, #f43f5e, #ef4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-sky-cyan {
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Button Morph Animation ────────────────────────────── */
+.btn-morph {
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 8px;
+}
+.btn-morph:hover {
+  border-radius: 24px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+.btn-morph-square {
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 12px;
+}
+.btn-morph-square:hover {
+  border-radius: 4px;
+}
+
+/* ─── Material Ripple Effect ────────────────────────────── */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-effect .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.1) 40%, transparent 70%);
+  transform: scale(0);
+  animation: ripple-effect-expand 0.6s ease-out forwards;
+  pointer-events: none;
+}
+.dark .ripple-effect .ripple {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 70%);
+}
+@keyframes ripple-effect-expand {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+/* ─── Scroll Fade (all edges) ───────────────────────────── */
+.scroll-fade {
+  position: relative;
+}
+.scroll-fade::before,
+.scroll-fade::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 24px;
+  pointer-events: none;
+  z-index: 10;
+}
+.scroll-fade::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--scroll-fade-color, oklch(1 0 0)), transparent);
+  mask-image: linear-gradient(to bottom, black, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+}
+.scroll-fade::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--scroll-fade-color, oklch(1 0 0)), transparent);
+  mask-image: linear-gradient(to top, black, transparent);
+  -webkit-mask-image: linear-gradient(to top, black, transparent);
+}
+.dark .scroll-fade::before {
+  --scroll-fade-color: oklch(0.15 0 0);
+}
+.dark .scroll-fade::after {
+  --scroll-fade-color: oklch(0.15 0 0);
+}
+
+/* ─── Improved Scrollbar Styles ─────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.82 0 0 / 0.5);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.65 0 0 / 0.8);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.35 0 0 / 0.6);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.50 0 0 / 0.8);
+}
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.82 0 0 / 0.5) transparent;
+}
+.dark * {
+  scrollbar-color: oklch(0.35 0 0 / 0.6) transparent;
+}
+
+/* ─── Enhanced Focus-Visible Ring ───────────────────────── */
+@layer base {
+  :focus-visible {
+    outline: 2px solid oklch(0.55 0.2 290);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}

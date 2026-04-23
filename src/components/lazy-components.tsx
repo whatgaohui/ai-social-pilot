@@ -163,3 +163,11 @@ export const LazyAccountCollector = dynamic(
     })),
   { ssr: false, loading: () => <TabContentSkeleton /> }
 );
+
+export const LazyAIChatWorkspace = dynamic(
+  () =>
+    import("./right-panel/ai-chat-workspace").then((mod) => ({
+      default: mod.AIChatWorkspace,
+    })),
+  { ssr: false, loading: () => <TabContentSkeleton /> }
+);

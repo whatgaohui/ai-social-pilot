@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,8 +26,16 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -28,184 +43,151 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Bell,
   BellOff,
   CheckCircle,
-  XCircle,
+  Archive,
+  Trash2,
   Sparkles,
   AlertTriangle,
-  TrendingUp,
-  TrendingDown,
   Clock,
-  Wand2,
-  Send,
-  FileText,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-  BarChart3,
-  Megaphone,
+  Trophy,
   Info,
-  Heart,
-  Lightbulb,
+  CalendarClock,
   Bot,
-  PartyPopper,
-  Target,
+  Settings,
+  MoreVertical,
+  ChevronDown,
+  X,
+  Star,
+  Flame,
+  CalendarX,
+  Zap,
 } from "lucide-react";
 import type { AppNotification, NotificationType } from "@/types";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 
-// ─── Notification type config ───────────────────────────────────────
-const NOTIFICATION_CONFIG: Record<
-  NotificationType,
-  {
-    icon: typeof Info;
-    color: string;
-    bgColor: string;
-    label: string;
-    dotColor: string;
-  }
-> = {
+// ─── Notification type config (as specified) ───────────────────────
+interface NotifTypeConfig {
+  icon: typeof Info;
+  color: string;
+  bgColor: string;
+  borderLeftColor: string;
+  dotColor: string;
+  label: string;
+}
+
+const TYPE_CONFIG: Record<string, NotifTypeConfig> = {
   system: {
     icon: Info,
+    color: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-100 dark:bg-blue-900/30",
+    borderLeftColor: "border-l-blue-500 dark:border-l-blue-400",
+    dotColor: "bg-blue-500",
+    label: "系统",
+  },
+  reminder: {
+    icon: Bell,
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-100 dark:bg-amber-900/30",
+    borderLeftColor: "border-l-amber-500 dark:border-l-amber-400",
+    dotColor: "bg-amber-500",
+    label: "提醒",
+  },
+  achievement: {
+    icon: Trophy,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    borderLeftColor: "border-l-emerald-500 dark:border-l-emerald-400",
+    dotColor: "bg-emerald-500",
+    label: "成就",
+  },
+  schedule: {
+    icon: CalendarClock,
     color: "text-violet-600 dark:text-violet-400",
     bgColor: "bg-violet-100 dark:bg-violet-900/30",
-    label: "系统",
+    borderLeftColor: "border-l-violet-500 dark:border-l-violet-400",
     dotColor: "bg-violet-500",
-  },
-  ai_task: {
-    icon: Bot,
-    color: "text-emerald-600 dark:text-emerald-400",
-    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
-    label: "AI任务",
-    dotColor: "bg-emerald-500",
-  },
-  completion: {
-    icon: PartyPopper,
-    color: "text-emerald-600 dark:text-emerald-400",
-    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
-    label: "完成",
-    dotColor: "bg-emerald-500",
-  },
-  marketing: {
-    icon: Target,
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-100 dark:bg-amber-900/30",
-    label: "营销",
-    dotColor: "bg-amber-500",
-  },
-  publish: {
-    icon: Clock,
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-100 dark:bg-amber-900/30",
-    label: "发布",
-    dotColor: "bg-amber-500",
-  },
-  interaction: {
-    icon: Heart,
-    color: "text-rose-600 dark:text-rose-400",
-    bgColor: "bg-rose-100 dark:bg-rose-900/30",
-    label: "互动",
-    dotColor: "bg-rose-500",
+    label: "排期",
   },
   ai: {
     icon: Sparkles,
-    color: "text-violet-600 dark:text-violet-400",
-    bgColor: "bg-violet-100 dark:bg-violet-900/30",
+    color: "text-purple-600 dark:text-purple-400",
+    bgColor: "bg-purple-100 dark:bg-purple-900/30",
+    borderLeftColor: "border-l-purple-500 dark:border-l-purple-400",
+    dotColor: "bg-purple-500",
     label: "AI",
-    dotColor: "bg-violet-500",
   },
-  inspiration: {
-    icon: Lightbulb,
+  // Extended types (mapped to core)
+  ai_task: {
+    icon: Bot,
+    color: "text-purple-600 dark:text-purple-400",
+    bgColor: "bg-purple-100 dark:bg-purple-900/30",
+    borderLeftColor: "border-l-purple-500 dark:border-l-purple-400",
+    dotColor: "bg-purple-500",
+    label: "AI任务",
+  },
+  completion: {
+    icon: CheckCircle,
     color: "text-emerald-600 dark:text-emerald-400",
     bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
-    label: "灵感",
+    borderLeftColor: "border-l-emerald-500 dark:border-l-emerald-400",
     dotColor: "bg-emerald-500",
+    label: "完成",
   },
-  optimize: {
-    icon: Wand2,
-    color: "text-violet-600 dark:text-violet-400",
-    bgColor: "bg-violet-100 dark:bg-violet-900/30",
-    label: "优化",
-    dotColor: "bg-violet-500",
-  },
-  polish: {
-    icon: Sparkles,
+  marketing: {
+    icon: AlertTriangle,
     color: "text-amber-600 dark:text-amber-400",
     bgColor: "bg-amber-100 dark:bg-amber-900/30",
-    label: "润色",
+    borderLeftColor: "border-l-amber-500 dark:border-l-amber-400",
     dotColor: "bg-amber-500",
+    label: "营销",
   },
-  generate: {
-    icon: FileText,
-    color: "text-emerald-600 dark:text-emerald-400",
-    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
-    label: "生成",
-    dotColor: "bg-emerald-500",
-  },
-  reminder: {
+  publish: {
     icon: Clock,
-    color: "text-sky-600 dark:text-sky-400",
-    bgColor: "bg-sky-100 dark:bg-sky-900/30",
-    label: "提醒",
-    dotColor: "bg-sky-500",
+    color: "text-violet-600 dark:text-violet-400",
+    bgColor: "bg-violet-100 dark:bg-violet-900/30",
+    borderLeftColor: "border-l-violet-500 dark:border-l-violet-400",
+    dotColor: "bg-violet-500",
+    label: "发布",
+  },
+  interaction: {
+    icon: Star,
+    color: "text-rose-600 dark:text-rose-400",
+    bgColor: "bg-rose-100 dark:bg-rose-900/30",
+    borderLeftColor: "border-l-rose-500 dark:border-l-rose-400",
+    dotColor: "bg-rose-500",
+    label: "互动",
   },
   error: {
-    icon: XCircle,
+    icon: X,
     color: "text-red-600 dark:text-red-400",
     bgColor: "bg-red-100 dark:bg-red-900/30",
-    label: "错误",
+    borderLeftColor: "border-l-red-500 dark:border-l-red-400",
     dotColor: "bg-red-500",
+    label: "错误",
   },
 };
 
-// ─── Demo notifications ─────────────────────────────────────────────
-function generateDemoNotifications(): Omit<AppNotification, "id" | "timestamp" | "read">[] {
-  return [
-    {
-      type: "system",
-      title: "欢迎使用AI运营助手",
-      description: "为您打造个性化内容策略，自动规划、生成、优化朋友圈内容。点击了解更多功能。",
-    },
-    {
-      type: "marketing",
-      title: "本周营销提醒",
-      description: "本周计划中有3篇内容尚未发布，建议尽快安排发布时间以保持活跃度。",
-      actionLabel: "查看详情",
-      actionType: "viewPost",
-    },
-    {
-      type: "ai_task",
-      title: "AI文案生成完成",
-      description: "「职场心得分享」的AI内容生成已完成，得分85分（优秀）。点击查看优化建议。",
-      actionLabel: "查看详情",
-      actionType: "viewPost",
-    },
-    {
-      type: "completion",
-      title: "内容计划已生成",
-      description: "本月内容计划已自动生成，共包含12篇内容。建议逐一审核并安排发布。",
-      actionLabel: "查看计划",
-      actionType: "viewData",
-    },
-    {
-      type: "inspiration",
-      title: "今日热门话题：AI工具效率提升",
-      description: "当前热议话题「如何用AI工具提升工作效率」热度持续上升，建议创作相关内容获取流量。",
-      actionLabel: "查看详情",
-      actionType: "viewData",
-    },
-  ];
+function getTypeConfig(type?: string): NotifTypeConfig {
+  return TYPE_CONFIG[type || "system"] || TYPE_CONFIG.system;
 }
 
-// ─── DB Notification → AppNotification mapper ─────────────────────────
+// ─── DB notification type ──────────────────────────────────────────
 interface DbNotification {
   id: string;
   type: string;
+  category?: string;
   title: string;
   message: string;
   read: boolean;
+  isArchived?: boolean;
+  priority?: string;
   actionUrl: string;
   metadata: string;
   data: string;
@@ -214,24 +196,44 @@ interface DbNotification {
 
 function mapDbToApp(dbNotif: DbNotification): AppNotification {
   let meta: Record<string, unknown> = {};
-  try { meta = JSON.parse(dbNotif.metadata || '{}'); } catch { /* ignore */ }
+  try { meta = JSON.parse(dbNotif.metadata || "{}"); } catch { /* ignore */ }
   return {
     id: dbNotif.id,
-    type: (dbNotif.type as NotificationType) || 'system',
+    type: (dbNotif.type as NotificationType) || "system",
+    category: (dbNotif.category as AppNotification["category"]) || undefined,
     title: dbNotif.title,
-    description: dbNotif.message || '',
+    description: dbNotif.message || "",
     timestamp: new Date(dbNotif.createdAt).getTime(),
     read: dbNotif.read,
     actionLabel: (meta.actionLabel as string) || undefined,
-    actionType: (meta.actionType as 'viewPost' | 'viewData' | 'dismiss') || undefined,
+    actionType: (meta.actionType as "viewPost" | "viewData" | "dismiss") || undefined,
     postId: (meta.postId as string) || undefined,
   };
 }
 
-// ─── Helper: format relative time ───────────────────────────────────
-function formatTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
+// ─── Time grouping helper ──────────────────────────────────────────
+type TimeGroup = "today" | "yesterday" | "earlier";
+
+function getTimeGroup(timestamp: number): TimeGroup {
+  const now = new Date();
+  const date = new Date(timestamp);
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 86400000;
+
+  if (timestamp >= todayStart) return "today";
+  if (timestamp >= yesterdayStart) return "yesterday";
+  return "earlier";
+}
+
+const TIME_GROUP_LABELS: Record<TimeGroup, string> = {
+  today: "今天",
+  yesterday: "昨天",
+  earlier: "更早",
+};
+
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
@@ -241,84 +243,148 @@ function formatTime(timestamp: number): string {
   if (minutes < 60) return `${minutes}分钟前`;
   if (hours < 24) return `${hours}小时前`;
   if (days < 7) return `${days}天前`;
-
-  try {
-    return formatDistanceToNow(new Date(timestamp), {
-      addSuffix: true,
-      locale: zhCN,
-    });
-  } catch {
-    return "刚刚";
-  }
+  return `${Math.floor(days / 7)}周前`;
 }
 
-// ─── Animation variants ─────────────────────────────────────────────
+// ─── Filter tabs ──────────────────────────────────────────────────
+const FILTER_TABS = [
+  { value: "all", label: "全部" },
+  { value: "system", label: "系统" },
+  { value: "reminder", label: "提醒" },
+  { value: "achievement", label: "成就" },
+  { value: "schedule", label: "排期" },
+  { value: "ai", label: "AI" },
+] as const;
+
+type FilterValue = (typeof FILTER_TABS)[number]["value"];
+
+// ─── Animation variants ───────────────────────────────────────────
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.04,
-      delayChildren: 0.05,
-    },
+    transition: { staggerChildren: 0.04, delayChildren: 0.05 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, x: -12, y: 4 },
+  hidden: { opacity: 0, x: -8, y: 2 },
   visible: {
     opacity: 1,
     x: 0,
     y: 0,
     transition: { type: "spring", stiffness: 500, damping: 30 },
   },
-  exit: { opacity: 0, x: 12, height: 0, marginBottom: 0, transition: { duration: 0.2 } },
+  exit: {
+    opacity: 0,
+    x: 16,
+    height: 0,
+    marginBottom: 0,
+    transition: { duration: 0.2 },
+  },
 };
 
-// ─── Single notification card ───────────────────────────────────────
+// ─── Achievement card (special gradient design) ────────────────────
+function AchievementCard({
+  notification,
+  onRead,
+  onDismiss,
+}: {
+  notification: AppNotification;
+  onRead: (id: string) => void;
+  onDismiss: (id: string) => void;
+}) {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9, height: 0 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      className="relative overflow-hidden rounded-xl cursor-pointer group"
+      onClick={() => {
+        if (!notification.read) onRead(notification.id);
+      }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-amber-500/10 to-violet-500/10 dark:from-emerald-500/20 dark:via-amber-500/20 dark:to-violet-500/20" />
+      <div className="relative z-10 flex items-start gap-3 p-3">
+        <motion.div
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="flex-shrink-0 h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20"
+        >
+          <Trophy className="h-5 w-5 text-white" />
+        </motion.div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-xs font-bold text-foreground">{notification.title}</span>
+            {!notification.read && (
+              <span className="flex-shrink-0 h-2 w-2 rounded-full bg-emerald-500" />
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+            {notification.description}
+          </p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-[10px] text-muted-foreground/70">
+              {formatRelativeTime(notification.timestamp)}
+            </span>
+            <Badge className="h-4 px-1.5 text-[9px] font-normal bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0">
+              <Star className="h-2.5 w-2.5 mr-0.5" />
+              成就
+            </Badge>
+          </div>
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDismiss(notification.id); }}
+          className="flex-shrink-0 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-muted flex items-center justify-center transition-all"
+          aria-label="关闭"
+        >
+          <X className="h-3 w-3 text-muted-foreground" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Regular notification card ────────────────────────────────────
 function NotificationCard({
   notification,
   onRead,
+  onDismiss,
   onAction,
 }: {
   notification: AppNotification;
   onRead: (id: string) => void;
+  onDismiss: (id: string) => void;
   onAction: (notification: AppNotification) => void;
 }) {
-  const config = NOTIFICATION_CONFIG[notification.type] || NOTIFICATION_CONFIG.system;
+  const config = getTypeConfig(notification.type);
   const Icon = config.icon;
 
   return (
     <motion.div
       variants={itemVariants}
       layout
-      className={`group flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors hover:bg-muted/50 border-l-2 ${
+      className={`group relative flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors hover:bg-muted/50 border-l-[3px] ${
         !notification.read
-          ? "border-l-violet-500 bg-violet-50/50 dark:bg-violet-950/10 dark:border-l-violet-400"
+          ? `${config.borderLeftColor} bg-muted/30`
           : "border-l-transparent"
       }`}
       onClick={() => {
         if (!notification.read) onRead(notification.id);
       }}
     >
-      <div
-        className={`flex-shrink-0 h-8 w-8 rounded-lg ${config.bgColor} flex items-center justify-center mt-0.5`}
-      >
+      <div className={`flex-shrink-0 h-8 w-8 rounded-lg ${config.bgColor} flex items-center justify-center mt-0.5`}>
         <Icon className={`h-4 w-4 ${config.color}`} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span
-            className={`text-xs truncate ${
-              !notification.read ? "font-bold text-foreground" : "font-medium text-foreground/80"
-            }`}
-          >
+          <span className={`text-xs truncate ${!notification.read ? "font-bold text-foreground" : "font-medium text-foreground/80"}`}>
             {notification.title}
           </span>
           {!notification.read && (
-            <span
-              className={`flex-shrink-0 h-2 w-2 rounded-full ${config.dotColor}`}
-            />
+            <span className={`flex-shrink-0 h-2 w-2 rounded-full ${config.dotColor}`} />
           )}
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
@@ -326,19 +392,16 @@ function NotificationCard({
         </p>
         <div className="flex items-center gap-2 mt-1.5">
           <span className="text-[10px] text-muted-foreground/70">
-            {formatTime(notification.timestamp)}
+            {formatRelativeTime(notification.timestamp)}
           </span>
-          <Badge
-            variant="secondary"
-            className="h-4 px-1.5 text-[9px] font-normal"
-          >
+          <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal">
             {config.label}
           </Badge>
           {notification.actionLabel && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-5 px-2 text-[10px] text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/30"
+              className="h-5 px-2 text-[10px] text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/30"
               onClick={(e) => {
                 e.stopPropagation();
                 if (!notification.read) onRead(notification.id);
@@ -350,27 +413,85 @@ function NotificationCard({
           )}
         </div>
       </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onDismiss(notification.id); }}
+        className="flex-shrink-0 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-muted flex items-center justify-center transition-all"
+        aria-label="关闭"
+      >
+        <X className="h-3 w-3 text-muted-foreground" />
+      </button>
     </motion.div>
   );
 }
 
-// ─── Smart Reminder card ────────────────────────────────────────────
-function ReminderCard({
+// ─── Time-grouped section ──────────────────────────────────────────
+function TimeGroupSection({
+  label,
+  notifications,
+  onRead,
+  onDismiss,
+  onAction,
+}: {
+  label: string;
+  notifications: AppNotification[];
+  onRead: (id: string) => void;
+  onDismiss: (id: string) => void;
+  onAction: (notification: AppNotification) => void;
+}) {
+  if (notifications.length === 0) return null;
+  return (
+    <div>
+      <div className="flex items-center gap-2 px-1 py-1.5">
+        <span className="text-[11px] font-semibold text-muted-foreground">{label}</span>
+        <Badge variant="secondary" className="h-4 px-1.5 text-[9px]">
+          {notifications.length}
+        </Badge>
+      </div>
+      <motion.div className="space-y-1" variants={containerVariants} initial="hidden" animate="visible">
+        <AnimatePresence mode="popLayout">
+          {notifications.map((notification) => {
+            if (notification.type === "achievement") {
+              return (
+                <AchievementCard
+                  key={notification.id}
+                  notification={notification}
+                  onRead={onRead}
+                  onDismiss={onDismiss}
+                />
+              );
+            }
+            return (
+              <NotificationCard
+                key={notification.id}
+                notification={notification}
+                onRead={onRead}
+                onDismiss={onDismiss}
+                onAction={onAction}
+              />
+            );
+          })}
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Smart reminder card ──────────────────────────────────────────
+function SmartReminderCard({
   icon: Icon,
   color,
   bgColor,
   label,
-  count,
+  description,
   onClick,
 }: {
-  icon: typeof Clock;
+  icon: typeof Info;
   color: string;
   bgColor: string;
   label: string;
-  count: number;
+  description: string;
   onClick: () => void;
 }) {
-  if (count === 0) return null;
   return (
     <motion.button
       whileHover={{ scale: 1.01 }}
@@ -378,124 +499,221 @@ function ReminderCard({
       onClick={onClick}
       className="w-full flex items-center gap-3 p-3 rounded-xl border border-border/50 hover:bg-muted/50 transition-colors text-left"
     >
-      <div
-        className={`flex-shrink-0 h-8 w-8 rounded-lg ${bgColor} flex items-center justify-center`}
-      >
+      <div className={`flex-shrink-0 h-8 w-8 rounded-lg ${bgColor} flex items-center justify-center`}>
         <Icon className={`h-4 w-4 ${color}`} />
       </div>
       <div className="flex-1 min-w-0">
         <span className="text-xs font-medium">{label}</span>
+        <p className="text-[10px] text-muted-foreground truncate">{description}</p>
       </div>
-      <Badge
-        variant="secondary"
-        className="h-5 px-2 text-[10px] font-semibold tabular-nums"
-      >
-        {count}
-      </Badge>
     </motion.button>
   );
 }
 
-// ─── Quick Stats ────────────────────────────────────────────────────
-function QuickStats() {
-  const contentPosts = useAppStore((s) => s.contentPosts);
-
-  const stats = useMemo(() => {
-    const total = contentPosts.length;
-    const published = contentPosts.filter((p) => p.status === "published").length;
-    const publishedRate = total > 0 ? Math.round((published / total) * 100) : 0;
-    const scoredPosts = contentPosts.filter((p) => p.aiScore > 0);
-    const avgScore =
-      scoredPosts.length > 0
-        ? Math.round(
-            scoredPosts.reduce((sum, p) => sum + p.aiScore, 0) /
-              scoredPosts.length
-          )
-        : 0;
-    return { total, published, publishedRate, avgScore };
-  }, [contentPosts]);
-
-  const trendUp = stats.publishedRate >= 50;
-
-  return (
-    <div className="grid grid-cols-3 gap-2">
-      <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-        <div className="text-lg font-bold tabular-nums text-foreground">
-          {stats.total}
-        </div>
-        <div className="text-[10px] text-muted-foreground">总内容</div>
-      </div>
-      <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-        <div className="flex items-center justify-center gap-1">
-          <span className="text-lg font-bold tabular-nums text-foreground">
-            {stats.publishedRate}%
-          </span>
-          {stats.total > 0 && (
-            <span
-              className={`text-[10px] ${trendUp ? "text-emerald-500" : "text-amber-500"}`}
-            >
-              {trendUp ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-            </span>
-          )}
-        </div>
-        <div className="text-[10px] text-muted-foreground">发布率</div>
-      </div>
-      <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-        <div className="text-lg font-bold tabular-nums text-foreground">
-          {stats.avgScore || "-"}
-        </div>
-        <div className="text-[10px] text-muted-foreground">平均分</div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Empty state with BellOff ───────────────────────────────────────
+// ─── Beautiful empty state ────────────────────────────────────────
 function EmptyState() {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="flex flex-col items-center py-10 text-muted-foreground"
+      transition={{ duration: 0.4 }}
+      className="flex flex-col items-center py-12 text-muted-foreground"
     >
-      <div className="relative mb-3">
-        <BellOff className="h-10 w-10 opacity-20" />
+      <div className="relative mb-4">
         <motion.div
-          className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-muted-foreground/20"
-          animate={{ scale: [1, 1.2, 1] }}
+          className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-900/30 dark:to-violet-900/30 flex items-center justify-center"
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <BellOff className="h-8 w-8 text-blue-400 dark:text-blue-500" />
+        </motion.div>
+        <motion.div
+          className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-blue-300 dark:bg-blue-600"
+          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
+        <motion.div
+          className="absolute -bottom-1 -left-1 h-2 w-2 rounded-full bg-emerald-300 dark:bg-emerald-600"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }}
+          transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+        />
       </div>
-      <span className="text-sm font-medium">暂无通知</span>
-      <span className="text-[11px] mt-1 text-muted-foreground/70">
+      <span className="text-sm font-semibold text-foreground/80 mb-1">暂无通知</span>
+      <span className="text-[11px] text-muted-foreground/60 text-center max-w-[200px] leading-relaxed">
         新消息和操作提醒将在这里显示
       </span>
     </motion.div>
   );
 }
 
-// ─── Notification type filter tabs ──────────────────────────────────
-const FILTER_TABS = [
-  { value: "all", label: "全部" },
-  { value: "ai_task", label: "AI任务" },
-  { value: "system", label: "系统" },
-  { value: "marketing", label: "营销" },
-  { value: "completion", label: "完成" },
-  { value: "ai", label: "AI" },
-] as const;
+// ─── Notification preferences settings ────────────────────────────
+interface NotifPreferences {
+  system: boolean;
+  reminder: boolean;
+  achievement: boolean;
+  schedule: boolean;
+  ai: boolean;
+  dndEnabled: boolean;
+  dndStart: string;
+  dndEnd: string;
+  previewMode: "full" | "summary" | "title";
+}
 
-type FilterValue = (typeof FILTER_TABS)[number]["value"];
+const DEFAULT_PREFERENCES: NotifPreferences = {
+  system: true,
+  reminder: true,
+  achievement: true,
+  schedule: true,
+  ai: true,
+  dndEnabled: false,
+  dndStart: "22:00",
+  dndEnd: "08:00",
+  previewMode: "summary",
+};
 
-// ─── Main Notification Center Panel ─────────────────────────────────
+function loadPreferences(): NotifPreferences {
+  if (typeof window === "undefined") return DEFAULT_PREFERENCES;
+  try {
+    const stored = localStorage.getItem("notif-preferences");
+    if (stored) return { ...DEFAULT_PREFERENCES, ...JSON.parse(stored) };
+  } catch { /* ignore */ }
+  return DEFAULT_PREFERENCES;
+}
+
+function NotificationPreferencesPanel() {
+  const [prefs, setPrefs] = useState<NotifPreferences>(loadPreferences);
+
+  const updatePref = useCallback(
+    <K extends keyof NotifPreferences>(key: K, value: NotifPreferences[K]) => {
+      setPrefs((prev) => {
+        const next = { ...prev, [key]: value };
+        try { localStorage.setItem("notif-preferences", JSON.stringify(next)); } catch { /* ignore */ }
+        return next;
+      });
+    },
+    []
+  );
+
+  const typeToggles = [
+    { key: "system" as const, label: "系统通知", desc: "版本更新、系统公告", icon: Info, color: "text-blue-500" },
+    { key: "reminder" as const, label: "排期提醒", desc: "内容发布、到期提醒", icon: Bell, color: "text-amber-500" },
+    { key: "ai" as const, label: "AI完成通知", desc: "AI生成、优化任务完成", icon: Sparkles, color: "text-purple-500" },
+    { key: "achievement" as const, label: "成就通知", desc: "里程碑、成就解锁", icon: Trophy, color: "text-emerald-500" },
+  ];
+
+  const previewModes = [
+    { value: "full" as const, label: "完整内容" },
+    { value: "summary" as const, label: "摘要预览" },
+    { value: "title" as const, label: "仅标题" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Type toggles */}
+      <div>
+        <h3 className="text-sm font-semibold mb-3">通知类型</h3>
+        <div className="space-y-3">
+          {typeToggles.map((toggle) => {
+            const Icon = toggle.icon;
+            return (
+              <div key={toggle.key} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                    <Icon className={`h-4 w-4 ${toggle.color}`} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium">{toggle.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{toggle.desc}</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={prefs[toggle.key]}
+                  onCheckedChange={(v) => updatePref(toggle.key, v)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* DND */}
+      <div>
+        <h3 className="text-sm font-semibold mb-3">免打扰时段</h3>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs">开启免打扰</span>
+          </div>
+          <Switch
+            checked={prefs.dndEnabled}
+            onCheckedChange={(v) => updatePref("dndEnabled", v)}
+          />
+        </div>
+        {prefs.dndEnabled && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex items-center gap-3"
+          >
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-muted-foreground">从</label>
+              <input
+                type="time"
+                value={prefs.dndStart}
+                onChange={(e) => updatePref("dndStart", e.target.value)}
+                className="h-7 px-2 text-xs rounded-md border bg-background"
+              />
+            </div>
+            <span className="text-[10px] text-muted-foreground">至</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="time"
+                value={prefs.dndEnd}
+                onChange={(e) => updatePref("dndEnd", e.target.value)}
+                className="h-7 px-2 text-xs rounded-md border bg-background"
+              />
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      <Separator />
+
+      {/* Preview mode */}
+      <div>
+        <h3 className="text-sm font-semibold mb-3">通知预览方式</h3>
+        <div className="flex gap-2">
+          {previewModes.map((mode) => (
+            <button
+              key={mode.value}
+              onClick={() => updatePref("previewMode", mode.value)}
+              className={`relative flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors border ${
+                prefs.previewMode === mode.value
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground border-border"
+              }`}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Notification Center Panel (shared content) ───────────────────
 function NotificationCenterPanel({
   onAction,
+  showPreferences,
+  onTogglePreferences,
 }: {
   onAction?: (notification: AppNotification) => void;
+  showPreferences: boolean;
+  onTogglePreferences: () => void;
 }) {
   const {
     notifications,
@@ -505,37 +723,32 @@ function NotificationCenterPanel({
     contentPosts,
     setSelectedPostId,
     setRightPanelTab,
-    addNotification,
   } = useAppStore();
-  const [showReminders, setShowReminders] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
-  const initialized = useRef(false);
-
-  // API-persisted notifications (merged with store)
   const [apiNotifications, setApiNotifications] = useState<AppNotification[]>([]);
-  const [clearingRead, setClearingRead] = useState(false);
+  const initialized = useRef(false);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch notifications from API on mount
+  // Fetch from API
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
 
-    // Try loading from API first
     (async () => {
       try {
-        const res = await fetch('/api/notifications');
+        const res = await fetch("/api/notifications?limit=50");
         if (res.ok) {
-          const data: DbNotification[] = await res.json();
+          const json = await res.json();
+          const data: DbNotification[] = json.notifications || json;
           if (Array.isArray(data) && data.length > 0) {
             setApiNotifications(data.map(mapDbToApp));
-            return;
           }
         }
       } catch {
-        // API unavailable – fall back to demo data
+        // fallback to store
       }
 
-      // Fallback: check localStorage or generate demo data
+      // Fallback: generate demo if store empty
       const current = useAppStore.getState().notifications;
       if (current.length === 0) {
         try {
@@ -544,105 +757,74 @@ function NotificationCenterPanel({
             const parsed = JSON.parse(stored) as AppNotification[];
             if (Array.isArray(parsed) && parsed.length > 0) {
               useAppStore.setState({ notifications: parsed });
-              return;
             }
           }
-        } catch {
-          // ignore
-        }
-
-        // Generate demo notifications
-        const demos = generateDemoNotifications();
-        for (const demo of demos) {
-          addNotification(demo);
-        }
+        } catch { /* ignore */ }
       }
+      setLoading(false);
     })();
-  }, [addNotification]);
-
-  // Helper: create notification via API and add to local state
-  const createApiNotification = useCallback(async (
-    data: Omit<AppNotification, 'id' | 'timestamp' | 'read'>
-  ) => {
-    try {
-      const res = await fetch('/api/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: data.type,
-          title: data.title,
-          message: data.description,
-          actionUrl: '',
-          metadata: JSON.stringify({
-            actionLabel: data.actionLabel,
-            actionType: data.actionType,
-            postId: data.postId,
-          }),
-        }),
-      });
-      if (res.ok) {
-        const created: DbNotification = await res.json();
-        setApiNotifications((prev) => [mapDbToApp(created), ...prev].slice(0, 50));
-      }
-    } catch {
-      // API unavailable – add to store only
-    }
   }, []);
 
-  // Helper: mark single notification as read (API + store)
-  const handleMarkRead = useCallback(async (id: string) => {
-    markNotificationRead(id);
-    setApiNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-    try {
-      await fetch('/api/notifications/mark-read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: [id] }),
-      });
-    } catch {
-      // ignore
-    }
-  }, [markNotificationRead]);
+  // Mark single as read
+  const handleMarkRead = useCallback(
+    async (id: string) => {
+      markNotificationRead(id);
+      setApiNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      );
+      try {
+        await fetch("/api/notifications/mark-read", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: [id] }),
+        });
+      } catch { /* ignore */ }
+    },
+    [markNotificationRead]
+  );
 
-  // Helper: mark all as read (API + store)
+  // Mark all as read
   const handleMarkAllRead = useCallback(async () => {
     markAllNotificationsRead();
     setApiNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
-      await fetch('/api/notifications', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ markAllRead: true }),
       });
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   }, [markAllNotificationsRead]);
 
-  // Helper: clear read notifications (API + store)
-  const handleClearRead = useCallback(async () => {
-    clearNotifications();
-    setApiNotifications((prev) => prev.filter((n) => !n.read));
-    setClearingRead(true);
+  // Dismiss single notification
+  const handleDismiss = useCallback(async (id: string) => {
+    setApiNotifications((prev) => prev.filter((n) => n.id !== id));
     try {
-      await fetch('/api/notifications', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clearRead: true }),
+      await fetch("/api/notifications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [id] }),
       });
-    } catch {
-      // ignore
-    }
-    setTimeout(() => setClearingRead(false), 800);
-  }, [clearNotifications]);
+    } catch { /* ignore */ }
+  }, []);
 
-  // Merge: API notifications first, then store (demo) notifications, deduplicated
+  // Archive all read
+  const handleArchiveRead = useCallback(async () => {
+    setApiNotifications((prev) => prev.filter((n) => !n.read));
+    try {
+      await fetch("/api/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archiveAllRead: true }),
+      });
+    } catch { /* ignore */ }
+  }, []);
+
+  // Merge notifications
   const mergedNotifications = useMemo(() => {
     const storeIds = new Set(notifications.map((n) => n.id));
     const apiFiltered = apiNotifications.filter((n) => !storeIds.has(n.id));
-    return [...apiFiltered, ...notifications].slice(0, 30);
+    return [...apiFiltered, ...notifications];
   }, [apiNotifications, notifications]);
 
   const unreadCount = useMemo(
@@ -655,60 +837,167 @@ function NotificationCenterPanel({
     [mergedNotifications]
   );
 
-  // Smart reminders computed from contentPosts
-  const reminders = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
-    return {
-      unpublished: contentPosts.filter((p) => p.status !== "published")
-        .length,
-      needsOptimize: contentPosts.filter((p) => p.status === "generated")
-        .length,
-      lowScore: contentPosts.filter(
-        (p) => p.aiScore > 0 && p.aiScore < 50
-      ).length,
-      todayScheduled: contentPosts.filter(
-        (p) => p.scheduledDate === today && p.status !== "published"
-      ).length,
+  // Filter by type
+  const filteredNotifications = useMemo(() => {
+    if (activeFilter === "all") return mergedNotifications;
+    // Map filter to notification types
+    if (activeFilter === "ai") {
+      return mergedNotifications.filter(
+        (n) =>
+          n.type === "ai" ||
+          n.type === "ai_task" ||
+          n.type === "generate" ||
+          n.type === "optimize" ||
+          n.type === "polish" ||
+          n.type === "completion"
+      );
+    }
+    return mergedNotifications.filter((n) => n.type === activeFilter);
+  }, [mergedNotifications, activeFilter]);
+
+  // Group by time
+  const groupedNotifications = useMemo(() => {
+    const groups: Record<TimeGroup, AppNotification[]> = {
+      today: [],
+      yesterday: [],
+      earlier: [],
     };
-  }, [contentPosts]);
+    for (const n of filteredNotifications) {
+      const group = getTimeGroup(n.timestamp);
+      groups[group].push(n);
+    }
+    return groups;
+  }, [filteredNotifications]);
 
-  const totalReminders = useMemo(
-    () =>
-      Object.values(reminders).reduce((sum, v) => sum + (v > 0 ? 1 : 0), 0),
-    [reminders]
-  );
+  // Filter counts
+  const filterCounts = useMemo(() => {
+    const all = mergedNotifications.length;
+    const system = mergedNotifications.filter((n) => n.type === "system").length;
+    const reminder = mergedNotifications.filter(
+      (n) => n.type === "reminder" || n.type === "publish" || n.type === "marketing"
+    ).length;
+    const achievement = mergedNotifications.filter(
+      (n) => n.type === "achievement" || n.type === "completion"
+    ).length;
+    const schedule = mergedNotifications.filter(
+      (n) => n.type === "schedule" || n.type === "calendar"
+    ).length;
+    const ai = mergedNotifications.filter(
+      (n) =>
+        n.type === "ai" ||
+        n.type === "ai_task" ||
+        n.type === "generate" ||
+        n.type === "optimize" ||
+        n.type === "polish"
+    ).length;
+    return { all, system, reminder, achievement, schedule, ai };
+  }, [mergedNotifications]);
 
-  const handleReminderClick = useCallback(
-    (filterType: string) => {
-      const targetPosts = contentPosts.filter((p) => {
-        switch (filterType) {
-          case "unpublished":
-            return p.status !== "published";
-          case "needsOptimize":
-            return p.status === "generated";
-          case "lowScore":
-            return p.aiScore > 0 && p.aiScore < 50;
-          case "todayScheduled": {
-            const today = new Date().toISOString().split("T")[0];
-            return p.scheduledDate === today && p.status !== "published";
-          }
-          default:
-            return false;
-        }
+  // Smart reminders from content
+  const smartReminders = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const posts = contentPosts;
+    const reminders: {
+      icon: typeof Info;
+      color: string;
+      bgColor: string;
+      label: string;
+      description: string;
+      action: () => void;
+    }[] = [];
+
+    // 1. Content expiring soon (scheduled for today but not published)
+    const todayScheduled = posts.filter(
+      (p) => p.scheduledDate === today && p.status !== "published"
+    );
+    if (todayScheduled.length > 0) {
+      reminders.push({
+        icon: CalendarClock,
+        color: "text-violet-600 dark:text-violet-400",
+        bgColor: "bg-violet-100 dark:bg-violet-900/30",
+        label: "今日待发布",
+        description: `${todayScheduled.length} 篇内容计划今日发布`,
+        action: () => {
+          setSelectedPostId(todayScheduled[0].id);
+          setRightPanelTab("workspace");
+        },
       });
-      if (targetPosts.length > 0) {
-        setSelectedPostId(targetPosts[0].id);
-        setRightPanelTab("copywriting");
-      }
-    },
-    [contentPosts, setSelectedPostId, setRightPanelTab]
-  );
+    }
 
+    // 2. Interaction milestone (likes > 100)
+    const highEngagement = posts.filter(
+      (p) => p.likes >= 100 || p.comments >= 50 || p.shares >= 20
+    );
+    const justReached = highEngagement.filter((p) => {
+      const ratio = p.likes > 0 ? p.likes / Math.max(p.views, 1) : 0;
+      return ratio > 0.1;
+    });
+    if (justReached.length > 0) {
+      reminders.push({
+        icon: Flame,
+        color: "text-rose-600 dark:text-rose-400",
+        bgColor: "bg-rose-100 dark:bg-rose-900/30",
+        label: "互动里程碑",
+        description: `${justReached.length} 篇内容互动率超过10%`,
+        action: () => {
+          setSelectedPostId(justReached[0].id);
+          setRightPanelTab("workspace");
+        },
+      });
+    }
+
+    // 3. Content calendar gap (3+ days without content)
+    const scheduledDates = posts
+      .map((p) => p.scheduledDate)
+      .filter(Boolean)
+      .sort();
+    if (scheduledDates.length >= 2) {
+      let maxGap = 0;
+      for (let i = 1; i < scheduledDates.length; i++) {
+        const d1 = new Date(scheduledDates[i - 1]);
+        const d2 = new Date(scheduledDates[i]);
+        const diffDays = (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24);
+        if (diffDays > maxGap) maxGap = diffDays;
+      }
+      if (maxGap >= 3) {
+        reminders.push({
+          icon: CalendarX,
+          color: "text-amber-600 dark:text-amber-400",
+          bgColor: "bg-amber-100 dark:bg-amber-900/30",
+          label: "内容日历空缺",
+          description: `排期中有 ${Math.round(maxGap)} 天空缺`,
+          action: () => {
+            setRightPanelTab("workspace");
+          },
+        });
+      }
+    }
+
+    // 4. Low AI score content
+    const lowScore = posts.filter((p) => p.aiScore > 0 && p.aiScore < 50);
+    if (lowScore.length > 0) {
+      reminders.push({
+        icon: Zap,
+        color: "text-purple-600 dark:text-purple-400",
+        bgColor: "bg-purple-100 dark:bg-purple-900/30",
+        label: "AI优化建议",
+        description: `${lowScore.length} 篇内容AI评分低于50`,
+        action: () => {
+          setSelectedPostId(lowScore[0].id);
+          setRightPanelTab("workspace");
+        },
+      });
+    }
+
+    return reminders;
+  }, [contentPosts, setSelectedPostId, setRightPanelTab]);
+
+  // Handle notification action
   const handleNotificationAction = useCallback(
     (notification: AppNotification) => {
       if (notification.actionType === "viewPost" && notification.postId) {
         setSelectedPostId(notification.postId);
-        setRightPanelTab("copywriting");
+        setRightPanelTab("workspace");
       } else if (notification.actionType === "viewData") {
         setRightPanelTab("data");
       }
@@ -717,52 +1006,67 @@ function NotificationCenterPanel({
     [setSelectedPostId, setRightPanelTab, onAction]
   );
 
-  // Filter notifications (max 20)
-  const filteredNotifications = useMemo(() => {
-    let filtered = mergedNotifications;
-    if (activeFilter !== "all") {
-      // Map filter to notification types
-      if (activeFilter === "ai_task") {
-        filtered = filtered.filter((n) => n.type === "ai_task" || n.type === "ai" || n.type === "generate" || n.type === "optimize" || n.type === "polish");
-      } else if (activeFilter === "completion") {
-        filtered = filtered.filter((n) => n.type === "completion" || n.type === "generate");
-      } else if (activeFilter === "marketing") {
-        filtered = filtered.filter((n) => n.type === "marketing" || n.type === "publish");
-      } else {
-        filtered = filtered.filter((n) => n.type === activeFilter);
-      }
-    }
-    return filtered.slice(0, 20);
-  }, [mergedNotifications, activeFilter]);
+  // ─── Preferences view ───────────────────────────────────────────
+  if (showPreferences) {
+    return (
+      <div className="w-80 sm:w-[400px] max-h-[75vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-2">
+            <Settings className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold">通知偏好设置</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-[10px]"
+            onClick={onTogglePreferences}
+          >
+            返回
+          </Button>
+        </div>
+        <ScrollArea className="flex-1 max-h-[60vh]">
+          <div className="p-4">
+            <NotificationPreferencesPanel />
+          </div>
+        </ScrollArea>
+      </div>
+    );
+  }
 
-  // Count per filter for filter tabs
-  const filterCounts = useMemo(() => {
-    const all = mergedNotifications.length;
-    const aiTask = mergedNotifications.filter((n) => n.type === "ai_task" || n.type === "ai" || n.type === "generate" || n.type === "optimize" || n.type === "polish").length;
-    const system = mergedNotifications.filter((n) => n.type === "system").length;
-    const marketing = mergedNotifications.filter((n) => n.type === "marketing" || n.type === "publish").length;
-    const completion = mergedNotifications.filter((n) => n.type === "completion" || n.type === "generate").length;
-    const ai = mergedNotifications.filter((n) => n.type === "ai").length;
-    return { all, ai_task: aiTask, system, marketing, completion, ai };
-  }, [mergedNotifications]);
+  // ─── Notification list view ─────────────────────────────────────
+  const hasAnyContent = mergedNotifications.length > 0 || smartReminders.length > 0;
 
-  const panelContent = (
-    <div className="w-80 sm:w-96 max-h-[70vh] flex flex-col">
+  return (
+    <div className="w-80 sm:w-[400px] max-h-[75vh] flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
         <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-violet-500" />
-          <span className="text-sm font-semibold">通知中心</span>
+          <Bell className="h-4 w-4 text-blue-500" />
+          <span className="text-sm font-semibold">消息中心</span>
           {unreadCount > 0 && (
-            <Badge
-              variant="secondary"
-              className="h-5 px-1.5 text-[10px] bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
-            >
+            <Badge className="h-5 px-1.5 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-0">
               {unreadCount} 未读
             </Badge>
           )}
         </div>
         <div className="flex items-center gap-1">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={onTogglePreferences}
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                <p>通知偏好设置</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -774,226 +1078,200 @@ function NotificationCenterPanel({
               全部已读
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-[10px] text-muted-foreground hover:text-red-500"
-            onClick={handleClearRead}
-            disabled={clearingRead || !hasReadItems}
-          >
-            <Trash2 className={`h-3 w-3 mr-1 ${clearingRead ? 'animate-pulse' : ''}`} />
-            清除已读
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <MoreVertical className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              {hasReadItems && (
+                <DropdownMenuItem onClick={handleArchiveRead} className="text-xs">
+                  <Archive className="h-3.5 w-3.5 mr-2" />
+                  归档已读
+                </DropdownMenuItem>
+              )}
+              {hasReadItems && (
+                <DropdownMenuItem onClick={clearNotifications} className="text-xs">
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                  清除已读
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={handleMarkAllRead} className="text-xs">
+                <CheckCircle className="h-3.5 w-3.5 mr-2" />
+                全部标记已读
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 max-h-96">
-        <div className="p-3 space-y-3">
-          {/* Quick Stats */}
-          <QuickStats />
-
-          <Separator />
-
-          {/* Smart Reminders */}
-          <div>
-            <button
-              className="w-full flex items-center justify-between py-1"
-              onClick={() => setShowReminders(!showReminders)}
-            >
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                <span className="text-xs font-semibold">智能提醒</span>
-                {totalReminders > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="h-4 px-1.5 text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                  >
-                    {totalReminders}
-                  </Badge>
-                )}
-              </div>
-              {showReminders ? (
-                <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              )}
-            </button>
-
-            <AnimatePresence>
-              {showReminders && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="space-y-1.5 pt-2">
-                    <ReminderCard
-                      icon={Megaphone}
-                      color="text-violet-600 dark:text-violet-400"
-                      bgColor="bg-violet-100 dark:bg-violet-900/30"
-                      label="待发布内容"
-                      count={reminders.unpublished}
-                      onClick={() => handleReminderClick("unpublished")}
-                    />
-                    <ReminderCard
-                      icon={Wand2}
-                      color="text-emerald-600 dark:text-emerald-400"
-                      bgColor="bg-emerald-100 dark:bg-emerald-900/30"
-                      label="待优化内容"
-                      count={reminders.needsOptimize}
-                      onClick={() => handleReminderClick("needsOptimize")}
-                    />
-                    <ReminderCard
-                      icon={AlertTriangle}
-                      color="text-amber-600 dark:text-amber-400"
-                      bgColor="bg-amber-100 dark:bg-amber-900/30"
-                      label="低评分内容"
-                      count={reminders.lowScore}
-                      onClick={() => handleReminderClick("lowScore")}
-                    />
-                    <ReminderCard
-                      icon={Clock}
-                      color="text-rose-600 dark:text-rose-400"
-                      bgColor="bg-rose-100 dark:bg-rose-900/30"
-                      label="今日待发布"
-                      count={reminders.todayScheduled}
-                      onClick={() => handleReminderClick("todayScheduled")}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {totalReminders === 0 && showReminders && (
-              <div className="flex flex-col items-center py-4 text-muted-foreground">
-                <CheckCircle className="h-6 w-6 mb-1.5 opacity-40" />
-                <span className="text-[11px]">暂无提醒事项</span>
-              </div>
-            )}
-          </div>
-
-          <Separator />
-
-          {/* Notification filter tabs */}
-          <div className="flex gap-1 overflow-x-auto scrollbar-none pb-1">
-            {FILTER_TABS.map((tab) => {
-              const isActive = activeFilter === tab.value;
-              const count = filterCounts[tab.value as keyof typeof filterCounts] || 0;
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => setActiveFilter(tab.value)}
-                  className={`relative flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors ${
-                    isActive
-                      ? "text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="notif-filter-pill"
-                      className="absolute inset-0 rounded-full bg-foreground"
-                      transition={{
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 35,
-                      }}
-                    />
-                  )}
-                  <span className="relative z-10">{tab.label}</span>
-                  {count > 0 && (
-                    <span
-                      className={`relative z-10 h-3.5 min-w-3.5 flex items-center justify-center rounded-full px-1 text-[8px] font-bold leading-none ${
-                        isActive
-                          ? "bg-white/20 text-white"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {count > 99 ? "99+" : count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Notification List */}
-          <div>
-            <div className="flex items-center gap-2 py-1">
-              <BarChart3 className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-xs font-semibold">操作记录</span>
-              <span className="text-[10px] text-muted-foreground">
-                ({mergedNotifications.length})
-              </span>
-            </div>
-
-            {filteredNotifications.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <motion.div
-                className="space-y-1 pt-1"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
+      {/* Filter tabs */}
+      <div className="px-3 pt-3 pb-1">
+        <div className="flex gap-1 overflow-x-auto scrollbar-none pb-1">
+          {FILTER_TABS.map((tab) => {
+            const isActive = activeFilter === tab.value;
+            const count =
+              filterCounts[tab.value as keyof typeof filterCounts] || 0;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setActiveFilter(tab.value)}
+                className={`relative flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
+                  isActive
+                    ? "text-white"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                <AnimatePresence mode="popLayout">
-                  {filteredNotifications.map((notification) => (
-                    <NotificationCard
-                      key={notification.id}
-                      notification={notification}
-                      onRead={handleMarkRead}
-                      onAction={handleNotificationAction}
-                    />
-                  ))}
-                </AnimatePresence>
+                {isActive && (
+                  <motion.div
+                    layoutId="msg-center-filter"
+                    className="absolute inset-0 rounded-full bg-foreground"
+                    transition={{
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 35,
+                    }}
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
+                {count > 0 && (
+                  <span
+                    className={`relative z-10 h-4 min-w-4 flex items-center justify-center rounded-full px-1 text-[8px] font-bold leading-none ${
+                      isActive
+                        ? "bg-white/20 text-white"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <Separator className="mx-3 opacity-50" />
+
+      {/* Scrollable content */}
+      <ScrollArea className="flex-1 max-h-[50vh]">
+        <div className="p-3 space-y-4">
+          {loading ? (
+            <div className="flex flex-col items-center py-8 text-muted-foreground">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              >
+                <Sparkles className="h-6 w-6 opacity-30" />
               </motion.div>
-            )}
-          </div>
+              <span className="text-[11px] mt-2">加载中...</span>
+            </div>
+          ) : !hasAnyContent ? (
+            <EmptyState />
+          ) : (
+            <>
+              {/* Smart Reminders Section */}
+              {smartReminders.length > 0 && activeFilter === "all" && (
+                <div>
+                  <div className="flex items-center gap-2 px-1 py-1">
+                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="text-[11px] font-semibold">智能提醒</span>
+                    <Badge className="h-4 px-1.5 text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0">
+                      {smartReminders.length}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1.5">
+                    {smartReminders.map((reminder, i) => (
+                      <SmartReminderCard key={i} {...reminder} />
+                    ))}
+                  </div>
+                  <Separator className="mt-4" />
+                </div>
+              )}
+
+              {/* Time-grouped notifications */}
+              {(TIME_GROUP_LABELS as unknown as Array<TimeGroup>)
+                .filter((group) => groupedNotifications[group].length > 0)
+                .map((group) => (
+                  <TimeGroupSection
+                    key={group}
+                    label={TIME_GROUP_LABELS[group]}
+                    notifications={groupedNotifications[group]}
+                    onRead={handleMarkRead}
+                    onDismiss={handleDismiss}
+                    onAction={handleNotificationAction}
+                  />
+                ))}
+
+              {filteredNotifications.length === 0 && smartReminders.length > 0 && (
+                <div className="text-center py-4">
+                  <span className="text-[11px] text-muted-foreground">
+                    该类型暂无通知
+                  </span>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </ScrollArea>
+
+      {/* Footer */}
+      {!loading && mergedNotifications.length > 0 && (
+        <>
+          <Separator className="opacity-50" />
+          <div className="px-4 py-2 flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>{mergedNotifications.length} 条通知</span>
+            <span>{unreadCount} 条未读</span>
+          </div>
+        </>
+      )}
     </div>
   );
-
-  return panelContent;
 }
 
-// ─── Unread Badge Component ───────────────────────────────────────
-function UnreadBadge({ count }: { count: number }) {
+// ─── NotificationBadge (exported for page.tsx) ────────────────────
+export function NotificationBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
     <motion.span
       key={count}
       initial={{ scale: 0 }}
-      animate={{ scale: [1, 1.3, 1] }}
+      animate={{ scale: [1, 1.25, 1] }}
       transition={{
         type: "spring",
         stiffness: 500,
         damping: 15,
         duration: 0.4,
       }}
-      className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
+      className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white leading-none shadow-sm"
     >
       {count > 9 ? "9+" : count}
+      {/* Pulse ring animation when there are new notifications */}
+      <motion.span
+        className="absolute inset-0 rounded-full bg-red-500"
+        animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+      />
     </motion.span>
   );
 }
 
-// ─── NotificationBell (exported for header) ─────────────────────────
-// Hydration-safe mounted check using useSyncExternalStore (no setState needed)
+// ─── Hydration-safe mounted check ─────────────────────────────────
 const subscribe = () => () => {};
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
+// ─── Main exported component: NotificationBell ────────────────────
 export function NotificationBell() {
   const { notifications } = useAppStore();
-  const hydrated = useRef(false);
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
   const isMobile = useIsMobile();
 
-  // Hydrate notifications from localStorage on mount
+  // Hydrate from localStorage
+  const hydrated = useRef(false);
   useEffect(() => {
     if (hydrated.current) return;
     hydrated.current = true;
@@ -1004,14 +1282,11 @@ export function NotificationBell() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const current = useAppStore.getState().notifications;
           if (current.length === 0) {
-            // Only set if store is empty (initial load)
             useAppStore.setState({ notifications: parsed });
           }
         }
       }
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   }, []);
 
   const unreadCount = useMemo(
@@ -1023,19 +1298,21 @@ export function NotificationBell() {
     setIsMobileOpen(false);
   }, []);
 
-  // Don't render until mounted to prevent hydration mismatch / FOUC
   if (!mounted) {
-    return (
-      <div className="h-8 w-[3.25rem] rounded-lg" aria-hidden="true" />
-    );
+    return <div className="h-8 w-[3.25rem] rounded-lg" aria-hidden="true" />;
   }
 
-  // Only render one Bell icon based on viewport to prevent duplicate icons
-  // during SSR hydration / FOUC (Flash of Unstyled Content)
+  const panel = (
+    <NotificationCenterPanel
+      onAction={handleAction}
+      showPreferences={showPreferences}
+      onTogglePreferences={() => setShowPreferences((v) => !v)}
+    />
+  );
+
   return (
     <TooltipProvider delayDuration={300}>
       {isMobile ? (
-        /* Mobile: Sheet */
         <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1044,27 +1321,30 @@ export function NotificationBell() {
                   variant="ghost"
                   size="icon"
                   className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
-                  aria-label="通知中心"
+                  aria-label="消息中心"
                 >
-                  <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
-                  <UnreadBadge count={unreadCount} />
+                  <Bell
+                    className={`h-4 w-4 transition-colors duration-200 ${
+                      unreadCount > 0 ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  />
+                  <NotificationBadge count={unreadCount} />
                 </Button>
               </SheetTrigger>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
-              <p>通知中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ''}</p>
+              <p>消息中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ""}</p>
             </TooltipContent>
           </Tooltip>
           <SheetContent side="right" className="w-full sm:max-w-md p-0">
             <SheetHeader className="sr-only">
-              <SheetTitle>通知中心</SheetTitle>
+              <SheetTitle>消息中心</SheetTitle>
               <SheetDescription>查看所有通知消息</SheetDescription>
             </SheetHeader>
-            <NotificationCenterPanel onAction={handleAction} />
+            {panel}
           </SheetContent>
         </Sheet>
       ) : (
-        /* Desktop: Popover with label + tooltip */
         <Popover>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1073,16 +1353,26 @@ export function NotificationBell() {
                   variant="ghost"
                   size="sm"
                   className="relative h-8 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
-                  aria-label="通知中心"
+                  aria-label="消息中心"
                 >
-                  <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
-                  <span className={`hidden lg:inline text-xs transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>通知</span>
-                  <UnreadBadge count={unreadCount} />
+                  <Bell
+                    className={`h-4 w-4 transition-colors duration-200 ${
+                      unreadCount > 0 ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  />
+                  <span
+                    className={`hidden lg:inline text-xs transition-colors duration-200 ${
+                      unreadCount > 0 ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    消息
+                  </span>
+                  <NotificationBadge count={unreadCount} />
                 </Button>
               </PopoverTrigger>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
-              <p>通知中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ''}</p>
+              <p>消息中心{unreadCount > 0 ? ` · ${unreadCount}条未读` : ""}</p>
             </TooltipContent>
           </Tooltip>
           <PopoverContent
@@ -1090,7 +1380,7 @@ export function NotificationBell() {
             align="end"
             sideOffset={8}
           >
-            <NotificationCenterPanel onAction={handleAction} />
+            {panel}
           </PopoverContent>
         </Popover>
       )}

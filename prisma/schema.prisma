@@ -216,17 +216,21 @@ model SyncTask {
 
 model Notification {
   id          String   @id @default(cuid())
-  type        String   @default("system") // ai_task, completion, system, marketing, publish, interaction, ai, inspiration, optimize, polish, generate, reminder, error
+  type        String   @default("system") // system, reminder, achievement, schedule, ai
   category    String   @default("system") // schedule, ai_task, system, achievement, reminder
   title       String
   message     String   @default("")
   read        Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  priority    String   @default("medium") // high, medium, low
   actionUrl   String   @default("")
   metadata    String   @default("") // JSON serialized
   data        String   @default("") // JSON serialized – extra payload for notification actions
   createdAt   DateTime @default(now())
 
   @@index([category])
+  @@index([isArchived])
+  @@index([read])
 }
 
 // ─── 互动数据：评论 ──────────────────────────────────────────────────────

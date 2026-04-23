@@ -19,13 +19,14 @@ import { TrendComparisonChart } from "@/components/right-panel/trend-comparison-
 import { CompetitorCalendarView } from "@/components/right-panel/competitor-calendar-view";
 import { CompetitorDashboard } from "@/components/right-panel/competitor-dashboard";
 import { TrendTracker } from "@/components/right-panel/trend-tracker";
-import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity, Radar, Flame, Gauge, Layers } from "lucide-react";
+import { FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity, Radar, Flame, Gauge, Layers, UserCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
 import { ExecutiveDashboard } from "@/components/right-panel/executive-dashboard";
 import { OpsRhythmDashboard } from "@/components/right-panel/ops-rhythm-dashboard";
 import { WeeklyAnalytics } from "@/components/right-panel/weekly-analytics";
 import { ReportTemplateManager } from "@/components/right-panel/report-template-manager";
+import { AudienceInsightsPanel } from "@/components/right-panel/audience-insights-panel";
 
 /**
  * DataAndReports — unified "数据与报告" view that merges
@@ -94,6 +95,10 @@ export function DataAndReports() {
               <TabsTrigger value="weekly" className={tabTriggerClass("weekly")}>
                 <FileBarChart className="h-3.5 w-3.5" />
                 周报分析
+              </TabsTrigger>
+              <TabsTrigger value="audience" className={tabTriggerClass("audience")}>
+                <UserCheck className="h-3.5 w-3.5" />
+                受众洞察
               </TabsTrigger>
               <TabsTrigger value="templates" className={tabTriggerClass("templates")}>
                 <Layers className="h-3.5 w-3.5" />
@@ -235,6 +240,16 @@ export function DataAndReports() {
             >
               <div className="flex flex-col flex-1 min-h-0">
                 <WeeklyAnalytics />
+              </div>
+            </TabsContent>
+
+            {/* ── Audience Insights Tab ────────────────────────── */}
+            <TabsContent
+              value="audience"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
+            >
+              <div className="flex flex-col flex-1 min-h-0">
+                <AudienceInsightsPanel />
               </div>
             </TabsContent>
 
