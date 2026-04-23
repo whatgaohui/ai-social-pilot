@@ -70,7 +70,7 @@ function getPlatformAccentColor(platform?: string) {
 // --- Types ---
 
 interface HoverPreviewProps {
-  post: ContentPost;
+  post: ContentPost | null;
   anchorRect: DOMRect | null;
   containerRect: DOMRect | null;
   visible: boolean;
@@ -167,7 +167,7 @@ export function ContentHoverPreview({
     [post, onCopy],
   );
 
-  if (!showDelay || !anchorRect || !containerRect) return null;
+  if (!post || !showDelay || !anchorRect || !containerRect) return null;
 
   return (
     <AnimatePresence>
