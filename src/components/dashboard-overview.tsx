@@ -40,8 +40,9 @@ import {
   Layers,
   Activity,
 } from "lucide-react";
-import { format, subDays, startOfWeek, endOfWeek, startOfDay, differenceInDays, parseISO } from "date-fns";
+import { subDays, startOfWeek, endOfWeek, startOfDay, differenceInDays, parseISO } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { safeFormat } from "@/lib/safe-date";
 import { EnhancedTooltip } from "@/components/enhanced-tooltip";
 import { ProgressRing } from "@/components/progress-ring";
 
@@ -99,7 +100,7 @@ function getGreeting(): string {
 }
 
 function getFormattedDate(): string {
-  return format(new Date(), "yyyy年M月d日 EEEE", { locale: zhCN });
+  return safeFormat(new Date(), "yyyy年M月d日 EEEE", "--", { locale: zhCN });
 }
 
 function formatNumber(num: number): string {
@@ -535,17 +536,17 @@ export function DashboardOverview() {
 
   const metrics = useMemo(() => {
     const now = new Date();
-    const todayStr = format(now, "yyyy-MM-dd");
+    const todayStr = safeFormat(now, "yyyy-MM-dd");
 
     // This week's posts (Monday to Sunday)
-    const weekStart = format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
-    const weekEnd = format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
+    const weekStart = safeFormat(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
+    const weekEnd = safeFormat(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
     const thisWeekPosts = contentPosts.filter(
       (p) => p.scheduledDate >= weekStart && p.scheduledDate <= weekEnd
     );
 
     // Last week's posts
-    const lastWeekStart = format(subDays(parseISO(weekStart), 7), "yyyy-MM-dd");
+    const lastWeekStart = safeFormat(subDays(parseISO(weekStart), 7), "yyyy-MM-dd");
     const lastWeekPosts = contentPosts.filter(
       (p) => p.scheduledDate >= lastWeekStart && p.scheduledDate < weekStart
     );
@@ -607,7 +608,7 @@ export function DashboardOverview() {
 
   const reminders = useMemo(() => {
     const now = new Date();
-    const todayStr = format(now, "yyyy-MM-dd");
+    const todayStr = safeFormat(now, "yyyy-MM-dd");
 
     const overduePosts = contentPosts.filter(
       (p) => p.scheduledDate < todayStr && p.status !== "published"
@@ -619,7 +620,7 @@ export function DashboardOverview() {
 
     const emptyDays: string[] = [];
     for (let i = 0; i < 7; i++) {
-      const dayStr = format(subDays(now, -i), "yyyy-MM-dd");
+      const dayStr = safeFormat(subDays(now, -i), "yyyy-MM-dd");
       const hasPosts = contentPosts.some((p) => p.scheduledDate === dayStr);
       if (!hasPosts) {
         emptyDays.push(dayStr);

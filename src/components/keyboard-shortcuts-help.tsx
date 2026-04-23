@@ -48,6 +48,9 @@ import {
   SunMedium,
   List,
   BookOpen,
+  Pin,
+  PinOff,
+  ChevronDown,
 } from "lucide-react";
 import { SHORTCUT_LIST } from "@/hooks/use-keyboard-shortcuts";
 
@@ -72,16 +75,17 @@ interface ShortcutCategory {
 /* ─── Constants ───────────────────────────────────────────────── */
 
 const CUSTOM_SHORTCUTS_KEY = "custom-shortcuts";
+const PINNED_SHORTCUTS_KEY = "pinned-shortcuts";
 const SHORTCUT_TIPS_DISMISSED_KEY = "shortcut-tips-dismissed";
 
 const CATEGORIES: ShortcutCategory[] = [
   { id: "global", label: "全局", icon: Command, color: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20" },
-  { id: "edit", label: "编辑", icon: FileText, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
-  { id: "ai", label: "AI", icon: Sparkles, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
+  { id: "edit", label: "编辑器", icon: FileText, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
+  { id: "ai", label: "全局", icon: Sparkles, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
   { id: "nav", label: "导航", icon: LayoutGrid, color: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20" },
-  { id: "platform", label: "平台", icon: Repeat, color: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20" },
+  { id: "platform", label: "全局", icon: Repeat, color: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20" },
   { id: "calendar", label: "日历", icon: CalendarDays, color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" },
-  { id: "settings", label: "设置", icon: Settings, color: "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20" },
+  { id: "settings", label: "全局", icon: Settings, color: "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20" },
 ];
 
 const DEFAULT_SHORTCUTS: ShortcutItem[] = [
@@ -114,6 +118,19 @@ const DEFAULT_SHORTCUTS: ShortcutItem[] = [
 ];
 
 const TOP_SHORTCUTS = DEFAULT_SHORTCUTS.slice(0, 6);
+
+// Collapsible category groups mapping
+const CATEGORY_GROUPS: Record<string, string> = {
+  global: "全局",
+  edit: "编辑器",
+  ai: "全局",
+  nav: "导航",
+  platform: "全局",
+  calendar: "日历",
+  settings: "全局",
+};
+
+const GROUP_ORDER = ["全局", "日历", "编辑器", "导航"];
 
 /* ─── Custom localStorage hook ────────────────────────────────── */
 
@@ -155,6 +172,47 @@ function useCustomShortcuts() {
   return { custom, setShortcut, resetShortcut, getKeys };
 }
 
+/* ─── Pinned shortcuts hook ──────────────────────────────────── */
+
+function usePinnedShortcuts() {
+  const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem(PINNED_SHORTCUTS_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const MAX_PINS = 3;
+
+  const togglePin = useCallback((id: string) => {
+    setPinnedIds((prev) => {
+      let next: string[];
+      if (prev.includes(id)) {
+        next = prev.filter((pid) => pid !== id);
+      } else {
+        // Replace oldest if at max
+        if (prev.length >= MAX_PINS) {
+          next = [...prev.slice(1), id];
+        } else {
+          next = [...prev, id];
+        }
+      }
+      localStorage.setItem(PINNED_SHORTCUTS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const isPinned = useCallback(
+    (id: string) => pinnedIds.includes(id),
+    [pinnedIds],
+  );
+
+  return { pinnedIds, togglePin, isPinned, maxPins: MAX_PINS };
+}
+
 /* ─── Keyboard Key Cap Display ────────────────────────────────── */
 
 function KeyCap({ children }: { children: string }) {
@@ -172,26 +230,47 @@ function ShortcutRow({
   currentKeys,
   onStartEdit,
   onReset,
+  isPinned,
+  onTogglePin,
 }: {
   shortcut: ShortcutItem;
   currentKeys: string[];
   onStartEdit: () => void;
   onReset: () => void;
+  isPinned: boolean;
+  onTogglePin: () => void;
 }) {
   const Icon = shortcut.icon;
   const isCustomized =
     currentKeys.join("+") !== shortcut.keys.join("+");
 
+  const categoryLabel = CATEGORY_GROUPS[shortcut.category] || shortcut.category;
+
   return (
-    <div className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors group">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8, height: 0 }}
+      transition={{ duration: 0.2 }}
+      className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors group"
+    >
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="h-7 w-7 rounded-md bg-muted/60 flex items-center justify-center flex-shrink-0">
           <Icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
         </div>
         <div className="min-w-0">
-          <span className="text-[13px] text-foreground/80 truncate block">
-            {shortcut.description}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[13px] text-foreground/80 truncate block">
+              {shortcut.description}
+            </span>
+            <Badge
+              variant="outline"
+              className={`text-[8px] px-1.5 py-0 h-3.5 border flex-shrink-0 ${CATEGORIES.find(c => c.id === shortcut.category)?.color || ""}`}
+            >
+              {categoryLabel}
+            </Badge>
+          </div>
           {shortcut.context && (
             <span className="text-[10px] text-muted-foreground/50">仅限 {shortcut.context} 视图</span>
           )}
@@ -206,6 +285,19 @@ function ShortcutRow({
         )}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0 ml-3">
+        {/* Pin button */}
+        <button
+          className={`h-5 w-5 rounded flex items-center justify-center transition-all ${
+            isPinned
+              ? "text-amber-500 opacity-100"
+              : "opacity-0 group-hover:opacity-60 hover:!opacity-100 text-muted-foreground"
+          }`}
+          onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
+          title={isPinned ? "取消置顶" : "置顶 (最多3个)"}
+          aria-label={isPinned ? "取消置顶" : "置顶"}
+        >
+          {isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+        </button>
         {currentKeys.map((key, i) => (
           <span key={i} className="flex items-center gap-0.5">
             <KeyCap>{key}</KeyCap>
@@ -233,7 +325,7 @@ function ShortcutRow({
           </button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -393,6 +485,65 @@ function ProTipsCard() {
   );
 }
 
+/* ─── Pinned Shortcuts Section ───────────────────────────────── */
+
+function PinnedSection({
+  pinnedIds,
+  shortcuts,
+  getKeys,
+  onStartEdit,
+  onReset,
+  onTogglePin,
+  isPinned,
+}: {
+  pinnedIds: string[];
+  shortcuts: ShortcutItem[];
+  getKeys: (id: string) => string[];
+  onStartEdit: (id: string) => void;
+  onReset: (id: string) => void;
+  onTogglePin: (id: string) => void;
+  isPinned: (id: string) => boolean;
+}) {
+  if (pinnedIds.length === 0) return null;
+
+  const pinnedShortcuts = pinnedIds
+    .map((id) => shortcuts.find((s) => s.id === id))
+    .filter(Boolean) as ShortcutItem[];
+
+  if (pinnedShortcuts.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-3 p-2.5 rounded-lg bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/40 dark:border-amber-800/20"
+    >
+      <div className="flex items-center gap-1.5 mb-2">
+        <Pin className="h-3 w-3 text-amber-500" />
+        <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+          常用置顶
+        </span>
+        <span className="text-[9px] text-amber-500/60">{pinnedShortcuts.length}/{3}</span>
+      </div>
+      <div className="space-y-0.5">
+        <AnimatePresence>
+          {pinnedShortcuts.map((shortcut) => (
+            <ShortcutRow
+              key={`pinned-${shortcut.id}`}
+              shortcut={shortcut}
+              currentKeys={getKeys(shortcut.id)}
+              onStartEdit={() => onStartEdit(shortcut.id)}
+              onReset={() => onReset(shortcut.id)}
+              isPinned={isPinned(shortcut.id)}
+              onTogglePin={() => onTogglePin(shortcut.id)}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ─── KeyboardShortcutsHelp Component ─────────────────────────── */
 
 interface KeyboardShortcutsHelpProps {
@@ -405,7 +556,21 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showTips, setShowTips] = useState(true);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const { setShortcut, resetShortcut, getKeys } = useCustomShortcuts();
+  const { pinnedIds, togglePin, isPinned } = usePinnedShortcuts();
+
+  const toggleGroup = useCallback((group: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) {
+        next.delete(group);
+      } else {
+        next.add(group);
+      }
+      return next;
+    });
+  }, []);
 
   const filteredShortcuts = useMemo(() => {
     let result = DEFAULT_SHORTCUTS;
@@ -428,15 +593,24 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
     return result;
   }, [searchQuery, activeCategory]);
 
-  // Group filtered shortcuts by category
+  // Group filtered shortcuts by display group
   const groupedShortcuts = useMemo(() => {
     const groups = new Map<string, ShortcutItem[]>();
     for (const s of filteredShortcuts) {
-      const cat = s.category;
-      if (!groups.has(cat)) groups.set(cat, []);
-      groups.get(cat)!.push(s);
+      const groupName = CATEGORY_GROUPS[s.category] || "其他";
+      if (!groups.has(groupName)) groups.set(groupName, []);
+      groups.get(groupName)!.push(s);
     }
-    return groups;
+    // Sort groups by GROUP_ORDER
+    const sorted = new Map<string, ShortcutItem[]>();
+    for (const g of GROUP_ORDER) {
+      if (groups.has(g)) sorted.set(g, groups.get(g)!);
+    }
+    // Add any remaining groups
+    for (const [key, val] of groups) {
+      if (!sorted.has(key)) sorted.set(key, val);
+    }
+    return sorted;
   }, [filteredShortcuts]);
 
   const handleSaveKeys = useCallback(
@@ -466,7 +640,7 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[580px] p-0 overflow-hidden gap-0">
+        <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden gap-0">
           {/* Gradient header */}
           <div className="relative px-6 pt-6 pb-4 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 dark:from-violet-700 dark:via-purple-700 dark:to-fuchsia-700">
             <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_30%_20%,white_1px,transparent_1px),radial-gradient(circle_at_70%_60%,white_1px,transparent_1px)] bg-[length:20px_20px]" />
@@ -483,7 +657,9 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
               <DialogDescription className="text-[11px] text-white/70 mt-1">
                 使用快捷键提升操作效率 · 点击
                 <Pencil className="inline h-3 w-3 mx-0.5" />
-                可自定义
+                可自定义 ·
+                <Pin className="inline h-3 w-3 mx-0.5" />
+                可置顶
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -552,8 +728,21 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
           )}
 
           {/* Shortcut groups */}
-          <ScrollArea className="max-h-[45vh]">
+          <ScrollArea className="max-h-[50vh]">
             <div className="px-4 py-3" role="tabpanel">
+              {/* Pinned shortcuts section */}
+              {!searchQuery && !activeCategory && (
+                <PinnedSection
+                  pinnedIds={pinnedIds}
+                  shortcuts={DEFAULT_SHORTCUTS}
+                  getKeys={getKeys}
+                  onStartEdit={setEditingId}
+                  onReset={handleResetKeys}
+                  onTogglePin={togglePin}
+                  isPinned={isPinned}
+                />
+              )}
+
               {/* Pro Tips Card — shown when no search and no category filter */}
               {!searchQuery && !activeCategory && showTips && (
                 <AnimatePresence>
@@ -567,42 +756,90 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
                 </AnimatePresence>
               )}
 
-              {Array.from(groupedShortcuts.entries()).map(([catId, shortcuts], catIndex) => {
-                const cat = CATEGORIES.find((c) => c.id === catId);
-                if (!cat) return null;
-                const CatIcon = cat.icon;
-                return (
-                  <div key={catId}>
-                    {catIndex > 0 && <Separator className="my-3" />}
-                    {/* Category header with card background */}
-                    <div className="flex items-center gap-2.5 mb-2.5 px-2 py-1.5 rounded-lg bg-muted/40 dark:bg-muted/10">
-                      <div className="h-6 w-6 rounded-md bg-card dark:bg-card border border-border dark:border-border/60 flex items-center justify-center">
-                        <CatIcon className="h-3.5 w-3.5 text-foreground/70 dark:text-foreground/60" />
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] px-2 py-0 font-semibold border ${cat.color}`}
+              {/* Grouped shortcuts with collapsible sections */}
+              <AnimatePresence mode="popLayout">
+                {Array.from(groupedShortcuts.entries()).map(([groupLabel, shortcuts], groupIndex) => {
+                  const isCollapsed = collapsedGroups.has(groupLabel);
+                  const GroupIcon = (() => {
+                    // Pick icon for group
+                    switch (groupLabel) {
+                      case "全局": return Command;
+                      case "日历": return CalendarDays;
+                      case "编辑器": return FileText;
+                      case "导航": return LayoutGrid;
+                      default: return Command;
+                    }
+                  })();
+                  return (
+                    <motion.div
+                      key={groupLabel}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      {groupIndex > 0 && <Separator className="my-3" />}
+
+                      {/* Collapsible group header */}
+                      <button
+                        className="w-full flex items-center gap-2.5 mb-2.5 px-2 py-1.5 rounded-lg bg-muted/40 dark:bg-muted/10 hover:bg-muted/60 transition-colors cursor-pointer"
+                        onClick={() => toggleGroup(groupLabel)}
+                        aria-expanded={!isCollapsed}
+                        aria-label={`${groupLabel} 分类`}
                       >
-                        {cat.label}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground/60">
-                        {shortcuts.length} 个快捷键
-                      </span>
-                    </div>
-                    <div className="space-y-0.5">
-                      {shortcuts.map((shortcut) => (
-                        <ShortcutRow
-                          key={shortcut.id}
-                          shortcut={shortcut}
-                          currentKeys={getKeys(shortcut.id)}
-                          onStartEdit={() => setEditingId(shortcut.id)}
-                          onReset={() => handleResetKeys(shortcut.id)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+                        <div className="h-6 w-6 rounded-md bg-card dark:bg-card border border-border dark:border-border/60 flex items-center justify-center">
+                          <GroupIcon className="h-3.5 w-3.5 text-foreground/70 dark:text-foreground/60" />
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-2 py-0 font-semibold border bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20"
+                        >
+                          {groupLabel}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground/60">
+                          {shortcuts.length} 个快捷键
+                        </span>
+                        <motion.div
+                          className="ml-auto"
+                          animate={{ rotate: isCollapsed ? -90 : 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                        </motion.div>
+                      </button>
+
+                      {/* Shortcuts list */}
+                      <AnimatePresence>
+                        {!isCollapsed && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="space-y-0.5">
+                              <AnimatePresence>
+                                {shortcuts.map((shortcut) => (
+                                  <ShortcutRow
+                                    key={shortcut.id}
+                                    shortcut={shortcut}
+                                    currentKeys={getKeys(shortcut.id)}
+                                    onStartEdit={() => setEditingId(shortcut.id)}
+                                    onReset={() => handleResetKeys(shortcut.id)}
+                                    isPinned={isPinned(shortcut.id)}
+                                    onTogglePin={() => togglePin(shortcut.id)}
+                                  />
+                                ))}
+                              </AnimatePresence>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+
               {filteredShortcuts.length === 0 && (
                 <div className="flex flex-col items-center py-8 text-muted-foreground">
                   <Search className="h-6 w-6 mb-2 opacity-30" />
@@ -635,6 +872,7 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
                   className="h-6 px-2 text-[10px] text-amber-600 dark:text-amber-400"
                   onClick={() => {
                     localStorage.removeItem(CUSTOM_SHORTCUTS_KEY);
+                    localStorage.removeItem(PINNED_SHORTCUTS_KEY);
                     window.location.reload();
                   }}
                 >

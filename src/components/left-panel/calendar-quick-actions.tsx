@@ -20,8 +20,9 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, subWeeks, addDays, startOfWeek, endOfWeek } from "date-fns";
+import { subWeeks, addDays, startOfWeek, endOfWeek } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { safeFormat } from "@/lib/safe-date";
 
 // --- Action Button Sub-component ---
 
@@ -141,7 +142,7 @@ export function CalendarQuickActions({ onOpenQuickCreate, onOpenWeeklyStats }: C
 
   // 1. ➕ 新建内容 - Opens quick create for today
   const handleNewContent = useCallback(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
+    const today = safeFormat(new Date(), "yyyy-MM-dd");
     if (onOpenQuickCreate) {
       onOpenQuickCreate(today);
     } else {
@@ -156,8 +157,8 @@ export function CalendarQuickActions({ onOpenQuickCreate, onOpenWeeklyStats }: C
       return;
     }
     await runAction("ai-today", async () => {
-      const today = format(new Date(), "yyyy-MM-dd");
-      const todayLabel = format(new Date(), "M月d日 EEEE", { locale: zhCN });
+      const today = safeFormat(new Date(), "yyyy-MM-dd");
+      const todayLabel = safeFormat(new Date(), "M月d日 EEEE", "--", { locale: zhCN });
       setIsGenerating(true);
       try {
         const res = await fetch("/api/ai/generate-single", {
@@ -189,7 +190,7 @@ export function CalendarQuickActions({ onOpenQuickCreate, onOpenWeeklyStats }: C
           scheduledDate: today,
           platform,
           contentType: platform === "xiaohongshu" ? "seeding" : "text",
-          topic: `AI生成 · ${format(new Date(), "M月d日")}内容`,
+          topic: `AI生成 · ${safeFormat(new Date(), "M月d日")}内容`,
           content: "正在生成中...",
           status: "planned" as const,
           generationType: "auto" as const,
@@ -230,7 +231,7 @@ export function CalendarQuickActions({ onOpenQuickCreate, onOpenWeeklyStats }: C
         const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
         const emptyDays: string[] = [];
         for (let d = weekStart; d <= weekEnd; d = addDays(d, 1)) {
-          const dateStr = format(d, "yyyy-MM-dd");
+          const dateStr = safeFormat(d, "yyyy-MM-dd");
           const hasPosts = contentPosts.some((p) => p.scheduledDate === dateStr);
           if (!hasPosts) emptyDays.push(dateStr);
         }
@@ -276,7 +277,7 @@ export function CalendarQuickActions({ onOpenQuickCreate, onOpenWeeklyStats }: C
         }
 
         toast.success(`已排满 ${emptyDays.length} 天`, {
-          description: `从 ${format(weekStart, "M/d")} 到 ${format(weekEnd, "M/d")}`,
+          description: `从 ${safeFormat(weekStart, "M/d")} 到 ${safeFormat(weekEnd, "M/d")}`,
         });
       } finally {
         setIsGenerating(false);
@@ -292,8 +293,8 @@ export function CalendarQuickActions({ onOpenQuickCreate, onOpenWeeklyStats }: C
 
       const lastWeekPosts = contentPosts.filter((p) => {
         const pDate = p.scheduledDate;
-        return pDate >= format(lastWeekStart, "yyyy-MM-dd") &&
-               pDate < format(thisWeekStart, "yyyy-MM-dd");
+        return pDate >= safeFormat(lastWeekStart, "yyyy-MM-dd") &&
+               pDate < safeFormat(thisWeekStart, "yyyy-MM-dd");
       });
 
       if (lastWeekPosts.length === 0) {
@@ -308,7 +309,7 @@ export function CalendarQuickActions({ onOpenQuickCreate, onOpenWeeklyStats }: C
       for (const post of lastWeekPosts) {
         const origDate = new Date(post.scheduledDate);
         const newDate = new Date(origDate.getTime() + DAY_MS);
-        const newDateStr = format(newDate, "yyyy-MM-dd");
+        const newDateStr = safeFormat(newDate, "yyyy-MM-dd");
 
         // Check if target date already has content
         const existing = contentPosts.find((p) => p.scheduledDate === newDateStr);

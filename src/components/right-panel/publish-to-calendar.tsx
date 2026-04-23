@@ -13,7 +13,7 @@ import {
 } from "@/types";
 import { CalendarPlus, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { useAppStore } from "@/store/app-store";
 
 interface PublishToCalendarProps {
@@ -64,7 +64,7 @@ export function PublishToCalendar({ isXHS, mode, defaultOpen }: PublishToCalenda
 
     setPublishing(true);
     try {
-      const dateStr = format(new Date(pubDate), 'yyyy-MM-dd');
+      const dateStr = safeFormat(new Date(pubDate), 'yyyy-MM-dd');
       const res = await fetch("/api/content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,7 +94,7 @@ export function PublishToCalendar({ isXHS, mode, defaultOpen }: PublishToCalenda
         addNotification({
           type: "publish",
           title: "内容已添加到日历",
-          description: `"${pubTopic}" 已添加到 ${format(new Date(pubDate), 'MM-dd')} 的发布计划`,
+          description: `"${pubTopic}" 已添加到 ${safeFormat(new Date(pubDate), 'MM-dd')} 的发布计划`,
           postId: newPost.id,
         });
         setPubTopic("");

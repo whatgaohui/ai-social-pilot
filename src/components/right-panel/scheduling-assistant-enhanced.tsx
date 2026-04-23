@@ -37,7 +37,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  format,
   addDays,
   startOfWeek,
   isWithinInterval,
@@ -676,7 +675,7 @@ export function SchedulingAssistantEnhanced() {
             </span>
             {lastRefresh > 0 && (
               <span>
-                {format(new Date(lastRefresh), "HH:mm:ss")} 更新
+                {safeFormat(new Date(lastRefresh), "HH:mm:ss")} 更新
               </span>
             )}
           </div>

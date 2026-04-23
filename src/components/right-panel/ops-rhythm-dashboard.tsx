@@ -50,8 +50,9 @@ import {
   XHS_CONTENT_TYPE_LABELS,
 } from "@/types";
 import { useAppStore } from "@/store/app-store";
-import { format, subDays, startOfWeek, addDays } from "date-fns";
+import { subDays, startOfWeek, addDays } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { safeFormat } from "@/lib/safe-date";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface OpsRhythmData {
@@ -673,7 +674,7 @@ export function OpsRhythmDashboard() {
                 {/* Calendar cells */}
                 {data.consistency.fourWeekCalendar.map((cell, idx) => {
                   const dayNum = parseInt(cell.date.split("-")[2], 10);
-                  const isToday = cell.date === format(new Date(), "yyyy-MM-dd");
+                  const isToday = cell.date === safeFormat(new Date(), "yyyy-MM-dd");
                   return (
                     <Tooltip key={cell.date}>
                       <TooltipTrigger asChild>

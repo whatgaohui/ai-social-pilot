@@ -33,6 +33,7 @@ import {
   Wand2,
   Cloud,
   TrendingUp,
+  BarChart3,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -267,26 +268,34 @@ const STATUS_BORDER_COLORS: Record<PostStatus, string> = {
   published: "border-l-purple-500",
 };
 
-// ─── Main Component ─────────────────────────────────────────────────────────
+// ─── Tab Group Definitions ─────────────────────────────────────────────────
+
+const TAB_GROUPS = [
+  { id: "create", label: "创作", icon: Pencil, color: "text-violet-500" },
+  { id: "publish", label: "发布", icon: Rocket, color: "text-emerald-500" },
+  { id: "insights", label: "洞察", icon: BarChart3, color: "text-amber-500" },
+] as const;
+
+type TabGroup = (typeof TAB_GROUPS)[number]["id"];
 
 // Sub-tabs for the tool panel below the editor
 // Using a different visual style (underline-style) to differentiate from action buttons above
 const TOOL_TABS = [
-  { value: "ai", icon: Sparkles, label: "智能分析", color: "text-amber-500" },
-  { value: "batch", icon: Bot, label: "批量操作", color: "text-violet-500" },
-  { value: "schedule", icon: CalendarClock, label: "智能排期", color: "text-cyan-500" },
-  { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500" },
-  { value: "queue", icon: Layers, label: "发布队列", color: "text-purple-500" },
-  { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500" },
-  { value: "pipeline", icon: Layers, label: "内容流水线", color: "text-cyan-500" },
-  { value: "writing", icon: Sparkles, label: "写作助手", color: "text-emerald-500" },
-  { value: "history", icon: History, label: "版本记录", color: "text-violet-500" },
-  { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500" },
-  { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500" },
-  { value: "metrics", icon: Activity, label: "实时指标", color: "text-teal-500" },
-  { value: "wordcloud", icon: Cloud, label: "词云分析", color: "text-fuchsia-500" },
-  { value: "quality-timeline", icon: TrendingUp, label: "质量趋势", color: "text-emerald-500" },
-  { value: "chat", icon: MessageSquare, label: "AI对话", color: "text-sky-500" },
+  { value: "ai", icon: Sparkles, label: "智能分析", color: "text-amber-500", group: "create" as const },
+  { value: "batch", icon: Bot, label: "批量操作", color: "text-violet-500", group: "create" as const },
+  { value: "pipeline", icon: Layers, label: "内容流水线", color: "text-cyan-500", group: "create" as const },
+  { value: "writing", icon: Sparkles, label: "写作助手", color: "text-emerald-500", group: "create" as const },
+  { value: "chat", icon: MessageSquare, label: "AI对话", color: "text-sky-500", group: "create" as const },
+  { value: "schedule", icon: CalendarClock, label: "智能排期", color: "text-cyan-500", group: "publish" as const },
+  { value: "publish", icon: Rocket, label: "发布管理", color: "text-emerald-500", group: "publish" as const },
+  { value: "queue", icon: Layers, label: "发布队列", color: "text-purple-500", group: "publish" as const },
+  { value: "workflow", icon: ClipboardList, label: "发布流程", color: "text-rose-500", group: "publish" as const },
+  { value: "history", icon: History, label: "版本记录", color: "text-violet-500", group: "insights" as const },
+  { value: "inspiration", icon: Lightbulb, label: "爆款灵感", color: "text-orange-500", group: "insights" as const },
+  { value: "assets", icon: ImageIcon, label: "素材库", color: "text-rose-500", group: "insights" as const },
+  { value: "metrics", icon: Activity, label: "实时指标", color: "text-teal-500", group: "insights" as const },
+  { value: "wordcloud", icon: Cloud, label: "词云分析", color: "text-fuchsia-500", group: "insights" as const },
+  { value: "quality-timeline", icon: TrendingUp, label: "质量趋势", color: "text-emerald-500", group: "insights" as const },
 ] as const;
 
 type ToolTab = (typeof TOOL_TABS)[number]["value"];
@@ -303,6 +312,7 @@ export function ContentWorkspace() {
   const isXHS = platform === "xiaohongshu";
   const [previewMode, setPreviewMode] = useState(false);
   const [toolTab, setToolTab] = useState<ToolTab>("ai");
+  const [activeGroup, setActiveGroup] = useState<TabGroup>("create");
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -398,6 +408,25 @@ export function ContentWorkspace() {
     }
   }, [selectedPost, loadSaved, clearSaved, updateContentPost]);
 
+  // Compute visible tabs based on active group
+  const groupTabs = useMemo(
+    () => TOOL_TABS.filter((t) => t.group === activeGroup),
+    [activeGroup],
+  );
+
+  // Handle group change — auto-switch to first tab in the group
+  const handleGroupChange = useCallback((group: TabGroup) => {
+    if (group === activeGroup) return;
+    setActiveGroup(group);
+    const firstTab = TOOL_TABS.find((t) => t.group === group);
+    if (firstTab) {
+      setTabTransitioning(true);
+      setToolTab(firstTab.value as ToolTab);
+      setShowHistory(false);
+      setTimeout(() => setTabTransitioning(false), 150);
+    }
+  }, [activeGroup]);
+
   // Brief skeleton flash on tab change
   const handleToolTabChange = useCallback((newTab: ToolTab) => {
     if (newTab !== toolTab) {
@@ -414,6 +443,7 @@ export function ContentWorkspace() {
 
   // Scroll to quality scorer section when score badge is clicked
   const handleScoreBadgeClick = useCallback(() => {
+    setActiveGroup("create");
     setToolTab("ai");
     setPreviewMode(false);
     // Wait for the tab content to render, then scroll
@@ -735,33 +765,32 @@ export function ContentWorkspace() {
 
           <Separator />
 
-          {/* ── Tool Tabs (underline style, distinct from action buttons) ──── */}
+          {/* ── Tool Tabs (two-level grouping) ──────────────────────────────── */}
           <motion.div variants={staggerItem}>
             <Tabs value={toolTab} onValueChange={(v) => { handleToolTabChange(v as ToolTab); }}>
-              {/* Underline-style tab bar — visually distinct from the pill buttons above */}
-              <div className="relative flex items-center border-b border-border overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_0%,black_85%,transparent)]">
-                {TOOL_TABS.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = toolTab === tab.value;
+              {/* Top row: Group tabs with gradient underline */}
+              <div className="flex items-center gap-1 mb-1">
+                {TAB_GROUPS.map((group) => {
+                  const Icon = group.icon;
+                  const isActive = activeGroup === group.id;
                   return (
                     <button
-                      key={tab.value}
-                      title={tab.label}
-                      onClick={() => setToolTab(tab.value as ToolTab)}
-                      className={`flex-shrink-0 min-w-[4.5rem] flex items-center justify-center gap-1.5 py-2.5 text-xs transition-all duration-200 relative rounded-md ${
+                      key={group.id}
+                      onClick={() => handleGroupChange(group.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 relative ${
                         isActive
-                          ? `font-semibold text-foreground ${tab.color}`
-                          : "text-muted-foreground hover:text-foreground/70 hover:bg-accent/50"
+                          ? `${group.color} bg-accent/60`
+                          : "text-muted-foreground hover:text-foreground/70 hover:bg-muted/40"
                       }`}
                     >
                       <Icon className="h-3.5 w-3.5" />
-                      {tab.label}
+                      {group.label}
                       {isActive && (
                         <motion.div
-                          layoutId="tool-tab-indicator"
-                          className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500"
+                          layoutId="group-tab-indicator"
+                          className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-gradient-to-r from-violet-500 via-emerald-500 to-amber-500"
                           initial={false}
-                          animate={{ opacity: [0.8, 1, 0.8], scaleX: [0.95, 1, 0.95] }}
+                          animate={{ opacity: [0.7, 1, 0.7], scaleX: [0.95, 1, 0.95] }}
                           transition={{
                             opacity: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
                             scaleX: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
@@ -772,6 +801,53 @@ export function ContentWorkspace() {
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Bottom row: Sub-tabs for the active group (scrollable) */}
+              <div className="relative flex items-center border-b border-border overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_0%,black_85%,transparent)]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeGroup}
+                    initial={{ opacity: 0, x: 8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex items-center"
+                  >
+                    {groupTabs.map((tab) => {
+                      const Icon = tab.icon;
+                      const isActive = toolTab === tab.value;
+                      return (
+                        <button
+                          key={tab.value}
+                          title={tab.label}
+                          onClick={() => setToolTab(tab.value as ToolTab)}
+                          className={`flex-shrink-0 min-w-[4.5rem] flex items-center justify-center gap-1.5 py-2.5 text-xs transition-all duration-200 relative rounded-md ${
+                            isActive
+                              ? `font-semibold text-foreground ${tab.color}`
+                              : "text-muted-foreground hover:text-foreground/70 hover:bg-accent/50"
+                          }`}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          {tab.label}
+                          {isActive && (
+                            <motion.div
+                              layoutId="tool-tab-indicator"
+                              className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500"
+                              initial={false}
+                              animate={{ opacity: [0.8, 1, 0.8], scaleX: [0.95, 1, 0.95] }}
+                              transition={{
+                                opacity: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
+                                scaleX: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
+                                layout: { type: "spring", stiffness: 500, damping: 35 },
+                              }}
+                            />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
               {/* ── AI Tools Tab ──────────────────────────────────────────── */}

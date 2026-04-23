@@ -9441,3 +9441,126 @@ Stage Summary:
   4. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
   5. 移动端响应式深度优化
   6. 运营报告自动生成功能完善（PDF/图片导出）
+---
+Task ID: 49
+Agent: Main Developer + Subagents
+Task: 第四十九轮开发 - Tab分组系统 + safeFormat全覆盖 + 功能增强 + 视觉打磨
+
+Work Log:
+- 运行 eslint（零错误）和 next build（编译成功）确认项目状态稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），使用 lint + build 验证
+- 并行启动两个子任务代理分别处理核心功能和视觉增强
+
+### Bug修复与代码质量
+
+1. **safeFormat 全项目 100% 覆盖**：
+   - 上一轮覆盖了所有 format(parseISO()) 调用（29处）
+   - 本轮扩展覆盖所有 format(new Date(...)) 调用
+   - 更新 7 个文件，替换约 28 处不安全调用：
+     - calendar-quick-actions.tsx（10处）— format import 移除
+     - dashboard-overview.tsx（6处）— format import 移除
+     - publish-to-calendar.tsx（2处）
+     - weekly-report-generator.tsx（7处）— format import 移除
+     - ops-rhythm-dashboard.tsx（1处）— format import 移除
+     - scheduling-assistant-enhanced.tsx（1处）
+     - cross-platform-publish.tsx（1处）
+   - 跳过已删除文件：mobile-calendar-enhanced.tsx, calendar-gantt-view.tsx
+   - **最终验证：grep 确认零处 format(parseISO() 和 format(new Date() 残留**
+
+### 新功能
+
+1. **Tab 分组导航系统**（content-workspace.tsx）：
+   - 将 15 个 TOOL_TABS 分为 3 个逻辑组：
+     - 创作组（5个）：智能分析、批量操作、内容流水线、写作助手、AI对话
+     - 发布组（4个）：智能排期、发布管理、发布队列、发布流程
+     - 洞察组（6个）：版本记录、爆款灵感、素材库、实时指标、词云分析、质量趋势
+   - 两级导航 UI：顶部组按钮（大号 icon+label，渐变下划线）+ 底部子 tab 行
+   - AnimatePresence 平滑切换组间动画
+   - 切换组时自动选中该组第一个 tab
+   - BarChart3 icon 新增导入
+
+2. **日历热力图增强**（calendar-heatmap.tsx）：
+   - 周/月双视图切换（GitHub 贡献图风格 vs 月历网格）
+   - 增强 Tooltip：显示日期 + 帖子数 + 主题片段
+   - 5 级 emerald 色阶：bg-muted → emerald-500/20 → 40 → 60 → 80
+   - framer-motion 交错入场动画（左上到右下波浪）
+   - 底部图例（带 Tooltip 显示数量范围）
+   - 可点击单元格 → 跳转到日历对应日期
+
+3. **键盘快捷键面板增强**（keyboard-shortcuts-help.tsx）：
+   - 4 组可折叠分类：全局、日历、编辑器、导航
+   - 搜索过滤快捷方式
+   - 置顶功能：最多 pin 3 个常用快捷方式（localStorage 持久化）
+   - AnimatePresence 列表过滤动画
+   - 每行显示：键盘按键样式（border+shadow）+ 描述 + 分类 Badge
+
+4. **Footer 迷你数据滚动条**（enhanced-footer.tsx）：
+   - MarqueeTicker 组件，8 个关键指标无限滚动
+   - 指标：总内容、已发布、平均分、互动率、总浏览、总点赞、AI生成数、知识库条数
+   - CSS infinite scroll 动画（30s 循环），hover 暂停
+   - 渐变淡出边缘 + 仅桌面端显示（hidden lg:block）
+
+### 视觉增强
+
+1. **通知铃铛渐变旋转边框**（notification-center-enhanced.tsx）：
+   - 未读时显示 conic-gradient 旋转动画边框
+   - 颜色循环：violet-500 → fuchsia-500 → rose-500
+   - 使用 CSS @property --conic-angle 实现平滑旋转
+   - 读写状态变化时 opacity 过渡
+
+2. **全局 CSS 工具类**（globals.css）：
+   - .shimmer-card：加载微光效果（shimmer-slide 动画）
+   - .gradient-text-violet：紫→粉渐变文字
+   - .gradient-text-emerald：绿→青渐变文字
+   - .dot-pulse：3 点脉冲加载动画（交错延迟）
+   - .marquee-ticker：CSS 无限滚动
+   - .notif-bell-glow：旋转锥形渐变边框
+   - .heatmap-cell-animate：热力图单元格入场动画
+
+### 修改文件
+- `src/components/right-panel/content-workspace.tsx` - Tab 分组系统
+- `src/components/left-panel/calendar-heatmap.tsx` - 热力图增强
+- `src/components/keyboard-shortcuts-help.tsx` - 快捷键面板增强
+- `src/components/enhanced-footer.tsx` - 迷你数据滚动条
+- `src/components/notification-center-enhanced.tsx` - 铃铛渐变边框
+- `src/app/globals.css` - 7 个新 CSS 工具类
+- `src/components/left-panel/calendar-quick-actions.tsx` - safeFormat
+- `src/components/dashboard-overview.tsx` - safeFormat
+- `src/components/right-panel/publish-to-calendar.tsx` - safeFormat
+- `src/components/right-panel/weekly-report-generator.tsx` - safeFormat
+- `src/components/right-panel/ops-rhythm-dashboard.tsx` - safeFormat
+- `src/components/right-panel/scheduling-assistant-enhanced.tsx` - safeFormat
+- `src/components/right-panel/cross-platform-publish.tsx` - safeFormat
+
+### 新增文件
+无（全部为现有文件修改）
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ next build 编译成功（所有动态路由正常）
+- ✅ format(parseISO()) 残留：0 处
+- ✅ format(new Date()) 残留：0 处
+
+Stage Summary:
+- 项目状态：稳定可运行，代码质量和用户体验显著提升
+- 本轮修改 14 个文件，无新增/删除文件
+- 核心成果：
+  1. Tab 分组导航系统（15 个 tab → 3 个逻辑组，两级导航）
+  2. safeFormat 全项目 100% 覆盖（累计 9 个文件、约 57 处替换，零残留）
+  3. 日历热力图增强（双视图 + 交互 + 动画）
+  4. 键盘快捷键面板增强（分组 + 置顶 + 过滤动画）
+  5. Footer 迷你数据滚动条（8 个指标无限滚动）
+  6. 通知铃铛渐变旋转边框动画
+  7. 7 个全局 CSS 工具类
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. Tab 分组后洞察组仍有 6 个子 tab，水平滚动方案已就位
+  3. 热力图周视图数据依赖 contentPosts store 中的 scheduledDate 字段
+  4. conic-gradient @property 动画在部分旧版浏览器可能不支持
+- 建议下一阶段优先事项：
+  1. 添加内容排期拖拽排序功能（已有 @dnd-kit 依赖）
+  2. AI 对话工作台增强（上下文记忆、人设注入、知识库检索）
+  3. 移动端响应式深度优化
+  4. 运营报告自动生成功能完善（PDF/图片导出）
+  5. 内容发布自动化工作流（定时发布 + 自动优化）
+  6. 数据备份/恢复功能

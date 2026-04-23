@@ -6,7 +6,7 @@ import { useAppStore } from '@/store/app-store';
 import {
   Sparkles, Wifi, WifiOff, Clock, Gauge, RefreshCw,
   Send, Flame, Cpu, Database, ChevronUp, ChevronDown,
-  Keyboard,
+  Keyboard, FileText, TrendingUp, BarChart3, Eye, Heart,
 } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -193,6 +193,41 @@ function RefreshSelector({
   );
 }
 
+// ─── Marquee Ticker Component ────────────────────────────────────────────────
+
+interface TickerMetric {
+  icon: React.ComponentType<{ className?: string }>;
+  value: string;
+  label: string;
+}
+
+function MarqueeTicker({ metrics }: { metrics: TickerMetric[] }) {
+  // Duplicate metrics for seamless loop
+  const doubled = useMemo(() => [...metrics, ...metrics], [metrics]);
+
+  return (
+    <div className="hidden lg:block overflow-hidden relative w-full" aria-label="数据滚动条">
+      {/* Fade edges */}
+      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background/80 to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background/80 to-transparent z-10 pointer-events-none" />
+
+      <div className="marquee-ticker flex items-center gap-6 whitespace-nowrap w-max">
+        {doubled.map((m, i) => {
+          const Icon = m.icon;
+          return (
+            <div key={i} className="flex items-center gap-1.5 px-3 py-1">
+              <Icon className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+              <span className="text-xs font-semibold text-foreground/70 tabular-nums">{m.value}</span>
+              <span className="text-[10px] text-muted-foreground/50">{m.label}</span>
+              <div className="w-px h-3 bg-border/30 ml-2" role="separator" />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function EnhancedFooter() {
@@ -259,6 +294,31 @@ export function EnhancedFooter() {
     return { todayPublished, todayTotal, activeDays, aiGenerated, libraryCount: knowledgeItems.length };
   }, [contentPosts, currentPlan, knowledgeItems]);
 
+  // Compute marquee metrics
+  const tickerMetrics = useMemo<TickerMetric[]>(() => {
+    const totalPosts = contentPosts.length;
+    const published = contentPosts.filter(p => p.status === 'published').length;
+    const totalLikes = contentPosts.reduce((sum, p) => sum + (p.likes || 0), 0);
+    const totalViews = contentPosts.reduce((sum, p) => sum + (p.views || 0), 0);
+    const avgScore = totalPosts > 0
+      ? (contentPosts.reduce((sum, p) => sum + (p.aiScore || 0), 0) / totalPosts).toFixed(1)
+      : '0.0';
+    const engagementRate = totalViews > 0
+      ? ((totalLikes / totalViews) * 100).toFixed(1) + '%'
+      : '0%';
+
+    return [
+      { icon: FileText, value: `${totalPosts}`, label: '总内容' },
+      { icon: Send, value: `${published}`, label: '已发布' },
+      { icon: BarChart3, value: `${avgScore}`, label: '平均评分' },
+      { icon: Heart, value: engagementRate, label: '互动率' },
+      { icon: Eye, value: `${totalViews.toLocaleString()}`, label: '总浏览' },
+      { icon: TrendingUp, value: `${totalLikes.toLocaleString()}`, label: '总点赞' },
+      { icon: Cpu, value: `${stats.aiGenerated}篇`, label: 'AI生成' },
+      { icon: Database, value: `${stats.libraryCount}篇`, label: '知识库' },
+    ];
+  }, [contentPosts, stats]);
+
   return (
     <footer
       ref={footerRef}
@@ -293,6 +353,11 @@ export function EnhancedFooter() {
           }}
           aria-hidden="true"
         />
+
+        {/* Row 0: Marquee ticker (desktop only) */}
+        <div className="px-4 pt-1.5">
+          <MarqueeTicker metrics={tickerMetrics} />
+        </div>
 
         {/* Row 1: Status Bar */}
         <div className="flex items-center justify-between px-4 py-1.5">

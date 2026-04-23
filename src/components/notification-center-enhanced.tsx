@@ -856,7 +856,7 @@ export function EnhancedNotificationBell() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative h-8 w-8 hover:bg-muted/80 transition-colors"
+                  className={`relative h-8 w-8 hover:bg-muted/80 transition-colors ${unreadCount > 0 ? 'notif-bell-glow has-unread' : ''}`}
                   aria-label="通知中心"
                 >
                   <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
@@ -885,7 +885,7 @@ export function EnhancedNotificationBell() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="relative h-8 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors"
+                  className={`relative h-8 px-2.5 gap-1.5 rounded-lg hover:bg-muted transition-colors ${unreadCount > 0 ? 'notif-bell-glow has-unread' : ''}`}
                   aria-label="通知中心"
                 >
                   <Bell className={`h-4 w-4 transition-colors duration-200 ${unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />

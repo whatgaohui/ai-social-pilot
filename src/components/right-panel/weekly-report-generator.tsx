@@ -36,13 +36,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  format,
   subWeeks,
   startOfWeek,
   endOfWeek,
   getDay,
 } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { safeFormat } from "@/lib/safe-date";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ function getWeekRange(offset: number): WeekRange {
       ? "本周"
       : offset === -1
         ? "上周"
-        : `${format(targetStart, "M/d", { locale: zhCN })}-${format(targetEnd, "M/d", { locale: zhCN })}`;
+        : `${safeFormat(targetStart, "M/d", "--", { locale: zhCN })}-${safeFormat(targetEnd, "M/d", "--", { locale: zhCN })}`;
 
   return { label, startDate: targetStart, endDate: targetEnd, weekOffset: offset };
 }
@@ -191,7 +191,7 @@ export function WeeklyReportGenerator() {
 
   // ── Plain text version ────────────────────────────────────────────────
   const plainTextReport = useMemo(() => {
-    const header = `# 运营周报 - ${currentWeek.label}\n${format(currentWeek.startDate, "yyyy年M月d日", { locale: zhCN })} - ${format(currentWeek.endDate, "yyyy年M月d日", { locale: zhCN })}\n\n`;
+    const header = `# 运营周报 - ${currentWeek.label}\n${safeFormat(currentWeek.startDate, "yyyy年M月d日", "--", { locale: zhCN })} - ${safeFormat(currentWeek.endDate, "yyyy年M月d日", "--", { locale: zhCN })}\n\n`;
     return header + reportSections.map((s) => `## ${s.title}\n\n${s.content}`).join("\n\n---\n\n");
   }, [reportSections, currentWeek]);
 
@@ -219,7 +219,7 @@ export function WeeklyReportGenerator() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `运营周报-${currentWeek.label}-${format(new Date(), "yyyyMMdd")}.txt`;
+      a.download = `运营周报-${currentWeek.label}-${safeFormat(new Date(), "yyyyMMdd")}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -279,8 +279,8 @@ export function WeeklyReportGenerator() {
               <div className="text-center">
                 <p className="text-xs font-semibold">{currentWeek.label}</p>
                 <p className="text-[10px] text-muted-foreground">
-                  {format(currentWeek.startDate, "M月d日", { locale: zhCN })} -{" "}
-                  {format(currentWeek.endDate, "M月d日", { locale: zhCN })}
+                  {safeFormat(currentWeek.startDate, "M月d日", "--", { locale: zhCN })} -{" "}
+                  {safeFormat(currentWeek.endDate, "M月d日", "--", { locale: zhCN })}
                 </p>
               </div>
 

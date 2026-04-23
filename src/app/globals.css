@@ -10124,3 +10124,116 @@ textarea,
   0%, 100% { box-shadow: 0 0 8px rgba(244, 63, 94, 0.25); }
   50% { box-shadow: 0 0 28px rgba(244, 63, 94, 0.5), 0 0 56px rgba(244, 63, 94, 0.15); }
 }
+
+/* ====== Feature 4: Global Loading Shimmer & Utility Enhancements ====== */
+
+/* Shimmer loading effect for cards */
+@keyframes shimmer-card-slide {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-card {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.08) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-card-slide 1.5s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+
+/* Gradient text utility — violet */
+.gradient-text-violet {
+  background: linear-gradient(135deg, #8b5cf6, #d946ef);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient text utility — emerald */
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Dot pulse animation */
+@keyframes dot-pulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.dot-pulse > span:nth-child(1) { animation: dot-pulse 1.4s ease-in-out infinite; }
+.dot-pulse > span:nth-child(2) { animation: dot-pulse 1.4s ease-in-out 0.2s infinite; }
+.dot-pulse > span:nth-child(3) { animation: dot-pulse 1.4s ease-in-out 0.4s infinite; }
+
+/* Marquee infinite scroll for footer ticker */
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee-ticker {
+  animation: marquee-scroll 30s linear infinite;
+}
+
+.marquee-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* Conic gradient rotating border for notification bell */
+@keyframes conic-border-rotate {
+  0% { --conic-angle: 0deg; }
+  100% { --conic-angle: 360deg; }
+}
+
+@property --conic-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.notif-bell-glow {
+  position: relative;
+}
+
+.notif-bell-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from var(--conic-angle),
+    #8b5cf6,
+    #d946ef,
+    #f43f5e,
+    #8b5cf6
+  );
+  animation: conic-border-rotate 3s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 2px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.notif-bell-glow.has-unread::before {
+  opacity: 1;
+}
+
+/* Heatmap stagger entrance animation delay utility */
+@keyframes heatmap-cell-in {
+  0% { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.heatmap-cell-animate {
+  animation: heatmap-cell-in 0.3s ease-out forwards;
+  opacity: 0;
+}

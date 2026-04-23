@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
-import { format } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 
 export function CrossPlatformPublish() {
   const {
@@ -196,7 +196,7 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
 
     setPublishing(true);
     try {
-      const dateStr = format(new Date(adaptedDate), "yyyy-MM-dd");
+      const dateStr = safeFormat(new Date(adaptedDate), "yyyy-MM-dd");
       const res = await fetch("/api/content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
