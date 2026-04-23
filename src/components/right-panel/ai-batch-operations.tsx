@@ -198,7 +198,7 @@ function CoverGrid({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.05, duration: 0.3 }}
-          className="group relative rounded-lg overflow-hidden border border-border/60"
+          className="group relative rounded-lg overflow-hidden border border-border/20"
         >
           <img
             src={cover.imageUrl}
@@ -723,7 +723,7 @@ export function AIBatchOperations() {
             </div>
 
             {/* Post list with checkboxes */}
-            <div className="max-h-40 overflow-y-auto space-y-1 rounded-md border border-border/60 p-2">
+            <div className="max-h-40 overflow-y-auto space-y-1 rounded-md border border-border/20 p-2">
               {optimizablePosts.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground text-center py-4">暂无可优化的内容</p>
               ) : (

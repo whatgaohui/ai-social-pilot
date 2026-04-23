@@ -160,7 +160,7 @@ export function ContentHeatmap() {
   const numWeeks = maxCol + 1;
 
   return (
-    <div className="p-3 rounded-lg border border-border/50 bg-card/50">
+    <div className="p-3 rounded-lg border border-border/20 bg-card/50">
       {/* Title */}
       <div className="flex items-center gap-1.5 mb-2">
         <CalendarDays className="h-3 w-3 text-violet-500" />

@@ -182,7 +182,7 @@ export function QualityTimeline({ posts }: QualityTimelineProps) {
             <p className="text-[10px] text-muted-foreground">AI评分随时间的变化</p>
           </div>
         </div>
-        <div className="flex flex-col items-center justify-center py-8 text-center rounded-xl border border-border/60 bg-card/50">
+        <div className="flex flex-col items-center justify-center py-8 text-center rounded-xl border border-border/20 bg-card/50">
           <div className="h-12 w-12 rounded-full bg-muted/60 flex items-center justify-center mb-3">
             <TrendingUp className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -239,7 +239,7 @@ export function QualityTimeline({ posts }: QualityTimelineProps) {
       </div>
 
       {/* Chart */}
-      <div className="rounded-xl border border-border/60 bg-card/50 p-3 relative" ref={containerRef}>
+      <div className="rounded-xl border border-border/20 bg-card/50 p-3 relative" ref={containerRef}>
         <div className="w-full overflow-x-auto scrollbar-none">
           <svg
             viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
@@ -431,19 +431,19 @@ export function QualityTimeline({ posts }: QualityTimelineProps) {
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-lg border border-border/40 bg-muted/20 p-2.5 text-center">
+        <div className="rounded-lg border border-border/20 bg-muted/20 p-2.5 text-center">
           <p className="text-[10px] text-muted-foreground">最高分</p>
           <p className="text-sm font-bold text-emerald-500 tabular-nums">
             {Math.max(...dataPoints.map((d) => d.score))}
           </p>
         </div>
-        <div className="rounded-lg border border-border/40 bg-muted/20 p-2.5 text-center">
+        <div className="rounded-lg border border-border/20 bg-muted/20 p-2.5 text-center">
           <p className="text-[10px] text-muted-foreground">最低分</p>
           <p className="text-sm font-bold text-red-400 tabular-nums">
             {Math.min(...dataPoints.map((d) => d.score))}
           </p>
         </div>
-        <div className="rounded-lg border border-border/40 bg-muted/20 p-2.5 text-center">
+        <div className="rounded-lg border border-border/20 bg-muted/20 p-2.5 text-center">
           <p className="text-[10px] text-muted-foreground">趋势</p>
           <p className={`text-sm font-bold tabular-nums ${
             trendDirection === "上升" ? "text-emerald-500" :

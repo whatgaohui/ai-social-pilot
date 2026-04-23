@@ -332,7 +332,7 @@ export function ContentHealthCard({ onClick }: { onClick?: () => void }) {
       {/* ── Main Score Card ────────────────────────────────────────── */}
       <motion.div variants={staggerItem}>
         <div
-          className="rounded-xl border border-border/60 bg-card/80 p-4 cursor-pointer hover:shadow-sm transition-shadow"
+          className="rounded-xl border border-border/20 bg-card/80 p-4 cursor-pointer hover:shadow-sm transition-shadow"
           onClick={() => {
             setExpanded(!expanded);
             onClick?.();
@@ -396,7 +396,7 @@ export function ContentHealthCard({ onClick }: { onClick?: () => void }) {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] as const }}
             className="overflow-hidden"
           >
-            <div className="rounded-xl border border-border/60 bg-card/80 p-4 space-y-3">
+            <div className="rounded-xl border border-border/20 bg-card/80 p-4 space-y-3">
               <p className="text-[11px] font-semibold">健康维度详情</p>
               <div className="space-y-2.5">
                 {dimensions.map((dim) => (

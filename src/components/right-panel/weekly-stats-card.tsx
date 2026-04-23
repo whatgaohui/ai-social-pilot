@@ -130,7 +130,7 @@ export function WeeklyStatsCard() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <Card className="border-border/50 overflow-hidden card-glow-border">
+      <Card className="border-border/20 overflow-hidden card-glow-border">
         {/* Header */}
         <div className={`px-4 py-2.5 bg-gradient-to-r ${
           platform === 'wechat'
@@ -175,7 +175,7 @@ export function WeeklyStatsCard() {
           </div>
 
           {/* Sub metrics row */}
-          <div className="flex items-center justify-between pt-1 border-t border-border/50">
+          <div className="flex items-center justify-between pt-1 border-t border-border/20">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <Share2 className="h-3 w-3" />

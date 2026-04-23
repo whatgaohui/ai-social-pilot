@@ -626,7 +626,7 @@ export function AIWritingCoach() {
                 open={isExpanded}
                 onOpenChange={() => toggleCategory(result.id)}
               >
-                <div className="rounded-xl border border-border/60 bg-card/80 overflow-hidden">
+                <div className="rounded-xl border border-border/20 bg-card/80 overflow-hidden">
                   {/* Category Header */}
                   <CollapsibleTrigger asChild>
                     <button className="w-full flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors cursor-pointer">

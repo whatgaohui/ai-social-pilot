@@ -208,7 +208,7 @@ export function TagInput({
           "hover:border-border/80",
           isFocused
             ? "border-violet-400/60 ring-2 ring-violet-400/15 shadow-sm shadow-violet-500/5"
-            : "border-border/60",
+            : "border-border/20",
           disabled && "opacity-50 cursor-not-allowed bg-muted/30",
           readOnly && "bg-muted/20 cursor-default",
           error && "border-destructive/60 focus-within:ring-destructive/20",

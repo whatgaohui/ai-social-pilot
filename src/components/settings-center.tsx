@@ -506,7 +506,7 @@ function DatabaseOptimizeCard() {
   };
 
   return (
-    <div className="rounded-lg border border-border/60 p-3 bg-muted/20 space-y-2 content-card-hover">
+    <div className="rounded-lg border border-border/20 p-3 bg-muted/20 space-y-2 content-card-hover">
       <div className="flex items-center gap-2 mb-1">
         <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
           <Database className="h-3.5 w-3.5 text-white" />
@@ -635,7 +635,7 @@ function DataManagementSection() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {statItems.map((item) => (
-              <div key={item.label} className="rounded-lg border border-border/60 p-3 bg-muted/20">
+              <div key={item.label} className="rounded-lg border border-border/20 p-3 bg-muted/20">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-sm">{item.icon}</span>
                   <span className="text-[11px] text-muted-foreground">{item.label}</span>
@@ -717,7 +717,7 @@ function DisplayPreferencesSection() {
       {/* Theme Toggle */}
       <div>
         <Label className="text-xs font-medium text-muted-foreground mb-3 block">主题模式</Label>
-        <div className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
+        <div className="flex items-center justify-between p-3 rounded-lg border border-border/20 bg-muted/20">
           <div className="flex items-center gap-2.5">
             <Palette className="h-4 w-4 text-pink-500" />
             <div>
@@ -744,7 +744,7 @@ function DisplayPreferencesSection() {
             className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
               displayPrefs.defaultPlatform === "wechat"
                 ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/20"
-                : "border-border/60 bg-muted/20 hover:bg-muted/40"
+                : "border-border/20 bg-muted/20 hover:bg-muted/40"
             }`}
           >
             <RadioGroupItem value="wechat" className="sr-only" />
@@ -758,7 +758,7 @@ function DisplayPreferencesSection() {
             className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
               displayPrefs.defaultPlatform === "xiaohongshu"
                 ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20"
-                : "border-border/60 bg-muted/20 hover:bg-muted/40"
+                : "border-border/20 bg-muted/20 hover:bg-muted/40"
             }`}
           >
             <RadioGroupItem value="xiaohongshu" className="sr-only" />
@@ -783,7 +783,7 @@ function DisplayPreferencesSection() {
             className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
               displayPrefs.viewMode === "grid"
                 ? "border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/20"
-                : "border-border/60 bg-muted/20 hover:bg-muted/40"
+                : "border-border/20 bg-muted/20 hover:bg-muted/40"
             }`}
           >
             <RadioGroupItem value="grid" className="sr-only" />
@@ -797,7 +797,7 @@ function DisplayPreferencesSection() {
             className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
               displayPrefs.viewMode === "list"
                 ? "border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/20"
-                : "border-border/60 bg-muted/20 hover:bg-muted/40"
+                : "border-border/20 bg-muted/20 hover:bg-muted/40"
             }`}
           >
             <RadioGroupItem value="list" className="sr-only" />
@@ -811,7 +811,7 @@ function DisplayPreferencesSection() {
       </div>
 
       {/* Compact Mode */}
-      <div className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
+      <div className="flex items-center justify-between p-3 rounded-lg border border-border/20 bg-muted/20">
         <div className="flex items-center gap-2.5">
           <Minimize2 className="h-4 w-4 text-slate-500" />
           <div>

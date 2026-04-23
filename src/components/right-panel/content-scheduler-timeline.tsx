@@ -186,7 +186,7 @@ function PostTimelineCard({ post, isSelected, onSelect, onDelete }: {
       className={`group relative flex items-start gap-2 p-3 rounded-xl border transition-all cursor-pointer ${
         isSelected
           ? "border-violet-300 dark:border-violet-700 bg-violet-50/50 dark:bg-violet-950/20 shadow-sm"
-          : "border-border/60 bg-card/80 hover:border-violet-200/60 dark:hover:border-violet-800/40 hover:bg-muted/30"
+          : "border-border/20 bg-card/80 hover:border-violet-200/60 dark:hover:border-violet-800/40 hover:bg-muted/30"
       }`}
       onClick={onSelect}
     >
@@ -347,7 +347,7 @@ export function ContentSchedulerTimeline() {
   return (
     <div className="space-y-3">
       {/* ── Statistics Bar ──────────────────────────────────────── */}
-      <div className="flex items-center gap-3 flex-wrap p-3 rounded-xl bg-muted/30 border border-border/40">
+      <div className="flex items-center gap-3 flex-wrap p-3 rounded-xl bg-muted/30 border border-border/20">
         <span className="text-[10px] text-muted-foreground font-medium">状态分布</span>
         <div className="flex items-center gap-2">
           {STATUS_FLOW.map((status) => {
@@ -405,7 +405,7 @@ export function ContentSchedulerTimeline() {
                         className={`text-[10px] px-2 py-1 rounded-full border transition-colors flex-shrink-0 ${
                           statusFilter === s
                             ? "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700"
-                            : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
+                            : "border-border/20 text-muted-foreground hover:border-border/20 hover:text-foreground"
                         }`}
                       >
                         {s === "all" ? "全部" : STATUS_LABELS[s]}
@@ -425,7 +425,7 @@ export function ContentSchedulerTimeline() {
                         className={`text-[10px] px-2 py-1 rounded-full border transition-colors flex-shrink-0 ${
                           platformFilter === p
                             ? "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700"
-                            : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
+                            : "border-border/20 text-muted-foreground hover:border-border/20 hover:text-foreground"
                         }`}
                       >
                         {p === "all" ? "全部" : p === "wechat" ? "朋友圈" : "小红书"}
@@ -450,7 +450,7 @@ export function ContentSchedulerTimeline() {
                         className={`text-[10px] px-2 py-1 rounded-full border transition-colors flex-shrink-0 ${
                           scoreFilter === s.key
                             ? "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700"
-                            : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
+                            : "border-border/20 text-muted-foreground hover:border-border/20 hover:text-foreground"
                         }`}
                       >
                         {s.label}

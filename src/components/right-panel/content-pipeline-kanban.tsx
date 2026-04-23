@@ -226,7 +226,7 @@ function SortableCard({ post, onSelect, isSelected, onMoveToLane }: SortableCard
       className={`group relative rounded-lg border p-2.5 cursor-pointer transition-all duration-200 ${
         isSelected
           ? "border-violet-300 dark:border-violet-700 bg-violet-50/80 dark:bg-violet-950/20 shadow-sm"
-          : "border-border/60 bg-card hover:border-border hover:shadow-sm"
+          : "border-border/20 bg-card hover:border-border/20 hover:shadow-sm"
       }`}
       onClick={() => onSelect(post.id)}
     >

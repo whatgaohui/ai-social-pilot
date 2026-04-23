@@ -625,7 +625,7 @@ export function SortableItem({
           hover:shadow-md hover:border-primary/30
           ${isThisDragged ? "z-50 shadow-xl" : ""}
           ${isThisOver ? `${overBgClass} shadow-sm` : ""}
-          ${isSelected ? "ring-2 ring-primary bg-primary/[0.03] border-primary/40 shadow-md" : "bg-card border-border"}
+          ${isSelected ? "ring-2 ring-primary bg-primary/[0.03] border-primary/40 shadow-md" : "bg-card border-border/20"}
         `}
       >
         {/* Drag Handle */}

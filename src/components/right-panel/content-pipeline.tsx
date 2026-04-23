@@ -447,7 +447,7 @@ export function ContentPipeline() {
       >
         {/* ── Pipeline Visualization ── */}
         <motion.div variants={staggerItem}>
-          <div className="rounded-xl border border-border/60 bg-card/80 p-3">
+          <div className="rounded-xl border border-border/20 bg-card/80 p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <div className="h-6 w-6 rounded-md bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -499,7 +499,7 @@ export function ContentPipeline() {
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <div className="rounded-xl border border-border/60 bg-card/80 p-3 space-y-2">
+              <div className="rounded-xl border border-border/20 bg-card/80 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {(() => {
@@ -638,7 +638,7 @@ export function ContentPipeline() {
         {/* ── Recent Workflow Runs ── */}
         {workflowRuns.length > 0 && (
           <motion.div variants={staggerItem}>
-            <div className="rounded-xl border border-border/60 bg-card/80 p-3">
+            <div className="rounded-xl border border-border/20 bg-card/80 p-3">
               <div className="flex items-center gap-1.5 mb-2">
                 <Bot className="h-3.5 w-3.5 text-violet-500" />
                 <span className="text-[11px] font-semibold">最近工作流</span>

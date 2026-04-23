@@ -84,7 +84,7 @@ function getTypeConfig(type: string) {
         icon: AlertTriangle,
         color: "text-muted-foreground",
         bg: "bg-muted",
-        border: "border-border",
+        border: "border-border/20",
       };
   }
 }

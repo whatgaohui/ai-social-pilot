@@ -620,7 +620,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
 
       {/* ── Tone Selector ── */}
       <motion.div variants={staggerItem}>
-        <div className="rounded-lg border border-border/60 bg-card/80 p-3 content-card-hover micro-hover">
+        <div className="rounded-lg border border-border/20 bg-card/80 p-3 content-card-hover micro-hover">
           <div className="flex items-center gap-1.5 mb-2">
             <Type className="h-3.5 w-3.5 text-violet-500" />
             <span className="text-[11px] font-semibold">语气风格</span>
@@ -639,7 +639,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
                   className={`relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all duration-200 press-scale cursor-pointer ${
                     isActive
                       ? `${tone.bgClass} ${tone.borderClass} border-2`
-                      : "border-border/40 hover:border-border bg-background/50"
+                      : "border-border/20 hover:border-border/20 bg-background/50"
                   }`}
                   onMouseEnter={() => setShowTonePreview(tone.id)}
                   onMouseLeave={() => setShowTonePreview(null)}
@@ -669,7 +669,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.15 }}
-                className="mt-2 p-2 rounded-lg bg-muted/50 border border-border/40 tone-preview"
+                className="mt-2 p-2 rounded-lg bg-muted/50 border border-border/20 tone-preview"
               >
                 <p className="text-[10px] font-medium text-foreground mb-0.5">
                   {TONE_PRESETS.find((t) => t.id === showTonePreview)?.name}
@@ -688,7 +688,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
 
       {/* ── Multi-Step Generation ── */}
       <motion.div variants={staggerItem}>
-        <div className="rounded-lg border border-border/60 bg-card/80 p-3 content-card-hover micro-hover">
+        <div className="rounded-lg border border-border/20 bg-card/80 p-3 content-card-hover micro-hover">
           <div className="flex items-center gap-1.5 mb-3">
             <Sparkles className="h-3.5 w-3.5 text-violet-500" />
             <span className="text-[11px] font-semibold">分步生成</span>
@@ -850,7 +850,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
 
       {/* ── Content Variations ── */}
       <motion.div variants={staggerItem}>
-        <div className="rounded-lg border border-border/60 bg-card/80 p-3 content-card-hover micro-hover">
+        <div className="rounded-lg border border-border/20 bg-card/80 p-3 content-card-hover micro-hover">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
               <RotateCcw className="h-3.5 w-3.5 text-violet-500" />
@@ -894,7 +894,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
               </div>
 
               {/* Active Variation Content */}
-              <div className="variation-content rounded-lg border border-border/40 p-2 max-h-40 overflow-y-auto">
+              <div className="variation-content rounded-lg border border-border/20 p-2 max-h-40 overflow-y-auto">
                 <p className="text-[10px] whitespace-pre-wrap">
                   {variations[activeVariation]}
                 </p>
@@ -949,7 +949,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
 
       {/* ── Quick Templates ── */}
       <motion.div variants={staggerItem}>
-        <div className="rounded-lg border border-border/60 bg-card/80 p-3 content-card-hover micro-hover">
+        <div className="rounded-lg border border-border/20 bg-card/80 p-3 content-card-hover micro-hover">
           <div className="flex items-center gap-1.5 mb-2">
             <FileText className="h-3.5 w-3.5 text-violet-500" />
             <span className="text-[11px] font-semibold">快速模板</span>
@@ -961,7 +961,7 @@ ${stepResults.expand || stepResults.outline || "无内容"}
                   key={template.id}
                   onClick={() => handleUseTemplate(template)}
                   disabled={isGenerating}
-                  className="quick-template flex items-start gap-2 p-2 rounded-lg border border-border/40 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/50 dark:hover:bg-violet-950/10 transition-all duration-200 text-left cursor-pointer press-scale disabled:opacity-50"
+                  className="quick-template flex items-start gap-2 p-2 rounded-lg border border-border/20 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/50 dark:hover:bg-violet-950/10 transition-all duration-200 text-left cursor-pointer press-scale disabled:opacity-50"
                 >
                   <div className="mt-0.5 shrink-0">{template.icon}</div>
                   <div className="min-w-0">

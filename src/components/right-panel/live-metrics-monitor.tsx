@@ -159,7 +159,7 @@ function MetricCard({
         className={`relative rounded-xl border p-3 transition-all ${
           isAlert
             ? "border-rose-300/60 dark:border-rose-700/50 bg-rose-50/50 dark:bg-rose-950/10"
-            : "border-border/50 bg-card"
+            : "border-border/20 bg-card"
         }`}
       >
         {/* Alert flash */}

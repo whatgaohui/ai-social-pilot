@@ -208,7 +208,7 @@ function TagCloud({
   const maxCount = Math.max(...tags.map(t => t.count), 1);
 
   return (
-    <div className="tag-cloud flex flex-wrap gap-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
+    <div className="tag-cloud flex flex-wrap gap-1.5 p-3 rounded-lg bg-muted/30 border border-border/20">
       {tags.slice(0, 20).map((tag) => {
         const sizeClass = tag.count === maxCount
           ? "text-sm font-semibold"
@@ -583,7 +583,7 @@ function ImportExportDialog({
         </Button>
       </div>
 
-      <div className="import-dropzone border-2 border-dashed border-border rounded-lg p-4 text-center">
+      <div className="import-dropzone border-2 border-dashed border-border/20 rounded-lg p-4 text-center">
         <input
           ref={fileInputRef}
           type="file"

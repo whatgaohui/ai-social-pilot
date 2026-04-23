@@ -492,7 +492,7 @@ export function AIIdeaGenerator() {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-1.5 max-h-40 overflow-y-auto">
+            <div className="rounded-xl border border-border/20 bg-muted/20 p-3 space-y-1.5 max-h-40 overflow-y-auto">
               <p className="text-[10px] font-semibold text-muted-foreground mb-1">最近生成</p>
               {history.length === 0 ? (
                 <p className="text-[10px] text-muted-foreground/60">暂无历史记录</p>
@@ -529,7 +529,7 @@ export function AIIdeaGenerator() {
               className={`text-[10px] px-2.5 py-1 rounded-full border transition-colors ${
                 seed === s
                   ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
-                  : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
+                  : "border-border/20 text-muted-foreground hover:border-border/20 hover:text-foreground"
               }`}
             >
               {s}
@@ -582,7 +582,7 @@ export function AIIdeaGenerator() {
                 className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border text-[10px] transition-all ${
                   selectedAudience === a.key
                     ? "bg-violet-50 border-violet-300 text-violet-700 dark:bg-violet-950/20 dark:border-violet-700 dark:text-violet-300"
-                    : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
+                    : "border-border/20 text-muted-foreground hover:border-border/20 hover:text-foreground"
                 }`}
               >
                 <Icon className={`h-3.5 w-3.5 ${selectedAudience === a.key ? "text-violet-500" : a.color}`} />
@@ -653,7 +653,7 @@ export function AIIdeaGenerator() {
       {isGenerating && (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="rounded-xl border border-border/40 p-4 space-y-3 skeleton-pulse">
+            <div key={i} className="rounded-xl border border-border/20 p-4 space-y-3 skeleton-pulse">
               <div className="h-2.5 w-16 rounded bg-muted" />
               <div className="h-4 w-3/4 rounded bg-muted" />
               <div className="h-3 w-full rounded bg-muted" />

@@ -352,7 +352,7 @@ export function ContentReschedulePanel({ post }: ReschedulePanelProps) {
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
-        <button className="w-full flex items-center gap-2.5 py-2 px-3 rounded-xl border border-border/60 bg-card/80 hover:bg-muted/40 transition-all cursor-pointer group hover-glow-violet">
+        <button className="w-full flex items-center gap-2.5 py-2 px-3 rounded-xl border border-border/20 bg-card/80 hover:bg-muted/40 transition-all cursor-pointer group hover-glow-violet">
           {/* Drag indicator */}
           <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors" />
 
@@ -395,7 +395,7 @@ export function ContentReschedulePanel({ post }: ReschedulePanelProps) {
             <CollapsibleContent>
               <div className="mt-2 space-y-3 px-1">
                 {/* ── Mini Calendar ──────────────────────────────────────────── */}
-                <div className="bg-background/60 backdrop-blur-sm border border-border/60 rounded-xl p-3">
+                <div className="bg-background/60 backdrop-blur-sm border border-border/20 rounded-xl p-3">
                   {/* Month navigation */}
                   <div className="flex items-center justify-between mb-2.5">
                     <button
@@ -498,7 +498,7 @@ export function ContentReschedulePanel({ post }: ReschedulePanelProps) {
                   </div>
 
                   {/* Legend */}
-                  <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border/40">
+                  <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border/20">
                     <div className="flex items-center gap-1">
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />
                       <span className="text-[9px] text-muted-foreground">今天</span>
@@ -603,7 +603,7 @@ export function ContentReschedulePanel({ post }: ReschedulePanelProps) {
                         disabled={isSubmitting}
                         variant="outline"
                         size="sm"
-                        className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground border-border/60"
+                        className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground border-border/20"
                       >
                         <X className="h-3 w-3" />
                       </Button>

@@ -392,7 +392,7 @@ export function QuickActionsToolbar() {
             {/* Glow backdrop */}
             <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-slate-500/10 via-violet-500/10 to-rose-500/10 blur-xl opacity-50" />
 
-            <div className="relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)] overflow-x-auto scrollbar-none">
+            <div className="relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-background/80 backdrop-blur-xl border border-border/20 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)] overflow-x-auto scrollbar-none">
               <TooltipProvider delayDuration={300}>
                 {actions.map((action, idx) => {
                   const Icon = action.icon;

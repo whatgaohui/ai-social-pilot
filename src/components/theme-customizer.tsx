@@ -99,7 +99,7 @@ function ThemePreview({ prefs }: { prefs: ThemePreferences }) {
 
   return (
     <div
-      className="theme-preview-card border border-border shadow-sm overflow-hidden"
+      className="theme-preview-card border border-border/20 shadow-sm overflow-hidden"
       style={{ borderRadius: `${12 * prefs.borderRadius}px` }}
     >
       {/* Preview header */}
@@ -242,7 +242,7 @@ export function ThemeCustomizer() {
                 "flex-1 py-2 rounded-lg border text-xs font-medium transition-all",
                 prefs.fontSize === size
                   ? "border-foreground bg-foreground/5 text-foreground"
-                  : "border-border hover:bg-muted/50 text-muted-foreground"
+                  : "border-border/20 hover:bg-muted/50 text-muted-foreground"
               )}
               onClick={() => updatePrefs({ fontSize: size })}
             >
@@ -278,7 +278,7 @@ export function ThemeCustomizer() {
       </div>
 
       {/* Compact Spacing */}
-      <div className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
+      <div className="flex items-center justify-between p-3 rounded-lg border border-border/20 bg-muted/20">
         <div className="flex items-center gap-2.5">
           <Type className="h-4 w-4 text-slate-500" />
           <div>

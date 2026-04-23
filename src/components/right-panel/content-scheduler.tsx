@@ -141,7 +141,7 @@ function PostItem({ post, platform, isDragging, onDragStart, onDragEnd, onClick 
         border transition-all duration-200 cursor-grab active:cursor-grabbing select-none
         ${isDragging
           ? "opacity-40 scale-95 border-primary/40 bg-primary/5 shadow-lg z-50"
-          : "border-border/60 bg-background hover:border-border hover:shadow-sm"
+          : "border-border/20 bg-background hover:border-border/20 hover:shadow-sm"
         }
         ${isXHS
           ? "hover:bg-red-50/50 dark:hover:bg-red-950/10"

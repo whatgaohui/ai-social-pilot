@@ -107,7 +107,7 @@ function KpiCard({
         ease: [0.22, 1, 0.36, 1],
       }}
     >
-      <Card className="border-border/50 hover:border-border/80 hover:shadow-md transition-all duration-300 overflow-hidden group">
+      <Card className="border-border/20 hover:border-border/80 hover:shadow-md transition-all duration-300 overflow-hidden group">
         {/* Subtle top accent line */}
         <div className="h-0.5 bg-gradient-to-r from-violet-500/60 via-purple-400/40 to-transparent group-hover:from-violet-500 group-hover:via-purple-400 group-hover:to-violet-300/30 transition-all duration-500" />
         <CardContent className="p-4">

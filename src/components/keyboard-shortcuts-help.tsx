@@ -396,7 +396,7 @@ function KeyRecorderDialog({
           </DialogHeader>
         </div>
         <div className="px-6 pb-4">
-          <div className="flex items-center justify-center gap-2 py-6 rounded-lg bg-muted/30 border border-dashed border-border">
+          <div className="flex items-center justify-center gap-2 py-6 rounded-lg bg-muted/30 border border-dashed border-border/20">
             {recordedKeys.length > 0 ? (
               recordedKeys.map((key, i) => (
                 <span key={i} className="flex items-center gap-1">
@@ -786,7 +786,7 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
                         aria-expanded={!isCollapsed}
                         aria-label={`${groupLabel} 分类`}
                       >
-                        <div className="h-6 w-6 rounded-md bg-card dark:bg-card border border-border dark:border-border/60 flex items-center justify-center">
+                        <div className="h-6 w-6 rounded-md bg-card dark:bg-card border border-border/20 dark:border-border/20 flex items-center justify-center">
                           <GroupIcon className="h-3.5 w-3.5 text-foreground/70 dark:text-foreground/60" />
                         </div>
                         <Badge

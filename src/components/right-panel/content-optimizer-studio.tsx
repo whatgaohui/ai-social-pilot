@@ -561,7 +561,7 @@ function OptimizationHistoryItem({
     <motion.button
       variants={staggerItem}
       onClick={onClick}
-      className="w-full text-left p-2.5 rounded-lg border border-border/60 hover:bg-muted/50 transition-colors hover-lift-sm group"
+      className="w-full text-left p-2.5 rounded-lg border border-border/20 hover:bg-muted/50 transition-colors hover-lift-sm group"
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
@@ -1176,7 +1176,7 @@ export function ContentOptimizerStudio({
               >
                 <div
                   ref={containerRef}
-                  className="flex gap-0 rounded-xl overflow-hidden border border-border/60 bg-background"
+                  className="flex gap-0 rounded-xl overflow-hidden border border-border/20 bg-background"
                   style={{ minHeight: "280px" }}
                 >
                   {/* Left Panel: Original */}
@@ -1184,7 +1184,7 @@ export function ContentOptimizerStudio({
                     className="flex flex-col min-w-0"
                     style={{ width: `${splitRatio}%` }}
                   >
-                    <div className="flex items-center justify-between px-3 py-2 bg-muted/40 border-b border-border/40">
+                    <div className="flex items-center justify-between px-3 py-2 bg-muted/40 border-b border-border/20">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-semibold text-foreground/80">
                           原文
@@ -1233,7 +1233,7 @@ export function ContentOptimizerStudio({
                     className="flex flex-col min-w-0"
                     style={{ width: `${100 - splitRatio}%` }}
                   >
-                    <div className="flex items-center justify-between px-3 py-2 bg-muted/40 border-b border-border/40">
+                    <div className="flex items-center justify-between px-3 py-2 bg-muted/40 border-b border-border/20">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-semibold text-violet-700 dark:text-violet-400">
                           优化后

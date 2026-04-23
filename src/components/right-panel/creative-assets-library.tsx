@@ -257,7 +257,7 @@ function SortablePhraseItem({
         layout
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="group flex items-center gap-2 p-2 rounded-lg border border-border/40 bg-card hover:bg-muted/30 transition-all duration-200"
+        className="group flex items-center gap-2 p-2 rounded-lg border border-border/20 bg-card hover:bg-muted/30 transition-all duration-200"
       >
         {/* Drag handle */}
         <div
@@ -607,7 +607,7 @@ export function CreativeAssetsLibrary() {
             <motion.button
               whileTap={{ scale: 0.96 }}
               onClick={() => setShowAddFragment(!showAddFragment)}
-              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-border/20 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
             >
               <Plus className="h-3.5 w-3.5" />
               添加自定义片段
@@ -674,7 +674,7 @@ export function CreativeAssetsLibrary() {
                     key={fragment.id}
                     variants={itemVariants}
                     layout
-                    className="group flex items-start gap-2 p-2.5 rounded-lg border border-border/40 bg-card hover:bg-muted/30 transition-all duration-200"
+                    className="group flex items-start gap-2 p-2.5 rounded-lg border border-border/20 bg-card hover:bg-muted/30 transition-all duration-200"
                   >
                     {/* Category badge */}
                     <Badge
@@ -790,7 +790,7 @@ export function CreativeAssetsLibrary() {
                     variants={itemVariants}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleCopyTag(tag)}
-                    className="group/tag flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/40 bg-card hover:bg-muted/50 transition-all duration-200"
+                    className="group/tag flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card hover:bg-muted/50 transition-all duration-200"
                   >
                     <Hash className="h-3 w-3 text-muted-foreground group-hover/tag:text-foreground transition-colors" />
                     <span className="text-xs text-foreground/80 group-hover/tag:text-foreground transition-colors">

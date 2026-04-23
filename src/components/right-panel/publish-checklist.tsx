@@ -797,10 +797,10 @@ export function PublishChecklist({ post }: PublishChecklistProps) {
   };
 
   return (
-    <div className="border border-border/50 rounded-xl overflow-hidden bg-card">
+    <div className="border border-border/20 rounded-xl overflow-hidden bg-card">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         {/* Header */}
-        <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/50">
+        <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/20">
           <CollapsibleTrigger asChild>
             <button className="flex items-center gap-2 flex-1 text-left group cursor-pointer">
               <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">

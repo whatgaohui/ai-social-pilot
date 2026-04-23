@@ -223,7 +223,7 @@ export function BackupManager({ compact = false }: BackupManagerProps) {
       </Button>
 
       {/* Auto-backup Settings */}
-      <div className="space-y-3 p-3 rounded-lg border border-border/60 bg-muted/20">
+      <div className="space-y-3 p-3 rounded-lg border border-border/20 bg-muted/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="h-3.5 w-3.5 text-violet-500" />
@@ -261,7 +261,7 @@ export function BackupManager({ compact = false }: BackupManagerProps) {
       </div>
 
       {/* Storage Indicator */}
-      <div className="p-3 rounded-lg border border-border/60 bg-muted/20">
+      <div className="p-3 rounded-lg border border-border/20 bg-muted/20">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
             <HardDrive className="h-3.5 w-3.5 text-muted-foreground" />

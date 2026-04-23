@@ -237,7 +237,7 @@ function MiniCalendarPreview({ theme }: { theme: CalendarTheme }) {
   const hasPost = [1, 3, 5, 7, 8, 12, 15, 18, 20, 22, 25];
 
   return (
-    <div className="theme-preview-mini rounded-lg border border-border/40 bg-background/50 p-2.5">
+    <div className="theme-preview-mini rounded-lg border border-border/20 bg-background/50 p-2.5">
       <div className="grid grid-cols-7 gap-1 mb-1.5">
         {days.map((d) => (
           <div key={d} className="text-center text-[7px] text-muted-foreground font-medium">
@@ -389,7 +389,7 @@ export function CalendarThemeSelector() {
               className={`theme-option relative rounded-xl border-2 p-3 text-left transition-all duration-200 cursor-pointer ${
                 isActive
                   ? "border-transparent shadow-md"
-                  : "border-border/60 hover:border-border"
+                  : "border-border/20 hover:border-border/20"
               }`}
               style={
                 isActive
@@ -442,7 +442,7 @@ export function CalendarThemeSelector() {
       </div>
 
       {/* Custom Theme */}
-      <div className="rounded-xl border border-border/60 bg-card/80 p-3.5 space-y-3">
+      <div className="rounded-xl border border-border/20 bg-card/80 p-3.5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Circle className="h-3.5 w-3.5 text-violet-500" />
@@ -483,7 +483,7 @@ export function CalendarThemeSelector() {
                     type="color"
                     value={customAccent}
                     onChange={(e) => setCustomAccent(e.target.value)}
-                    className="h-8 w-10 rounded-md border border-border cursor-pointer bg-transparent p-0.5"
+                    className="h-8 w-10 rounded-md border border-border/20 cursor-pointer bg-transparent p-0.5"
                   />
                   <Input
                     value={customAccent}

@@ -655,7 +655,7 @@ function BackupRow({
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: 20, height: 0 }}
-      className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 hover:bg-muted/50 transition-colors group"
+      className="flex items-center justify-between p-2.5 rounded-lg border border-border/20 hover:bg-muted/50 transition-colors group"
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-muted flex items-center justify-center">

@@ -221,7 +221,7 @@ function OptimizationPreview({
       {/* Comparison Cards */}
       <div className="grid grid-cols-1 gap-2">
         {/* Before */}
-        <div className="rounded-lg border border-border p-3 space-y-1.5">
+        <div className="rounded-lg border border-border/20 p-3 space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Badge variant="outline" className="text-[10px] h-5 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400">

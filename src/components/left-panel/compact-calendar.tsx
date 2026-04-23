@@ -452,7 +452,7 @@ function DraggableListItem({
         transition-all duration-150 cursor-grab active:cursor-grabbing
         hover:border-primary/30 hover:bg-muted/50 hover:shadow-sm
         ${platformColor}
-        ${isSelected ? "ring-1.5 ring-primary bg-primary/[0.05] border-primary/40" : "border-border"}
+        ${isSelected ? "ring-1.5 ring-primary bg-primary/[0.05] border-primary/40" : "border-border/20"}
         ${isDragged ? "opacity-50 scale-95 z-50" : ""}
       `}
     >
@@ -655,7 +655,7 @@ function EnhancedWeekDayColumn({
             : isTodayFlag
               ? "ring-1 ring-primary/30 bg-primary/5 border-primary/20"
               : posts.length > 0
-                ? `bg-card border-border hover:border-primary/30 hover:bg-muted/50 ${isWeekend ? "dark:bg-card/80" : ""}`
+                ? `bg-card border-border/20 hover:border-primary/30 hover:bg-muted/50 ${isWeekend ? "dark:bg-card/80" : ""}`
                 : isWeekend
                   ? "bg-muted/10 border-transparent hover:bg-muted/30"
                   : "bg-muted/20 border-transparent hover:bg-muted/40"
@@ -698,7 +698,7 @@ function EnhancedWeekDayColumn({
         <button
           onClick={() => onClick(dateStr)}
           onDoubleClick={() => onDoubleClick(dateStr)}
-          className={`w-full px-1.5 py-1 border-b text-left ${isSelected ? "border-primary/20" : "border-border/50"}`}
+          className={`w-full px-1.5 py-1 border-b text-left ${isSelected ? "border-primary/20" : "border-border/20"}`}
         >
           <div className="flex items-center justify-between">
             {/* Today indicator with animated ring */}
@@ -1570,7 +1570,7 @@ export function CompactCalendar() {
 
       {/* ====== Content Health Indicator ====== */}
       {filteredPosts.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="mx-3 mb-2 p-2 rounded-lg bg-muted/30 border border-border/40">
+        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="mx-3 mb-2 p-2 rounded-lg bg-muted/30 border border-border/20">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <Activity className="h-3 w-3" />
@@ -1665,7 +1665,7 @@ export function CompactCalendar() {
                             backgroundColor: isOverThisDate && !isDraggedPostInThisDate ? "var(--color-primary-alpha-04)" : undefined,
                           }}
                           transition={{ type: "spring" as const, stiffness: 300, damping: 25 }}
-                          className={`rounded-lg border-2 overflow-hidden ${isOverThisDate && !isDraggedPostInThisDate ? `${borderHighlight} ring-2 bg-primary/[0.04] dark:bg-primary/[0.08] scale-[1.01]` : "border-border bg-card/50"} transition-all duration-200`}
+                          className={`rounded-lg border-2 overflow-hidden ${isOverThisDate && !isDraggedPostInThisDate ? `${borderHighlight} ring-2 bg-primary/[0.04] dark:bg-primary/[0.08] scale-[1.01]` : "border-border/20 bg-card/50"} transition-all duration-200`}
                         >
                           <div
                             onDragOver={(e) => calDragHandlers.onDateDragOver(e, group.dateStr)}

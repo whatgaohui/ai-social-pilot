@@ -398,7 +398,7 @@ export function CalendarHeatmap({ posts }: CalendarHeatmapProps) {
                                   {day.count > 0 ? `${day.count} 篇内容` : "无发布"}
                                 </p>
                                 {day.topics.length > 0 && (
-                                  <div className="mt-1 pt-1 border-t border-border/40">
+                                  <div className="mt-1 pt-1 border-t border-border/20">
                                     <p className="text-[9px] text-muted-foreground/70 truncate">
                                       📝 {day.topics.slice(0, 2).join(" · ")}
                                     </p>
@@ -474,7 +474,7 @@ export function CalendarHeatmap({ posts }: CalendarHeatmapProps) {
                                   {day.count > 0 ? `${day.count} 篇内容` : "无发布"}
                                 </p>
                                 {day.topics.length > 0 && (
-                                  <div className="mt-1 pt-1 border-t border-border/40">
+                                  <div className="mt-1 pt-1 border-t border-border/20">
                                     <p className="text-[9px] text-muted-foreground/70 truncate">
                                       📝 {day.topics.slice(0, 2).join(" · ")}
                                     </p>

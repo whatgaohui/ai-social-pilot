@@ -2870,7 +2870,7 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                                 className={`transition-all duration-200 cursor-pointer ${
                                   isSelected
                                     ? "border-primary/50 bg-primary/[0.03] dark:bg-primary/[0.05] shadow-sm"
-                                    : "border-border/50 hover:border-border opacity-70 hover:opacity-100"
+                                    : "border-border/20 hover:border-border/20 opacity-70 hover:opacity-100"
                                 }`}
                                 onClick={() => toggleParsedSelection(index)}
                               >
@@ -2961,7 +2961,7 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                     className="space-y-4"
                   >
                     {/* Format hints for manual import */}
-                    <div className="rounded-lg bg-muted/50 border border-border/50 p-3">
+                    <div className="rounded-lg bg-muted/50 border border-border/20 p-3">
                       <div className="flex items-start gap-2">
                         <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
                         <div className="space-y-1">
@@ -3051,7 +3051,7 @@ export function AccountCollector({ selectedPost }: AccountCollectorProps) {
                     <span>AI 正在智能解析内容...</span>
                   </div>
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-lg border border-border/50 p-3 space-y-2">
+                    <div key={i} className="rounded-lg border border-border/20 p-3 space-y-2">
                       <Skeleton className="h-3 w-3/4" />
                       <Skeleton className="h-2.5 w-full" />
                       <Skeleton className="h-2.5 w-5/6" />

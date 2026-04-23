@@ -129,7 +129,7 @@ function TrendBadge({
     },
     neutral: {
       icon: Minus,
-      className: "text-muted-foreground bg-muted/50 border-border/40",
+      className: "text-muted-foreground bg-muted/50 border-border/20",
     },
   };
 
@@ -152,14 +152,14 @@ function TrendBadge({
 
 const variantStyles: Record<StatVariant, string> = {
   default:
-    "bg-card text-card-foreground border border-border/60 shadow-sm hover:shadow-md",
+    "bg-card text-card-foreground border border-border/20 shadow-sm hover:shadow-md",
   minimal: "bg-transparent hover:bg-muted/30",
   glass:
     "glass-card backdrop-blur-xl bg-white/60 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-sm",
   gradient:
     "bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-fuchsia-500/10 border border-violet-200/40 dark:border-violet-700/30",
   outline:
-    "bg-transparent border-2 border-dashed border-border/60 hover:border-violet-300/60 dark:hover:border-violet-600/40",
+    "bg-transparent border-2 border-dashed border-border/20 hover:border-violet-300/60 dark:hover:border-violet-600/40",
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────

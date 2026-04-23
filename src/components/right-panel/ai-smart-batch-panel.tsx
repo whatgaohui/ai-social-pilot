@@ -526,7 +526,7 @@ export function AISmartBatchPanel() {
               className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200 text-left cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-sm ${
                 isRunning
                   ? "border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/20"
-                  : "border-border/60 bg-card hover:border-border"
+                  : "border-border/20 bg-card hover:border-border/20"
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -564,7 +564,7 @@ export function AISmartBatchPanel() {
       {logs.length > 0 && (
         <motion.div
           variants={staggerItem}
-          className="rounded-xl border border-border/60 bg-card/80 p-3"
+          className="rounded-xl border border-border/20 bg-card/80 p-3"
         >
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">

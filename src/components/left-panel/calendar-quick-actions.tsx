@@ -54,8 +54,8 @@ function ActionButton({ icon, label, isLoading, isSuccess, onClick }: ActionButt
               ${isSuccess
                 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
                 : isLoading
-                  ? "bg-muted border-border text-muted-foreground"
-                  : "bg-card border-border hover:bg-muted hover:border-primary/30 hover:text-primary text-foreground"
+                  ? "bg-muted border-border/20 text-muted-foreground"
+                  : "bg-card border-border/20 hover:bg-muted hover:border-primary/30 hover:text-primary text-foreground"
               }
             `}
           >

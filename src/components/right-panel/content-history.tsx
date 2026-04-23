@@ -58,7 +58,7 @@ function DiffView({ oldText, newText }: { oldText: string; newText: string }) {
             旧版本
           </Badge>
         </div>
-        <div className="rounded-lg border border-border p-3 bg-muted/30 max-h-48 overflow-y-auto text-xs leading-relaxed">
+        <div className="rounded-lg border border-border/20 p-3 bg-muted/30 max-h-48 overflow-y-auto text-xs leading-relaxed">
           <div className="flex flex-wrap gap-0">
             {oldWords.map((char, i) => (
               <span
@@ -83,7 +83,7 @@ function DiffView({ oldText, newText }: { oldText: string; newText: string }) {
             新版本
           </Badge>
         </div>
-        <div className="rounded-lg border border-border p-3 bg-muted/30 max-h-48 overflow-y-auto text-xs leading-relaxed">
+        <div className="rounded-lg border border-border/20 p-3 bg-muted/30 max-h-48 overflow-y-auto text-xs leading-relaxed">
           <div className="flex flex-wrap gap-0">
             {newWords.map((char, i) => (
               <span
@@ -210,7 +210,7 @@ function VersionEntry({
           className={`rounded-lg border p-3 transition-all duration-200 content-card-hover ${
             isLatest
               ? "border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/10 shadow-sm"
-              : "border-border hover:border-muted-foreground/30"
+              : "border-border/20 hover:border-muted-foreground/30"
           }`}
         >
           {/* Header row */}
@@ -261,7 +261,7 @@ function VersionEntry({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/50">
+          <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/20">
             <Button
               variant="ghost"
               size="sm"

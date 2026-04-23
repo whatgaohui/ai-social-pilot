@@ -322,7 +322,7 @@ function EmptyState({ onQuickAction }: { onQuickAction: (msg: string) => void })
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
               onClick={() => onQuickAction(action.message)}
-              className={`flex items-center gap-2 p-3 rounded-xl border border-border/60 bg-background hover:bg-muted/40 transition-all duration-200 hover:shadow-sm group text-left content-card-hover micro-hover focus-ring-soft`}
+              className={`flex items-center gap-2 p-3 rounded-xl border border-border/20 bg-background hover:bg-muted/40 transition-all duration-200 hover:shadow-sm group text-left content-card-hover micro-hover focus-ring-soft`}
             >
               <div
                 className={`h-7 w-7 rounded-lg ${action.bg} flex items-center justify-center flex-shrink-0`}
@@ -640,7 +640,7 @@ export function AIChatWorkspace() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/20 flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
             <Bot className="h-4 w-4 text-white" />
@@ -743,7 +743,7 @@ export function AIChatWorkspace() {
                   key={action.label}
                   onClick={() => handleQuickAction(action.message)}
                   disabled={isLoading}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap border border-border/50 bg-background hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 focus-ring-soft"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap border border-border/20 bg-background hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 focus-ring-soft"
                 >
                   <Icon className="h-3 w-3" />
                   {action.label}
@@ -755,7 +755,7 @@ export function AIChatWorkspace() {
       )}
 
       {/* Input Area */}
-      <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-sm flex-shrink-0">
+      <div className="px-4 py-3 border-t border-border/20 bg-background/80 backdrop-blur-sm flex-shrink-0">
         <div className="flex gap-2 items-end input-glow">
           <Textarea
             ref={textareaRef}
@@ -767,7 +767,7 @@ export function AIChatWorkspace() {
             }
             disabled={isLoading}
             rows={1}
-            className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border-border/60 bg-muted/30 text-sm focus-visible:ring-violet-400/40 focus-visible:border-violet-300/60 transition-all input-glow focus-ring-soft"
+            className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border-border/20 bg-muted/30 text-sm focus-visible:ring-violet-400/40 focus-visible:border-violet-300/60 transition-all input-glow focus-ring-soft"
           />
           <Button
             size="icon"

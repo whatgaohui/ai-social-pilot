@@ -323,7 +323,7 @@ function WechatPersonalGuide() {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.06 }}
-                            className="rounded-lg border border-border/60 p-3 bg-background hover:bg-accent/30 transition-colors group"
+                            className="rounded-lg border border-border/20 p-3 bg-background hover:bg-accent/30 transition-colors group"
                           >
                             <div className="flex items-start justify-between gap-2 mb-1.5">
                               <p className="text-xs font-medium text-foreground truncate flex-1">{post.topic}</p>
@@ -410,7 +410,7 @@ function WechatPersonalGuide() {
 
                 {/* 第三方工具列表 */}
                 <div className="space-y-2.5">
-                  <div className="rounded-lg border border-border/60 p-3 bg-background">
+                  <div className="rounded-lg border border-border/20 p-3 bg-background">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-foreground">WTAPI</span>
                       <Badge variant="outline" className="text-[9px] text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/40">
@@ -422,7 +422,7 @@ function WechatPersonalGuide() {
                     </p>
                   </div>
 
-                  <div className="rounded-lg border border-border/60 p-3 bg-background">
+                  <div className="rounded-lg border border-border/20 p-3 bg-background">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-foreground">WeChatFerry</span>
                       <Badge variant="outline" className="text-[9px] text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40">
@@ -622,7 +622,7 @@ function XiaohongshuPersonalGuide() {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.06 }}
-                            className="rounded-lg border border-border/60 p-3 bg-background hover:bg-accent/30 transition-colors group"
+                            className="rounded-lg border border-border/20 p-3 bg-background hover:bg-accent/30 transition-colors group"
                           >
                             <div className="flex items-start justify-between gap-2 mb-1.5">
                               <p className="text-xs font-medium text-foreground truncate flex-1">{post.topic}</p>
@@ -683,28 +683,28 @@ function XiaohongshuPersonalGuide() {
               小红书爆款笔记技巧
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-border/60 p-3 bg-background">
+              <div className="rounded-lg border border-border/20 p-3 bg-background">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Camera className="h-3.5 w-3.5 text-red-500" />
                   <span className="text-[11px] font-semibold text-foreground">封面是灵魂</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">小红书80%的流量来自封面，使用AI封面图生成器制作吸睛封面</p>
               </div>
-              <div className="rounded-lg border border-border/60 p-3 bg-background">
+              <div className="rounded-lg border border-border/20 p-3 bg-background">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Hash className="h-3.5 w-3.5 text-orange-500" />
                   <span className="text-[11px] font-semibold text-foreground">标签要精准</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">添加3-5个话题标签，混合热门标签(#好物推荐)和精准标签(#XX测评)</p>
               </div>
-              <div className="rounded-lg border border-border/60 p-3 bg-background">
+              <div className="rounded-lg border border-border/20 p-3 bg-background">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Star className="h-3.5 w-3.5 text-amber-500" />
                   <span className="text-[11px] font-semibold text-foreground">标题决定点击</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">15-25字标题最佳，善用数字、悬念和情绪词吸引点击</p>
               </div>
-              <div className="rounded-lg border border-border/60 p-3 bg-background">
+              <div className="rounded-lg border border-border/20 p-3 bg-background">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Heart className="h-3.5 w-3.5 text-rose-500" />
                   <span className="text-[11px] font-semibold text-foreground">种草语气</span>
@@ -749,7 +749,7 @@ function XiaohongshuPersonalGuide() {
 
                 {/* 工具列表 */}
                 <div className="space-y-2.5">
-                  <div className="rounded-lg border border-border/60 p-3 bg-background">
+                  <div className="rounded-lg border border-border/20 p-3 bg-background">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-foreground">小红书开放平台</span>
                       <Badge variant="outline" className="text-[9px] text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40">
@@ -761,7 +761,7 @@ function XiaohongshuPersonalGuide() {
                     </p>
                   </div>
 
-                  <div className="rounded-lg border border-border/60 p-3 bg-background">
+                  <div className="rounded-lg border border-border/20 p-3 bg-background">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-foreground">Mediago / 新榜</span>
                       <Badge variant="outline" className="text-[9px] text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/40">
@@ -773,7 +773,7 @@ function XiaohongshuPersonalGuide() {
                     </p>
                   </div>
 
-                  <div className="rounded-lg border border-border/60 p-3 bg-background">
+                  <div className="rounded-lg border border-border/20 p-3 bg-background">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-foreground">浏览器Cookie方式</span>
                       <Badge variant="outline" className="text-[9px] text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-800/40">
@@ -1467,7 +1467,7 @@ function PlatformSection({
                   className={`relative rounded-lg border-2 p-3 text-left transition-all duration-200 ${
                     wechatMode === "personal"
                       ? "border-green-500 bg-green-50 dark:bg-green-950/20 shadow-sm"
-                      : "border-border hover:border-green-300 dark:hover:border-green-700 bg-background"
+                      : "border-border/20 hover:border-green-300 dark:hover:border-green-700 bg-background"
                   }`}
                 >
                   {/* 选中指示 */}
@@ -1500,7 +1500,7 @@ function PlatformSection({
                   className={`relative rounded-lg border-2 p-3 text-left transition-all duration-200 ${
                     wechatMode === "official"
                       ? "border-green-500 bg-green-50 dark:bg-green-950/20 shadow-sm"
-                      : "border-border hover:border-green-300 dark:hover:border-green-700 bg-background"
+                      : "border-border/20 hover:border-green-300 dark:hover:border-green-700 bg-background"
                   }`}
                 >
                   {/* 选中指示 */}
@@ -1546,7 +1546,7 @@ function PlatformSection({
                   className={`relative rounded-lg border-2 p-3 text-left transition-all duration-200 ${
                     xhsMode === "personal"
                       ? "border-red-500 bg-red-50 dark:bg-red-950/20 shadow-sm"
-                      : "border-border hover:border-red-300 dark:hover:border-red-700 bg-background"
+                      : "border-border/20 hover:border-red-300 dark:hover:border-red-700 bg-background"
                   }`}
                 >
                   {/* 选中指示 */}
@@ -1579,7 +1579,7 @@ function PlatformSection({
                   className={`relative rounded-lg border-2 p-3 text-left transition-all duration-200 ${
                     xhsMode === "creator"
                       ? "border-red-500 bg-red-50 dark:bg-red-950/20 shadow-sm"
-                      : "border-border hover:border-red-300 dark:hover:border-red-700 bg-background"
+                      : "border-border/20 hover:border-red-300 dark:hover:border-red-700 bg-background"
                   }`}
                 >
                   {/* 选中指示 */}

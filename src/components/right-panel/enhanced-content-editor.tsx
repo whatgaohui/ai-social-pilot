@@ -453,7 +453,7 @@ function InlineEmojiPicker({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -4, scale: 0.97 }}
           transition={{ duration: 0.15 }}
-          className="inline-emoji-picker absolute bottom-full left-0 right-0 z-50 mb-1 rounded-lg border border-border/60 bg-popover p-2 shadow-lg"
+          className="inline-emoji-picker absolute bottom-full left-0 right-0 z-50 mb-1 rounded-lg border border-border/20 bg-popover p-2 shadow-lg"
         >
           {/* Search */}
           <div className="relative mb-2">
@@ -624,7 +624,7 @@ function TemplateChips({
                     onSelect(item);
                     setExpanded(false);
                   }}
-                  className="template-chip px-2 py-1 rounded-md text-[10px] text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted/80 border border-border/40 hover:border-border transition-colors max-w-full truncate"
+                  className="template-chip px-2 py-1 rounded-md text-[10px] text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted/80 border border-border/20 hover:border-border/20 transition-colors max-w-full truncate"
                 >
                   {item}
                 </motion.button>
@@ -934,7 +934,7 @@ export function EnhancedContentEditor({ post, isXHS, onScoreBadgeClick }: Enhanc
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15 }}
-                    className="editor-toolbar absolute -top-9 left-0 right-0 z-40 flex items-center gap-0.5 px-1 py-1 rounded-lg border border-border/60 bg-background/95 backdrop-blur-sm shadow-md"
+                    className="editor-toolbar absolute -top-9 left-0 right-0 z-40 flex items-center gap-0.5 px-1 py-1 rounded-lg border border-border/20 bg-background/95 backdrop-blur-sm shadow-md"
                   >
                     <Tooltip>
                       <TooltipTrigger asChild>

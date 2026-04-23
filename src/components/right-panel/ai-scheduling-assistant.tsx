@@ -731,7 +731,7 @@ export function AISchedulingAssistant() {
                             initial={{ opacity: 0, x: -12 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: idx * 0.04 }}
-                            className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-muted/50 border border-border/50 hover:bg-muted/80 transition-colors group"
+                            className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-muted/50 border border-border/20 hover:bg-muted/80 transition-colors group"
                           >
                             {/* Drag handle */}
                             <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0 cursor-grab" />

@@ -376,7 +376,7 @@ export function SystemSettingsPage() {
                           className={`px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors border ${
                             settings.language === lang
                               ? "bg-foreground text-background border-foreground"
-                              : "bg-muted/50 text-muted-foreground hover:text-foreground border-border"
+                              : "bg-muted/50 text-muted-foreground hover:text-foreground border-border/20"
                           }`}
                         >
                           {lang === "zh-CN" ? "中文" : "English"}
@@ -404,7 +404,7 @@ export function SystemSettingsPage() {
                           className={`px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors border ${
                             settings.defaultPlatform === p.value
                               ? "bg-foreground text-background border-foreground"
-                              : "bg-muted/50 text-muted-foreground hover:text-foreground border-border"
+                              : "bg-muted/50 text-muted-foreground hover:text-foreground border-border/20"
                           }`}
                         >
                           {p.label}
@@ -429,7 +429,7 @@ export function SystemSettingsPage() {
                           className={`px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-colors border ${
                             settings.pageSize === size
                               ? "bg-foreground text-background border-foreground"
-                              : "bg-muted/50 text-muted-foreground hover:text-foreground border-border"
+                              : "bg-muted/50 text-muted-foreground hover:text-foreground border-border/20"
                           }`}
                         >
                           {size}
@@ -454,7 +454,7 @@ export function SystemSettingsPage() {
                           className={`px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-colors border ${
                             settings.autoSaveInterval === interval
                               ? "bg-foreground text-background border-foreground"
-                              : "bg-muted/50 text-muted-foreground hover:text-foreground border-border"
+                              : "bg-muted/50 text-muted-foreground hover:text-foreground border-border/20"
                           }`}
                         >
                           {interval}秒
@@ -772,7 +772,7 @@ export function SystemSettingsPage() {
                       { label: "数据模型", value: "15", color: "text-amber-600 dark:text-amber-400" },
                       { label: "迭代次数", value: "40", color: "text-rose-600 dark:text-rose-400" },
                     ].map((stat) => (
-                      <div key={stat.label} className="p-3 rounded-xl bg-muted/50 border border-border/50">
+                      <div key={stat.label} className="p-3 rounded-xl bg-muted/50 border border-border/20">
                         <p className="text-[10px] text-muted-foreground">{stat.label}</p>
                         <p className={`text-lg font-bold tabular-nums ${stat.color}`}>{stat.value}</p>
                       </div>

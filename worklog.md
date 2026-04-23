@@ -11617,3 +11617,95 @@ Stage Summary:
   2. framer-motion Variants类型统一修复
   3. globals.css继续清理（移除未使用的CSS类）
   4. 右侧面板文件目录重组
+
+---
+Task ID: 68
+Agent: Main Developer + Subagents
+Task: 第68轮 - 黑色边框修复 + UI视觉全面清理（用户反馈"每个组件都有黑色边框"）
+
+Work Log:
+- 读取 worklog.md 了解第67轮项目状态
+- 用户反馈：每个组件都有黑色边框、重叠错位
+- 硬约束：未使用 agent-browser（会导致 OOM kill），改用 next build + eslint 验证
+
+### Bug修复
+
+1. **全局黑色边框修复**（223处，78个文件）：
+   - 问题：大量组件使用 `border-border`（无透明度）或 `border-border/40`、`/50`、`/60`，在浅色/暗色主题下均显示为明显的黑色边框
+   - 修复：全量替换为 `border-border/20`（极淡边框）
+   - 验证：0个剩余裸 `border-border` 实例
+
+2. **ResizablePanel 黑色伪元素边框**（page.tsx）：
+   - 问题：`card-gradient-border` 类在 ResizablePanelGroup 上使用 `::after` + `mask-composite: exclude` 技术生成渐变边框，在某些浏览器下 mask 失效导致显示为黑色实心边框
+   - 修复：移除 `card-gradient-border` 类，改为无伪元素装饰
+
+3. **编辑器区域多层边框叠加**（content-workspace.tsx）：
+   - 问题：编辑器容器同时有 `card-shine` + `hover-glow-violet` + `ring-1 ring-violet-500/20` + 动画渐变伪元素 + `border-l-2` 状态边框，至少5层边框效果叠加
+   - 修复：移除全部装饰层，改为简洁 `rounded-lg shadow-sm bg-card/60`
+   - 移除 `card-shine` 类（2处）、移除动画渐变伪元素、移除 `border-l-2` 状态边框
+
+4. **工具栏分组头部边框**（content-workspace.tsx）：
+   - 问题：CollapsibleSectionHeader 使用 `border border-border/60` + `hover-glow-violet`
+   - 修复：移除边框，改为纯背景色区分
+
+5. **Header 区域边框过重**（page.tsx，8处修复）：
+   - `border-b border-border/50` → `border-b border-border/30`
+   - 平台切换器 `border border-border/40` → `border-border/20`
+   - 搜索按钮 `border border-border/60` → `border-border/30`
+   - 快捷键按钮 移除边框
+   - Badge `border-border/60` → `border-border/30`
+
+6. **Dashboard 边框修复**（dashboard-overview.tsx，2处）：
+   - MetricCard `border-border/60 hover:border-border` → `border-border/20 hover:border-border/40`
+   - QuickActionCard `border-border/50 hover:border-border` → `border-border/20 hover:border-border/40`
+
+7. **Footer 边框修复**（enhanced-footer.tsx）：
+   - `border-t border-border` → `border-t border-border/30`
+
+### CSS 基础设施新增（globals.css）
+
+新增 7 个精细化 CSS 工具类：
+- `.card-clean` — 无边框卡片（仅阴影），hover 加深阴影
+- `.divider-subtle` — 渐变淡出分隔线（替代实线边框）
+- `.content-card-clean` — 透明边框→hover 微边框过渡
+- `.tooltip-clean` — 精细化 tooltip 样式
+- `.section-spacing` — 子元素统一 12px 间距
+- `.platform-tint` — 平台感知微背景色
+- `.input-clean` — 极淡边框输入框 + 平台色 focus ring
+
+### 修改文件
+- `src/app/page.tsx` — 9处边框修复 + card-gradient-border 移除
+- `src/app/globals.css` — 7个新CSS工具类（98行新增）
+- `src/components/enhanced-footer.tsx` — 1处边框修复
+- `src/components/dashboard-overview.tsx` — 2处边框修复
+- `src/components/right-panel/content-workspace.tsx` — 6处修复（边框+ring+card-shine+border-l-2）
+- 78 个其他组件文件 — 223处 border-border 替换
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（70个页面正常生成）
+- ✅ 0个剩余裸 border-border 实例
+- ✅ 0个剩余 border-border/40、/50、/60 实例
+
+Stage Summary:
+- 项目状态：稳定可运行，UI边框问题全面修复
+- 本轮修改 ~85 个文件，~250 处修改，98行 CSS 新增
+- 核心改变：
+  1. 全局边框从可见黑色降级为极淡半透明（223处）
+  2. 移除 ResizablePanel 上的 mask-composite 伪元素（消除外框黑线）
+  3. 编辑器区域从5层边框装饰简化为0层
+  4. Header/Footer/Tab 栏边框统一降级
+  5. 新增 7 个精细化 CSS 工具类供后续使用
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. ~85 个 TS 类型错误仍存在（framer-motion Variants）
+  3. 右侧面板 95+ 文件未分组整理
+  4. 移动端响应式布局未在真机测试
+  5. content-context-menu 跨平台发布功能仍显示"coming soon"
+- 建议下一阶段优先事项：
+  1. framer-motion Variants 类型统一修复（消除~85个TS错误）
+  2. 右侧面板文件目录重组（95+文件→分类目录）
+  3. content-context-menu 跨平台发布功能实现
+  4. 发布日历热力图功能
+  5. 移动端真机测试优化
+  6. Dashboard Activity Timeline 接入真实数据

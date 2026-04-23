@@ -201,7 +201,7 @@ export function ContentWordCloud({ posts }: ContentWordCloudProps) {
         <Button
           variant="outline"
           size="sm"
-          className="h-7 gap-1.5 text-[10px] border-border/60"
+          className="h-7 gap-1.5 text-[10px] border-border/20"
           onClick={handleAnalyze}
         >
           <RefreshCw className="h-3 w-3" />
@@ -221,7 +221,7 @@ export function ContentWordCloud({ posts }: ContentWordCloudProps) {
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-border/60 bg-card/50 p-4">
+        <div className="rounded-xl border border-border/20 bg-card/50 p-4">
           <div className="flex flex-wrap items-center justify-center gap-2 min-h-[180px]">
             {words.map((word, i) => (
               <motion.button
@@ -266,7 +266,7 @@ export function ContentWordCloud({ posts }: ContentWordCloudProps) {
           </div>
 
           {/* Legend */}
-          <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between">
+          <div className="mt-3 pt-3 border-t border-border/20 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {WORD_COLORS.map((color, i) => (
                 <div key={i} className="flex items-center gap-1">
@@ -287,7 +287,7 @@ export function ContentWordCloud({ posts }: ContentWordCloudProps) {
 
       {/* Top 5 Bar */}
       {words.length > 0 && (
-        <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
+        <div className="rounded-lg border border-border/20 bg-muted/20 p-3">
           <p className="text-[10px] text-muted-foreground font-medium mb-2">TOP 5 高频词汇</p>
           <div className="space-y-1.5">
             {words.slice(0, 5).map((word, i) => {

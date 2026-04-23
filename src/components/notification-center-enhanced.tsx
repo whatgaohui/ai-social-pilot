@@ -581,7 +581,7 @@ function EnhancedNotificationCenterPanel({
   const panelContent = (
     <div className="w-80 sm:w-96 max-h-[75vh] flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
         <div className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-violet-500" />
           <span className="text-sm font-semibold">通知中心</span>
@@ -898,7 +898,7 @@ export function EnhancedNotificationBell() {
             </TooltipContent>
           </Tooltip>
           <PopoverContent
-            className="w-auto p-0 border-border/50 shadow-xl"
+            className="w-auto p-0 border-border/20 shadow-xl"
             align="end"
             sideOffset={8}
           >

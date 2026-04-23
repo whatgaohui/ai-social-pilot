@@ -665,7 +665,7 @@ export function ContentStyleDNA() {
 
       {/* ── Platform Comparison ─────────────────────────────────── */}
       <motion.div variants={staggerItem}>
-        <Card className="p-3 border-dashed border-border/60">
+        <Card className="p-3 border-dashed border-border/20">
           <CardContent className="p-0">
             <div className="flex items-center gap-1.5 mb-2">
               <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />

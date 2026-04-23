@@ -25,7 +25,7 @@ export function KeyboardShortcutHint() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden mb-2"
           >
-            <div className="space-y-1 p-2 rounded-lg bg-muted/40 border border-border/40">
+            <div className="space-y-1 p-2 rounded-lg bg-muted/40 border border-border/20">
               {SHORTCUTS.map((s) => (
                 <div key={s.label} className="flex items-center justify-between">
                   <span className="text-[10px] text-muted-foreground">{s.label}</span>
@@ -33,7 +33,7 @@ export function KeyboardShortcutHint() {
                     {s.keys.map((key, i) => (
                       <kbd
                         key={i}
-                        className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded border border-border/60 bg-background/80 text-[8px] font-mono text-muted-foreground"
+                        className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded border border-border/20 bg-background/80 text-[8px] font-mono text-muted-foreground"
                       >
                         {key}
                       </kbd>

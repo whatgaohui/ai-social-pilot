@@ -359,7 +359,7 @@ function TitleABTestInner({ post }: { post: ContentPost }) {
                         ${
                           isSelected
                             ? `${style.border} ${style.bg} ring-2 ${style.ring}`
-                            : `border-border ${style.hover}`
+                            : `border-border/20 ${style.hover}`
                         }
                       `}
                     >

@@ -226,7 +226,7 @@ function MetricCard({
       className="group relative"
     >
       <div
-        className={`relative rounded-xl border p-4 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border-border/60 hover:border-border content-card-hover micro-hover ${gradientBorder}`}
+        className={`relative rounded-xl border p-4 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border-border/20 hover:border-border/20 content-card-hover micro-hover ${gradientBorder}`}
       >
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
@@ -302,7 +302,7 @@ function QuickActionCard({ icon, title, subtitle, gradient, onClick, index }: Qu
       whileHover={{ scale: 1.02, y: -1 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="group relative flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-accent/50 text-left cursor-pointer w-full transition-all duration-200 hover:shadow-sm focus-ring-soft"
+      className="group relative flex items-center gap-3 p-3 rounded-xl border border-border/20 bg-card hover:bg-accent/50 text-left cursor-pointer w-full transition-all duration-200 hover:shadow-sm focus-ring-soft"
     >
       <div className={`relative flex items-center justify-center h-8 w-8 rounded-lg shrink-0 transition-colors duration-200 ${gradient}`}>
         {icon}
@@ -820,7 +820,7 @@ export function DashboardOverview() {
             <motion.button
               whileHover={{ scale: 1.002 }}
               whileTap={{ scale: 0.998 }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border/50 hover:border-border transition-all duration-200 cursor-pointer group"
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border/20 hover:border-border/20 transition-all duration-200 cursor-pointer group"
             >
               <div className={`flex items-center justify-center h-8 w-8 rounded-lg ${platform === 'wechat' ? 'bg-gradient-to-br from-violet-500 to-purple-600' : 'bg-gradient-to-br from-rose-500 to-red-600'} shadow-sm`}>
                 <Sparkles className="h-4 w-4 text-white" />

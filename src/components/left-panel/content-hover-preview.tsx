@@ -192,7 +192,7 @@ export function ContentHoverPreview({
         >
           <div
             className={`
-              rounded-lg border border-border/60 shadow-xl shadow-black/10
+              rounded-lg border border-border/20 shadow-xl shadow-black/10
               bg-background/80 backdrop-blur-xl backdrop-saturate-150
               border-t-[3px] ${getPlatformAccentColor(post.platform)}
               overflow-hidden
@@ -276,7 +276,7 @@ export function ContentHoverPreview({
             </div>
 
             {/* Divider */}
-            <div className="mx-3 border-t border-border/40" />
+            <div className="mx-3 border-t border-border/20" />
 
             {/* Action buttons */}
             <div className="flex items-center gap-1 px-3 py-2">
@@ -314,7 +314,7 @@ export function ContentHoverPreview({
           {arrowStyle && (
             <div
               style={arrowStyle}
-              className="absolute w-2.5 h-2.5 rotate-45 bg-background/80 backdrop-blur-xl border border-border/60 z-10"
+              className="absolute w-2.5 h-2.5 rotate-45 bg-background/80 backdrop-blur-xl border border-border/20 z-10"
             />
           )}
         </motion.div>

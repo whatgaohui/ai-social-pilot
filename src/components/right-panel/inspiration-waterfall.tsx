@@ -720,7 +720,7 @@ export function InspirationWaterfall() {
                 layout
                 className="break-inside-avoid mb-2.5"
               >
-                <div className="group/card relative rounded-xl overflow-hidden border border-border/50 bg-card hover:shadow-md transition-all duration-300">
+                <div className="group/card relative rounded-xl overflow-hidden border border-border/20 bg-card hover:shadow-md transition-all duration-300">
                   {/* Gradient header */}
                   <div
                     className={`relative h-16 bg-gradient-to-br ${item.gradient} p-3 flex flex-col justify-end`}

@@ -447,8 +447,8 @@ export function ScheduledPublish({ post }: ScheduledPublishProps) {
       {/* ── Publish Stats Summary ─────────────────────────────────────── */}
       <motion.div variants={fadeIn}>
         <Collapsible open={statsOpen} onOpenChange={setStatsOpen}>
-          <div className="border border-border/50 rounded-xl overflow-hidden bg-card">
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/50">
+          <div className="border border-border/20 rounded-xl overflow-hidden bg-card">
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/20">
               <CollapsibleTrigger asChild>
                 <button className="flex items-center gap-2 flex-1 text-left group cursor-pointer">
                   <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
@@ -491,8 +491,8 @@ export function ScheduledPublish({ post }: ScheduledPublishProps) {
 
       {/* ── Schedule Time Picker ───────────────────────────────────────── */}
       <motion.div variants={fadeIn}>
-        <div className="border border-border/50 rounded-xl overflow-hidden bg-card">
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/50">
+        <div className="border border-border/20 rounded-xl overflow-hidden bg-card">
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/20">
             <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
               <CalendarClock className="h-3.5 w-3.5 text-white" />
             </div>
@@ -540,7 +540,7 @@ export function ScheduledPublish({ post }: ScheduledPublishProps) {
                         <button
                           onClick={() => handleQuickSchedule(date)}
                           disabled={isScheduling}
-                          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-muted/60 hover:bg-violet-100 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300 border border-border/50 hover:border-violet-300 dark:hover:border-violet-700/50 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-muted/60 hover:bg-violet-100 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300 border border-border/20 hover:border-violet-300 dark:hover:border-violet-700/50 transition-colors disabled:opacity-50"
                         >
                           <Clock className="h-2.5 w-2.5" />
                           {opt.label}
@@ -592,8 +592,8 @@ export function ScheduledPublish({ post }: ScheduledPublishProps) {
 
       {/* ── Reminder Settings ─────────────────────────────────────────── */}
       <motion.div variants={fadeIn}>
-        <div className="border border-border/50 rounded-xl overflow-hidden bg-card">
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/50">
+        <div className="border border-border/20 rounded-xl overflow-hidden bg-card">
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/20">
             <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm">
               <Bell className="h-3.5 w-3.5 text-white" />
             </div>
@@ -659,8 +659,8 @@ export function ScheduledPublish({ post }: ScheduledPublishProps) {
       {/* ── Publish Queue ──────────────────────────────────────────────── */}
       <motion.div variants={fadeIn}>
         <Collapsible open={queueOpen} onOpenChange={setQueueOpen}>
-          <div className="border border-border/50 rounded-xl overflow-hidden bg-card">
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/50">
+          <div className="border border-border/20 rounded-xl overflow-hidden bg-card">
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/20">
               <CollapsibleTrigger asChild>
                 <button className="flex items-center gap-2 flex-1 text-left group cursor-pointer">
                   <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-sm">

@@ -106,7 +106,7 @@ export function AIWritingAssistant() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.9 }}
               transition={{ type: "spring", stiffness: 350, damping: 25 }}
-              className="absolute bottom-14 right-0 w-56 rounded-2xl bg-background/95 backdrop-blur-xl border border-border/50 shadow-xl p-2"
+              className="absolute bottom-14 right-0 w-56 rounded-2xl bg-background/95 backdrop-blur-xl border border-border/20 shadow-xl p-2"
             >
               <div className="flex items-center justify-between px-2 py-1.5 mb-1">
                 <span className="text-xs font-semibold text-foreground">AI 写作助手</span>

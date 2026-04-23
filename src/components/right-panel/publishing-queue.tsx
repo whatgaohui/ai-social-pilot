@@ -229,7 +229,7 @@ function TimeSlotChips({ onSelect, selectedTime, disabled }: {
           className={`time-slot-chip flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium border transition-all duration-200 ${
             selectedTime === slot.time
               ? "bg-violet-100 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 shadow-sm"
-              : "bg-muted/40 border-border/50 hover:bg-muted/60 hover:border-border text-muted-foreground"
+              : "bg-muted/40 border-border/20 hover:bg-muted/60 hover:border-border/20 text-muted-foreground"
           } disabled:opacity-50`}
         >
           <span>{slot.emoji}</span>
@@ -327,7 +327,7 @@ function ScheduleDialog({ post, children }: { post: ContentPost; children: React
 
         <div className="space-y-4 py-2">
           {/* Post preview */}
-          <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50">
+          <div className="p-2.5 rounded-lg bg-muted/40 border border-border/20">
             <p className="text-xs font-medium truncate">{post.topic || "未命名内容"}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge
@@ -875,8 +875,8 @@ export function PublishingQueue() {
     >
       {/* ── Stats Bar ─────────────────────────────────────────────── */}
       <motion.div variants={staggerItem}>
-        <div className="queue-stats-bar border border-border/50 rounded-xl overflow-hidden bg-card">
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/50">
+        <div className="queue-stats-bar border border-border/20 rounded-xl overflow-hidden bg-card">
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/20">
             <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
               <BarChart3 className="h-3.5 w-3.5 text-white" />
             </div>
@@ -1014,7 +1014,7 @@ export function PublishingQueue() {
 
       {/* ── Queue List (Timeline) ─────────────────────────────────── */}
       <motion.div variants={staggerItem}>
-        <div className="schedule-timeline border border-border/50 rounded-xl overflow-hidden bg-card max-h-[420px] overflow-y-auto">
+        <div className="schedule-timeline border border-border/20 rounded-xl overflow-hidden bg-card max-h-[420px] overflow-y-auto">
           <AnimatePresence mode="popLayout">
             {filteredQueue.length === 0 ? (
               <motion.div
@@ -1061,8 +1061,8 @@ export function PublishingQueue() {
       {/* ── Unscheduled Posts (Quick Schedule) ────────────────────── */}
       {unscheduledPosts.length > 0 && (
         <motion.div variants={staggerItem}>
-          <div className="border border-border/50 rounded-xl overflow-hidden bg-card">
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/50">
+          <div className="border border-border/20 rounded-xl overflow-hidden bg-card">
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/20">
               <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-sm">
                 <RefreshCw className="h-3.5 w-3.5 text-white" />
               </div>

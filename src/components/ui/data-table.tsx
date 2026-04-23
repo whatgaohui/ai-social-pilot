@@ -147,12 +147,12 @@ export function DataTable<TData extends Record<string, unknown>>({
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {/* Table container — responsive horizontal scroll */}
-      <div className="relative overflow-x-auto rounded-lg border border-border/60 bg-background">
+      <div className="relative overflow-x-auto rounded-lg border border-border/20 bg-background">
         <table className="w-full caption-bottom text-sm">
           {/* Table Header */}
           <thead
             className={cn(
-              "bg-muted/40 border-b border-border/60",
+              "bg-muted/40 border-b border-border/20",
               stickyHeader && "sticky top-0 z-10",
               headerClassName
             )}
@@ -223,7 +223,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="border-b border-border/40"
+                    className="border-b border-border/20"
                   >
                     {columns.map((col, j) => (
                       <td key={j} className="px-3 py-3">
@@ -271,7 +271,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.15, delay: rowIdx * 0.02 }}
                       className={cn(
-                        "border-b border-border/40 last:border-0 transition-colors",
+                        "border-b border-border/20 last:border-0 transition-colors",
                         "hover:bg-muted/40",
                         clickable && "cursor-pointer",
                         dynamicClassName

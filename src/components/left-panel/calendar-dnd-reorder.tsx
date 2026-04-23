@@ -539,7 +539,7 @@ export function CalendarDndReorder({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            className="flex items-center justify-between px-3 py-2 rounded-md bg-muted/60 border border-border/40"
+            className="flex items-center justify-between px-3 py-2 rounded-md bg-muted/60 border border-border/20"
           >
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />

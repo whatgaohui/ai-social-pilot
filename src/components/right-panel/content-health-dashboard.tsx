@@ -213,7 +213,7 @@ function MetricCard({
   return (
     <motion.div
       variants={staggerItem}
-      className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/30 border border-border/40"
+      className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/30 border border-border/20"
     >
       <div className={`h-7 w-7 rounded-md ${color} flex items-center justify-center shrink-0`}>
         <Icon className="h-3.5 w-3.5 text-white" />

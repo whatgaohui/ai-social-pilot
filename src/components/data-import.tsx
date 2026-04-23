@@ -254,7 +254,7 @@ export function DataImport({ open, onOpenChange }: DataImportProps) {
                   className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                     importType === "content"
                       ? "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20"
-                      : "border-border/60 bg-muted/20 hover:bg-muted/40"
+                      : "border-border/20 bg-muted/20 hover:bg-muted/40"
                   }`}
                 >
                   <RadioGroupItem value="content" className="sr-only" />
@@ -274,7 +274,7 @@ export function DataImport({ open, onOpenChange }: DataImportProps) {
                   className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                     importType === "knowledge"
                       ? "border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/20"
-                      : "border-border/60 bg-muted/20 hover:bg-muted/40"
+                      : "border-border/20 bg-muted/20 hover:bg-muted/40"
                   }`}
                 >
                   <RadioGroupItem value="knowledge" className="sr-only" />
@@ -326,7 +326,7 @@ export function DataImport({ open, onOpenChange }: DataImportProps) {
                     ? "border-violet-400 dark:border-violet-500 bg-violet-50 dark:bg-violet-950/20 scale-[1.01]"
                     : file
                       ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/10"
-                      : "border-border hover:border-muted-foreground/40 hover:bg-muted/30"
+                      : "border-border/20 hover:border-muted-foreground/40 hover:bg-muted/30"
                 }`}
               >
                 <input

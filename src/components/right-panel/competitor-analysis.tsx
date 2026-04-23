@@ -419,7 +419,7 @@ export function CompetitorAnalysis() {
                     className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all ${
                       isSelected
                         ? `${colorSet.border} ${colorSet.bg} ring-1 ring-primary/10`
-                        : "border-border/60 hover:bg-muted/30"
+                        : "border-border/20 hover:bg-muted/30"
                     }`}
                   >
                     <Checkbox

@@ -233,7 +233,7 @@ function TemplateCard({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/50">
+            <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/20">
               <Button
                 size="sm"
                 className="flex-1 h-7 text-[10px] gap-1 bg-gradient-to-r text-white hover:opacity-90 from-violet-500 to-purple-600"
@@ -338,7 +338,7 @@ function CustomTemplateForm({
               key={section.key}
               layout
               className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${
-                section.enabled ? "bg-background border-border" : "bg-muted/30 border-border/50 opacity-60"
+                section.enabled ? "bg-background border-border/20" : "bg-muted/30 border-border/20 opacity-60"
               }`}
             >
               <GripVertical className="h-3.5 w-3.5 text-muted-foreground cursor-grab" />

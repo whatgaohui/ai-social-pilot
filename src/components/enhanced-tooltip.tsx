@@ -47,7 +47,7 @@ export function EnhancedTooltip({
               )}
               {shortcut && (
                 <div className="flex items-center gap-1.5 pt-0.5">
-                  <kbd className="tooltip-shortcut inline-flex h-5 min-w-5 items-center justify-center rounded border border-border/60 bg-muted px-1.5 font-mono text-[10px] text-muted-foreground font-medium">
+                  <kbd className="tooltip-shortcut inline-flex h-5 min-w-5 items-center justify-center rounded border border-border/20 bg-muted px-1.5 font-mono text-[10px] text-muted-foreground font-medium">
                     {shortcut}
                   </kbd>
                 </div>

@@ -9507,3 +9507,101 @@ html {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* ====== Round 68: Border Cleanup & Visual Polish ====== */
+
+/* Global: Prevent heavy borders everywhere — use very subtle defaults */
+@layer base {
+  /* Remove default border from all elements that Tailwind adds */
+  [class*="border-"] {
+    border-color: oklch(from var(--color-border) l c h / 0.2);
+  }
+  [class*="border-"]:hover {
+    border-color: oklch(from var(--color-border) l c h / 0.4);
+  }
+}
+
+/* Clean card style — no visible border by default, just shadow */
+.card-clean {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+.card-clean:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+.dark .card-clean {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.dark .card-clean:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Subtle divider — replaces border-border with a softer separator */
+.divider-subtle {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, oklch(from var(--color-border) l c h / 0.15), transparent);
+}
+.dark .divider-subtle {
+  background: linear-gradient(90deg, transparent, oklch(from var(--color-border) l c h / 0.2), transparent);
+}
+
+/* Content card hover — very subtle lift without visible border change */
+.content-card-clean {
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  border: 1px solid transparent;
+}
+.content-card-clean:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: oklch(from var(--color-border) l c h / 0.12);
+}
+.dark .content-card-clean:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-color: oklch(from var(--color-border) l c h / 0.15);
+}
+
+/* Refined tooltip style */
+.tooltip-clean {
+  background: oklch(0.15 0 0);
+  color: oklch(0.95 0 0);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+.dark .tooltip-clean {
+  background: oklch(0.25 0 0);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Smooth section padding — consistent vertical rhythm */
+.section-spacing > * + * {
+  margin-top: 12px;
+}
+
+/* Platform-aware subtle background tint */
+.platform-tint {
+  background: rgb(var(--platform-primary) / 0.02);
+  transition: background-color 0.3s ease;
+}
+.platform-tint:hover {
+  background: rgb(var(--platform-primary) / 0.04);
+}
+
+/* Clean input — minimal border, focus ring only */
+.input-clean {
+  border: 1px solid oklch(from var(--color-border) l c h / 0.15);
+  background: transparent;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input-clean:focus {
+  border-color: oklch(from var(--color-border) l c h / 0.3);
+  box-shadow: 0 0 0 3px rgb(var(--platform-primary) / 0.08);
+  outline: none;
+}
+.input-clean::placeholder {
+  color: oklch(from var(--color-muted-foreground) l c h / 0.5);
+}

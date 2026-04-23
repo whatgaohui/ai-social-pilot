@@ -62,7 +62,7 @@ export function TrendLineChartPanel({ className }: { className?: string }) {
       transition={{ duration: 0.4, delay: 0.08 }}
       className={cn(className)}
     >
-      <Card className="border-border/50 overflow-hidden">
+      <Card className="border-border/20 overflow-hidden">
         {/* Header with title + range selector */}
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">

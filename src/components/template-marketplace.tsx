@@ -171,7 +171,7 @@ function TemplateCard({ template, onPreview, onUse, onFavorite, favorites }: Tem
       animate="visible"
       exit="exit"
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-      className="template-card group relative rounded-xl border border-border/60 bg-card/80 hover:border-violet-300/50 dark:hover:border-violet-700/50 hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer"
+      className="template-card group relative rounded-xl border border-border/20 bg-card/80 hover:border-violet-300/50 dark:hover:border-violet-700/50 hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer"
     >
       {/* Featured badge */}
       {template.isFeatured && (
@@ -519,7 +519,7 @@ function TemplateDetailDialog({ template, open, onOpenChange, onUse, onAIRewrite
         </DialogHeader>
 
         {/* Content */}
-        <div className="rounded-lg border border-border/60 bg-muted/30 p-4 my-2">
+        <div className="rounded-lg border border-border/20 bg-muted/30 p-4 my-2">
           <pre className="text-xs whitespace-pre-wrap leading-relaxed font-[inherit]">{template.content}</pre>
         </div>
 
@@ -725,7 +725,7 @@ export function TemplateMarketplace() {
       className="space-y-4"
     >
       {/* ─── Marketplace Header ─── */}
-      <div className="marketplace-header rounded-xl border border-border/60 bg-card/80 p-3 space-y-3">
+      <div className="marketplace-header rounded-xl border border-border/20 bg-card/80 p-3 space-y-3">
         {/* Search bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -888,7 +888,7 @@ export function TemplateMarketplace() {
               </div>
             ) : (
               myTemplates.map((t) => (
-                <div key={t.id} className="template-card flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card/80 hover:border-violet-300/50 transition-all group">
+                <div key={t.id} className="template-card flex items-center gap-3 p-3 rounded-lg border border-border/20 bg-card/80 hover:border-violet-300/50 transition-all group">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-xs font-medium truncate">{t.title}</h4>

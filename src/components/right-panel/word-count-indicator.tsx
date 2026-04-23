@@ -133,7 +133,7 @@ export function WordCountIndicator() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className="border-t border-border/60 bg-muted/20 px-4 py-2 space-y-1.5"
+          className="border-t border-border/20 bg-muted/20 px-4 py-2 space-y-1.5"
         >
           {/* Progress bar */}
           <CountProgressBar charCount={charCount} platform={platform} />

@@ -334,7 +334,7 @@ export function AIQuickActionsBar() {
               </div>
 
               {/* Selected post info */}
-              <div className="hidden md:flex items-center gap-1.5 ml-1 pl-2 border-l border-border/50">
+              <div className="hidden md:flex items-center gap-1.5 ml-1 pl-2 border-l border-border/20">
                 <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">
                   {selectedPost.topic}
                 </span>

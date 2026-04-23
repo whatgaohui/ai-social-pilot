@@ -164,7 +164,7 @@ export function QuickCreatePopup({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-sm rounded-xl border-border/60 p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-sm rounded-xl border-border/20 p-0 gap-0 overflow-hidden">
         {/* Colored accent bar at top */}
         <div className="relative">
           <motion.div
@@ -215,7 +215,7 @@ export function QuickCreatePopup({
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="输入内容主题..."
-                  className="text-sm h-8 rounded-lg border-border/60 focus-visible:ring-1 focus-visible:ring-offset-0"
+                  className="text-sm h-8 rounded-lg border-border/20 focus-visible:ring-1 focus-visible:ring-offset-0"
                   onKeyDown={handleKeyDown}
                 />
               </div>
@@ -258,7 +258,7 @@ export function QuickCreatePopup({
                   placeholder="简要描述内容要点..."
                   rows={3}
                   className="
-                    w-full text-sm rounded-lg border border-border/60 bg-background px-3 py-2
+                    w-full text-sm rounded-lg border border-border/20 bg-background px-3 py-2
                     placeholder:text-muted-foreground/50
                     focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0
                     resize-none transition-colors

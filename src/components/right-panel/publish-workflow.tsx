@@ -253,7 +253,7 @@ function OneClickFormat({ post }: { post: ContentPost | null }) {
 
                 <div className="grid grid-cols-1 gap-2">
                   {/* Before */}
-                  <div className="rounded-lg border border-border/60 p-2.5">
+                  <div className="rounded-lg border border-border/20 p-2.5">
                     <div className="flex items-center gap-1 mb-1.5">
                       <FileText className="h-3 w-3 text-muted-foreground" />
                       <span className="text-[9px] text-muted-foreground font-medium">原文</span>

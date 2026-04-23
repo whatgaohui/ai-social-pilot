@@ -209,7 +209,7 @@ export function AppContextMenu({
 
             {/* Menu */}
             <motion.div
-              className="context-menu-enter fixed z-[9999] min-w-[180px] max-w-[260px] py-1 rounded-lg bg-popover border border-border shadow-xl"
+              className="context-menu-enter fixed z-[9999] min-w-[180px] max-w-[260px] py-1 rounded-lg bg-popover border border-border/20 shadow-xl"
               style={{ left: position.x, top: position.y }}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -264,7 +264,7 @@ export function AppContextMenu({
                     <AnimatePresence>
                       {activeSubmenu === item.id && item.submenu && (
                         <motion.div
-                          className="context-menu-enter fixed z-[10000] min-w-[160px] py-1 rounded-lg bg-popover border border-border shadow-xl"
+                          className="context-menu-enter fixed z-[10000] min-w-[160px] py-1 rounded-lg bg-popover border border-border/20 shadow-xl"
                           initial={{ opacity: 0, x: -4 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -4 }}

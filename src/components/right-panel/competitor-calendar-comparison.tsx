@@ -206,7 +206,7 @@ function DayCell({
         <TooltipTrigger asChild>
           <motion.button
             onClick={() => onSelect(date, entry)}
-            className={`relative flex flex-col items-center p-1 rounded-lg transition-all hover:shadow-md border border-transparent hover:border-border/50 ${bgClass}`}
+            className={`relative flex flex-col items-center p-1 rounded-lg transition-all hover:shadow-md border border-transparent hover:border-border/20 ${bgClass}`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0, scale: 0.8 }}

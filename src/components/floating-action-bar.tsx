@@ -88,7 +88,7 @@ export function FloatingActionBar() {
         {/* Dismiss button — visible on hover of the bar */}
         <button
           onClick={() => setDismissed(true)}
-          className="absolute -top-2 -left-1 h-4 w-4 rounded-full bg-muted border border-border text-muted-foreground flex items-center justify-center text-[8px] opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
+          className="absolute -top-2 -left-1 h-4 w-4 rounded-full bg-muted border border-border/20 text-muted-foreground flex items-center justify-center text-[8px] opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
           aria-label="关闭快捷栏"
         >
           ✕
@@ -96,7 +96,7 @@ export function FloatingActionBar() {
 
         {/* Main container — glass morphism pill */}
         <div
-          className={`glass-card content-card-hover flex flex-col items-center gap-1 p-1.5 rounded-2xl bg-background/80 backdrop-blur-xl border border-border/50 shadow-lg transition-all duration-300 ${
+          className={`glass-card content-card-hover flex flex-col items-center gap-1 p-1.5 rounded-2xl bg-background/80 backdrop-blur-xl border border-border/20 shadow-lg transition-all duration-300 ${
             expanded ? "shadow-xl" : ""
           }`}
         >
@@ -132,7 +132,7 @@ export function FloatingActionBar() {
         {/* Expand / Collapse toggle */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="focus-ring-soft mt-1 h-6 w-6 rounded-full bg-muted/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-200 cursor-pointer"
+          className="focus-ring-soft mt-1 h-6 w-6 rounded-full bg-muted/80 border border-border/20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-200 cursor-pointer"
           aria-label={expanded ? "收起" : "展开"}
         >
           {expanded ? (

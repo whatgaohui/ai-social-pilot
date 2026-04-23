@@ -165,7 +165,7 @@ function QuickExportButton({
       <Button
         variant="outline"
         size="sm"
-        className={`w-full justify-start gap-2 text-xs h-9 border-border/60 ${color}`}
+        className={`w-full justify-start gap-2 text-xs h-9 border-border/20 ${color}`}
         onClick={onClick}
         disabled={loading}
       >
@@ -191,7 +191,7 @@ function ReportExportSubMenu({ onExport, loading }: { onExport: (format: string,
       <Button
         variant="outline"
         size="sm"
-        className="w-full justify-between text-xs h-9 border-border/60 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+        className="w-full justify-between text-xs h-9 border-border/20 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
         onClick={() => setOpen(!open)}
       >
         <span className="flex items-center gap-2">
@@ -503,7 +503,7 @@ function CustomExportPanel({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="rounded-lg border border-border/60 overflow-hidden">
+            <div className="rounded-lg border border-border/20 overflow-hidden">
               <div className="bg-muted/40 px-3 py-1.5 flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <Table className="h-3 w-3" />
@@ -519,7 +519,7 @@ function CustomExportPanel({
               <div className="overflow-x-auto">
                 <table className="w-full text-[10px]">
                   <thead>
-                    <tr className="border-b border-border/40">
+                    <tr className="border-b border-border/20">
                       {selectedFields
                         .filter((key) => AVAILABLE_FIELDS.find((f) => f.key === key))
                         .map((key) => (
@@ -665,7 +665,7 @@ function ExportHistory() {
               key={record.id}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 p-2 rounded-md bg-muted/30 border border-border/40 group"
+              className="flex items-center gap-2 p-2 rounded-md bg-muted/30 border border-border/20 group"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-medium truncate">{record.type}</p>
@@ -897,7 +897,7 @@ export function ExportCenter() {
       </div>
 
       {/* Quick Export Buttons */}
-      <Card className="border-border/60">
+      <Card className="border-border/20">
         <CardHeader className="pb-2 pt-3 px-4">
           <CardTitle className="text-xs font-medium flex items-center gap-1.5">
             <Download className="h-3.5 w-3.5 text-violet-500" />
@@ -927,7 +927,7 @@ export function ExportCenter() {
       </Card>
 
       {/* Custom Export */}
-      <Card className="border-border/60">
+      <Card className="border-border/20">
         <CardHeader className="pb-2 pt-3 px-4">
           <CardTitle className="text-xs font-medium flex items-center gap-1.5">
             <Settings2 className="h-3.5 w-3.5 text-amber-500" />
@@ -940,7 +940,7 @@ export function ExportCenter() {
       </Card>
 
       {/* Export History */}
-      <Card className="border-border/60">
+      <Card className="border-border/20">
         <CardHeader className="pb-2 pt-3 px-4">
           <CardTitle className="text-xs font-medium flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5 text-muted-foreground" />

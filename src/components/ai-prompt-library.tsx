@@ -271,7 +271,7 @@ function PromptCard({ prompt, onCopy, onUse, onEdit, onDelete }: PromptCardProps
       variants={fadeIn}
       initial="hidden"
       animate="visible"
-      className="prompt-card group rounded-xl border border-border/60 bg-card/80 hover:border-violet-300/50 dark:hover:border-violet-700/50 hover:shadow-md transition-all duration-200 overflow-hidden"
+      className="prompt-card group rounded-xl border border-border/20 bg-card/80 hover:border-violet-300/50 dark:hover:border-violet-700/50 hover:shadow-md transition-all duration-200 overflow-hidden"
     >
       <div className="p-3.5">
         {/* Header */}
@@ -590,7 +590,7 @@ export function AIPromptLibrary() {
       className="space-y-4"
     >
       {/* Header */}
-      <div className="rounded-xl border border-border/60 bg-card/80 p-3 space-y-3">
+      <div className="rounded-xl border border-border/20 bg-card/80 p-3 space-y-3">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

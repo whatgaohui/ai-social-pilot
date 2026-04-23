@@ -185,7 +185,7 @@ export function TimeSuggestions() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.2, delay: index * 0.08 }}
-              className="rounded-lg bg-background/80 border border-border/50 p-3 hover:shadow-sm transition-all micro-hover content-card-hover"
+              className="rounded-lg bg-background/80 border border-border/20 p-3 hover:shadow-sm transition-all micro-hover content-card-hover"
             >
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
