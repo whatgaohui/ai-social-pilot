@@ -207,7 +207,7 @@ function VersionEntry({
         }`}
       >
         <div
-          className={`rounded-lg border p-3 transition-all duration-200 ${
+          className={`rounded-lg border p-3 transition-all duration-200 content-card-hover ${
             isLatest
               ? "border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/10 shadow-sm"
               : "border-border hover:border-muted-foreground/30"
@@ -265,7 +265,7 @@ function VersionEntry({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+              className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground micro-hover focus-ring-soft"
               onClick={() => setExpandedId(isExpanded ? null : version.id)}
             >
               <Eye className="h-3 w-3 mr-1" />
@@ -275,7 +275,7 @@ function VersionEntry({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+              className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground micro-hover focus-ring-soft"
               onClick={() => onRestore(version)}
             >
               <RotateCcw className="h-3 w-3 mr-1" />
@@ -286,7 +286,7 @@ function VersionEntry({
               <Button
                 variant="ghost"
                 size="sm"
-                className={`h-6 px-2 text-[11px] ${
+                className={`h-6 px-2 text-[11px] micro-hover focus-ring-soft ${
                   compareTargetId === version.id
                     ? "text-violet-600 dark:text-violet-400"
                     : "text-muted-foreground hover:text-foreground"
@@ -416,7 +416,7 @@ export function ContentHistory({ post }: ContentHistoryProps) {
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="w-full">
-        <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group/trig">
+        <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group/trig content-card-hover">
           <CardContent className="p-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500/10 to-purple-500/10 flex items-center justify-center">
@@ -448,7 +448,7 @@ export function ContentHistory({ post }: ContentHistoryProps) {
               disabled={saving || !post.content.trim()}
               size="sm"
               variant="outline"
-              className="h-7 text-[11px] border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/20"
+              className="h-7 text-[11px] border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/20 focus-ring-soft"
             >
               {saving ? (
                 <>

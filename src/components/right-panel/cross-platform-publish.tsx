@@ -267,7 +267,7 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger className="w-full">
-        <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group/trig">
+        <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group/trig content-card-hover">
           <CardContent className="p-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-cyan-500/10 to-violet-500/10 flex items-center justify-center">
@@ -343,7 +343,7 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
               <Button
                 size="sm"
                 variant="outline"
-                className="w-full h-8 text-xs"
+                className="w-full h-8 text-xs focus-ring-soft"
                 onClick={() => {
                   setSelectedPostId(crossPlatformVersion.id);
                 }}
@@ -359,7 +359,7 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
             <Button
               onClick={handleAdapt}
               disabled={adapting}
-              className="w-full h-9 bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600 text-white"
+              className="w-full h-9 bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600 text-white focus-ring-soft"
             >
               {adapting ? (
                 <>
@@ -409,12 +409,12 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
                 </div>
 
                 {/* Content preview */}
-                <div className="rounded-lg bg-background border p-3 relative group">
+                <div className="rounded-lg bg-background border p-3 relative group content-card-hover">
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
                       variant="secondary"
                       size="sm"
-                      className={`h-6 px-2 text-[10px] shadow-sm ${copied ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800" : ""}`}
+                      className={`h-6 px-2 text-[10px] shadow-sm micro-hover focus-ring-soft ${copied ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800" : ""}`}
                       onClick={handleCopy}
                     >
                       {copied ? (
@@ -445,7 +445,7 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
                           adaptedContentType === ct.value ? "secondary" : "ghost"
                         }
                         size="sm"
-                        className={`h-6 px-2 text-[10px] ${
+                        className={`h-6 px-2 text-[10px] micro-hover focus-ring-soft ${
                           adaptedContentType === ct.value
                             ? getContentTypeColor(ct.value)
                             : ""
@@ -467,7 +467,7 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
                     type="date"
                     value={adaptedDate}
                     onChange={(e) => setAdaptedDate(e.target.value)}
-                    className="text-sm h-8"
+                    className="text-sm h-8 focus-ring-soft"
                   />
                 </div>
 
@@ -479,7 +479,7 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
                       publishing || !adaptedContent.trim() || !adaptedDate
                     }
                     size="sm"
-                    className={`flex-1 bg-gradient-to-r ${
+                    className={`flex-1 bg-gradient-to-r focus-ring-soft ${
                       targetPlatform === "wechat"
                         ? "from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
                         : "from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700"
@@ -504,7 +504,7 @@ ${targetPlatform === "xiaohongshu" ? "小红书风格：emoji丰富、话题标�
                     }}
                     variant="outline"
                     size="sm"
-                    className="h-8 text-xs"
+                    className="h-8 text-xs focus-ring-soft"
                   >
                     重新改编
                   </Button>

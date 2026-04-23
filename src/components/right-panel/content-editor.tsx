@@ -344,7 +344,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
   };
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="border-0 shadow-sm content-card-hover">
       <CardContent className="p-4">
         {editing ? (
           <div className="space-y-2">
@@ -363,7 +363,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
               ref={textareaRef}
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[150px] text-sm leading-relaxed resize-none"
+              className="min-h-[150px] text-sm leading-relaxed resize-none focus-ring-soft"
               placeholder="开始编辑内容..."
             />
 
@@ -393,7 +393,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/80 micro-hover focus-ring-soft"
                     onClick={handleBold}
                   >
                     <Bold className="h-3.5 w-3.5" />
@@ -410,7 +410,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/80 micro-hover focus-ring-soft"
                         >
                           <Smile className="h-3.5 w-3.5" />
                         </Button>
@@ -444,7 +444,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/80 micro-hover focus-ring-soft"
                     onClick={handleLineBreak}
                   >
                     <WrapText className="h-3.5 w-3.5" />
@@ -458,7 +458,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`h-7 w-7 p-0 transition-colors ${isXHS ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30" : "text-muted-foreground hover:text-foreground hover:bg-muted/80"}`}
+                    className={`h-7 w-7 p-0 transition-colors focus-ring-soft ${isXHS ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30" : "text-muted-foreground hover:text-foreground hover:bg-muted/80"}`}
                     onClick={handleHashtag}
                   >
                     <Hash className="h-3.5 w-3.5" />
@@ -474,7 +474,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 micro-hover focus-ring-soft"
                     onClick={handleClear}
                     disabled={!editContent}
                   >
@@ -487,11 +487,11 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
 
             {/* ── Save / Cancel Buttons ─────────────────────────────── */}
             <div className="flex gap-2 pt-1">
-              <Button onClick={saveEdit} size="sm" className="flex-1">
+              <Button onClick={saveEdit} size="sm" className="flex-1 focus-ring-soft">
                 <Check className="h-3.5 w-3.5 mr-1" />
                 保存
               </Button>
-              <Button onClick={cancelEdit} variant="outline" size="sm">
+              <Button onClick={cancelEdit} variant="outline" size="sm" className="focus-ring-soft">
                 取消
               </Button>
             </div>
@@ -533,7 +533,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
                 <Button
                   variant="secondary"
                   size="sm"
-                  className={`h-7 px-2 shadow-sm ${copied ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : ""}`}
+                  className={`h-7 px-2 shadow-sm micro-hover focus-ring-soft ${copied ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : ""}`}
                   onClick={handleCopy}
                   disabled={!post.content}
                 >
@@ -542,7 +542,7 @@ export function ContentEditor({ post, isXHS, onScoreBadgeClick }: ContentEditorP
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="h-7 px-2 shadow-sm"
+                  className="h-7 px-2 shadow-sm micro-hover focus-ring-soft"
                   onClick={startEdit}
                 >
                   <Edit3 className="h-3 w-3" />

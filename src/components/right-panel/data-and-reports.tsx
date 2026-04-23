@@ -20,16 +20,15 @@ import { CompetitorCalendarView } from "@/components/right-panel/competitor-cale
 import { CompetitorDashboard } from "@/components/right-panel/competitor-dashboard";
 import { TrendTracker } from "@/components/right-panel/trend-tracker";
 import {
-  FileBarChart, BarChart3, LayoutDashboard, Users, Sparkles, Activity,
+  BarChart3, LayoutDashboard, Users, Sparkles, Activity,
   Radar, Flame, Gauge, Layers, UserCheck, Download, ChevronDown,
-  TrendingUp, PenTool, FileBarChart2, CalendarCheck, Crosshair,
+  TrendingUp, PenTool, CalendarCheck, Crosshair,
   Calendar, FileText, Loader2, AlertCircle, Shield, Target, Zap,
   ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { OperationsDashboard } from "@/components/right-panel/operations-dashboard";
 import { ExecutiveDashboard } from "@/components/right-panel/executive-dashboard";
@@ -377,7 +376,7 @@ function CompetitorTabEnhanced() {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
+    <div className="space-y-2">
       {/* Section 1: Radar */}
       <CollapsibleSection
         title="竞品雷达图"
@@ -462,61 +461,12 @@ function CompetitorTabEnhanced() {
   );
 }
 
-// ── Ops Dashboard Tab ─────────────────────────────────────────────────────
-
-function OpsDashboardTab() {
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    rhythm: true,
-    metrics: false,
-    workflow: false,
-    weekly: false,
-  });
-
-  const toggle = (key: string) =>
-    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
-      <CollapsibleSection
-        title="运营节奏引擎"
-        icon={Activity}
-        gradientClass="from-violet-500 to-purple-600"
-        defaultOpen={true}
-      >
-        <OpsRhythmEngine />
-      </CollapsibleSection>
-      <CollapsibleSection
-        title="实时指标监控"
-        icon={Gauge}
-        gradientClass="from-emerald-500 to-teal-600"
-        defaultOpen={false}
-      >
-        <LiveMetricsMonitor />
-      </CollapsibleSection>
-      <CollapsibleSection
-        title="发布工作流"
-        icon={PenTool}
-        gradientClass="from-rose-500 to-pink-600"
-        defaultOpen={false}
-      >
-        <PublishWorkflowEnhanced />
-      </CollapsibleSection>
-      <CollapsibleSection
-        title="周报生成器"
-        icon={CalendarCheck}
-        gradientClass="from-amber-500 to-orange-600"
-        defaultOpen={false}
-      >
-        <WeeklyReportGenerator />
-      </CollapsibleSection>
-    </div>
-  );
-}
-
 /**
- * DataAndReports — unified "数据与报告" view that merges
- * the OperationReport (prominent, default) and AnalyticsPanel
- * into a single tabbed component.
+ * DataAndReports — unified "数据与报告" view with 4 consolidated tabs:
+ * 1. 数据分析 — Analytics + Audience Insights
+ * 2. 运营报告 — Reports + Weekly Analytics
+ * 3. 运营看板 — Ops dashboards + Competitor + Trends (collapsible)
+ * 4. 导出 — Export + Templates
  *
  * Key fix: each tab panel has `flex flex-col min-h-0` so that
  * the inner ScrollArea can resolve its `h-full` constraint correctly.
@@ -527,19 +477,11 @@ export function DataAndReports() {
 
   const isWeChat = platform === "wechat";
 
-  const tabTriggerClass = (value: string) =>
-    `flex-1 h-7 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm ${
-      !isWeChat
-        ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
-        : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400"
-    }`;
-
-  const badgeDotVariant = (value: string) => {
-    if (value === "analytics" || value === "intelligence") return "dot-violet";
-    if (value === "ops" || value === "rhythm") return "dot-emerald";
-    if (value === "competitor" || value === "trends") return "dot-rose";
-    return "dot-amber";
-  };
+  const tabTriggerClass =
+    "flex-1 h-8 text-xs gap-1.5 data-[state=active]:bg-background shadow-sm rounded-md " +
+    (!isWeChat
+      ? "data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400"
+      : "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400");
 
   return (
     <div className="flex flex-col h-full">
@@ -551,113 +493,52 @@ export function DataAndReports() {
           transition={{ duration: 0.25 }}
         >
           <Tabs defaultValue="analytics" className="w-full">
-            <TabsList className="w-full h-8 bg-muted/50 p-0.5 overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_0%,black_85%,transparent)] micro-hover">
-              <TabsTrigger value="analytics" className={`${tabTriggerClass("analytics")} flex-shrink-0`}>
-                <span className="badge-dot dot-violet">
-                  <BarChart3 className="h-3.5 w-3.5" />
-                </span>
+            <TabsList className="w-full h-9 bg-muted/50 p-0.5 gap-0.5">
+              <TabsTrigger value="analytics" className={tabTriggerClass}>
+                <BarChart3 className="h-3.5 w-3.5" />
                 数据分析
               </TabsTrigger>
-              <TabsTrigger value="ops" className={`${tabTriggerClass("ops")} flex-shrink-0`}>
-                <span className="badge-dot dot-emerald">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                </span>
-                运营仪表盘
-              </TabsTrigger>
-              <TabsTrigger value="competitor" className={`${tabTriggerClass("competitor")} flex-shrink-0`}>
-                <span className="badge-dot dot-rose">
-                  <Users className="h-3.5 w-3.5" />
-                </span>
-                竞品分析
-              </TabsTrigger>
-              <TabsTrigger value="report" className={`${tabTriggerClass("report")} flex-shrink-0`}>
-                <span className="badge-dot dot-amber">
-                  <FileBarChart className="h-3.5 w-3.5" />
-                </span>
+              <TabsTrigger value="report" className={tabTriggerClass}>
+                <FileText className="h-3.5 w-3.5" />
                 运营报告
               </TabsTrigger>
-              <TabsTrigger value="intelligence" className={`${tabTriggerClass("intelligence")} flex-shrink-0`}>
-                <span className="badge-dot dot-violet">
-                  <Radar className="h-3.5 w-3.5" />
-                </span>
-                竞品看板
+              <TabsTrigger value="dashboard" className={tabTriggerClass}>
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                运营看板
               </TabsTrigger>
-              <TabsTrigger value="trends" className={`${tabTriggerClass("trends")} flex-shrink-0`}>
-                <span className="badge-dot dot-rose">
-                  <Flame className="h-3.5 w-3.5" />
-                </span>
-                趋势追踪
-              </TabsTrigger>
-              <TabsTrigger value="dashboard" className={`${tabTriggerClass("dashboard")} flex-shrink-0`}>
-                <span className="badge-dot dot-amber">
-                  <LayoutDashboard className="h-3.5 w-3.5" />
-                </span>
-                看板
-              </TabsTrigger>
-              <TabsTrigger value="executive" className={`${tabTriggerClass("executive")} flex-shrink-0`}>
-                <span className="badge-dot dot-amber">
-                  <Gauge className="h-3.5 w-3.5" />
-                </span>
-                执行看板
-              </TabsTrigger>
-              <TabsTrigger value="rhythm" className={`${tabTriggerClass("rhythm")} flex-shrink-0`}>
-                <span className="badge-dot dot-emerald">
-                  <Activity className="h-3.5 w-3.5" />
-                </span>
-                节奏
-              </TabsTrigger>
-              <TabsTrigger value="weekly" className={`${tabTriggerClass("weekly")} flex-shrink-0`}>
-                <span className="badge-dot dot-amber">
-                  <FileBarChart2 className="h-3.5 w-3.5" />
-                </span>
-                周报分析
-              </TabsTrigger>
-              <TabsTrigger value="audience" className={`${tabTriggerClass("audience")} flex-shrink-0`}>
-                <span className="badge-dot dot-violet">
-                  <UserCheck className="h-3.5 w-3.5" />
-                </span>
-                受众洞察
-              </TabsTrigger>
-              <TabsTrigger value="templates" className={`${tabTriggerClass("templates")} flex-shrink-0`}>
-                <span className="badge-dot dot-amber">
-                  <Layers className="h-3.5 w-3.5" />
-                </span>
-                模板
-              </TabsTrigger>
-              <TabsTrigger value="export" className={`${tabTriggerClass("export")} flex-shrink-0`}>
-                <span className="badge-dot dot-amber">
-                  <Download className="h-3.5 w-3.5" />
-                </span>
+              <TabsTrigger value="export" className={tabTriggerClass}>
+                <Download className="h-3.5 w-3.5" />
                 导出
               </TabsTrigger>
             </TabsList>
 
-            {/* ── Analytics Tab (DEFAULT) ────────────────────────────── */}
+            {/* ── Tab 1: 数据分析 ──────────────────────────────────── */}
             <TabsContent
               value="analytics"
               className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
-              <div className="flex flex-col flex-1 min-h-0 space-y-3">
+              <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
                 <ContentStreakWidget />
                 <ContentCompetitionPanel />
                 <div className="flex flex-col flex-1 min-h-0">
                   <AnalyticsPanel />
                 </div>
+                {/* Merged: 受众洞察 */}
+                <CollapsibleSection
+                  title="受众洞察"
+                  icon={UserCheck}
+                  gradientClass="from-violet-500 to-purple-600"
+                  defaultOpen={false}
+                >
+                  <AudienceInsightsPanel />
+                </CollapsibleSection>
               </div>
             </TabsContent>
 
-            {/* ── Ops Dashboard Tab (运营仪表盘) ────────────────────── */}
-            <TabsContent
-              value="ops"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
-            >
-              <OpsDashboardTab />
-            </TabsContent>
-
-            {/* ── Report Tab ────────────────── */}
+            {/* ── Tab 2: 运营报告 ──────────────────────────────────── */}
             <TabsContent
               value="report"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
+              className="flex flex-col min-h-0 mt-1 animate-fade-in-up relative"
             >
               <AnimatePresence mode="wait">
                 {showReportGenerator ? (
@@ -676,13 +557,15 @@ export function DataAndReports() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex flex-col flex-1 min-h-0 space-y-3"
+                    className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-3 pr-1"
                   >
                     <KpiOverviewCards />
                     <TrendLineChartPanel />
                     <WeeklyStatsCard />
                     <OperationReport />
                     <WeeklyReport />
+                    {/* Merged: 周报分析 */}
+                    <WeeklyAnalytics />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -704,101 +587,124 @@ export function DataAndReports() {
               )}
             </TabsContent>
 
-            {/* ── Competitor Analysis Tab (Enhanced — collapsible + dynamic) ── */}
-            <TabsContent
-              value="competitor"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
-            >
-              <CompetitorTabEnhanced />
-            </TabsContent>
-
-            {/* ── Intelligence Tab (Competitor Dashboard) ──────────────── */}
-            <TabsContent
-              value="intelligence"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
-            >
-              <div className="flex flex-col flex-1 min-h-0">
-                <CompetitorDashboard />
-              </div>
-            </TabsContent>
-
-            {/* ── Trends Tab (Trend Tracker) ─────────────────────────────── */}
-            <TabsContent
-              value="trends"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
-            >
-              <div className="flex flex-col flex-1 min-h-0">
-                <TrendTracker />
-              </div>
-            </TabsContent>
-
-            {/* ── Dashboard Tab ──────────────────────────────────────── */}
+            {/* ── Tab 3: 运营看板 ──────────────────────────────────── */}
             <TabsContent
               value="dashboard"
               className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
-              <div className="flex flex-col flex-1 min-h-0">
-                <OperationsDashboard />
+              <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
+                {/* Core ops sections */}
+                <CollapsibleSection
+                  title="运营节奏引擎"
+                  icon={Activity}
+                  gradientClass="from-violet-500 to-purple-600"
+                  defaultOpen={true}
+                >
+                  <OpsRhythmEngine />
+                </CollapsibleSection>
+                <CollapsibleSection
+                  title="实时指标监控"
+                  icon={Gauge}
+                  gradientClass="from-emerald-500 to-teal-600"
+                  defaultOpen={false}
+                >
+                  <LiveMetricsMonitor />
+                </CollapsibleSection>
+                <CollapsibleSection
+                  title="发布工作流"
+                  icon={PenTool}
+                  gradientClass="from-rose-500 to-pink-600"
+                  defaultOpen={false}
+                >
+                  <PublishWorkflowEnhanced />
+                </CollapsibleSection>
+                <CollapsibleSection
+                  title="周报生成器"
+                  icon={CalendarCheck}
+                  gradientClass="from-amber-500 to-orange-600"
+                  defaultOpen={false}
+                >
+                  <WeeklyReportGenerator />
+                </CollapsibleSection>
+
+                {/* Merged: 竞品分析 */}
+                <CollapsibleSection
+                  title="竞品分析"
+                  icon={Users}
+                  gradientClass="from-rose-500 to-pink-600"
+                  defaultOpen={false}
+                >
+                  <CompetitorTabEnhanced />
+                </CollapsibleSection>
+
+                {/* Merged: 趋势追踪 */}
+                <CollapsibleSection
+                  title="趋势追踪"
+                  icon={Flame}
+                  gradientClass="from-orange-500 to-amber-600"
+                  defaultOpen={false}
+                >
+                  <TrendTracker />
+                </CollapsibleSection>
+
+                {/* Merged: 竞品看板 */}
+                <CollapsibleSection
+                  title="竞品看板"
+                  icon={Radar}
+                  gradientClass="from-violet-500 to-purple-600"
+                  defaultOpen={false}
+                >
+                  <CompetitorDashboard />
+                </CollapsibleSection>
+
+                {/* Merged: 运营总览 */}
+                <CollapsibleSection
+                  title="运营总览"
+                  icon={LayoutDashboard}
+                  gradientClass="from-emerald-500 to-teal-600"
+                  defaultOpen={false}
+                >
+                  <OperationsDashboard />
+                </CollapsibleSection>
+
+                {/* Merged: 执行看板 */}
+                <CollapsibleSection
+                  title="执行看板"
+                  icon={Gauge}
+                  gradientClass="from-amber-500 to-orange-600"
+                  defaultOpen={false}
+                >
+                  <ExecutiveDashboard />
+                </CollapsibleSection>
+
+                {/* Merged: 运营节奏 */}
+                <CollapsibleSection
+                  title="运营节奏看板"
+                  icon={Activity}
+                  gradientClass="from-rose-500 to-pink-600"
+                  defaultOpen={false}
+                >
+                  <OpsRhythmDashboard />
+                </CollapsibleSection>
               </div>
             </TabsContent>
 
-            {/* ── Executive Dashboard Tab ────────────────────────────── */}
-            <TabsContent
-              value="executive"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
-            >
-              <div className="flex flex-col flex-1 min-h-0">
-                <ExecutiveDashboard />
-              </div>
-            </TabsContent>
-
-            {/* ── Rhythm Tab ────────────────────────────────────── */}
-            <TabsContent
-              value="rhythm"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
-            >
-              <div className="flex flex-col flex-1 min-h-0">
-                <OpsRhythmDashboard />
-              </div>
-            </TabsContent>
-
-            {/* ── Weekly Analytics Tab ──────────────────────────── */}
-            <TabsContent
-              value="weekly"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
-            >
-              <div className="flex flex-col flex-1 min-h-0">
-                <WeeklyAnalytics />
-              </div>
-            </TabsContent>
-
-            {/* ── Audience Insights Tab ────────────────────────── */}
-            <TabsContent
-              value="audience"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
-            >
-              <div className="flex flex-col flex-1 min-h-0">
-                <AudienceInsightsPanel />
-              </div>
-            </TabsContent>
-
-            {/* ── Report Templates Tab ──────────────────────────────── */}
-            <TabsContent
-              value="templates"
-              className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
-            >
-              <div className="flex flex-col flex-1 min-h-0">
-                <ReportTemplateManager />
-              </div>
-            </TabsContent>
-
-            {/* ── Export Center Tab ──────────────────────────────── */}
+            {/* ── Tab 4: 导出 ──────────────────────────────────────── */}
             <TabsContent
               value="export"
               className="flex flex-col min-h-0 mt-1 animate-fade-in-up"
             >
-              <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+              <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
                 <ExportCenter />
+                {/* Merged: 报告模板 */}
+                <CollapsibleSection
+                  title="报告模板"
+                  icon={Layers}
+                  gradientClass="from-violet-500 to-purple-600"
+                  defaultOpen={false}
+                >
+                  <ReportTemplateManager />
+                </CollapsibleSection>
               </div>
             </TabsContent>
           </Tabs>

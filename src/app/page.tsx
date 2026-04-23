@@ -98,6 +98,10 @@ function DataInitializer() {
   const { setPersona, setKnowledgeItems, setCurrentPlan, setContentPosts } = useAppStore();
   const [loadingStage, setLoadingStage] = useState(0); // 0: config, 1: data, 2: ready
   const [progress, setProgress] = useState(0);
+  const [savedPlatform, setSavedPlatform] = useState<string | null>(null);
+  useEffect(() => {
+    try { setSavedPlatform(localStorage.getItem('platform-storage')); } catch {}
+  }, []);
 
   const LOADING_STEPS = [
     { label: "加载配置...", icon: Settings },
@@ -180,21 +184,10 @@ function DataInitializer() {
           transition={{ duration: 0.4, ease: "easeOut" as const }}
           className="flex flex-col items-center gap-5"
         >
-          {/* Animated Logo */}
-          <motion.div
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" as const }}
-            className="relative"
-          >
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200 dark:shadow-violet-900/40">
-              <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" as const }}
-              >
-                <Sparkles className="h-7 w-7 text-white" />
-              </motion.div>
-            </div>
-          </motion.div>
+          {/* Logo */}
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200 dark:shadow-violet-900/40">
+            <Sparkles className="h-7 w-7 text-white" />
+          </div>
 
           {/* Step text with fade transition */}
           <div className="relative h-5 overflow-hidden">
@@ -215,7 +208,7 @@ function DataInitializer() {
           {/* Progress bar */}
           <div className="w-40 h-1.5 rounded-full bg-muted overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-500"
+              className={`h-full rounded-full bg-gradient-to-r ${savedPlatform === 'xiaohongshu' ? 'from-rose-500 to-pink-500' : 'from-violet-500 to-purple-500'}`}
               style={{ width: `${progress}%` }}
               transition={{ duration: 0.15 }}
             />
@@ -276,50 +269,36 @@ function LeftSidebar() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Left Panel Tab Bar — Enhanced with glow + platform accent */}
-      <div className="px-3 pt-3 pb-2 divider-gradient">
+      {/* Left Panel Tab Bar */}
+      <div className="px-3 pt-3 pb-2">
         <div className="flex gap-1">
           {LEFT_TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = leftPanelTab === tab.value;
             return (
-              <motion.button
+              <button
                 key={tab.value}
                 onClick={() => setLeftPanelTab(tab.value)}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.96 }}
-                className={`relative flex-1 h-9 text-[11px] gap-1 rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer focus-ring-soft ${
+                className={`relative flex-1 h-8 text-xs gap-1 rounded-md flex items-center justify-center transition-colors duration-200 cursor-pointer ${
                   isActive
-                    ? `font-medium shadow-sm ${isXHS
-                      ? 'text-rose-700 dark:text-rose-300 bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/50 dark:border-rose-800/30'
-                      : 'text-violet-700 dark:text-violet-300 bg-violet-50/80 dark:bg-violet-950/30 border border-violet-200/50 dark:border-violet-800/30'}`
+                    ? `font-medium ${isXHS
+                      ? 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/30'
+                      : 'text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/30'}`
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 }`}
               >
-                <Icon className={`h-3.5 w-3.5 transition-all duration-200 ${isActive ? 'scale-115 drop-shadow-sm' : ''}`} />
+                <Icon className="h-3.5 w-3.5" />
                 {tab.label}
                 {tab.value === 'knowledge' && knowledgeItems.length > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className={`ml-0.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full text-[9px] font-semibold tabular-nums ${isXHS
+                  <span
+                    className={`ml-0.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full text-[9px] font-semibold ${isXHS
                       ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300'
                       : 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300'}`}
                   >
                     {knowledgeItems.length}
-                  </motion.span>
+                  </span>
                 )}
-                {/* Active bottom accent line */}
-                {isActive && (
-                  <motion.div
-                    className={`absolute bottom-0 left-2 right-2 h-[2px] rounded-full ${isXHS
-                      ? 'bg-gradient-to-r from-rose-400 to-pink-400'
-                      : 'bg-gradient-to-r from-violet-500 to-purple-500'}`}
-                    layoutId="left-tab-underline"
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                  />
-                )}
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -327,24 +306,24 @@ function LeftSidebar() {
 
       {/* Left Panel Content */}
       {leftPanelTab === 'calendar' ? (
-        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll sidebar-scroll">
           <CompactCalendar />
           <CalendarThemeSelector />
         </ScrollArea>
       ) : leftPanelTab === 'knowledge' ? (
-        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll sidebar-scroll">
           <KnowledgeBase />
         </ScrollArea>
       ) : leftPanelTab === 'templates' ? (
-        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll sidebar-scroll">
           {isXHS ? <XiaohongshuTemplates /> : <CopywritingTemplates />}
         </ScrollArea>
       ) : leftPanelTab === 'marketplace' ? (
-        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll sidebar-scroll">
           <TemplateMarketplace />
         </ScrollArea>
       ) : (
-        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll">
+        <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll sidebar-scroll">
           <AIPromptLibrary />
         </ScrollArea>
       )}
@@ -357,6 +336,7 @@ function LeftSidebar() {
 function MainContentPanel() {
   const { rightPanelTab, setRightPanelTab, platform, contentPosts, selectedPostId } = useAppStore();
   const [trackedAccountsCount, setTrackedAccountsCount] = useState(0);
+  const isXHS = platform === 'xiaohongshu';
 
   // Derive selected post from store
   const selectedPost = selectedPostId
@@ -385,27 +365,27 @@ function MainContentPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Main Tab Bar — Enhanced with divider gradient */}
-      <div className="px-4 pt-3 pb-2 divider-gradient flex-shrink-0">
+      {/* Main Tab Bar */}
+      <div className="px-3 pt-3 pb-2 flex-shrink-0">
         <Tabs value={effectiveTab} onValueChange={setRightPanelTab}>
-          <TabsList className="w-full h-10 bg-muted/40 p-0.5 border border-border/40 shadow-sm rounded-lg">
+          <TabsList className="w-full h-9 bg-muted/40 p-0.5 border border-border/40 rounded-lg">
             {MAIN_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className={`flex-1 h-9 text-xs gap-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200 data-[state=active]:font-medium ${effectiveTab === tab.value && isXHS ? 'data-[state=active]:text-rose-600 dark:data-[state=active]:text-rose-400' : ''}`}
+                  className="flex-1 h-8 text-xs gap-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:font-medium transition-colors duration-200"
                 >
                   <span className="relative inline-flex">
                     <Icon className="h-3.5 w-3.5" />
                     {tab.value === 'data' && unpublishedCount > 0 && (
-                      <span className="absolute -top-1.5 -right-2.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-violet-500 text-[8px] font-bold text-white ring-1 ring-background badge-pulse">
+                      <span className={`absolute -top-1.5 -right-2.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white ${isXHS ? 'bg-rose-500' : 'bg-violet-500'}`}>
                         {unpublishedCount > 9 ? '9+' : unpublishedCount}
                       </span>
                     )}
                     {tab.value === 'collect' && trackedAccountsCount > 0 && (
-                      <span className="absolute -top-1.5 -right-2.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white ring-1 ring-background">
+                      <span className={`absolute -top-1.5 -right-2.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white ${isXHS ? 'bg-rose-500' : 'bg-violet-500'}`}>
                         {trackedAccountsCount > 9 ? '9+' : trackedAccountsCount}
                       </span>
                     )}
@@ -441,6 +421,7 @@ function MainContentPanel() {
 
 function ScrollProgressIndicator() {
   const [progress, setProgress] = useState(0);
+  const platform = useAppStore((s) => s.platform);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -460,7 +441,7 @@ function ScrollProgressIndicator() {
       aria-hidden="true"
     >
       <motion.div
-        className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+        className={`h-full bg-gradient-to-r ${platform === 'xiaohongshu' ? 'from-rose-500 to-pink-500' : 'from-violet-500 to-purple-500'}`}
         style={{ width: `${progress}%` }}
         transition={{ duration: 0 }}
       />
@@ -485,6 +466,13 @@ export default function Home() {
     const handler = () => setShortcutsOpen(true);
     window.addEventListener("open-shortcuts-help", handler);
     return () => window.removeEventListener("open-shortcuts-help", handler);
+  }, []);
+
+  // Listen for custom open-content-search event from floating action bar
+  useEffect(() => {
+    const handler = () => setContentSearchOpen(true);
+    window.addEventListener("open-content-search", handler);
+    return () => window.removeEventListener("open-content-search", handler);
   }, []);
 
   // Announce shortcuts dialog state for screen readers
@@ -623,7 +611,7 @@ export default function Home() {
 
   return (
     <ShortcutManagerProvider>
-    <div className="min-h-screen flex flex-col bg-gradient-animated">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Scroll Progress Indicator */}
       <ScrollProgressIndicator />
       {/* Accessibility: Screen reader live regions */}
@@ -640,70 +628,52 @@ export default function Home() {
       {/* 顶部加载进度条 */}
       <DataInitializer />
       {/* Top Header — Enhanced with gradient accent */}
-      <header role="banner" className={`header-gradient-border border-b border-border/50 bg-background/90 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_3px_0] shadow-black/[0.03] hover:shadow-[0_2px_8px_0] shadow-black/[0.06] transition-all duration-300 ${isXHS ? 'header-xhs-accent' : 'header-wechat-accent'}`}>
+      <header role="banner" className="border-b border-border/50 bg-background/95 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
-            <motion.div
-              className={`h-9 w-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg logo-hover-spin ${notifications.filter(n => !n.read).length > 0 ? 'logo-notification-pulse' : ''} ${platform === 'wechat' ? 'from-violet-600 to-purple-600 shadow-violet-300/50 dark:shadow-violet-900/50' : 'from-red-500 to-rose-600 shadow-red-300/50 dark:shadow-red-900/50'}`}
-              whileHover={{ scale: 1.05, rotate: 3 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            <div
+              className={`h-9 w-9 rounded-xl bg-gradient-to-br flex items-center justify-center ${platform === 'wechat' ? 'from-violet-600 to-purple-600' : 'from-red-500 to-rose-600'}`}
             >
               <Sparkles className="h-4.5 w-4.5 text-white" />
-            </motion.div>
+            </div>
             <div>
-              <h1 className="text-base font-bold">
-                <span className={`text-sm drop-shadow-sm ${isXHS ? 'text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-500' : 'gradient-text-violet'}`}>
+              <h1 className="text-sm font-bold">
+                <span className={isXHS ? 'text-rose-600 dark:text-rose-400' : 'text-violet-600 dark:text-violet-400'}>
                   {platform === 'wechat' ? '朋友圈AI运营助手' : '小红书AI运营助手'}
                 </span>
               </h1>
-              <p className="text-[11px] text-muted-foreground -mt-0.5">{platform === 'wechat' ? '个人IP打造 · 全自动内容规划' : '爆款内容打造 · 全自动笔记生成'}</p>
+              <p className="text-xs text-muted-foreground -mt-0.5">{platform === 'wechat' ? '个人IP打造 · 全自动内容规划' : '爆款内容打造 · 全自动笔记生成'}</p>
             </div>
           </div>
 
           {/* Platform Switcher - Desktop */}
           <div className="hidden sm:flex items-center">
-            <div className="animated-border-gradient relative flex items-center h-9 rounded-full bg-muted/70 p-0.5 border border-border/50 shadow-sm ambient-glow">
-              {/* Glow backdrop for active platform */}
+            <div className="relative flex items-center h-8 rounded-lg bg-muted/60 p-0.5 border border-border/40">
               <motion.div
-                className="absolute h-9 w-1/2 rounded-full"
-                layoutId="platform-glow"
-                style={{ left: platform === 'wechat' ? '0' : '50%' }}
-                transition={{ type: 'spring', stiffness: 300, damping: 28, mass: 0.8 }}
-              >
-                <div className={`h-full w-full rounded-full blur-sm ${platform === 'wechat' ? 'bg-green-400/30' : 'bg-red-400/30'}`} />
-              </motion.div>
-              <motion.div
-                className="absolute h-7 rounded-full"
+                className="absolute h-7 rounded-md"
                 layoutId="platform-indicator"
                 style={{
                   width: 'calc(50% - 2px)',
                   left: platform === 'wechat' ? '2px' : 'calc(50%)',
                 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 28, mass: 0.8 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               >
-                <div className={`h-full w-full rounded-full shadow-lg transition-colors duration-500 ${platform === 'wechat' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`} />
+                <div className={`h-full w-full rounded-md shadow-sm transition-colors duration-300 ${platform === 'wechat' ? 'bg-green-500' : 'bg-rose-500'}`} />
               </motion.div>
               <button
                 onClick={() => setPlatform('wechat')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover btn-press btn-shine ${platform === 'wechat' ? 'text-white' : 'text-green-600 hover:text-green-700'}`}
+                className={`relative z-10 flex items-center gap-1.5 px-3 h-7 rounded-md text-xs font-medium transition-colors duration-200 ${platform === 'wechat' ? 'text-white' : 'text-muted-foreground hover:text-foreground'}`}
+                aria-label="切换到朋友圈模式"
               >
-                <motion.span
-                  className="h-2 w-2 rounded-full bg-green-400"
-                  animate={platform === 'wechat' ? { scale: [1, 1.3, 1] } : { scale: 1 }}
-                  transition={{ duration: 0.4, ease: "easeInOut" }}
-                />
+                <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
                 朋友圈
               </button>
               <button
                 onClick={() => setPlatform('xiaohongshu')}
-                className={`relative z-10 flex items-center gap-1 px-3 h-7 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95 hover:scale-100 magnetic-hover btn-press btn-shine ${platform === 'xiaohongshu' ? 'text-white' : 'text-red-600 hover:text-red-700'}`}
+                className={`relative z-10 flex items-center gap-1.5 px-3 h-7 rounded-md text-xs font-medium transition-colors duration-200 ${platform === 'xiaohongshu' ? 'text-white' : 'text-muted-foreground hover:text-foreground'}`}
+                aria-label="切换到小红书模式"
               >
-                <motion.span
-                  className="h-2 w-2 rounded-full bg-red-400"
-                  animate={platform === 'xiaohongshu' ? { scale: [1, 1.3, 1] } : { scale: 1 }}
-                  transition={{ duration: 0.4, ease: "easeInOut" }}
-                />
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
                 小红书
               </button>
             </div>
@@ -711,46 +681,30 @@ export default function Home() {
 
           <div className="hidden sm:flex items-center gap-2">
             {/* Command Palette trigger — ⌘K */}
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+            <button
               onClick={() => setCommandPaletteOpen(true)}
-              className="group flex items-center gap-2 h-8 px-3 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted/70 hover:border-border text-muted-foreground hover:text-foreground text-xs transition-all duration-200 focus-ring-soft"
+              className="group flex items-center gap-2 h-8 px-3 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted/70 hover:border-border text-muted-foreground hover:text-foreground text-xs transition-colors duration-200 cursor-pointer focus-ring-soft"
               aria-label="命令面板"
             >
-              <Search className="h-3.5 w-3.5 transition-colors group-hover:text-violet-500" />
+              <Search className="h-3.5 w-3.5" />
               <span className="hidden md:inline">搜索</span>
-              <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border border-border/50 bg-background/80 px-1 font-mono text-[10px] text-muted-foreground group-hover:border-violet-300/50 group-hover:text-violet-500 transition-colors">
+              <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border border-border/50 bg-background/80 px-1 font-mono text-[10px] text-muted-foreground">
                 ⌘K
               </kbd>
-            </motion.button>
+            </button>
 
-            {isGenerating && (
-              <motion.div
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 text-violet-700 dark:text-violet-300 text-xs border border-violet-200/50 dark:border-violet-700/30"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
-                </span>
-                <span className="font-medium">AI生成中</span>
-              </motion.div>
-            )}
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <motion.button
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.92 }}
+                  <button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setShortcutsOpen(true)}
-                    className="flex items-center justify-center h-7 w-7 rounded-full border border-border/60 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex items-center justify-center h-7 w-7 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     aria-label="快捷键帮助"
                   >
                     <HelpCircle className="h-3.5 w-3.5" />
-                  </motion.button>
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs">
                   <p>快捷键 (⌘/)</p>
@@ -758,7 +712,7 @@ export default function Home() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="gear-spin">
+                  <div>
                     <LazySettingsCenter connectedPlatforms={connectedPlatforms} />
                   </div>
                 </TooltipTrigger>
@@ -767,8 +721,8 @@ export default function Home() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Badge variant="outline" className="hidden md:inline-flex text-[10px] gap-1 px-1.5 py-0 border-amber-300/40 dark:border-amber-700/40 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400">
-              <Zap className="h-2.5 w-2.5 text-amber-500 animate-pulse" />
+            <Badge variant="outline" className="hidden md:inline-flex items-center text-[10px] gap-1 px-1.5 py-0 border-border/60 bg-background text-muted-foreground">
+              <Zap className="h-2.5 w-2.5 text-amber-500" />
               <span className="hidden lg:inline font-medium">AI驱动</span>
             </Badge>
           </div>
@@ -811,7 +765,7 @@ export default function Home() {
                   </div>
                 </ResizablePanel>
 
-                <ResizableHandle withHandle className="bg-border/50 hover:bg-primary/20 transition-colors drag-handle" />
+                <ResizableHandle withHandle className="relative bg-border/30 hover:bg-primary/10 transition-all duration-300 drag-handle before:absolute before:inset-y-0 before:left-1/2 before:-translate-x-1/2 before:w-px before:bg-gradient-to-b before:from-transparent before:via-primary/20 before:to-transparent" />
 
                 {/* Main Content Area */}
                 <ResizablePanel defaultSize={76} minSize={55}>
@@ -857,7 +811,7 @@ export default function Home() {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring' as const, stiffness: 300, damping: 30, delay: 0.2 }}
-          className="flex items-center gap-0.5 px-1 py-1 rounded-[1.5rem] bg-background/75 backdrop-blur-2xl saturate-200 border border-white/15 dark:border-white/[0.08] shadow-[0_-1px_8px_rgba(0,0,0,0.06),0_8px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_-1px_8px_rgba(0,0,0,0.15),0_8px_40px_rgba(0,0,0,0.5)]"
+          className="flex items-center gap-0.5 px-1 py-1 rounded-[1.5rem] bg-background/80 backdrop-blur-xl saturate-200 border border-white/15 dark:border-white/[0.08] shadow-[0_-1px_8px_rgba(0,0,0,0.06),0_8px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_-1px_8px_rgba(0,0,0,0.15),0_8px_40px_rgba(0,0,0,0.5)] before:absolute before:-top-px before:left-6 before:right-6 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/30 before:to-transparent"
         >
           {/* Platform switcher dots */}
           <div className="flex items-center gap-1.5 px-2">

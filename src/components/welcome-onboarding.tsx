@@ -352,11 +352,11 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
       {/* Feature Highlights */}
       <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 max-w-sm mx-auto">
         {[
-          { icon: Wand2, label: "AI 创作", color: "from-violet-500 to-purple-600", desc: "智能生成文案", stagger: "slide-in-stagger-1" },
-          { icon: BarChart3, label: "数据分析", color: "from-emerald-500 to-teal-600", desc: "互动数据洞察", stagger: "slide-in-stagger-2" },
-          { icon: Palette, label: "爆款灵感", color: "from-amber-500 to-orange-500", desc: "12+标题公式", stagger: "slide-in-stagger-3" },
+          { icon: Wand2, label: "AI 创作", color: "from-violet-500 to-purple-600", desc: "智能生成文案" },
+          { icon: BarChart3, label: "数据分析", color: "from-emerald-500 to-teal-600", desc: "互动数据洞察" },
+          { icon: Palette, label: "爆款灵感", color: "from-amber-500 to-orange-500", desc: "12+标题公式" },
         ].map((f) => (
-          <Card key={f.label} className={`border-0 shadow-sm bg-muted/30 p-0 glass-card ${f.stagger || ''}`}>
+          <Card key={f.label} className="border-0 shadow-sm bg-muted/30 p-0 glass-card content-card-hover">
             <CardContent className="p-3 text-center">
               <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center mx-auto mb-1.5 shadow-sm`}>
                 <f.icon className="h-4 w-4 text-white" />

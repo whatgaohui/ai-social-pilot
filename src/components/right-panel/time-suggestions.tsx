@@ -156,7 +156,7 @@ export function TimeSuggestions() {
   );
 
   return (
-    <Card className="border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
+    <Card className="border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 content-card-hover">
       <CardHeader className="pb-2 px-4 pt-4">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center">
@@ -185,7 +185,7 @@ export function TimeSuggestions() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.2, delay: index * 0.08 }}
-              className="rounded-lg bg-background/80 border border-border/50 p-3 hover:shadow-sm transition-all"
+              className="rounded-lg bg-background/80 border border-border/50 p-3 hover:shadow-sm transition-all micro-hover content-card-hover"
             >
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">

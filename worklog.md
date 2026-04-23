@@ -11074,3 +11074,202 @@ Stage Summary:
   5. 运营报告自动导出功能
   6. 添加内容快捷操作面板到日历空日期格子
   7. Dashboard Activity Timeline 接入真实数据
+
+---
+Task ID: 18
+Agent: Main Developer
+Task: 全面UI美化 - 去除视觉噪声 + 统一设计语言
+
+Work Log:
+- 对整个项目进行全面UI审计，使用Explore agent深入分析11个核心组件
+- 识别出11大类UI问题（动画过载、颜色不一致、排版混乱、布局溢出等）
+- 逐项修复，重点消除"圣诞树"视觉效果
+
+### Bug修复
+1. **重复事件监听器**（page.tsx）：
+   - 问题：`open-content-search` 事件注册了两次，每次触发调用两次
+   - 修复：删除重复的 useEffect
+
+### Header简化（page.tsx）
+2. **Logo动画去除**：
+   - 移除加载页Logo的360°无限旋转 + 呼吸缩放双层动画 → 静态Logo
+   - 移除Header Logo的 `logo-hover-spin` + `logo-notification-pulse` + `whileHover/whileTap` → 纯CSS静态图标
+3. **标题简化**：
+   - 移除渐变文字效果（`gradient-text-violet` / `bg-gradient-to-r from-rose-500 to-pink-500`）
+   - 改为纯色文字（`text-violet-600 dark:text-violet-400`），更清晰可读
+4. **平台切换器简化**：
+   - 移除 `animated-border-gradient` / `ambient-glow` / `magnetic-hover` / `btn-press` / `btn-shine` 6层动画
+   - 移除 glow backdrop layer（模糊光晕层）
+   - 移除 pulsing dot 动画（`scale: [1, 1.3, 1]` infinite）
+   - 改为简洁的 rounded-lg + 单层 sliding indicator
+5. **搜索按钮简化**：
+   - 移除重复的全局搜索按钮（与命令面板按钮功能重叠）
+   - 移除 `motion.button` whileHover/whileTap 缩放 → 普通 `button`
+   - 移除 `group-hover:text-violet-500` 颜色变化
+6. **AI生成中指示器**：完全移除（持续pinging的动画太吵）
+7. **AI驱动Badge**：移除 `animate-pulse` + 琥珀色渐变 → 中性Badge样式
+8. **Header装饰**：移除 `header-gradient-border` / `header-xhs-accent` / `header-wechat-accent` / 复杂box-shadow → 简洁 `border-b border-border/50 bg-background/95 backdrop-blur-xl`
+
+### 左侧面板Tab简化（page.tsx）
+9. **Tab按钮简化**：
+   - 移除 `motion.button` → 普通 `button`
+   - 移除 `whileHover={{ scale: 1.03 }}` / `whileTap={{ scale: 0.96 }}`
+   - 移除 `focus-ring-soft` / border 边框 / shadow-sm
+   - 移除底部渐变动画下划线（`layoutId="left-tab-underline"`）
+   - 移除知识库Badge弹入动画（`motion.span` + `initial={{ scale: 0 }}`）
+   - Tab大小从 h-9 统一为 h-8，字体从 text-[11px] 统一为 text-xs
+
+### 主内容区Tab简化（page.tsx）
+10. **Tab统一**：
+    - 移除 `divider-gradient` 装饰分隔线
+    - 移除 `data-[state=active]:border` / `data-[state=active]:text-rose-600` 平台特殊色
+    - Tab高度从 h-10 统一为 h-9
+    - 通知Badge从 h-3.5 w-3.5 统一为 h-4 w-4（更大更易点击）
+
+### 背景简化（page.tsx）
+11. **移除渐变背景**：`bg-gradient-animated`（缓慢移动的渐变背景）→ `bg-background`（纯色）
+
+### Data & Reports Tab修复（data-and-reports.tsx）
+12. **Tab溢出修复**：
+    - 13个Tab合并为4个：数据分析、运营报告、运营看板、导出
+    - 移除CSS mask-image溢出隐藏hack
+    - 所有原始内容通过CollapsibleSection保留
+
+### Footer清理（enhanced-footer.tsx）
+13. **大幅精简**（520行→~100行）：
+    - 移除旋转励志语录（MOTIVATIONAL_QUOTES + AnimatePresence）
+    - 移除stock-ticker marquee（MarqueeTicker + MiniProgress + StatChip）
+    - 移除API延迟测量（useApiLatency）
+    - 移除展开/折叠切换功能
+    - 移除所有framer-motion导入和动画过渡
+    - 移除渐变边框、backdrop-blur、装饰阴影
+    - 保留：连接状态、版本信息、3个快速统计、AI Powered平台色Badge、⌘K提示
+
+### 工作区清理（content-workspace.tsx）
+14. **浮动操作栏精简**：
+    - 移除 WorkspaceQuickBar（顶部浮动栏）
+    - 移除 AIQuickActionsBar（底部浮动栏）
+    - 移除 QuickActionsToolbar（额外浮动工具栏）
+    - 移除 card-glow / hover-glow-violet 装饰类
+15. **数据修复**：MiniSparkline 从 `Math.random()` 每次渲染闪烁 → 静态数据数组 `[35, 42, 38, 55, 48, 62, 58]`
+
+### 修改文件
+- `src/app/page.tsx` — Header/Tab/Logo/背景/事件监听器 全面简化
+- `src/components/right-panel/data-and-reports.tsx` — 13Tab→4Tab
+- `src/components/enhanced-footer.tsx` — 520行→~100行
+- `src/components/right-panel/content-workspace.tsx` — 移除浮动栏+修复数据
+
+### QA验证结果
+- ✅ lint通过（零错误）
+- ✅ dev server编译成功（268ms，无错误）
+- ✅ 所有API路由正常返回200
+
+Stage Summary:
+- 项目状态：稳定可运行，UI大幅简化，视觉噪声显著减少
+- 核心改变：移除30+个过度动画/装饰元素，统一Tab/标题/Badge样式，简化Header/Footer
+- 未解决问题或风险：
+  1. globals.css仍有9700+行，大部分是之前迭代积累的CSS类，部分已无引用
+  2. 各组件内仍有部分 `whileHover` / `whileTap` micro-animations未清理
+  3. 排版系统仍需进一步统一（text-[6px]~text-[11px] 的arbitrary值较多）
+  4. Badge尺寸在多个组件中仍不完全一致
+- 建议下一阶段优先事项：
+  1. 逐步清理globals.css中无引用的CSS类
+  2. 建立统一的排版scale（3-4个固定尺寸）
+  3. 统一Badge为2-3个标准尺寸
+  4. 在dashboard-overview中用Lucide图标替换emoji
+
+---
+Task ID: 64
+Agent: Main Developer + Subagents
+Task: 第64轮 - 全面UI问题分析与修复
+
+Work Log:
+- 读取 worklog.md 了解第63轮项目状态（MiniSparkline已集成到Dashboard Overview和InlineEngagementBar）
+- 运行 eslint（零错误）+ next build（编译成功11.2s，70页面）确认项目稳定
+- 硬约束：未使用 agent-browser（会导致 OOM kill），改用 next build + eslint 验证
+- 使用 Explore agent 对 6 个核心 UI 文件进行全面 UI 问题分析
+
+### UI问题分析结果（发现20+项问题）
+
+| 严重度 | 数量 | 关键问题 |
+|--------|------|----------|
+| High | 3 | globals.css 10K行大量重复；platform颜色不一致；面板分隔线粗糙 |
+| Medium | 8 | badge颜色不感知平台；滚动条不一致；欢迎页死CSS类；移动端glass效果 |
+| Low | 10 | 极小字体；缺失aria-label；不一致的ring使用 |
+
+### 修复内容
+
+1. **globals.css 去重**（-509行）：
+   - 原始 10,215 行 → 清理后 9,706 行
+   - 移除 64 个重复块，涉及 57 个选择器
+   - 关键去重：`.card-spotlight`(4→1)、`.loading-bar-top`(4→1)、`.card-gradient-border`(4→1)、`.skeleton-wave`(3→1)
+   - 9 个 @keyframes 去重
+   - 验证：花括号平衡（2,308对），262个@keyframes完整
+
+2. **page.tsx 平台颜色一致性修复**（5处修改）：
+   - `MainContentPanel` 新增 `isXHS` 变量（之前缺失，导致badge颜色无法感知平台）
+   - 主面板 Tab Bar px-4 → px-3（与左面板 px-3 对齐，消除4px不对称）
+   - 数据/收藏 Tab Badge 颜色改为平台感知（XHS=rose，WeChat=violet）
+   - 滚动进度条改为平台感知渐变（XHS: rose→pink，WeChat: violet→purple）
+   - 桌面平台切换器按钮添加 `aria-label`（无障碍）
+
+3. **page.tsx 视觉增强**（3处修改）：
+   - `ScrollProgressIndicator` 添加 platform 从 store 读取，渐变色随平台切换
+   - `ResizableHandle` 添加渐变分隔线（before伪元素 via-primary/20）
+   - 移动端底部导航栏增强 glass 效果（backdrop-blur-xl + 顶部渐变线）
+   - `DataInitializer` 加载进度条添加 localStorage 平台检测（XHS时显示rose渐变）
+
+4. **content-workspace.tsx 平台感知**：
+   - Tab 栏下方添加 0.5px 平台渐变装饰线
+   - XHS: rose→pink，WeChat: violet→purple
+
+5. **dashboard-overview.tsx 增强**：
+   - QuickActionCard 添加 `focus-ring-soft`
+   - Pipeline Stage 活跃项添加脉冲绿色指示器
+
+6. **welcome-onboarding.tsx 修复**：
+   - 移除不存在的 `slide-in-stagger-*` CSS类（死代码）
+   - 替换为 `content-card-hover` 添加悬停效果
+
+7. **左侧面板滚动条统一**：
+   - 5处 `smooth-scroll` → `smooth-scroll sidebar-scroll`
+   - 与右侧面板 `workspace-scroll` 滚动条风格一致
+
+### 修改文件
+- `src/app/page.tsx` — 12处修改（平台颜色、aria、padding、渐变线、glass效果）
+- `src/app/globals.css` — 509行重复CSS移除
+- `src/components/right-panel/content-workspace.tsx` — 平台装饰线
+- `src/components/dashboard-overview.tsx` — focus-ring + pipeline指示器
+- `src/components/welcome-onboarding.tsx` — 清理死CSS类
+
+### QA验证结果
+- ✅ eslint 通过（零错误）
+- ✅ next build 编译成功（13.4s，70个页面正常生成）
+- ✅ 所有修改文件 lint 通过
+- ✅ CSS 文件花括号平衡验证通过
+
+Stage Summary:
+- 项目状态：稳定可运行，UI一致性全面提升
+- 本轮修改 5 个文件，30+ 处修改，509 行 CSS 重复代码移除
+- 核心改进：
+  1. globals.css 从 10,215 行减至 9,706 行（减少 5% 体积）
+  2. 全平台颜色一致性修复（badge、进度条、装饰线、加载条）
+  3. 面板布局对齐（tab padding 统一为 px-3）
+  4. 无障碍改进（aria-label 添加）
+  5. 滚动条样式统一（sidebar-scroll / workspace-scroll）
+  6. 分隔线/面板/导航栏 glass 效果增强
+  7. 欢迎引导页清理无效CSS
+- 未解决问题或风险：
+  1. agent-browser 硬约束不可用（OOM kill）
+  2. ~85 个 TS 类型错误仍存在（framer-motion Variants）
+  3. 右侧面板 95+ 文件未分组整理
+  4. 移动端响应式布局未在真机测试
+  5. Dashboard Overview 使用 mock 活动数据
+  6. content-context-menu 组件尚未接入内容列表
+- 建议下一阶段优先事项：
+  1. content-context-menu 接入内容列表（右键菜单功能）
+  2. Dashboard Overview 接入真实活动数据
+  3. framer-motion Variants 类型统一修复
+  4. 右侧面板文件目录重组
+  5. 移动端布局真机测试
+  6. 发布日历热力图功能

@@ -258,7 +258,7 @@ const InlineEngagementBar = React.memo(function InlineEngagementBar({ post, isXH
       </div>
           {/* Mini 7-day engagement trend sparkline */}
           <MiniSparkline
-            data={Array.from({ length: 7 }, () => Math.floor(Math.random() * 100) + 10)}
+            data={[35, 42, 38, 55, 48, 62, 58]}
             width={48}
             height={16}
             color={isXHS ? "#f43f5e" : "#8b5cf6"}
@@ -536,17 +536,6 @@ export function ContentWorkspace() {
   // ── Post selected ────────────────────────────────────────────────────────
   return (
     <div className={`flex flex-col h-full min-h-0 relative border-l-2 ${statusBorderColor} transition-colors duration-300`}>
-      {/* Floating Quick Actions Bar (top) */}
-      <WorkspaceQuickBar
-        onEdit={() => { setPreviewMode(false); }}
-        onQualityScore={handleScoreBadgeClick}
-      />
-
-      {/* Floating AI Quick Actions Bar (bottom) */}
-      <AIQuickActionsBar />
-
-      {/* Floating Quick Actions Toolbar */}
-      <QuickActionsToolbar />
 
       <div className="flex-1 overflow-y-auto min-h-0 workspace-scroll">
         <motion.div
@@ -557,12 +546,12 @@ export function ContentWorkspace() {
           className="p-4 space-y-3"
         >
           {/* ── Quick Actions Bar ───────────────────────────────────────── */}
-          <motion.div variants={staggerItem} className="card-glow hover-glow-violet rounded-lg">
+          <motion.div variants={staggerItem}>
             <ContentQuickActions />
           </motion.div>
 
           {/* ── Header + engagement bar ─────────────────────────────────── */}
-          <motion.div variants={staggerItem} className="space-y-2 card-glow hover-glow-violet rounded-lg p-3 -mx-3">
+          <motion.div variants={staggerItem} className="space-y-2 rounded-lg p-3 -mx-3">
             <PostDetailHeader post={selectedPost} isXHS={isXHS} />
             <InlineEngagementBar post={selectedPost} isXHS={isXHS} />
           </motion.div>
@@ -859,6 +848,9 @@ export function ContentWorkspace() {
                   );
                 })}
               </div>
+
+              {/* Platform-aware accent line */}
+              <div className={`h-0.5 bg-gradient-to-r ${isXHS ? 'from-rose-500/60 via-pink-500/40 to-transparent' : 'from-violet-500/60 via-purple-500/40 to-transparent'} rounded-full`} />
 
               {/* Bottom row: Sub-tabs for the active group (scrollable) */}
               <div className="relative flex items-center border-b border-border overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_0%,black_85%,transparent)]">

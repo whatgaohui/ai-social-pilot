@@ -313,7 +313,7 @@ function QuickActionCard({ icon, title, subtitle, gradient, onClick, index }: Qu
       whileHover={{ scale: 1.02, y: -1 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="group relative flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-accent/50 text-left cursor-pointer w-full transition-all duration-200 hover:shadow-sm"
+      className="group relative flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-accent/50 text-left cursor-pointer w-full transition-all duration-200 hover:shadow-sm focus-ring-soft"
     >
       <div className="relative flex items-center justify-center h-8 w-8 rounded-lg bg-muted/80 group-hover:bg-muted shrink-0 transition-colors duration-200">
         <div className={`${gradient} bg-clip-text`}>{icon}</div>
@@ -448,8 +448,12 @@ function DashboardPipelineOverview() {
                   <div className="w-full h-px bg-border/40" />
                 </div>
               )}
-              <div className="flex-1 flex flex-col items-center gap-0.5 cursor-pointer group py-1 rounded-lg hover:bg-muted/50 transition-colors" onClick={() => setRightPanelTab("workspace")}>
-                <div className="text-xs">{stage.emoji}</div>
+              <div className={`flex-1 flex flex-col items-center gap-0.5 cursor-pointer group py-1 rounded-lg hover:bg-muted/50 transition-colors relative ${count > 0 ? 'has-items' : ''}`} onClick={() => setRightPanelTab("workspace")}>
+                <div className="text-xs relative">{stage.emoji}
+                  {count > 0 && (
+                    <span className="absolute -top-0.5 -right-1.5 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-1 ring-background animate-pulse" />
+                  )}
+                </div>
                 <div className={`text-[11px] font-semibold tabular-nums ${count > 0 ? "text-foreground" : "text-muted-foreground/40"}`}>
                   {count}
                 </div>
