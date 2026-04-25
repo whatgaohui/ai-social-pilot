@@ -1,0 +1,131 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { invalidateConfigCache } from '@/lib/ai-client';
+import { encrypt, decrypt } from '@/lib/crypto';
+
+// Fields that need encryption for AIConfig
+const ENCRYPTED_FIELDS = ['apiKey'] as const;
+
+// GET - Get all AI configs
+export async function GET() {
+  try {
+    const configs = await db.aIConfig.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Decrypt sensitive fields before returning
+    const decryptedConfigs = configs.map(config => {
+      const result = { ...config };
+      for (const field of ENCRYPTED_FIELDS) {
+        if (result[field]) {
+          (result as Record<string, unknown>)[field] = decrypt(result[field]);
+        }
+      }
+      return result;
+    });
+
+    return NextResponse.json(decryptedConfigs);
+  } catch (error) {
+    console.error('Failed to fetch AI configs:', error);
+    return NextResponse.json({ error: 'Failed to fetch configs' }, { status: 500 });
+  }
+}
+
+// POST - Create or update AI config
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, name, provider, modelId, baseUrl, apiKey, isFree, isActive, maxTokens, temperature } = body;
+
+    // Encrypt apiKey before storing
+    const encryptedApiKey = apiKey ? encrypt(apiKey) : '';
+
+    // If setting this config as active, deactivate all others first
+    if (isActive) {
+      await db.aIConfig.updateMany({
+        where: { isActive: true },
+        data: { isActive: false },
+      });
+    }
+
+    if (id) {
+      // Update existing
+      const updated = await db.aIConfig.update({
+        where: { id },
+        data: {
+          name,
+          provider: provider || 'z-ai',
+          modelId: modelId || '',
+          baseUrl: baseUrl || '',
+          apiKey: encryptedApiKey,
+          isFree: isFree ?? false,
+          isActive: isActive ?? false,
+          maxTokens: maxTokens || 2048,
+          temperature: temperature ?? 0.7,
+        },
+      });
+      invalidateConfigCache();
+
+      // Decrypt before returning to frontend
+      const decryptedUpdated = {
+        ...updated,
+        apiKey: decrypt(updated.apiKey),
+      };
+
+      return NextResponse.json(decryptedUpdated);
+    } else {
+      // Create new
+      const created = await db.aIConfig.create({
+        data: {
+          name: name || '未命名配置',
+          provider: provider || 'z-ai',
+          modelId: modelId || '',
+          baseUrl: baseUrl || '',
+          apiKey: encryptedApiKey,
+          isFree: isFree ?? false,
+          isActive: isActive ?? false,
+          maxTokens: maxTokens || 2048,
+          temperature: temperature ?? 0.7,
+        },
+      });
+      invalidateConfigCache();
+
+      // Decrypt before returning to frontend
+      const decryptedCreated = {
+        ...created,
+        apiKey: decrypt(created.apiKey),
+      };
+
+      return NextResponse.json(decryptedCreated);
+    }
+  } catch (error) {
+    console.error('Failed to save AI config:', error);
+    return NextResponse.json({ error: 'Failed to save config' }, { status: 500 });
+  }
+}
+
+// DELETE - Delete an AI config
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'Config ID is required' }, { status: 400 });
+    }
+
+    const config = await db.aIConfig.findUnique({ where: { id } });
+    if (!config) {
+      return NextResponse.json({ error: 'Config not found' }, { status: 404 });
+    }
+    if (config.isActive) {
+      return NextResponse.json({ error: 'Cannot delete active config' }, { status: 400 });
+    }
+
+    await db.aIConfig.delete({ where: { id } });
+    invalidateConfigCache();
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete AI config:', error);
+    return NextResponse.json({ error: 'Failed to delete config' }, { status: 500 });
+  }
+}
