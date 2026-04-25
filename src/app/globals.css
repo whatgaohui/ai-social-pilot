@@ -6994,7 +6994,7 @@ textarea,
   50% { box-shadow: 0 0 8px 2px rgba(139, 92, 246, 0.12); }
 }
 
-/* ====== Iteration 37: Template Marketplace + Prompt Library + Calendar Themes ====== */
+/* ====== Iteration 37: Template Marketplace + Prompt Library ====== */
 
 /* Template card styles */
 .template-card {
@@ -7070,32 +7070,6 @@ textarea,
   width: 3px;
   border-radius: 3px 0 0 3px;
   transition: background-color 0.2s ease;
-}
-
-/* Theme selector styles */
-.theme-selector {
-  transition: all 0.2s ease;
-}
-
-/* Theme mini calendar preview */
-.theme-preview-mini {
-  transition: all 0.3s ease;
-}
-
-/* Theme option card */
-.theme-option {
-  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-  overflow: hidden;
-}
-.theme-option:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-}
-.theme-option:active {
-  transform: translateY(-1px) scale(0.98);
-}
-.dark .theme-option:hover {
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* Difficulty badge styles */

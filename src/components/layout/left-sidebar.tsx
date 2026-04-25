@@ -15,7 +15,6 @@ const CopywritingTemplates = dynamic(() => import("@/components/left-panel/copyw
 const XiaohongshuTemplates = dynamic(() => import("@/components/right-panel/xiaohongshu-templates").then(m => ({ default: m.XiaohongshuTemplates })), { ssr: false, loading: () => <Skeleton className="h-full" /> });
 const TemplateMarketplace = dynamic(() => import("@/components/template-marketplace").then(m => ({ default: m.TemplateMarketplace })), { ssr: false, loading: () => <Skeleton className="h-full" /> });
 const AIPromptLibrary = dynamic(() => import("@/components/ai-prompt-library").then(m => ({ default: m.AIPromptLibrary })), { ssr: false, loading: () => <Skeleton className="h-full" /> });
-const CalendarThemeSelector = dynamic(() => import("@/components/calendar-theme-selector").then(m => ({ default: m.CalendarThemeSelector })), { ssr: false, loading: () => <Skeleton className="h-10 w-full" /> });
 const KeyboardShortcutHint = dynamic(() => import("@/components/left-panel/keyboard-shortcut-hint").then(m => ({ default: m.KeyboardShortcutHint })), { ssr: false });
 
 // ─── Left sidebar tabs ────────────────────────────────────────────────────────
@@ -77,7 +76,6 @@ export function LeftSidebar() {
       {leftPanelTab === 'calendar' ? (
         <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll sidebar-scroll">
           <CompactCalendar />
-          <CalendarThemeSelector />
         </ScrollArea>
       ) : leftPanelTab === 'knowledge' ? (
         <ScrollArea className="flex-1 px-3 pb-3 smooth-scroll sidebar-scroll">

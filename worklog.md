@@ -78,3 +78,31 @@ Stage Summary:
 - Application now renders correctly: header, platform toggle, onboarding, templates, footer all visible
 - Dev server requires persistent process management (setsid + keep-alive script)
 - Screenshot saved to /home/z/my-project/working-screenshot.png
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Remove calendar theme feature (日历主题) per user request
+
+Work Log:
+- User requested removal of "日历主题" (calendar theme) feature as it's not useful
+- Analyzed the feature scope:
+  - `calendar-theme-selector.tsx` (525+ lines) - UI component with 7 built-in themes + custom theme creator
+  - `use-calendar-theme.tsx` (175 lines) - Hook for theme state management
+  - CSS in globals.css (theme-preview-mini, theme-option, theme-selector classes)
+  - Used only in left-sidebar.tsx (rendered below CompactCalendar)
+  - The compact-calendar.tsx does NOT actually use the theme - it was purely decorative/orphaned
+- Removed CalendarThemeSelector import and rendering from left-sidebar.tsx
+- Deleted /home/z/my-project/src/components/calendar-theme-selector.tsx
+- Deleted /home/z/my-project/src/hooks/use-calendar-theme.tsx
+- Cleaned up related CSS from globals.css:
+  - Removed .theme-preview-mini, .theme-option, .theme-selector styles
+  - Updated iteration comment (removed "Calendar Themes" reference)
+- Verified no remaining references to deleted files in codebase
+- Ran lint check: zero errors
+- Dev server running and healthy on port 3000
+
+Stage Summary:
+- Calendar theme feature completely removed (~700 lines of code deleted)
+- Left sidebar now shows only the CompactCalendar without the theme selector below it
+- App compiles and runs cleanly with no errors
