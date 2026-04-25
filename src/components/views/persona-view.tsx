@@ -1,0 +1,559 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { EmptyState } from "@/components/empty-state";
+import { AccountCard } from "@/components/account-card";
+import { useAppStore } from "@/store/app-store";
+import type { XhsAccountInfo, XhsPersonaInfo } from "@/types";
+import { toast } from "sonner";
+import {
+  Theater,
+  Save,
+  Loader2,
+  X,
+  Plus,
+  Eye,
+  UserCircle,
+  Sparkles,
+  ArrowLeft,
+} from "lucide-react";
+
+type ToneType = XhsPersonaInfo["tone"];
+type WritingStyleType = XhsPersonaInfo["writingStyle"];
+
+const toneOptions: { value: ToneType; label: string; emoji: string }[] = [
+  { value: "warm", label: "温暖亲切", emoji: "😊" },
+  { value: "professional", label: "专业严谨", emoji: "💼" },
+  { value: "witty", label: "幽默风趣", emoji: "😄" },
+  { value: "casual", label: "随性自然", emoji: "🤙" },
+  { value: "elegant", label: "优雅精致", emoji: "✨" },
+];
+
+const writingStyleOptions: { value: WritingStyleType; label: string; emoji: string }[] = [
+  { value: "concise", label: "简洁精炼", emoji: "📝" },
+  { value: "detailed", label: "详细丰富", emoji: "📖" },
+  { value: "emotional", label: "感性细腻", emoji: "💗" },
+  { value: "balanced", label: "平衡适中", emoji: "⚖️" },
+];
+
+function TagInput({
+  label,
+  tags,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  tags: string[];
+  onChange: (tags: string[]) => void;
+  placeholder: string;
+}) {
+  const [inputValue, setInputValue] = useState("");
+
+  const handleAdd = () => {
+    const val = inputValue.trim();
+    if (val && !tags.includes(val)) {
+      onChange([...tags, val]);
+      setInputValue("");
+    }
+  };
+
+  const handleRemove = (index: number) => {
+    onChange(tags.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs font-medium">{label}</Label>
+      <div className="flex flex-wrap gap-1.5 mb-1.5">
+        {tags.map((tag, i) => (
+          <Badge key={i} variant="secondary" className="gap-1 text-xs">
+            {tag}
+            <button onClick={() => handleRemove(i)} className="hover:text-xhs">
+              <X className="w-3 h-3" />
+            </button>
+          </Badge>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder={placeholder}
+          className="text-xs"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleAdd}
+          className="shrink-0"
+        >
+          <Plus className="w-3 h-3" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function PersonaView() {
+  const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen } = useAppStore();
+  const [accounts, setAccounts] = useState<(XhsAccountInfo & { postsCount?: number })[]>([]);
+  const [persona, setPersona] = useState<XhsPersonaInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [personaExists, setPersonaExists] = useState(false);
+
+  // Form state
+  const [name, setName] = useState("");
+  const [tone, setTone] = useState<ToneType>("warm");
+  const [writingStyle, setWritingStyle] = useState<WritingStyleType>("balanced");
+  const [targetAudience, setTargetAudience] = useState("");
+  const [contentThemes, setContentThemes] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [avoidTopics, setAvoidTopics] = useState<string[]>([]);
+  const [referenceDesc, setReferenceDesc] = useState("");
+  const [signaturePhrase, setSignaturePhrase] = useState("");
+
+  useEffect(() => {
+    loadAccounts();
+  }, []);
+
+  useEffect(() => {
+    if (selectedAccountId) {
+      loadPersona(selectedAccountId);
+    } else {
+      setLoading(false);
+    }
+  }, [selectedAccountId]);
+
+  const loadAccounts = async () => {
+    try {
+      const res = await fetch("/api/accounts");
+      const data = await res.json();
+      if (data.success) {
+        setAccounts(data.data || []);
+        if (!selectedAccountId && data.data?.length > 0) {
+          setSelectedAccountId(data.data[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load accounts:", err);
+    }
+  };
+
+  const loadPersona = async (accountId: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/persona?accountId=${accountId}`);
+      const data = await res.json();
+      if (data.success && data.data) {
+        const p = data.data as XhsPersonaInfo;
+        setPersona(p);
+        setPersonaExists(true);
+        setName(p.name);
+        setTone(p.tone);
+        setWritingStyle(p.writingStyle);
+        setTargetAudience(p.targetAudience);
+        setContentThemes(p.contentThemes || []);
+        setKeywords(p.keywords || []);
+        setAvoidTopics(p.avoidTopics || []);
+        setReferenceDesc(p.referenceDesc);
+        setSignaturePhrase(p.signaturePhrase);
+      } else {
+        setPersona(null);
+        setPersonaExists(false);
+        resetForm();
+      }
+    } catch (err) {
+      console.error("Failed to load persona:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setName("");
+    setTone("warm");
+    setWritingStyle("balanced");
+    setTargetAudience("");
+    setContentThemes([]);
+    setKeywords([]);
+    setAvoidTopics([]);
+    setReferenceDesc("");
+    setSignaturePhrase("");
+  };
+
+  const handleSave = async () => {
+    if (!selectedAccountId) return;
+
+    setSaving(true);
+    try {
+      const body = {
+        accountId: selectedAccountId,
+        name,
+        tone,
+        writingStyle,
+        targetAudience,
+        contentThemes,
+        keywords,
+        avoidTopics,
+        referenceDesc,
+        signaturePhrase,
+      };
+
+      const res = await fetch("/api/persona", {
+        method: personaExists ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setPersona(data.data);
+        setPersonaExists(true);
+        toast.success(personaExists ? "人设已更新" : "人设已创建");
+      } else {
+        toast.error(data.error || "保存失败");
+      }
+    } catch {
+      toast.error("网络错误，请重试");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6 space-y-6">
+        <Skeleton className="h-12 rounded-xl" />
+        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (accounts.length === 0) {
+    return (
+      <div className="p-4 md:p-6">
+        <EmptyState
+          icon={Theater}
+          title="还没有添加账号"
+          description="添加小红书账号后，即可为其设置AI创作人设"
+          actionLabel="添加账号"
+          onAction={() => setAddAccountDialogOpen(true)}
+        />
+      </div>
+    );
+  }
+
+  if (!selectedAccountId) {
+    return (
+      <div className="p-4 md:p-6 space-y-4">
+        <h2 className="text-lg font-bold">选择账号</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {accounts.map((account) => (
+            <AccountCard
+              key={account.id}
+              account={account}
+              onClick={() => setSelectedAccountId(account.id)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden"
+            onClick={() => setSelectedAccountId(null)}
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <h2 className="text-lg font-bold">人设管理</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedAccountId}
+            onChange={(e) => setSelectedAccountId(e.target.value)}
+            className="text-sm border rounded-lg px-3 py-1.5 bg-background"
+          >
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.nickname || "未命名用户"}
+              </option>
+            ))}
+          </select>
+          <Button
+            size="sm"
+            className="bg-xhs hover:bg-xhs-dark text-white"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                保存中...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-1" />
+                保存
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Form */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Basic Info */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">基本信息</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">人设名称</Label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="例如：生活美学博主"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">语气风格</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {toneOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setTone(opt.value)}
+                      className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border transition-all text-xs ${
+                        tone === opt.value
+                          ? "border-xhs bg-xhs-light text-xhs"
+                          : "border-border hover:border-xhs/30"
+                      }`}
+                    >
+                      <span className="text-lg">{opt.emoji}</span>
+                      <span className="font-medium">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">写作风格</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {writingStyleOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setWritingStyle(opt.value)}
+                      className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border transition-all text-xs ${
+                        writingStyle === opt.value
+                          ? "border-xhs bg-xhs-light text-xhs"
+                          : "border-border hover:border-xhs/30"
+                      }`}
+                    >
+                      <span className="text-lg">{opt.emoji}</span>
+                      <span className="font-medium">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">目标受众</Label>
+                <Input
+                  value={targetAudience}
+                  onChange={(e) => setTargetAudience(e.target.value)}
+                  placeholder="例如：25-35岁都市女性，追求品质生活"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Content Strategy */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">内容策略</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <TagInput
+                label="内容主题"
+                tags={contentThemes}
+                onChange={setContentThemes}
+                placeholder="输入主题后按回车添加"
+              />
+              <TagInput
+                label="核心关键词"
+                tags={keywords}
+                onChange={setKeywords}
+                placeholder="输入关键词后按回车添加"
+              />
+              <TagInput
+                label="避免话题"
+                tags={avoidTopics}
+                onChange={setAvoidTopics}
+                placeholder="输入要避免的话题"
+              />
+            </CardContent>
+          </Card>
+
+          {/* Reference */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">参考描述</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">人设描述 / 品牌调性</Label>
+                <Textarea
+                  value={referenceDesc}
+                  onChange={(e) => setReferenceDesc(e.target.value)}
+                  placeholder="描述这个账号的人设定位、品牌调性、内容风格等，AI将参考此描述进行创作..."
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">标志性用语</Label>
+                <Input
+                  value={signaturePhrase}
+                  onChange={(e) => setSignaturePhrase(e.target.value)}
+                  placeholder="例如：生活的美好，在于发现细节"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Preview Card */}
+        <div className="space-y-4">
+          <Card className="sticky top-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                人设预览
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-xhs-light flex items-center justify-center">
+                  <UserCircle className="w-7 h-7 text-xhs" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm">
+                    {name || "未命名人设"}
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    {toneOptions.find((t) => t.value === tone)?.emoji}{" "}
+                    {toneOptions.find((t) => t.value === tone)?.label} ·{" "}
+                    {writingStyleOptions.find((w) => w.value === writingStyle)?.label}
+                  </p>
+                </div>
+              </div>
+
+              {targetAudience && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    目标受众
+                  </p>
+                  <p className="text-xs">{targetAudience}</p>
+                </div>
+              )}
+
+              {contentThemes.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    内容主题
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {contentThemes.map((theme, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">
+                        {theme}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {keywords.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    核心关键词
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {keywords.map((kw, i) => (
+                      <Badge key={i} className="text-xs bg-xhs-light text-xhs border-0">
+                        {kw}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {avoidTopics.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    避免话题
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {avoidTopics.map((topic, i) => (
+                      <Badge key={i} variant="outline" className="text-xs text-muted-foreground">
+                        {topic}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {referenceDesc && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    人设描述
+                  </p>
+                  <p className="text-xs line-clamp-3">{referenceDesc}</p>
+                </div>
+              )}
+
+              {signaturePhrase && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs italic text-xhs font-medium">
+                    &ldquo;{signaturePhrase}&rdquo;
+                  </p>
+                </div>
+              )}
+
+              {name && (
+                <div className="pt-2 border-t flex items-center gap-1 text-xs text-muted-foreground">
+                  <Sparkles className="w-3 h-3 text-xhs" />
+                  AI将基于此人设进行内容创作
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -7,303 +7,123 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Persona {
-  id          String   @id @default(cuid())
-  name        String
-  title       String   @default("")
-  industry    String   @default("")
-  tone        String   @default("professional") // professional, casual, humorous, inspirational, storytelling
-  style       String   @default("balanced") // concise, detailed, emotional, balanced
-  keywords    String   @default("") // comma-separated keywords
-  bio         String   @default("")
-  targetAudience String @default("")
-  avatarUrl   String   @default("")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+// ─── 小红书账号 ──────────────────────────────────────────────────────────
 
-model KnowledgeItem {
-  id          String   @id @default(cuid())
-  category    String   @default("general") // expertise, experience, opinion, story, resource
-  title       String
-  content     String
-  tags        String   @default("") // comma-separated tags
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model ContentPlan {
-  id          String   @id @default(cuid())
-  month       String   // e.g. "2025-01"
-  theme       String   @default("")
-  status      String   @default("draft") // draft, active, completed
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  posts       ContentPost[]
-}
-
-model ContentPost {
+model XhsAccount {
   id            String   @id @default(cuid())
-  planId        String
-  scheduledDate String   // e.g. "2025-01-15"
-  platform      String   @default("wechat") // wechat, xiaohongshu
-  contentType   String   @default("text") // text, image, video, mixed, story, insight, interaction; xiaohongshu: seeding, review, tutorial, drygoods, vlog, daily, recommend, collection
-  topic         String   @default("")
-  content       String   @default("")
-  status        String   @default("planned") // planned, generated, optimized, scheduled, published
-  generationType String @default("auto") // auto, fragment, polish
-  scheduledAt   DateTime? // exact datetime for scheduled publishing
-  publishedAt   DateTime? // when the post was actually published
+  xhsUrl        String   @unique  // 小红书主页链接
+  xhsId         String   @default("")  // 小红书用户ID
+  nickname      String   @default("")
+  avatarUrl     String   @default("")
+  bio           String   @default("")  // 简介
+  location      String   @default("")
+  gender        String   @default("")
+  
+  // 账号数据
+  followers     Int      @default(0)  // 粉丝数
+  following     Int      @default(0)  // 关注数
+  likedCollected Int     @default(0)  // 获赞与收藏
+  notesCount    Int      @default(0)  // 笔记数
+  
+  // 采集状态
+  status        String   @default("idle") // idle, scraping, success, error
+  lastScrapedAt DateTime?
+  errorMessage  String   @default("")
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  posts         XhsPost[]
+  persona       XhsPersona?
+  drafts        ContentDraft[]
+}
+
+// ─── 小红书笔记 ──────────────────────────────────────────────────────────
+
+model XhsPost {
+  id            String   @id @default(cuid())
+  accountId     String
+  account       XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  // 笔记基本信息
+  xhsPostId     String   @default("")  // 小红书笔记ID
+  title         String   @default("")
+  content       String   @default("")  // 正文
+  coverUrl      String   @default("")  // 封面图
+  imageUrls     String   @default("[]") // 图片URL列表 JSON
+  postType      String   @default("normal") // normal, video
+  
+  // 互动数据
   likes         Int      @default(0)
   comments      Int      @default(0)
-  shares        Int      @default(0)
-  views         Int      @default(0)
-  favorites     Int      @default(0) // Xiaohongshu favorites/收藏
-  aiScore       Float    @default(0) // AI quality score 0-100
-  feedback      String   @default("") // user feedback notes
-  sortOrder     Int      @default(0) // list-view drag sort order
+  collects      Int      @default(0)  // 收藏数
+  shares        Int      @default(0)  // 分享数
+  
+  // 内容分析
+  tags          String   @default("[]") // 标签 JSON
+  category      String   @default("")  // 内容分类
+  aiScore       Float    @default(0)   // AI质量评分
+  aiAnalysis    String   @default("")  // AI分析摘要
+  
+  publishDate   String   @default("")  // 发布日期 "2025-01-15"
+  scrapedAt     DateTime @default(now())
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
-  plan          ContentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  versions      ContentVersion[]
-  postComments  ContentComment[]
-  postInteractions ContentInteraction[]
+  @@index([accountId])
+  @@index([publishDate])
 }
 
-model ContentVersion {
-  id          String   @id @default(cuid())
-  postId      String
-  version     Int
-  content     String
-  changeType  String   @default("edit") // edit, optimize, polish, ai_generate
-  summary     String   @default("")
-  aiScore     Int      @default(0)
-  createdAt   DateTime @default(now())
-  
-  post        ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  @@index([postId])
-}
+// ─── 人设管理 ─────────────────────────────────────────────────────────────
 
-model Material {
-  id          String   @id @default(cuid())
-  name        String   @default("")
-  type        String   @default("text") // text, image, screenshot, conversation
-  content     String   @default("")
-  imageUrl    String   @default("")
-  contentType String   @default("") // fragment type: complaint, praise, question, experience, etc.
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model AnalyticsSummary {
-  id          String   @id @default(cuid())
-  period      String   @default("weekly") // daily, weekly, monthly
-  date        String
-  totalPosts  Int      @default(0)
-  totalLikes  Int      @default(0)
-  totalComments Int    @default(0)
-  totalShares Int      @default(0)
-  totalViews  Int      @default(0)
-  avgScore    Float    @default(0)
-  insights    String   @default("") // AI-generated insights
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model AIConfig {
-  id          String   @id @default(cuid())
-  name        String   // 配置名称
-  provider    String   @default("z-ai") // z-ai, gemini, groq, cerebras, siliconflow, openrouter, custom
-  modelId     String   @default("") // 模型 ID
-  baseUrl     String   @default("") // API base URL
-  apiKey      String   @default("") // API Key（加密存储）
-  isFree      Boolean  @default(false) // 是否免费
-  isActive    Boolean  @default(false) // 是否为当前激活的配置
-  maxTokens   Int      @default(2048)
-  temperature Float    @default(0.7)
-  extraConfig String   @default("") // JSON string for extra params
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model PlatformAccount {
+model XhsPersona {
   id            String   @id @default(cuid())
-  platform      String   // wechat, xiaohongshu
-  displayName   String   @default("") // 账号昵称
-  accountType   String   @default("personal") // personal, business, creator
-  status        String   @default("disconnected") // disconnected, connecting, connected, expired, error
-  avatarUrl     String   @default("") // 头像URL
-
-  // OAuth / API 连接信息
-  accessToken   String   @default("") // 加密存储的 access token
-  refreshToken  String   @default("") // refresh token
-  tokenType     String   @default("oauth") // oauth, api_key, cookie
-  scope         String   @default("") // 授权范围
-
-  // API 配置
-  apiEndpoint   String   @default("") // API 端点
-  apiKey        String   @default("") // API Key（如果使用 API Key 模式）
-  apiSecret     String   @default("") // API Secret
-
-  // 连接状态
-  connectedAt   DateTime? // 连接时间
-  expiresAt     DateTime? // Token 过期时间
-  lastSyncAt    DateTime? // 最后同步时间
-  lastError     String   @default("") // 最后错误信息
-
-  // 统计信息
-  followers     Int      @default(0) // 粉丝数
-  following     Int      @default(0) // 关注数
-  postsCount    Int      @default(0) // 已发布笔记/动态数
-
+  accountId     String   @unique
+  account       XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  // 人设核心
+  name          String   @default("")  // 人设名称/定位
+  tone          String   @default("warm") // warm, professional, witty, casual, elegant
+  writingStyle  String   @default("balanced") // concise, detailed, emotional, balanced
+  
+  // 内容策略
+  targetAudience String  @default("")  // 目标受众
+  contentThemes String   @default("[]") // 内容主题 JSON
+  keywords      String   @default("[]") // 核心关键词 JSON
+  avoidTopics   String   @default("[]") // 避免话题 JSON
+  
+  // 参考描述
+  referenceDesc String   @default("")  // 人设描述/品牌调性描述
+  signaturePhrase String @default("")  // 标志性用语
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  @@unique([platform, accountType])
 }
 
-// ─── 账号采集功能 ────────────────────────────────────────────────────────
+// ─── AI创作草稿 ──────────────────────────────────────────────────────────
 
-// 追踪的目标账号（自己的或竞品的）
-model TrackedAccount {
+model ContentDraft {
   id            String   @id @default(cuid())
-  platform      String   // wechat, xiaohongshu
-  homeUrl       String   @default("") // 主页链接（小红书：https://www.xiaohongshu.com/user/profile/xxx）
-  nickname      String   @default("") // 昵称
-  avatarUrl     String   @default("") // 头像
-  bio           String   @default("") // 简介
-  followers     Int      @default(0)
-  following     Int      @default(0)
-  postsCount    Int      @default(0)
-  isOwn         Boolean  @default(true) // 是否是自己的账号
-  status        String   @default("idle") // idle, syncing, success, error
-  lastSyncAt    DateTime?
-  lastError     String   @default("")
-  collectMethod  String   @default("link") // link, cookie, manual
-  cookie        String   @default("") // 存储采集用的Cookie
-  totalCollected Int      @default(0) // 已采集内容总数
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  syncTasks     SyncTask[]
-  @@index([platform])
-}
-
-// 采集任务记录
-model SyncTask {
-  id            String   @id @default(cuid())
-  trackedAccountId String
-  status        String   @default("pending") // pending, running, success, partial, error
-  totalFound    Int      @default(0)
-  totalImported Int      @default(0)
-  totalFailed   Int      @default(0)
-  errorMessage  String   @default("")
-  startedAt     DateTime?
-  finishedAt    DateTime?
-  metadata      String   @default("{}") // JSON: 采集范围、参数等
-
-  trackedAccount TrackedAccount @relation(fields: [trackedAccountId], references: [id], onDelete: Cascade)
-
-  createdAt     DateTime @default(now())
-
-  @@index([trackedAccountId])
-}
-
-// ─── 通知 ──────────────────────────────────────────────────────────────
-
-model Notification {
-  id          String   @id @default(cuid())
-  type        String   @default("system") // system, reminder, achievement, schedule, ai
-  category    String   @default("system") // schedule, ai_task, system, achievement, reminder
-  title       String
-  message     String   @default("")
-  read        Boolean  @default(false)
-  isArchived  Boolean  @default(false)
-  priority    String   @default("medium") // high, medium, low
-  actionUrl   String   @default("")
-  metadata    String   @default("") // JSON serialized
-  data        String   @default("") // JSON serialized – extra payload for notification actions
-  createdAt   DateTime @default(now())
-
-  @@index([category])
-  @@index([isArchived])
-  @@index([read])
-}
-
-// ─── 互动数据：评论 ──────────────────────────────────────────────────────
-
-model ContentComment {
-  id            String   @id @default(cuid())
-  postId        String
-  platform      String   @default("wechat")
-  authorName     String   @default("")
-  authorAvatar   String   @default("")
+  accountId     String
+  account       XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  // 草稿内容
+  title         String   @default("")
   content       String   @default("")
-  likes         Int      @default(0)
-  replyTo       String   @default("")
-  replyToName   String   @default("")
-  publishedAt    String   @default("")
-  sourceType    String   @default("collected") // collected, manual
-  syncedAt      DateTime @default(now())
-
-  post          ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@index([postId])
-  @@index([platform])
-  @@index([authorName])
-}
-
-// ─── 报告模板 ──────────────────────────────────────────────────────────
-
-model ReportTemplate {
-  id          String   @id @default(cuid())
-  name        String   // 模板名称
-  description String   @default("") // 模板描述
-  icon        String   @default("📊") // 模板图标
-  color       String   @default("violet") // 主题色: violet, rose, amber, emerald, cyan
-  isPreset    Boolean  @default(false) // 是否为预设模板
-  sections    String   // JSON: 报告章节列表，有序
-  lastUsedAt  DateTime? // 最后使用时间
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// ─── 报告生成历史 ──────────────────────────────────────────────────────
-
-model ReportHistory {
-  id            String   @id @default(cuid())
-  templateId    String   @default("") // 使用的模板ID
-  templateName  String   @default("") // 模板名称快照
-  title         String   // 报告标题
-  periodType    String   @default("week") // week, month, quarter, custom
-  startDate     String   // 起始日期
-  endDate       String   // 结束日期
-  reportData    String   // JSON: 完整报告数据
-  aiSummary     String   @default("") // AI 摘要
+  coverPrompt   String   @default("")  // AI封面图提示词
+  tags          String   @default("[]") // 标签 JSON
+  
+  // 创作状态
+  status        String   @default("draft") // draft, polishing, ready, published
+  
+  // AI元数据
+  aiModel       String   @default("")
+  aiSuggestions String   @default("")  // AI建议 JSON
+  
   createdAt     DateTime @default(now())
-}
-
-// ─── 互动数据：转发/分享记录 ──────────────────────────────────────────────
-
-model ContentInteraction {
-  id            String   @id @default(cuid())
-  postId        String
-  platform      String   @default("wechat")
-  interactionType String   @default("share") // share, forward, collect
-  authorName     String   @default("")
-  authorAvatar   String   @default("")
-  content       String   @default("")
-  publishedAt    String   @default("")
-  sourceType    String   @default("collected") // collected, manual
-  syncedAt      DateTime @default(now())
-
-  post          ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@index([postId])
-  @@index([platform])
-  @@index([interactionType])
+  updatedAt     DateTime @updatedAt
+  
+  @@index([accountId])
+  @@index([status])
 }
