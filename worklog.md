@@ -48,3 +48,33 @@ Next Steps Priority:
 2. Implement P0 optimizations: merge duplicate _enhanced components, API key encryption, label mock data
 3. Implement P1 optimizations: further split Zustand stores, split page.tsx, unified AI service layer
 4. Continue with P2/P3 optimizations as time permits
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix UI not loading - useAppStore.subscribe is not a function (round 2)
+
+Work Log:
+- User reported the interface couldn't load ("怎么记载不出来界面了")
+- Investigated and found the dev server was not running (connection refused on port 3000)
+- Started the dev server, but it kept dying after compilation
+- Used agent-browser to check the browser console and found the critical error:
+  `useAppStore.subscribe is not a function` in NotificationHooks component
+- Root cause: Turbopack's ESM module system strips static properties attached via Object.assign to function objects
+- The previous fix using Object.assign(useAppStoreHook, { getState, subscribe, setState }) did NOT work with Turbopack on the client side
+- Rewrote app-store.ts to use a proper Zustand `create` store instead of Object.assign pattern
+  - Created `useAppStore` using `create<AppState>(() => getCombinedState())`
+  - Subscribed to each sub-store (persona, content, ui, notification) to sync changes to the combined store
+  - Overrode `useAppStore.setState` to route updates to the correct sub-store
+  - All static methods (.subscribe, .getState, .setState) are now provided natively by Zustand
+- Verified the fix: page renders correctly with full UI including header, platform toggle, content workspace, templates, footer
+- Zero browser errors after the fix
+- Server process management issue: dev server process keeps getting killed by the sandbox environment
+  - Workaround: use `setsid` to create a detached process session
+
+Stage Summary:
+- CRITICAL BUG FIXED: `useAppStore.subscribe is not a function` error
+- The fix: replaced Object.assign pattern with native Zustand `create` store in app-store.ts
+- Application now renders correctly: header, platform toggle, onboarding, templates, footer all visible
+- Dev server requires persistent process management (setsid + keep-alive script)
+- Screenshot saved to /home/z/my-project/working-screenshot.png

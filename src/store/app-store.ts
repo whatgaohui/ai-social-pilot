@@ -1,5 +1,5 @@
 /**
- * Backward-compatibility wrapper for the split domain stores.
+ * Combined store that aggregates all domain-specific stores.
  *
  * The original monolithic `useAppStore` has been split into 4 domain-specific stores:
  *   - usePersonaStore  (persona-store.ts)
@@ -7,13 +7,15 @@
  *   - useUIStore       (ui-store.ts)
  *   - useNotificationStore (notification-store.ts)
  *
- * This module re-exports `useAppStore` that combines all 4 stores so existing
- * consumers continue to work without any code changes.
+ * This module creates a combined Zustand store that mirrors all sub-store state,
+ * so `useAppStore.getState()`, `.subscribe()`, `.setState()` work natively
+ * via Zustand (not via Object.assign which Turbopack can strip).
  *
  * For new code, prefer importing from the specific domain store directly
  * for better re-render isolation.
  */
 
+import { create } from 'zustand';
 import { usePersonaStore } from './persona-store';
 import { useContentStore } from './content-store';
 import { useUIStore } from './ui-store';
@@ -114,103 +116,65 @@ function getCombinedState(): AppState {
     ...useContentStore.getState(),
     ...useUIStore.getState(),
     ...useNotificationStore.getState(),
-  };
+  } as AppState;
 }
 
-// ─── useAppStore: combined hook + static API ────────────────────────────────
+// ─── Create combined Zustand store ──────────────────────────────────────────
 //
-// Supports three call patterns:
-//   1. useAppStore()              → returns the full combined state (React hook)
-//   2. useAppStore(selector)      → returns selector(combinedState) (React hook)
-//   3. useAppStore.getState()     → returns combined state outside React
-//   4. useAppStore.subscribe(fn)  → subscribe to changes outside React
-//   5. useAppStore.setState(obj)  → update state outside React
+// This is a real Zustand store so `.subscribe()`, `.getState()`, `.setState()`
+// are all provided natively by Zustand — Turbopack cannot strip them.
+
+const useAppStore = create<AppState>(() => getCombinedState());
+
+// ─── Keep combined store in sync with sub-stores ────────────────────────────
 //
-// We use a single object that IS both the hook function AND the store API,
-// so Turbopack's ESM module system preserves all properties correctly.
+// When any sub-store changes, we update the combined store with the new
+// combined state. We use the internal _setState reference to avoid
+// triggering our custom routing logic in the overridden setState.
+
+const _internalSetState = useAppStore.setState.bind(useAppStore);
+
+function syncFromSubStores() {
+  _internalSetState(getCombinedState(), true);
+}
+
+// Subscribe to each sub-store
+usePersonaStore.subscribe(syncFromSubStores);
+useContentStore.subscribe(syncFromSubStores);
+useUIStore.subscribe(syncFromSubStores);
+useNotificationStore.subscribe(syncFromSubStores);
+
+// ─── Override setState to route updates to the correct sub-store ─────────────
 
 type Listener = (state: AppState, prevState: AppState) => void;
-type Selector<T> = (state: AppState) => T;
 
-function useAppStoreHook<T>(selector?: Selector<T>): AppState | T {
-  // Subscribe to each sub-store individually — Zustand will only trigger
-  // a re-render when the slice we read actually changes.
-  const personaState = usePersonaStore();
-  const contentState = useContentStore();
-  const uiState = useUIStore();
-  const notificationState = useNotificationStore();
+useAppStore.setState = function (partial: Partial<AppState> | ((state: AppState) => Partial<AppState>)) {
+  const update = typeof partial === 'function' ? partial(getCombinedState()) : partial;
 
-  const combined: AppState = {
-    ...personaState,
-    ...contentState,
-    ...uiState,
-    ...notificationState,
-  };
+  // Route updates to the appropriate sub-store
+  const personaKeys = new Set(Object.keys(usePersonaStore.getState()));
+  const contentKeys = new Set(Object.keys(useContentStore.getState()));
+  const uiKeys = new Set(Object.keys(useUIStore.getState()));
+  const notificationKeys = new Set(Object.keys(useNotificationStore.getState()));
 
-  return selector ? selector(combined) : combined;
-}
+  const personaSlice: Record<string, unknown> = {};
+  const contentSlice: Record<string, unknown> = {};
+  const uiSlice: Record<string, unknown> = {};
+  const notificationSlice: Record<string, unknown> = {};
 
-// Build the full store object with hook + static API
-const useAppStore = Object.assign(useAppStoreHook, {
-  getState: getCombinedState,
+  for (const [key, value] of Object.entries(update)) {
+    if (personaKeys.has(key)) personaSlice[key] = value;
+    else if (contentKeys.has(key)) contentSlice[key] = value;
+    else if (uiKeys.has(key)) uiSlice[key] = value;
+    else if (notificationKeys.has(key)) notificationSlice[key] = value;
+  }
 
-  subscribe(listener: Listener) {
-    const unsubs = [
-      usePersonaStore.subscribe(() => {
-        const next = getCombinedState();
-        const prev = getCombinedState(); // best-effort prev state
-        listener(next, prev);
-      }),
-      useContentStore.subscribe(() => {
-        const next = getCombinedState();
-        const prev = getCombinedState();
-        listener(next, prev);
-      }),
-      useUIStore.subscribe(() => {
-        const next = getCombinedState();
-        const prev = getCombinedState();
-        listener(next, prev);
-      }),
-      useNotificationStore.subscribe(() => {
-        const next = getCombinedState();
-        const prev = getCombinedState();
-        listener(next, prev);
-      }),
-    ];
-    return () => unsubs.forEach((u) => u());
-  },
+  if (Object.keys(personaSlice).length) usePersonaStore.setState(personaSlice);
+  if (Object.keys(contentSlice).length) useContentStore.setState(contentSlice);
+  if (Object.keys(uiSlice).length) useUIStore.setState(uiSlice);
+  if (Object.keys(notificationSlice).length) useNotificationStore.setState(notificationSlice);
 
-  setState(partial: Partial<AppState> | ((state: AppState) => Partial<AppState>)) {
-    const update = typeof partial === 'function' ? partial(getCombinedState()) : partial;
-    // Route updates to the appropriate sub-store
-    const personaKeys = new Set(Object.keys(usePersonaStore.getState()));
-    const contentKeys = new Set(Object.keys(useContentStore.getState()));
-    const uiKeys = new Set(Object.keys(useUIStore.getState()));
-    const notificationKeys = new Set(Object.keys(useNotificationStore.getState()));
-
-    const personaSlice: Record<string, unknown> = {};
-    const contentSlice: Record<string, unknown> = {};
-    const uiSlice: Record<string, unknown> = {};
-    const notificationSlice: Record<string, unknown> = {};
-
-    for (const [key, value] of Object.entries(update)) {
-      if (personaKeys.has(key)) personaSlice[key] = value;
-      else if (contentKeys.has(key)) contentSlice[key] = value;
-      else if (uiKeys.has(key)) uiSlice[key] = value;
-      else if (notificationKeys.has(key)) notificationSlice[key] = value;
-    }
-
-    if (Object.keys(personaSlice).length) usePersonaStore.setState(personaSlice);
-    if (Object.keys(contentSlice).length) useContentStore.setState(contentSlice);
-    if (Object.keys(uiSlice).length) useUIStore.setState(uiSlice);
-    if (Object.keys(notificationSlice).length) useNotificationStore.setState(notificationSlice);
-  },
-}) as {
-  (): AppState;
-  <T>(selector: Selector<T>): T;
-  getState: () => AppState;
-  subscribe: (listener: Listener) => () => void;
-  setState: (partial: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void;
+  // The sub-store updates will trigger syncFromSubStores which updates the combined store
 };
 
 export { useAppStore };
