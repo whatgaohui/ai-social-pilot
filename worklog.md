@@ -35,3 +35,27 @@ Next Steps:
 - Add more features: content export, batch operations, notification system
 - Test scraping functionality with real XHS URLs
 - Add more AI-powered features (content calendar, competitor analysis)
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Fix black border/styling issue on the page
+
+Work Log:
+- Identified root cause: globals.css was missing shadcn/ui CSS variable definitions (--background, --foreground, --card, --border, etc.)
+- The tailwind.config.ts referenced these variables (e.g., hsl(var(--background))) but they were never defined in CSS
+- Without these variables, bg-background, bg-card, text-foreground, border etc. classes could not resolve to proper colors
+- Added complete :root and .dark CSS variable blocks for the XHS red-themed shadcn/ui design system
+- Set --primary to XHS red (346 100% 57%) and --ring to match
+- Added body background-color: hsl(var(--background)) and color: hsl(var(--foreground))
+- Added global border-color: hsl(var(--border)) for consistent border rendering
+- Updated scrollbar colors to use CSS variables instead of hardcoded values
+- Verified fix with agent-browser screenshots across all 5 views (dashboard, account, content, persona, creator)
+- VLM analysis confirmed no black borders or dark edge issues remain
+- Lint check passes with zero errors
+
+Stage Summary:
+- Fixed the black border styling issue by adding missing shadcn/ui CSS variables
+- All 5 navigation views render correctly with proper colors and borders
+- No black borders, dark edges, or visual anomalies detected
+- CSS variables now properly support both light and dark modes
