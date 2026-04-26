@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink, AlertTriangle } from "lucide-react";
 import { useAppStore } from "@/store/app-store";
 import { toast } from "sonner";
 import type { XhsAccountInfo } from "@/types";
@@ -21,6 +21,7 @@ export function AddAccountDialog() {
   const { addAccountDialogOpen, setAddAccountDialogOpen } = useAppStore();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [partialMessage, setPartialMessage] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!url.trim()) {
@@ -34,6 +35,7 @@ export function AddAccountDialog() {
     }
 
     setLoading(true);
+    setPartialMessage(null);
     try {
       const res = await fetch("/api/accounts", {
         method: "POST",
@@ -47,19 +49,32 @@ export function AddAccountDialog() {
         return;
       }
 
-      toast.success("账号添加成功，正在开始采集...");
+      const account = data.data as XhsAccountInfo;
 
       // Trigger scraping
-      const account = data.data as XhsAccountInfo;
+      let scrapeData: { success: boolean; data?: { partialData?: boolean; warnings?: string[]; scrapeMethod?: string }; error?: string } | null = null;
       try {
-        await fetch(`/api/accounts/${account.id}/scrape`, { method: "POST" });
-        toast.success("采集任务已启动");
+        const scrapeRes = await fetch(`/api/accounts/${account.id}/scrape`, { method: "POST" });
+        scrapeData = await scrapeRes.json();
       } catch {
         toast.error("启动采集失败，请手动触发");
       }
 
-      setUrl("");
-      setAddAccountDialogOpen(false);
+      if (scrapeData?.success && scrapeData.data) {
+        if (scrapeData.data.partialData) {
+          // Partial data - keep dialog open, show warning
+          toast.warning("⚠️ 小红书网站限制了直接访问，部分数据可能不完整。你可以手动补充账号信息。");
+          setPartialMessage('⚠️ 数据采集不完整 - 小红书网站限制了直接访问，部分信息需要手动补充。你可以关闭此对话框，在账号详情中点击"编辑账号"来手动补充信息。');
+        } else {
+          toast.success("账号添加成功，数据采集完成！");
+          setUrl("");
+          setAddAccountDialogOpen(false);
+        }
+      } else {
+        // Scraping failed completely - keep account, show error
+        toast.error("账号已添加，但采集失败。小红书网站限制了访问，你可以手动补充账号信息。");
+        setPartialMessage('采集失败，小红书网站限制了直接访问。你可以关闭此对话框，在账号详情中点击"编辑账号"来手动补充信息。');
+      }
     } catch {
       toast.error("网络错误，请重试");
     } finally {
@@ -67,8 +82,16 @@ export function AddAccountDialog() {
     }
   };
 
+  const handleClose = (open: boolean) => {
+    if (!open) {
+      setUrl("");
+      setPartialMessage(null);
+    }
+    setAddAccountDialogOpen(open);
+  };
+
   return (
-    <Dialog open={addAccountDialogOpen} onOpenChange={setAddAccountDialogOpen}>
+    <Dialog open={addAccountDialogOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>添加小红书账号</DialogTitle>
@@ -88,8 +111,16 @@ export function AddAccountDialog() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !loading) handleSubmit();
               }}
+              disabled={loading}
             />
           </div>
+
+          {partialMessage && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{partialMessage}</span>
+            </div>
+          )}
 
           <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1.5">
             <p className="font-medium text-foreground flex items-center gap-1">
@@ -106,25 +137,27 @@ export function AddAccountDialog() {
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => setAddAccountDialogOpen(false)}
+            onClick={() => handleClose(false)}
             disabled={loading}
           >
-            取消
+            {partialMessage ? "关闭" : "取消"}
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="bg-xhs hover:bg-xhs-dark text-white"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                添加中...
-              </>
-            ) : (
-              "添加账号"
-            )}
-          </Button>
+          {!partialMessage && (
+            <Button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-xhs hover:bg-xhs-dark text-white"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  添加中...
+                </>
+              ) : (
+                "添加账号"
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

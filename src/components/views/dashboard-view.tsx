@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { AccountCard, formatNumber } from "@/components/account-card";
 import { useAppStore } from "@/store/app-store";
+import { toast } from "sonner";
 import type { XhsAccountInfo, XhsPostInfo } from "@/types";
 import {
   Users,
@@ -85,6 +85,21 @@ export function DashboardView() {
           description="添加你的第一个小红书账号，开始智能运营之旅"
           actionLabel="添加账号"
           onAction={() => setAddAccountDialogOpen(true)}
+          demoLabel="加载演示数据"
+          onDemoAction={async () => {
+            try {
+              const res = await fetch("/api/demo/seed", { method: "POST" });
+              const data = await res.json();
+              if (data.success) {
+                toast.success("演示数据加载成功！");
+                loadData();
+              } else {
+                toast.error(data.error || "加载演示数据失败");
+              }
+            } catch {
+              toast.error("网络错误，请重试");
+            }
+          }}
         />
       </div>
     );

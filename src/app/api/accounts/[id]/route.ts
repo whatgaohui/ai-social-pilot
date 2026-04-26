@@ -41,6 +41,69 @@ export async function GET(
   }
 }
 
+// PATCH /api/accounts/[id] - Update account fields
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    // Only allow updating specific fields
+    const allowedFields = [
+      'nickname',
+      'bio',
+      'location',
+      'followers',
+      'following',
+      'likedCollected',
+      'notesCount',
+      'xhsId',
+      'avatarUrl',
+      'status',
+    ];
+    const updateData: Record<string, unknown> = {};
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { success: false, error: '没有可更新的字段' },
+        { status: 400 }
+      );
+    }
+
+    // If user manually edits, upgrade status from partial/error to success
+    if (
+      updateData.status !== 'scraping' &&
+      (await db.xhsAccount.findUnique({ where: { id } }))
+    ) {
+      const current = await db.xhsAccount.findUnique({ where: { id } });
+      if (current && (current.status === 'partial' || current.status === 'error')) {
+        updateData.status = 'success';
+        updateData.errorMessage = '';
+      }
+    }
+
+    const account = await db.xhsAccount.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json({ success: true, data: account });
+  } catch (error) {
+    console.error('Failed to update account:', error);
+    return NextResponse.json(
+      { success: false, error: '更新账号失败' },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE /api/accounts/[id] - Delete account
 export async function DELETE(
   _request: NextRequest,

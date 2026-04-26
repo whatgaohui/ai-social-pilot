@@ -26,8 +26,17 @@ export async function POST(
     });
 
     try {
-      // Scrape the profile
+      // Scrape the profile using multi-strategy approach
       const scrapeResult = await scrapeXhsProfile(account.xhsUrl);
+
+      // Determine status based on whether data is partial
+      const accountStatus = scrapeResult.partialData ? 'partial' : 'success';
+
+      // Build errorMessage to store warnings if any
+      let errorMessage = '';
+      if (scrapeResult.warnings.length > 0) {
+        errorMessage = `[部分采集] ${scrapeResult.warnings.join('; ')}`;
+      }
 
       // Update account info
       const updatedAccount = await db.xhsAccount.update({
@@ -43,8 +52,9 @@ export async function POST(
           likedCollected:
             scrapeResult.account.likedCollected || account.likedCollected,
           notesCount: scrapeResult.account.notesCount || account.notesCount,
-          status: 'success',
+          status: accountStatus,
           lastScrapedAt: new Date(),
+          errorMessage,
         },
       });
 
@@ -138,6 +148,9 @@ export async function POST(
           account: updatedAccount,
           postsFound: scrapeResult.totalFound,
           postsSynced: postsCreated.length,
+          warnings: scrapeResult.warnings,
+          partialData: scrapeResult.partialData,
+          scrapeMethod: scrapeResult.scrapeMethod,
         },
       });
     } catch (scrapeError) {

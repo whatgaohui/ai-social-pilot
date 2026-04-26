@@ -37,6 +37,13 @@ function StatusIndicator({ status }: { status: string }) {
           已同步
         </Badge>
       );
+    case "partial":
+      return (
+        <Badge variant="secondary" className="gap-1 text-xs text-amber-600 bg-amber-50">
+          <AlertCircle className="w-3 h-3" />
+          部分采集
+        </Badge>
+      );
     case "error":
       return (
         <Badge variant="secondary" className="gap-1 text-xs text-red-600 bg-red-50">

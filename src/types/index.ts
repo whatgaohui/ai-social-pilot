@@ -12,8 +12,9 @@ export interface XhsAccountInfo {
   following: number;
   likedCollected: number;
   notesCount: number;
-  status: 'idle' | 'scraping' | 'success' | 'error';
+  status: 'idle' | 'scraping' | 'success' | 'partial' | 'error';
   lastScrapedAt: string | null;
+  errorMessage?: string;
 }
 
 // ─── Post Types ────────────────────────────────────────────────────────
@@ -84,6 +85,9 @@ export interface ScrapeResult {
   account: Partial<XhsAccountInfo>;
   posts: Partial<XhsPostInfo>[];
   totalFound: number;
+  scrapeMethod: 'page_reader' | 'web_search' | 'llm_fallback';
+  warnings: string[];
+  partialData: boolean;
 }
 
 // ─── Analysis Types ────────────────────────────────────────────────────

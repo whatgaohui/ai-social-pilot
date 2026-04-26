@@ -1,28 +1,32 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
+
 import { EmptyState } from "@/components/empty-state";
 import { AccountCard, formatNumber } from "@/components/account-card";
+import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { useAppStore } from "@/store/app-store";
-import type { XhsAccountInfo, XhsPostInfo, AccountAnalysis } from "@/types";
+import { toast } from "sonner";
+import type { XhsAccountInfo, AccountAnalysis } from "@/types";
 import {
   Users,
   Heart,
   MessageCircle,
   Bookmark,
-  Share2,
   RefreshCw,
   Loader2,
   TrendingUp,
   Lightbulb,
   FileText,
   ArrowLeft,
+  Pencil,
+  AlertTriangle,
+  XCircle,
 } from "lucide-react";
 
 export function AccountView() {
@@ -33,6 +37,7 @@ export function AccountView() {
   const [loading, setLoading] = useState(true);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [scraping, setScraping] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     loadAccounts();
@@ -91,12 +96,23 @@ export function AccountView() {
       });
       const data = await res.json();
       if (data.success) {
-        loadAnalysis(selectedAccountId);
+        if (data.data?.partialData) {
+          loadAnalysis(selectedAccountId);
+        } else {
+          loadAnalysis(selectedAccountId);
+        }
       }
     } catch {
       console.error("Scrape failed");
     } finally {
       setScraping(false);
+    }
+  };
+
+  const handleEditSuccess = () => {
+    if (selectedAccountId) {
+      loadAnalysis(selectedAccountId);
+      loadAccounts();
     }
   };
 
@@ -122,6 +138,21 @@ export function AccountView() {
           description="添加你的第一个小红书账号，开始数据分析"
           actionLabel="添加账号"
           onAction={() => setAddAccountDialogOpen(true)}
+          demoLabel="加载演示数据"
+          onDemoAction={async () => {
+            try {
+              const res = await fetch("/api/demo/seed", { method: "POST" });
+              const data = await res.json();
+              if (data.success) {
+                toast.success("演示数据加载成功！");
+                loadAccounts();
+              } else {
+                toast.error(data.error || "加载演示数据失败");
+              }
+            } catch {
+              toast.error("网络错误，请重试");
+            }
+          }}
         />
       </div>
     );
@@ -162,25 +193,76 @@ export function AccountView() {
           </Button>
           <h2 className="text-lg font-bold">账号分析</h2>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleScrape}
-          disabled={scraping}
-        >
-          {scraping ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              采集中...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="w-4 h-4 mr-1" />
-              重新采集
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setEditDialogOpen(true)}
+            disabled={!account}
+          >
+            <Pencil className="w-4 h-4 mr-1" />
+            编辑账号
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleScrape}
+            disabled={scraping}
+          >
+            {scraping ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                采集中...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-1" />
+                重新采集
+              </>
+            )}
+          </Button>
+        </div>
       </div>
+
+      {/* Warning banner for partial data */}
+      {account?.status === "partial" && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">数据采集不完整</p>
+            <p className="text-xs mt-0.5">小红书网站限制了直接访问。部分信息需要手动补充。</p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-amber-700 border-amber-300 hover:bg-amber-100 text-xs h-7"
+            onClick={() => setEditDialogOpen(true)}
+          >
+            去补充
+          </Button>
+        </div>
+      )}
+
+      {/* Error banner for error status */}
+      {account?.status === "error" && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 flex items-start gap-2">
+          <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">采集失败</p>
+            <p className="text-xs mt-0.5">
+              {account.errorMessage || "小红书网站限制了访问，数据采集失败。你可以手动补充账号信息。"}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-red-700 border-red-300 hover:bg-red-100 text-xs h-7"
+            onClick={() => setEditDialogOpen(true)}
+          >
+            手动补充
+          </Button>
+        </div>
+      )}
 
       {/* Account Profile Card */}
       {account && (
@@ -416,6 +498,14 @@ export function AccountView() {
           )}
         </>
       )}
+
+      {/* Edit Account Dialog */}
+      <EditAccountDialog
+        account={account || null}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 }
