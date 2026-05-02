@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { useNotificationStore } from "@/store/notification-store";
 import { useAppStore } from "@/store/app-store";
 import {
@@ -121,8 +122,4 @@ export function NotificationCenter() {
       </PopoverContent>
     </Popover>
   );
-}
-
-function cn(...inputs: (string | undefined | false)[]) {
-  return inputs.filter(Boolean).join(" ");
 }

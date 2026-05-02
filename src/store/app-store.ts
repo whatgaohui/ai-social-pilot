@@ -18,6 +18,11 @@ interface AppState {
   // Dialogs
   addAccountDialogOpen: boolean;
   setAddAccountDialogOpen: (v: boolean) => void;
+
+  // Prefilled topic for creator view
+  prefilledTopic: string | null;
+  setPrefilledTopic: (topic: string | null) => void;
+  navigateToCreator: (topic: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -31,4 +36,7 @@ export const useAppStore = create<AppState>((set) => ({
   setIsGenerating: (v) => set({ isGenerating: v }),
   addAccountDialogOpen: false,
   setAddAccountDialogOpen: (v) => set({ addAccountDialogOpen: v }),
+  prefilledTopic: null,
+  setPrefilledTopic: (topic) => set({ prefilledTopic: topic }),
+  navigateToCreator: (topic) => set({ activeTab: 'creator', prefilledTopic: topic }),
 }));

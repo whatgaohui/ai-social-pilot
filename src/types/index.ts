@@ -134,3 +134,24 @@ export interface AccountAnalysis {
   contentThemes: ContentThemeStat[];
   aiInsights: string;
 }
+
+// ─── Trending Topic Types ───────────────────────────────────────────────
+
+export interface TrendingTopic {
+  id: string;
+  name: string;
+  heat: number; // 1-5 scale
+  category: string;
+  description: string;
+  suggestedAngles: string[];
+  exampleTitles: string[];
+}
+
+export interface ContentSuggestion {
+  topic: string;
+  angles: string[];
+  titles: string[];
+  tags: string[];
+  contentOutline: string;
+  tips: string[];
+}

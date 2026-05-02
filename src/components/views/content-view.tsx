@@ -14,6 +14,7 @@ import { useAppStore } from "@/store/app-store";
 import type { XhsAccountInfo, XhsPostInfo } from "@/types";
 import { PostCard } from "@/components/post-card";
 import { formatNumber } from "@/components/account-card";
+import { cn } from "@/lib/utils";
 import {
   FileText,
   Search,
@@ -169,10 +170,6 @@ function ContentCalendar({
       </div>
     </div>
   );
-}
-
-function cn(...inputs: (string | undefined | false)[]) {
-  return inputs.filter(Boolean).join(" ");
 }
 
 export function ContentView() {

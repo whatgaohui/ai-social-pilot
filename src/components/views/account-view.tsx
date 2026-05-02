@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 import {
   Users,
   Heart,
@@ -408,33 +409,35 @@ export function AccountView() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-end gap-1 h-32">
-                  {analysis.engagementTrend.slice(-14).map((item, i) => {
-                    const maxVal = Math.max(
-                      ...analysis.engagementTrend.slice(-14).map(
-                        (d) => d.likes + d.comments + d.collects
-                      )
-                    );
-                    const total = item.likes + item.comments + item.collects;
-                    const height = maxVal > 0 ? (total / maxVal) * 100 : 0;
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 flex flex-col items-center gap-1 group"
-                        title={`${item.date}: ${total} 互动`}
-                      >
+                <div className="relative h-32">
+                  <div className="flex items-end gap-1 h-full">
+                    {analysis.engagementTrend.slice(-14).map((item, i) => {
+                      const maxVal = Math.max(
+                        ...analysis.engagementTrend.slice(-14).map(
+                          (d) => d.likes + d.comments + d.collects
+                        )
+                      );
+                      const total = item.likes + item.comments + item.collects;
+                      const height = maxVal > 0 ? (total / maxVal) * 100 : 0;
+                      return (
                         <div
-                          className="w-full bg-xhs/60 rounded-t group-hover:bg-xhs transition-colors"
-                          style={{ height: `${Math.max(height, 2)}%` }}
-                        />
-                        {i % 2 === 0 && (
-                          <span className="text-[9px] text-muted-foreground">
-                            {item.date.slice(5)}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                          key={i}
+                          className="flex-1 h-full flex flex-col items-center justify-end gap-1 group"
+                          title={`${item.date}: ${total} 互动`}
+                        >
+                          <div
+                            className="w-full bg-gradient-to-t from-xhs/60 to-xhs/30 rounded-t-sm group-hover:from-xhs group-hover:to-xhs/70 transition-all duration-200"
+                            style={{ height: `${Math.max(height, 2)}%` }}
+                          />
+                          {i % 2 === 0 && (
+                            <span className="text-[9px] text-muted-foreground">
+                              {item.date.slice(5)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -571,6 +574,3 @@ export function AccountView() {
   );
 }
 
-function cn(...inputs: (string | undefined | false)[]) {
-  return inputs.filter(Boolean).join(" ");
-}
