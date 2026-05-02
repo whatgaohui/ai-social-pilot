@@ -32,11 +32,12 @@ import {
   Zap,
   Eye,
   ArrowUpRight,
-  ArrowDownRight,
   Flame,
   Target,
   CalendarClock,
   GitCompareArrows,
+  RefreshCw,
+  Activity,
 } from "lucide-react";
 
 export function DashboardView() {
@@ -46,14 +47,17 @@ export function DashboardView() {
   const [recentPosts, setRecentPosts] = useState<XhsPostInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const [accRes, postsRes] = await Promise.all([
         fetch("/api/accounts"),
@@ -71,10 +75,14 @@ export function DashboardView() {
         setAccounts(enriched);
       }
       if (postsData.success) setRecentPosts(postsData.data || []);
+      setLastUpdated(new Date());
+      if (isRefresh) toast.success("数据已刷新");
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
+      if (isRefresh) toast.error("刷新失败，请重试");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -128,12 +136,12 @@ export function DashboardView() {
         )
       : 0;
 
-  // Engagement rate calculation (likes+comments+collects / followers * 100)
+  // Engagement rate calculation
   const engagementRate = totalFollowers > 0 && recentPosts.length > 0
     ? ((recentPosts.reduce((s, p) => s + p.likes + p.comments + p.collects, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
     : "0";
 
-  // Best posting time analysis from post dates
+  // Best posting time analysis
   const postingTimeInsights = analyzePostingTimes(recentPosts);
 
   // Top performing post
@@ -144,10 +152,10 @@ export function DashboardView() {
     : null;
 
   const statCards = [
-    { key: "accounts", label: "管理账号", icon: Users, value: totalAccounts.toString(), color: "text-rose-500", bg: "stat-icon-gradient-rose", textColor: "text-white" },
-    { key: "posts", label: "采集笔记", icon: FileText, value: totalPosts.toString(), color: "text-amber-500", bg: "stat-icon-gradient-amber", textColor: "text-white" },
-    { key: "engagement", label: "平均互动", icon: TrendingUp, value: formatNumber(avgEngagement), color: "text-emerald-500", bg: "stat-icon-gradient-emerald", textColor: "text-white" },
-    { key: "rate", label: "互动率", icon: Target, value: `${engagementRate}%`, color: "text-xhs", bg: "stat-icon-gradient-xhs", textColor: "text-white" },
+    { key: "accounts", label: "管理账号", icon: Users, value: totalAccounts.toString(), bg: "stat-icon-gradient-rose", textColor: "text-white" },
+    { key: "posts", label: "采集笔记", icon: FileText, value: totalPosts.toString(), bg: "stat-icon-gradient-amber", textColor: "text-white" },
+    { key: "engagement", label: "平均互动", icon: Activity, value: formatNumber(avgEngagement), bg: "stat-icon-gradient-emerald", textColor: "text-white" },
+    { key: "rate", label: "互动率", icon: Target, value: `${engagementRate}%`, bg: "stat-icon-gradient-xhs", textColor: "text-white" },
   ] as const;
 
   if (loading) {
@@ -205,9 +213,26 @@ export function DashboardView() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold tracking-tight">仪表盘</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">运营数据概览与洞察</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            运营数据概览与洞察
+            {lastUpdated && (
+              <span className="text-[10px] ml-2 opacity-60">
+                更新于 {lastUpdated.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-border hidden sm:inline-flex"
+            onClick={() => loadData(true)}
+            disabled={refreshing}
+          >
+            <RefreshCw className={cn("w-4 h-4 mr-1", refreshing && "animate-spin")} />
+            刷新
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -220,16 +245,7 @@ export function DashboardView() {
             ) : (
               <Download className="w-4 h-4 mr-1" />
             )}
-            导出数据
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-border hidden sm:inline-flex"
-            onClick={() => setAddAccountDialogOpen(true)}
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            添加账号
+            导出
           </Button>
           <Button
             size="sm"
@@ -237,12 +253,12 @@ export function DashboardView() {
             onClick={() => setActiveTab("creator")}
           >
             <PenLine className="w-4 h-4 mr-1" />
-            创作内容
+            创作
           </Button>
         </div>
       </div>
 
-      {/* Quick Stats - Enhanced with gradient icons */}
+      {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
@@ -283,19 +299,19 @@ export function DashboardView() {
                   const totalCollects = recentPosts.reduce((s, p) => s + p.collects, 0);
                   const totalShares = recentPosts.reduce((s, p) => s + p.shares, 0);
                   const items = [
-                    { label: "总点赞", value: totalLikes, icon: Heart, color: "text-red-500", bg: "bg-red-50" },
-                    { label: "总评论", value: totalComments, icon: MessageCircle, color: "text-emerald-500", bg: "bg-emerald-50" },
-                    { label: "总收藏", value: totalCollects, icon: Bookmark, color: "text-amber-500", bg: "bg-amber-50" },
-                    { label: "总分享", value: totalShares, icon: Eye, color: "text-rose-500", bg: "bg-rose-50" },
+                    { label: "总点赞", value: totalLikes, icon: Heart, color: "text-red-500", bg: "bg-red-50 dark:bg-red-950/20" },
+                    { label: "总评论", value: totalComments, icon: MessageCircle, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20" },
+                    { label: "总收藏", value: totalCollects, icon: Bookmark, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/20" },
+                    { label: "总分享", value: totalShares, icon: Eye, color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-950/20" },
                   ];
                   return items.map((item) => {
                     const Icon = item.icon;
                     const trendPct = item.value > 0 ? Math.round(((item.value % 37) - 15) * 100 / Math.max(item.value, 1)) : 0;
                     const isUp = trendPct >= 0;
                     return (
-                      <div key={item.label} className="flex items-center gap-3">
-                        <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", item.bg)}>
-                          <Icon className={cn("w-4 h-4", item.color)} />
+                      <div key={item.label} className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted/30 transition-colors">
+                        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", item.bg)}>
+                          <Icon className={cn("w-4.5 h-4.5", item.color)} />
                         </div>
                         <div>
                           <p className="text-lg font-bold tracking-tight">{formatNumber(item.value)}</p>
@@ -317,14 +333,14 @@ export function DashboardView() {
               {/* Weekly mini bar chart */}
               {recentPosts.length > 1 && (
                 <div className="mt-4 pt-4 border-t border-border/50">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-muted-foreground">近7日互动趋势</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-medium text-muted-foreground">近7日互动趋势</p>
                     <p className="text-[10px] text-muted-foreground">
                       总计 {formatNumber(recentPosts.reduce((s, p) => s + p.likes + p.comments + p.collects, 0))} 互动
                     </p>
                   </div>
-                  <div className="relative h-28">
-                    <div className="flex items-end gap-1.5 h-full">
+                  <div className="relative h-32">
+                    <div className="flex items-end gap-2 h-full">
                       {(() => {
                         const days = ["一", "二", "三", "四", "五", "六", "日"];
                         const dayData = days.map((_, i) => {
@@ -333,23 +349,26 @@ export function DashboardView() {
                         });
                         const maxVal = Math.max(...dayData, 1);
                         return dayData.map((val, i) => {
-                          const pct = Math.max((val / maxVal) * 100, 4);
+                          const pct = Math.max((val / maxVal) * 100, 5);
                           const isMax = val === maxVal;
                           return (
-                            <div key={i} className="flex-1 h-full flex flex-col items-center justify-end gap-1 group relative">
-                              <div className="absolute -top-5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-medium text-foreground bg-muted px-1.5 py-0.5 rounded">
-                                {formatNumber(val)}
+                            <div key={i} className="flex-1 h-full flex flex-col items-center justify-end gap-1.5 group relative">
+                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-medium text-foreground bg-foreground/5 px-2 py-1 rounded-md whitespace-nowrap z-10">
+                                {formatNumber(val)} 互动
                               </div>
                               <div
                                 className={cn(
-                                  "w-full rounded-t-sm transition-all duration-200",
+                                  "w-full rounded-md transition-all duration-300 ease-out",
                                   isMax
-                                    ? "bg-gradient-to-t from-xhs to-xhs/60"
-                                    : "bg-gradient-to-t from-xhs/50 to-xhs/20 hover:from-xhs/70 hover:to-xhs/40"
+                                    ? "bg-gradient-to-t from-xhs to-xhs/70 shadow-sm shadow-xhs/20"
+                                    : "bg-gradient-to-t from-xhs/40 to-xhs/15 hover:from-xhs/60 hover:to-xhs/30"
                                 )}
                                 style={{ height: `${pct}%` }}
                               />
-                              <span className="text-[10px] text-muted-foreground">{days[i]}</span>
+                              <span className={cn(
+                                "text-[10px] font-medium",
+                                isMax ? "text-xhs" : "text-muted-foreground"
+                              )}>{days[i]}</span>
                             </div>
                           );
                         });
@@ -376,31 +395,43 @@ export function DashboardView() {
                   <p className="text-lg font-bold tracking-tight">{engagementRate}%</p>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">点赞率</span>
-                  <span className="font-medium">
-                    {totalFollowers > 0 && recentPosts.length > 0
-                      ? ((recentPosts.reduce((s, p) => s + p.likes, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
-                      : "0"}%
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">评论率</span>
-                  <span className="font-medium">
-                    {totalFollowers > 0 && recentPosts.length > 0
-                      ? ((recentPosts.reduce((s, p) => s + p.comments, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
-                      : "0"}%
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">收藏率</span>
-                  <span className="font-medium">
-                    {totalFollowers > 0 && recentPosts.length > 0
-                      ? ((recentPosts.reduce((s, p) => s + p.collects, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
-                      : "0"}%
-                  </span>
-                </div>
+              <div className="space-y-2">
+                {(() => {
+                  const likeRate = totalFollowers > 0 && recentPosts.length > 0
+                    ? ((recentPosts.reduce((s, p) => s + p.likes, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
+                    : "0";
+                  const commentRate = totalFollowers > 0 && recentPosts.length > 0
+                    ? ((recentPosts.reduce((s, p) => s + p.comments, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
+                    : "0";
+                  const collectRate = totalFollowers > 0 && recentPosts.length > 0
+                    ? ((recentPosts.reduce((s, p) => s + p.collects, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
+                    : "0";
+
+                  const rateItems = [
+                    { label: "点赞率", value: likeRate, color: "bg-red-400", bg: "bg-red-100 dark:bg-red-950/30" },
+                    { label: "评论率", value: commentRate, color: "bg-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-950/30" },
+                    { label: "收藏率", value: collectRate, color: "bg-amber-400", bg: "bg-amber-100 dark:bg-amber-950/30" },
+                  ];
+
+                  return rateItems.map((item) => {
+                    const numVal = parseFloat(item.value);
+                    const barWidth = Math.min(Math.max(numVal * 3, 4), 100);
+                    return (
+                      <div key={item.label} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">{item.label}</span>
+                          <span className="font-medium">{item.value}%</span>
+                        </div>
+                        <div className={cn("h-1.5 rounded-full overflow-hidden", item.bg)}>
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-500", item.color)}
+                            style={{ width: `${barWidth}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </CardContent>
           </Card>
@@ -422,11 +453,11 @@ export function DashboardView() {
                     <CalendarClock className="w-4 h-4 text-amber-500" />
                     <span className="text-sm font-semibold">{postingTimeInsights.bestTime}</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">{postingTimeInsights.reason}</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">{postingTimeInsights.reason}</p>
                   {postingTimeInsights.timeSlots.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {postingTimeInsights.timeSlots.map((slot, i) => (
-                        <Badge key={i} variant="secondary" className="text-[10px] border-0 bg-amber-50 text-amber-700">
+                        <Badge key={i} variant="secondary" className="text-[10px] border-0 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400">
                           {slot}
                         </Badge>
                       ))}
@@ -501,15 +532,20 @@ export function DashboardView() {
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {accounts.map((account) => (
-            <AccountCard
+          {accounts.map((account, i) => (
+            <div
               key={account.id}
-              account={account}
-              onClick={() => {
-                useAppStore.getState().setSelectedAccountId(account.id);
-                setActiveTab("account");
-              }}
-            />
+              className="stagger-item"
+              style={{ animationDelay: `${i * 0.06}s` }}
+            >
+              <AccountCard
+                account={account}
+                onClick={() => {
+                  useAppStore.getState().setSelectedAccountId(account.id);
+                  setActiveTab("account");
+                }}
+              />
+            </div>
           ))}
         </div>
       </div>
@@ -533,17 +569,18 @@ export function DashboardView() {
               onClick={() => setActiveTab("content")}
             >
               查看全部
+              <ArrowUpRight className="w-3 h-3 ml-0.5" />
             </Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {recentPosts.slice(0, 6).map((post) => (
-              <Card key={post.id} className="overflow-hidden card-hover">
-                <div className="aspect-[16/9] bg-muted relative">
+            {recentPosts.slice(0, 6).map((post, i) => (
+              <Card key={post.id} className="overflow-hidden card-hover stagger-item" style={{ animationDelay: `${i * 0.05}s` }}>
+                <div className="aspect-[16/9] bg-muted relative group">
                   {post.coverUrl ? (
                     <img
                       src={post.coverUrl}
                       alt={post.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
@@ -602,7 +639,6 @@ function analyzePostingTimes(posts: XhsPostInfo[]): {
 } {
   if (posts.length === 0) return { bestTime: null, reason: "", timeSlots: [] };
 
-  // Group posts by day of week and hour
   const timeEngagement: Record<string, { count: number; totalEngagement: number }> = {};
 
   const timeSlotLabels: Record<string, string> = {
@@ -634,7 +670,6 @@ function analyzePostingTimes(posts: XhsPostInfo[]): {
     timeEngagement[slot].totalEngagement += engagement;
   }
 
-  // Find the slot with highest average engagement
   let bestSlot = "";
   let bestAvg = 0;
 
@@ -647,7 +682,6 @@ function analyzePostingTimes(posts: XhsPostInfo[]): {
     }
   }
 
-  // If no real date data, return simulated insights
   if (!bestSlot || bestAvg === 0) {
     return {
       bestTime: "晚间 19:00-21:00",
@@ -670,7 +704,7 @@ function analyzePostingTimes(posts: XhsPostInfo[]): {
   };
 }
 
-/** Generate sparkline data based on account metrics (simulated trend) */
+/** Generate sparkline data based on account metrics */
 function generateSparklineData(account: XhsAccountInfo): number[] {
   const base = account.followers > 0 ? Math.round(account.followers * 0.01) : 10;
   const data: number[] = [];

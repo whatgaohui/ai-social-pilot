@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/empty-state";
 import { useAppStore } from "@/store/app-store";
 import type { XhsAccountInfo, ContentDraftInfo } from "@/types";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Sparkles,
   Send,
@@ -25,18 +27,43 @@ import {
   Trash2,
   Copy,
   Check,
+  PenLine,
+  Lightbulb,
+  Type,
+  Hash,
+  ImagePlus,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  BookOpen,
 } from "lucide-react";
 
 type QuickTone = "default" | "warm" | "professional" | "witty" | "casual" | "elegant";
 
-const toneOptions: { value: QuickTone; label: string; emoji: string }[] = [
-  { value: "default", label: "默认", emoji: "🎯" },
-  { value: "warm", label: "温暖", emoji: "😊" },
-  { value: "professional", label: "专业", emoji: "💼" },
-  { value: "witty", label: "幽默", emoji: "😄" },
-  { value: "casual", label: "随性", emoji: "🤙" },
-  { value: "elegant", label: "优雅", emoji: "✨" },
+const toneOptions: { value: QuickTone; label: string; emoji: string; desc: string }[] = [
+  { value: "default", label: "默认", emoji: "🎯", desc: "平台自然风格" },
+  { value: "warm", label: "温暖", emoji: "😊", desc: "亲切友好" },
+  { value: "professional", label: "专业", emoji: "💼", desc: "权威严谨" },
+  { value: "witty", label: "幽默", emoji: "😄", desc: "风趣生动" },
+  { value: "casual", label: "随性", emoji: "🤙", desc: "轻松自在" },
+  { value: "elegant", label: "优雅", emoji: "✨", desc: "精致品味" },
 ];
+
+const topicSuggestions = [
+  { label: "好物分享", emoji: "🎁", prompt: "分享我最近入手的实用好物推荐" },
+  { label: "探店打卡", emoji: "🏠", prompt: "探店分享：发现一家宝藏店铺" },
+  { label: "穿搭灵感", emoji: "👗", prompt: "今日穿搭灵感分享" },
+  { label: "美食制作", emoji: "🍳", prompt: "在家也能轻松搞定的美食教程" },
+  { label: "旅行攻略", emoji: "✈️", prompt: "超详细的旅行攻略分享" },
+  { label: "护肤心得", emoji: "🧴", prompt: "亲测好用的护肤心得分享" },
+  { label: "职场干货", emoji: "💼", prompt: "职场新人必看的干货分享" },
+  { label: "生活日常", emoji: "☀️", prompt: "平凡日子里的闪光时刻" },
+];
+
+// Title length guidelines
+const TITLE_MAX = 20;
+const CONTENT_MIN = 50;
+const CONTENT_MAX = 1000;
 
 export function CreatorView() {
   const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen } =
@@ -52,6 +79,7 @@ export function CreatorView() {
   const [generating, setGenerating] = useState(false);
   const [polishing, setPolishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [showTopicSuggestions, setShowTopicSuggestions] = useState(false);
 
   // Generated content
   const [generatedTitle, setGeneratedTitle] = useState("");
@@ -62,6 +90,20 @@ export function CreatorView() {
 
   const [copied, setCopied] = useState(false);
   const [newTag, setNewTag] = useState("");
+
+  // Content quality score
+  const contentQuality = useMemo(() => {
+    if (!generatedContent) return 0;
+    let score = 0;
+    if (generatedTitle.length > 0 && generatedTitle.length <= TITLE_MAX) score += 25;
+    if (generatedContent.length >= CONTENT_MIN) score += 25;
+    if (generatedTags.length >= 3) score += 25;
+    if (generatedCoverPrompt.length > 5) score += 25;
+    return score;
+  }, [generatedTitle, generatedContent, generatedTags, generatedCoverPrompt]);
+
+  const qualityLabel = contentQuality >= 75 ? "优秀" : contentQuality >= 50 ? "良好" : contentQuality >= 25 ? "待完善" : "未开始";
+  const qualityColor = contentQuality >= 75 ? "text-emerald-600" : contentQuality >= 50 ? "text-amber-600" : contentQuality >= 25 ? "text-orange-500" : "text-muted-foreground";
 
   useEffect(() => {
     loadData();
@@ -179,7 +221,6 @@ export function CreatorView() {
     setSavingDraft(true);
     try {
       if (currentDraftId) {
-        // Update existing draft
         const res = await fetch(`/api/drafts/${currentDraftId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -198,7 +239,6 @@ export function CreatorView() {
           toast.error(data.error || "保存失败");
         }
       } else {
-        // Create new draft
         const res = await fetch("/api/drafts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -253,6 +293,7 @@ export function CreatorView() {
     setGeneratedTags(draft.tags || []);
     setGeneratedCoverPrompt(draft.coverPrompt || "");
     setCurrentDraftId(draft.id);
+    toast.success("草稿已加载");
   };
 
   const addTag = () => {
@@ -299,7 +340,7 @@ export function CreatorView() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
+    <div className="p-4 md:p-6 space-y-5 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -334,27 +375,55 @@ export function CreatorView() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="输入你想创作的内容主题，例如：分享我的居家好物推荐..."
+              className="h-10"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !generating) handleGenerate();
               }}
             />
+            {/* Topic suggestions */}
+            <div>
+              <button
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-xhs transition-colors"
+                onClick={() => setShowTopicSuggestions(!showTopicSuggestions)}
+              >
+                <Lightbulb className="w-3 h-3" />
+                需要灵感？
+                {showTopicSuggestions ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              {showTopicSuggestions && (
+                <div className="mt-2 flex flex-wrap gap-1.5 p-3 bg-muted/30 rounded-xl border border-border/50">
+                  {topicSuggestions.map((s) => (
+                    <button
+                      key={s.label}
+                      onClick={() => setTopic(s.prompt)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-border/60 text-xs hover:border-xhs/30 hover:bg-xhs-light/30 hover:text-xhs transition-all"
+                    >
+                      <span>{s.emoji}</span>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label className="text-xs font-medium">语气风格</Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {toneOptions.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setSelectedTone(opt.value)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all ${
+                  className={cn(
+                    "flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all text-xs",
                     selectedTone === opt.value
                       ? "border-xhs bg-xhs-light text-xhs shadow-sm shadow-xhs/10"
                       : "border-border hover:border-xhs/30 hover:bg-muted/50"
-                  }`}
+                  )}
                 >
-                  <span>{opt.emoji}</span>
-                  {opt.label}
+                  <span className="text-lg">{opt.emoji}</span>
+                  <span className="font-medium">{opt.label}</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight hidden sm:block">{opt.desc}</span>
                 </button>
               ))}
             </div>
@@ -363,16 +432,16 @@ export function CreatorView() {
           <Button
             onClick={handleGenerate}
             disabled={generating || !topic.trim()}
-            className="w-full bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20"
+            className="w-full bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20 h-10"
           >
             {generating ? (
               <>
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                AI创作中...
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                AI创作中，请稍候...
               </>
             ) : (
               <>
-                <Send className="w-4 h-4 mr-1" />
+                <Send className="w-4 h-4 mr-1.5" />
                 开始创作
               </>
             )}
@@ -385,27 +454,35 @@ export function CreatorView() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">编辑内容</CardTitle>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <PenLine className="w-4 h-4" />
+                编辑内容
+                {contentQuality > 0 && (
+                  <Badge variant="secondary" className={cn("text-[10px] border-0", qualityColor)}>
+                    {qualityLabel} · {contentQuality}分
+                  </Badge>
+                )}
+              </CardTitle>
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleCopy}
                   disabled={!generatedContent}
-                  className="border-border"
+                  className="border-border text-xs"
                 >
                   {copied ? (
-                    <Check className="w-4 h-4 mr-1 text-emerald-500" />
+                    <Check className="w-3.5 h-3.5 mr-1 text-emerald-500" />
                   ) : (
-                    <Copy className="w-4 h-4 mr-1" />
+                    <Copy className="w-3.5 h-3.5 mr-1" />
                   )}
-                  复制
+                  {copied ? "已复制" : "复制"}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={resetEditor}
-                  className="border-border"
+                  className="border-border text-xs"
                 >
                   清空
                 </Button>
@@ -414,24 +491,86 @@ export function CreatorView() {
           </CardHeader>
           <CardContent className="space-y-4">
             {generating ? (
-              <div className="space-y-3">
-                <Skeleton className="h-8 rounded-lg" />
-                <Skeleton className="h-32 rounded-lg" />
-                <Skeleton className="h-8 rounded-lg w-1/2" />
+              <div className="space-y-3 py-4">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-xhs-light flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-xhs animate-pulse" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium">AI正在创作中</p>
+                    <p className="text-xs text-muted-foreground mt-1">正在分析主题、生成标题和内容...</p>
+                  </div>
+                  <div className="w-48">
+                    <Progress value={undefined} className="h-1.5" />
+                  </div>
+                </div>
               </div>
             ) : (
               <>
+                {/* Quality score bar */}
+                {contentQuality > 0 && (
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-medium">内容完善度</span>
+                      <span className={cn("text-xs font-bold", qualityColor)}>{contentQuality}%</span>
+                    </div>
+                    <Progress value={contentQuality} className="h-1.5" />
+                    <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                      <span className={cn(generatedTitle.length > 0 && "text-emerald-600")}>
+                        {generatedTitle.length > 0 ? "✓" : "○"} 标题
+                      </span>
+                      <span className={cn(generatedContent.length >= CONTENT_MIN && "text-emerald-600")}>
+                        {generatedContent.length >= CONTENT_MIN ? "✓" : "○"} 正文
+                      </span>
+                      <span className={cn(generatedTags.length >= 3 && "text-emerald-600")}>
+                        {generatedTags.length >= 3 ? "✓" : "○"} 标签
+                      </span>
+                      <span className={cn(generatedCoverPrompt.length > 5 && "text-emerald-600")}>
+                        {generatedCoverPrompt.length > 5 ? "✓" : "○"} 封面提示
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">标题</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium flex items-center gap-1.5">
+                      <Type className="w-3 h-3" />
+                      标题
+                    </Label>
+                    <span className={cn(
+                      "text-[10px]",
+                      generatedTitle.length > TITLE_MAX ? "text-red-500 font-medium" : "text-muted-foreground"
+                    )}>
+                      {generatedTitle.length}/{TITLE_MAX}
+                    </span>
+                  </div>
                   <Input
                     value={generatedTitle}
                     onChange={(e) => setGeneratedTitle(e.target.value)}
                     placeholder="输入标题..."
+                    className={cn(
+                      generatedTitle.length > TITLE_MAX && "border-red-300 focus-visible:ring-red-300"
+                    )}
                   />
+                  {generatedTitle.length > TITLE_MAX && (
+                    <p className="text-[10px] text-red-500">标题建议不超过{TITLE_MAX}字，小红书展示效果更好</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">正文</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium flex items-center gap-1.5">
+                      <BookOpen className="w-3 h-3" />
+                      正文
+                    </Label>
+                    <span className={cn(
+                      "text-[10px]",
+                      generatedContent.length > CONTENT_MAX ? "text-red-500 font-medium" : "text-muted-foreground"
+                    )}>
+                      {generatedContent.length}/{CONTENT_MAX}
+                    </span>
+                  </div>
                   <Textarea
                     value={generatedContent}
                     onChange={(e) => setGeneratedContent(e.target.value)}
@@ -439,14 +578,20 @@ export function CreatorView() {
                     rows={8}
                     className="resize-y"
                   />
+                  {generatedContent.length > 0 && generatedContent.length < CONTENT_MIN && (
+                    <p className="text-[10px] text-amber-500">建议正文不少于{CONTENT_MIN}字，内容更丰富</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">标签</Label>
+                  <Label className="text-xs font-medium flex items-center gap-1.5">
+                    <Hash className="w-3 h-3" />
+                    标签
+                  </Label>
                   {generatedTags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {generatedTags.map((tag, i) => (
-                        <Badge key={i} variant="secondary" className="gap-1 text-xs border-0 bg-muted/80">
+                        <Badge key={i} variant="secondary" className="gap-1 text-xs border-0 bg-xhs-light/60 text-xhs/80">
                           #{tag}
                           <button onClick={() => removeTag(i)} className="hover:text-xhs transition-colors">
                             <X className="w-3 h-3" />
@@ -475,7 +620,10 @@ export function CreatorView() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">封面图提示词</Label>
+                  <Label className="text-xs font-medium flex items-center gap-1.5">
+                    <ImagePlus className="w-3 h-3" />
+                    封面图提示词
+                  </Label>
                   <Input
                     value={generatedCoverPrompt}
                     onChange={(e) => setGeneratedCoverPrompt(e.target.value)}
@@ -484,40 +632,40 @@ export function CreatorView() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handlePolish}
                     disabled={polishing || !generatedContent}
-                    className="border-border"
+                    className="border-border text-xs"
                   >
                     {polishing ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
                         润色中...
                       </>
                     ) : (
                       <>
-                        <Wand2 className="w-4 h-4 mr-1" />
+                        <Wand2 className="w-3.5 h-3.5 mr-1" />
                         AI润色
                       </>
                     )}
                   </Button>
                   <Button
                     size="sm"
-                    className="bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20"
+                    className="bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20 text-xs"
                     onClick={handleSaveDraft}
                     disabled={savingDraft}
                   >
                     {savingDraft ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
                         保存中...
                       </>
                     ) : (
                       <>
-                        <Save className="w-4 h-4 mr-1" />
+                        <Save className="w-3.5 h-3.5 mr-1" />
                         保存草稿
                       </>
                     )}
@@ -543,9 +691,15 @@ export function CreatorView() {
               {drafts.map((draft) => (
                 <div
                   key={draft.id}
-                  className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/30 transition-colors cursor-pointer"
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer",
+                    currentDraftId === draft.id ? "border-xhs/30 bg-xhs-light/20" : "border-border hover:bg-muted/30"
+                  )}
                   onClick={() => handleLoadDraft(draft)}
                 >
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
                       {draft.title || "无标题草稿"}
@@ -559,7 +713,7 @@ export function CreatorView() {
                             ? "secondary"
                             : "outline"
                         }
-                        className="text-xs"
+                        className="text-[10px]"
                       >
                         {draft.status === "draft"
                           ? "草稿"
@@ -569,7 +723,8 @@ export function CreatorView() {
                           ? "就绪"
                           : "已发布"}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <Clock className="w-2.5 h-2.5" />
                         {new Date(draft.updatedAt).toLocaleDateString("zh-CN")}
                       </span>
                     </div>
@@ -594,3 +749,5 @@ export function CreatorView() {
     </div>
   );
 }
+
+

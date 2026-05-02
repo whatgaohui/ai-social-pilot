@@ -430,3 +430,51 @@ html {
   opacity: 0;
   animation: staggerFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ─── Button press feedback ───────────────────────────────────────────── */
+
+button:active:not(:disabled) {
+  transition: transform 0.1s ease;
+}
+
+/* ─── Smooth content transitions ────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Progress bar animation ─────────────────────────────────────────────── */
+
+@keyframes progressIndeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* ─── Selection highlight ────────────────────────────────────────────────── */
+
+::selection {
+  background-color: rgba(255, 36, 66, 0.15);
+  color: inherit;
+}
+
+/* ─── Interactive hover enhancements ─────────────────────────────────────── */
+
+button:hover:not(:disabled) > [data-lucide] {
+  transition: transform 0.15s ease;
+}
+
+/* ─── Smooth number transitions ──────────────────────────────────────────── */
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

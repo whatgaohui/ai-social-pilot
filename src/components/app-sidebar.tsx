@@ -8,6 +8,7 @@ import {
   FileText,
   Theater,
   Sparkles,
+  Settings,
 } from "lucide-react";
 import {
   Tooltip,
@@ -71,7 +72,22 @@ export function AppSidebar() {
           })}
         </nav>
 
-        {/* Footer info */}
+        {/* Settings + Footer */}
+        <div className="px-3 pb-2">
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.97]",
+              activeTab === "settings"
+                ? "nav-active-indicator bg-gradient-to-r from-xhs-light to-xhs-light/40 text-xhs shadow-sm shadow-xhs/5"
+                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+            )}
+          >
+            <Settings className={cn("w-5 h-5 transition-all duration-150", activeTab === "settings" && "text-xhs")} />
+            设置
+          </button>
+        </div>
+
         <div className="px-5 py-4 border-t border-border">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -82,7 +98,7 @@ export function AppSidebar() {
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-md border-t border-border flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom)]">
-        {navItems.map((item) => {
+        {navItems.slice(0, 4).map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
@@ -110,6 +126,27 @@ export function AppSidebar() {
             </button>
           );
         })}
+        {/* Settings button for mobile */}
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={cn(
+            "flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-all duration-150 min-w-[56px] active:scale-[0.97]",
+            activeTab === "settings" ? "text-xhs" : "text-muted-foreground"
+          )}
+        >
+          <div className={cn(
+            "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150",
+            activeTab === "settings" ? "bg-gradient-to-br from-xhs-light to-xhs-light/40" : ""
+          )}>
+            <Settings className="w-5 h-5" />
+          </div>
+          <span className={cn(
+            "text-[10px] font-medium transition-all",
+            activeTab === "settings" && "font-semibold"
+          )}>
+            设置
+          </span>
+        </button>
       </nav>
     </>
   );

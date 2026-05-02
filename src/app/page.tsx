@@ -7,6 +7,7 @@ import { AccountView } from "@/components/views/account-view";
 import { ContentView } from "@/components/views/content-view";
 import { PersonaView } from "@/components/views/persona-view";
 import { CreatorView } from "@/components/views/creator-view";
+import { SettingsView } from "@/components/views/settings-view";
 import { AddAccountDialog } from "@/components/add-account-dialog";
 
 export default function Home() {
@@ -24,6 +25,8 @@ export default function Home() {
         return <PersonaView />;
       case "creator":
         return <CreatorView />;
+      case "settings":
+        return <SettingsView />;
     }
   };
 
