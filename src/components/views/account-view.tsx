@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/empty-state";
 import { AccountCard, formatNumber } from "@/components/account-card";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
@@ -58,11 +64,84 @@ import {
   Award,
   PenLine,
   Theater,
+  Link2,
+  Database,
+  Search,
+  CheckCircle2,
+  CircleDot,
+  Minus,
+  ChevronRight,
 } from "lucide-react";
+
+// ─── Placeholder Chart Component ────────────────────────────────────────
+
+function PlaceholderTrendChart({ label, color = "#FF2442" }: { label: string; color?: string }) {
+  const width = 320;
+  const height = 120;
+  const padding = { top: 10, right: 10, bottom: 24, left: 40 };
+  const chartW = width - padding.left - padding.right;
+  const chartH = height - padding.top - padding.bottom;
+
+  // Draw a subtle dashed preview line
+  const previewPoints = [
+    { x: padding.left, y: padding.top + chartH * 0.6 },
+    { x: padding.left + chartW * 0.25, y: padding.top + chartH * 0.5 },
+    { x: padding.left + chartW * 0.5, y: padding.top + chartH * 0.35 },
+    { x: padding.left + chartW * 0.75, y: padding.top + chartH * 0.25 },
+    { x: padding.left + chartW, y: padding.top + chartH * 0.2 },
+  ];
+
+  const linePath = `M ${previewPoints.map((p) => `${p.x},${p.y}`).join(" L ")}`;
+
+  return (
+    <div className="relative">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <span className="text-xs text-muted-foreground">—</span>
+      </div>
+      <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="overflow-visible opacity-40">
+        {/* Grid lines */}
+        {[0.25, 0.5, 0.75].map((pct) => (
+          <line
+            key={pct}
+            x1={padding.left}
+            y1={padding.top + chartH * pct}
+            x2={padding.left + chartW}
+            y2={padding.top + chartH * pct}
+            stroke="currentColor"
+            className="text-border"
+            strokeWidth="0.5"
+            strokeDasharray="4 4"
+          />
+        ))}
+        {/* Preview line */}
+        <path
+          d={linePath}
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray="6 4"
+        />
+        {/* Dots */}
+        {previewPoints.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="3" fill="none" stroke={color} strokeWidth="1.5" strokeDasharray="2 2" />
+        ))}
+      </svg>
+      {/* Overlay text */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <p className="text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded-md">
+          开始采集数据后这里会显示趋势图
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // SVG Line Chart Component
 function TrendLineChart({ data, label, color = "#FF2442" }: { data: { date: string; value: number }[]; label: string; color?: string }) {
-  if (data.length < 2) return null;
+  if (data.length < 2) return <PlaceholderTrendChart label={label} color={color} />;
 
   const width = 320;
   const height = 120;
@@ -127,7 +206,24 @@ function TrendLineChart({ data, label, color = "#FF2442" }: { data: { date: stri
 
 // Heatmap for best posting times
 function PostingTimeHeatmap({ data }: { data: { hour: number; avgEngagement: number }[] }) {
-  if (data.length === 0) return null;
+  if (data.length === 0) {
+    // Show placeholder
+    return (
+      <div className="space-y-2">
+        {["凌晨 🌙", "早间 🌅", "午间 ☀️", "下午 🌤️", "晚间 🌆", "深夜 🌃"].map((slot) => (
+          <div key={slot} className="flex items-center gap-2">
+            <span className="text-xs w-16 shrink-0 text-muted-foreground">{slot}</span>
+            <div className="flex-1 flex gap-1">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex-1 h-8 rounded-md border border-dashed border-border/50" />
+              ))}
+            </div>
+          </div>
+        ))}
+        <p className="text-xs text-muted-foreground text-center mt-2">采集数据后将显示发布时间分析</p>
+      </div>
+    );
+  }
 
   const maxEng = Math.max(...data.map((d) => d.avgEngagement), 1);
   const hours = Array.from({ length: 24 }, (_, i) => {
@@ -183,6 +279,106 @@ function PostingTimeHeatmap({ data }: { data: { hour: number; avgEngagement: num
   );
 }
 
+// ─── Step Guide Card for Empty/Partial State ────────────────────────────
+
+function StepGuideCard({ currentStep, onAction, actionLabel }: { currentStep: number; onAction: () => void; actionLabel: string }) {
+  const steps = [
+    {
+      num: 1,
+      icon: <Link2 className="w-4 h-4" />,
+      title: "输入账号链接",
+      desc: "粘贴你的小红书主页链接",
+    },
+    {
+      num: 2,
+      icon: <Database className="w-4 h-4" />,
+      title: "等待数据采集",
+      desc: "系统自动获取账号数据",
+    },
+    {
+      num: 3,
+      icon: <Search className="w-4 h-4" />,
+      title: "查看深度分析",
+      desc: "获得AI驱动的运营洞察",
+    },
+  ];
+
+  return (
+    <Card className="border-dashed border-2 border-xhs/20 bg-gradient-to-br from-xhs-light/20 via-transparent to-amber-50/20 dark:from-xhs/5 dark:to-amber-950/5">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-3 mb-4">
+          {/* SVG illustration placeholder */}
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-xhs-light to-xhs-light/30 dark:from-xhs/10 dark:to-xhs/5 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 40 40" className="w-8 h-8" fill="none">
+              <rect x="4" y="8" width="32" height="24" rx="4" stroke="#FF2442" strokeWidth="2" strokeDasharray="4 2" />
+              <circle cx="14" cy="20" r="4" stroke="#FF2442" strokeWidth="1.5" />
+              <path d="M22 16 L30 16 M22 20 L28 20 M22 24 L30 24" stroke="#FF2442" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold">开始你的数据分析之旅</p>
+            <p className="text-xs text-muted-foreground mt-0.5">按照以下步骤完成账号数据采集</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {steps.map((step, idx) => {
+            const isActive = currentStep === step.num;
+            const isCompleted = currentStep > step.num;
+            const isFuture = currentStep < step.num;
+
+            return (
+              <div
+                key={step.num}
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-xl transition-all duration-300",
+                  isActive && "bg-xhs-light/50 dark:bg-xhs/10 ring-1 ring-xhs/20",
+                  isCompleted && "bg-emerald-50/50 dark:bg-emerald-950/10",
+                  isFuture && "opacity-40",
+                )}
+              >
+                {/* Step number / status */}
+                <div className={cn(
+                  "w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold",
+                  isCompleted && "bg-emerald-500 text-white",
+                  isActive && "bg-xhs text-white",
+                  isFuture && "bg-muted text-muted-foreground",
+                )}>
+                  {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : step.num}
+                </div>
+                {/* Icon + text */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("text-muted-foreground", isActive && "text-xhs")}>{step.icon}</span>
+                    <p className={cn("text-sm font-medium", isActive && "text-xhs")}>{step.title}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 ml-6">{step.desc}</p>
+                </div>
+                {/* Arrow between steps */}
+                {idx < steps.length - 1 && (
+                  <ChevronRight className="w-3 h-3 text-muted-foreground/30 shrink-0 mt-2" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {currentStep <= 1 && (
+          <Button
+            size="sm"
+            className="w-full mt-4 bg-gradient-to-r from-xhs to-xhs-dark text-white"
+            onClick={onAction}
+          >
+            {actionLabel}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────
+
 export function AccountView() {
   const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen, setActiveTab } = useAppStore();
   const [accounts, setAccounts] = useState<(XhsAccountInfo & { postsCount?: number })[]>([]);
@@ -193,6 +389,7 @@ export function AccountView() {
   const [scraping, setScraping] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [activeAnalysisTab, setActiveAnalysisTab] = useState("overview");
+  const [tabAnimating, setTabAnimating] = useState(false);
 
   useEffect(() => {
     loadAccounts();
@@ -291,6 +488,12 @@ export function AccountView() {
     }
   };
 
+  const handleTabChange = useCallback((value: string) => {
+    setTabAnimating(true);
+    setActiveAnalysisTab(value);
+    setTimeout(() => setTabAnimating(false), 300);
+  }, []);
+
   // Prepare trend data for charts
   const likesTrend = useMemo(() =>
     (analysis?.engagementTrend || []).map((d) => ({ date: d.date, value: d.likes })),
@@ -312,6 +515,23 @@ export function AccountView() {
     const rate = accountDetail.followers > 0 ? (totalEng / accountDetail.followers * 100).toFixed(1) : "0";
     return rate;
   }, [analysis, accountDetail]);
+
+  // Determine current step for guide
+  const currentStep = useMemo(() => {
+    if (!accountDetail) return 1;
+    if (accountDetail.status === "scraping") return 2;
+    if (accountDetail.status === "partial") return 2;
+    if (accountDetail.status === "error") return 1;
+    if (accountDetail.status === "success" && analysis) return 3;
+    if (accountDetail.status === "success") return 2;
+    return 1;
+  }, [accountDetail, analysis]);
+
+  // Check if there's zero data
+  const hasZeroData = useMemo(() => {
+    if (!analysis) return true;
+    return analysis.totalPosts === 0 && analysis.avgLikes === 0 && analysis.avgComments === 0;
+  }, [analysis]);
 
   if (loading && !analysis) {
     return (
@@ -374,572 +594,633 @@ export function AccountView() {
 
   const account = accountDetail || accounts.find((a) => a.id === selectedAccountId);
 
+  // Get status dot color
+  const getStatusDot = (status?: string) => {
+    switch (status) {
+      case "success": return "bg-emerald-500";
+      case "partial": return "bg-amber-500";
+      case "scraping": return "bg-xhs animate-pulse";
+      case "error": return "bg-red-500";
+      default: return "bg-muted-foreground/30";
+    }
+  };
+
   return (
-    <div className="p-4 md:p-6 space-y-5 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="md:hidden -ml-2"
-            onClick={() => setSelectedAccountId(null)}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">账号分析</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">深度数据洞察</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedAccountId}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white dark:bg-neutral-950 hidden sm:block"
-          >
-            {accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.nickname || "未命名用户"}
-              </option>
-            ))}
-          </select>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-border"
-            onClick={() => setEditDialogOpen(true)}
-            disabled={!account}
-          >
-            <Pencil className="w-4 h-4 mr-1" />
-            编辑
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-border"
-            onClick={handleScrape}
-            disabled={scraping}
-          >
-            {scraping ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                采集中...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-4 h-4 mr-1" />
-                采集
-              </>
-            )}
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                disabled={deleting || !account}
-              >
-                {deleting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>确定删除该账号？</AlertDialogTitle>
-                <AlertDialogDescription>
-                  所有相关数据（笔记、人设、草稿）将被永久删除。此操作无法撤销。
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction variant="destructive" onClick={handleDeleteAccount}>
-                  确定删除
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
-
-      {/* Warning banner */}
-      {account?.status === "partial" && (
-        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 text-amber-800 dark:text-amber-300 rounded-xl p-3 flex items-start gap-2.5">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">数据采集不完整</p>
-            <p className="text-xs mt-0.5 text-amber-700 dark:text-amber-400">小红书网站限制了直接访问。部分信息需要手动补充。</p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-amber-700 border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-xs h-7 shrink-0"
-            onClick={() => setEditDialogOpen(true)}
-          >
-            去补充
-          </Button>
-        </div>
-      )}
-
-      {account?.status === "error" && (
-        <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-800 dark:text-red-300 rounded-xl p-3 flex items-start gap-2.5">
-          <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">采集失败</p>
-            <p className="text-xs mt-0.5 text-red-700 dark:text-red-400">
-              {account.errorMessage || "小红书网站限制了访问，数据采集失败。你可以手动补充账号信息。"}
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-red-700 border-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 text-xs h-7 shrink-0"
-            onClick={() => setEditDialogOpen(true)}
-          >
-            手动补充
-          </Button>
-        </div>
-      )}
-
-      {/* Account Profile Card - Enhanced */}
-      {account && (
-        <Card className="overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-xhs via-xhs/70 to-amber-400" />
-          <CardContent className="p-5 md:p-6">
-            <div className="flex items-start gap-4">
-              <Avatar className="w-16 h-16 shrink-0 ring-2 ring-xhs/10">
-                <AvatarImage src={account.avatarUrl} alt={account.nickname} />
-                <AvatarFallback className="bg-xhs-light text-xhs text-xl font-medium">
-                  {(account.nickname || "用户").slice(0, 1)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold">{account.nickname || "未命名用户"}</h3>
-                  <Badge variant="secondary" className={cn(
-                    "text-[10px] border-0",
-                    account.status === "success" ? "bg-emerald-50 text-emerald-600" :
-                    account.status === "partial" ? "bg-amber-50 text-amber-600" :
-                    "bg-muted text-muted-foreground"
-                  )}>
-                    {account.status === "success" ? "✓ 已同步" :
-                     account.status === "partial" ? "⚠ 部分采集" :
-                     account.status === "scraping" ? "⟳ 采集中" : "○ 待采集"}
-                  </Badge>
-                </div>
-                {account.bio && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">{account.bio}</p>
-                )}
-                {account.location && (
-                  <p className="text-xs text-muted-foreground mt-1">📍 {account.location}</p>
-                )}
-                <div className="flex items-center gap-5 mt-3">
-                  <div className="text-center">
-                    <p className="text-lg font-bold tracking-tight">{formatNumber(account.followers)}</p>
-                    <p className="text-[11px] text-muted-foreground">粉丝</p>
-                  </div>
-                  <div className="w-px h-8 bg-border" />
-                  <div className="text-center">
-                    <p className="text-lg font-bold tracking-tight">{formatNumber(account.following)}</p>
-                    <p className="text-[11px] text-muted-foreground">关注</p>
-                  </div>
-                  <div className="w-px h-8 bg-border" />
-                  <div className="text-center">
-                    <p className="text-lg font-bold tracking-tight">{formatNumber(account.likedCollected)}</p>
-                    <p className="text-[11px] text-muted-foreground">获赞与收藏</p>
-                  </div>
-                  <div className="w-px h-8 bg-border" />
-                  <div className="text-center">
-                    <p className="text-lg font-bold tracking-tight">{engagementRate}%</p>
-                    <p className="text-[11px] text-muted-foreground">互动率</p>
-                  </div>
-                </div>
-              </div>
+    <TooltipProvider delayDuration={200}>
+      <div className="p-4 md:p-6 space-y-5 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden -ml-2"
+              onClick={() => setSelectedAccountId(null)}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight">账号分析</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">深度数据洞察</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+              className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white dark:bg-neutral-950 hidden sm:block"
+            >
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.nickname || "未命名用户"}
+                </option>
+              ))}
+            </select>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-border"
+              onClick={() => setEditDialogOpen(true)}
+              disabled={!account}
+            >
+              <Pencil className="w-4 h-4 mr-1" />
+              编辑
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-border"
+              onClick={handleScrape}
+              disabled={scraping}
+            >
+              {scraping ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  采集中...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  采集
+                </>
+              )}
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  disabled={deleting || !account}
+                >
+                  {deleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>确定删除该账号？</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    所有相关数据（笔记、人设、草稿）将被永久删除。此操作无法撤销。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction variant="destructive" onClick={handleDeleteAccount}>
+                    确定删除
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
 
-      {/* Analysis Tabs */}
-      {analysis && (
-        <Tabs value={activeAnalysisTab} onValueChange={setActiveAnalysisTab}>
-          <TabsList className="w-full grid grid-cols-4 h-9">
-            <TabsTrigger value="overview" className="text-xs">数据总览</TabsTrigger>
-            <TabsTrigger value="trends" className="text-xs">趋势分析</TabsTrigger>
-            <TabsTrigger value="content" className="text-xs">内容洞察</TabsTrigger>
-            <TabsTrigger value="ai" className="text-xs">AI建议</TabsTrigger>
-          </TabsList>
+        {/* Step Guide for partial/error/idle state */}
+        {(account?.status === "partial" || account?.status === "error" || account?.status === "idle") && (
+          <StepGuideCard
+            currentStep={currentStep}
+            onAction={() => {
+              if (currentStep <= 1) setEditDialogOpen(true);
+              else handleScrape();
+            }}
+            actionLabel={currentStep <= 1 ? "补充账号信息" : "重新采集"}
+          />
+        )}
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-4 mt-4">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { icon: FileText, label: "总笔记数", value: analysis.totalPosts, bg: "stat-icon-gradient-rose" },
-                { icon: Heart, label: "平均点赞", value: formatNumber(analysis.avgLikes), bg: "stat-icon-gradient-xhs" },
-                { icon: MessageCircle, label: "平均评论", value: formatNumber(analysis.avgComments), bg: "stat-icon-gradient-emerald" },
-                { icon: Bookmark, label: "平均收藏", value: formatNumber(analysis.avgCollects), bg: "stat-icon-gradient-amber" },
-              ].map((stat) => {
-                const Icon = stat.icon;
-                return (
-                  <Card key={stat.label} className="card-hover">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shadow-sm", stat.bg)}>
-                          <Icon className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold tracking-tight stat-count-animate">{stat.value}</p>
-                          <p className="text-[11px] text-muted-foreground">{stat.label}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {/* Engagement Breakdown + Quick Stats */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Engagement Composition */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <PieChart className="w-4 h-4 text-xhs" />
-                    互动构成
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {(() => {
-                    const total = analysis.avgLikes + analysis.avgComments + analysis.avgCollects + analysis.avgShares;
-                    if (total === 0) return <p className="text-xs text-muted-foreground">暂无数据</p>;
-                    const items = [
-                      { label: "点赞", value: analysis.avgLikes, color: "bg-red-400", pct: ((analysis.avgLikes / total) * 100).toFixed(1) },
-                      { label: "评论", value: analysis.avgComments, color: "bg-emerald-400", pct: ((analysis.avgComments / total) * 100).toFixed(1) },
-                      { label: "收藏", value: analysis.avgCollects, color: "bg-amber-400", pct: ((analysis.avgCollects / total) * 100).toFixed(1) },
-                      { label: "分享", value: analysis.avgShares, color: "bg-rose-400", pct: ((analysis.avgShares / total) * 100).toFixed(1) },
-                    ];
-                    return (
-                      <>
-                        {/* Stacked bar */}
-                        <div className="h-3 rounded-full overflow-hidden flex">
-                          {items.map((item) => (
-                            <div key={item.label} className={cn("h-full transition-all duration-500", item.color)} style={{ width: `${item.pct}%` }} />
-                          ))}
-                        </div>
-                        {/* Legend */}
-                        <div className="grid grid-cols-2 gap-2">
-                          {items.map((item) => (
-                            <div key={item.label} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
-                              <div className="flex items-center gap-2">
-                                <div className={cn("w-2.5 h-2.5 rounded-full", item.color)} />
-                                <span className="text-xs text-muted-foreground">{item.label}</span>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-xs font-medium">{item.pct}%</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-
-              {/* Top Posts Quick View */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                      <Award className="w-4 h-4 text-amber-500" />
-                      热门笔记
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" className="text-xs text-xhs hover:text-xhs-dark" onClick={() => setActiveTab("content")}>
-                      查看全部 <ArrowUpRight className="w-3 h-3 ml-0.5" />
-                    </Button>
+        {/* Account Profile Card - Enhanced */}
+        {account && (
+          <Card className="overflow-hidden">
+            {/* Gradient background header */}
+            <div className="relative h-2 bg-gradient-to-r from-xhs via-xhs/70 to-amber-400" />
+            <div className="relative">
+              {/* Subtle gradient behind avatar */}
+              <div className="absolute -top-10 left-6 w-24 h-24 rounded-full bg-gradient-to-br from-xhs/10 to-amber-200/10 dark:from-xhs/5 dark:to-amber-400/5 blur-lg" />
+              <CardContent className="p-5 md:p-6">
+                <div className="flex items-start gap-4">
+                  <div className="relative">
+                    <Avatar className="w-16 h-16 shrink-0 ring-2 ring-xhs/10">
+                      <AvatarImage src={account.avatarUrl} alt={account.nickname} />
+                      <AvatarFallback className="bg-xhs-light text-xhs text-xl font-medium">
+                        {(account.nickname || "用户").slice(0, 1)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {/* Status indicator dot */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className={cn(
+                          "absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-background",
+                          getStatusDot(account.status)
+                        )} />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {account.status === "success" ? "已同步" :
+                         account.status === "partial" ? "部分采集" :
+                         account.status === "scraping" ? "采集中" :
+                         account.status === "error" ? "采集异常" : "待采集"}
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  {analysis.topPosts.length > 0 ? (
-                    <div className="space-y-2">
-                      {analysis.topPosts.slice(0, 5).map((post, i) => (
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-bold">{account.nickname || "未命名用户"}</h3>
+                      <Badge variant="secondary" className={cn(
+                        "text-[10px] border-0",
+                        account.status === "success" ? "bg-emerald-50 text-emerald-600" :
+                        account.status === "partial" ? "bg-amber-50 text-amber-600" :
+                        "bg-muted text-muted-foreground"
+                      )}>
+                        {account.status === "success" ? "已同步" :
+                         account.status === "partial" ? "部分采集" :
+                         account.status === "scraping" ? "采集中" : "待采集"}
+                      </Badge>
+                    </div>
+                    {account.bio && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">{account.bio}</p>
+                    )}
+                    {account.location && (
+                      <p className="text-xs text-muted-foreground mt-1">📍 {account.location}</p>
+                    )}
+                    {/* Stats in card-style containers */}
+                    <div className="grid grid-cols-4 gap-2 mt-3">
+                      {[
+                        { label: "粉丝", value: formatNumber(account.followers), trend: account.followers > 0 ? "+" : "—" },
+                        { label: "关注", value: formatNumber(account.following), trend: "—" },
+                        { label: "获赞与收藏", value: formatNumber(account.likedCollected), trend: account.likedCollected > 0 ? "+" : "—" },
+                        { label: "互动率", value: engagementRate === "0" ? "—" : engagementRate + "%", trend: engagementRate !== "0" ? "+" : "—" },
+                      ].map((stat) => (
                         <div
-                          key={post.id}
-                          className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors"
+                          key={stat.label}
+                          className="text-center p-2 rounded-lg bg-muted/30 dark:bg-muted/20 border border-border/30"
                         >
-                          <span className={cn(
-                            "text-sm font-bold w-5 text-center shrink-0",
-                            i === 0 ? "text-amber-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-orange-400" : "text-muted-foreground"
-                          )}>
-                            {i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium line-clamp-1">{post.title || "无标题"}</p>
-                            <div className="flex items-center gap-3 mt-0.5 text-[11px] text-muted-foreground">
-                              <span className="flex items-center gap-0.5 text-red-500">
-                                <Heart className="w-3 h-3" />
-                                {formatNumber(post.likes)}
-                              </span>
-                              <span className="flex items-center gap-0.5 text-emerald-500">
-                                <MessageCircle className="w-3 h-3" />
-                                {formatNumber(post.comments)}
-                              </span>
-                              <span className="flex items-center gap-0.5 text-amber-500">
-                                <Bookmark className="w-3 h-3" />
-                                {formatNumber(post.collects)}
-                              </span>
-                            </div>
-                          </div>
+                          <p className="text-base font-bold tracking-tight">{stat.value}</p>
+                          <p className="text-[10px] text-muted-foreground">{stat.label}</p>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground text-center py-4">暂无热门笔记数据</p>
-                  )}
-                </CardContent>
-              </Card>
+                  </div>
+                </div>
+              </CardContent>
             </div>
-          </TabsContent>
+          </Card>
+        )}
 
-          {/* Trends Tab */}
-          <TabsContent value="trends" className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-red-500" />
-                    点赞趋势
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TrendLineChart data={likesTrend} label="近14日点赞" color="#ef4444" />
-                </CardContent>
-              </Card>
+        {/* Analysis Tabs */}
+        {analysis && (
+          <Tabs value={activeAnalysisTab} onValueChange={handleTabChange}>
+            <TabsList className="w-full grid grid-cols-4 h-9">
+              <TabsTrigger value="overview" className="text-xs">数据总览</TabsTrigger>
+              <TabsTrigger value="trends" className="text-xs">趋势分析</TabsTrigger>
+              <TabsTrigger value="content" className="text-xs">内容洞察</TabsTrigger>
+              <TabsTrigger value="ai" className="text-xs">AI建议</TabsTrigger>
+            </TabsList>
 
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-emerald-500" />
-                    评论趋势
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TrendLineChart data={commentsTrend} label="近14日评论" color="#10b981" />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Bookmark className="w-4 h-4 text-amber-500" />
-                    收藏趋势
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TrendLineChart data={collectsTrend} label="近14日收藏" color="#f59e0b" />
-                </CardContent>
-              </Card>
-
-              {/* Best Posting Times Heatmap */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-xhs" />
-                    最佳发布时间
-                  </CardTitle>
-                  <CardDescription className="text-[10px]">颜色越深表示该时段平均互动越高</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PostingTimeHeatmap data={analysis.bestPostingTimes} />
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Content Tab */}
-          <TabsContent value="content" className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Content Categories */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-xhs" />
-                    内容分类
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {analysis.contentCategories.length > 0 ? (
-                    <div className="space-y-2.5">
-                      {analysis.contentCategories.slice(0, 8).map((cat, i) => {
-                        const maxCount = Math.max(...analysis.contentCategories.map((c) => c.count));
-                        const pct = maxCount > 0 ? (cat.count / maxCount) * 100 : 0;
-                        return (
-                          <div key={i} className="flex items-center gap-3">
-                            <span className="text-xs w-20 truncate text-right text-muted-foreground shrink-0">
-                              {cat.name}
-                            </span>
-                            <div className="flex-1 h-5 bg-muted/50 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-xhs/60 to-xhs/30 rounded-full transition-all duration-700"
-                                style={{ width: `${pct}%` }}
-                              />
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-4 mt-4">
+              <div className={cn(
+                "transition-all duration-300",
+                tabAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
+              )}>
+                {/* Key Metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { icon: FileText, label: "总笔记数", value: analysis.totalPosts, bg: "stat-icon-gradient-rose" },
+                    { icon: Heart, label: "平均点赞", value: formatNumber(analysis.avgLikes), bg: "stat-icon-gradient-xhs" },
+                    { icon: MessageCircle, label: "平均评论", value: formatNumber(analysis.avgComments), bg: "stat-icon-gradient-emerald" },
+                    { icon: Bookmark, label: "平均收藏", value: formatNumber(analysis.avgCollects), bg: "stat-icon-gradient-amber" },
+                  ].map((stat) => {
+                    const Icon = stat.icon;
+                    return (
+                      <Card key={stat.label} className="card-hover">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shadow-sm", stat.bg)}>
+                              <Icon className="w-4 h-4 text-white" />
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-xs font-medium w-8 text-right">{cat.count}篇</span>
-                              <span className="text-[10px] text-muted-foreground w-16 text-right">
-                                均{formatNumber(cat.avgEngagement)}
+                            <div>
+                              <p className="text-lg font-bold tracking-tight stat-count-animate">
+                                {stat.value}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">{stat.label}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* Engagement Breakdown + Quick Stats */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                  {/* Engagement Composition */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <PieChart className="w-4 h-4 text-xhs" />
+                        互动构成
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {(() => {
+                        const total = analysis.avgLikes + analysis.avgComments + analysis.avgCollects + analysis.avgShares;
+                        if (total === 0) return (
+                          <div className="py-4">
+                            {/* Placeholder stacked bar with dashed segments */}
+                            <div className="h-3 rounded-full overflow-hidden flex border border-dashed border-border/50">
+                              {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="flex-1 border-r border-dashed border-border/30 last:border-r-0" />
+                              ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground text-center mt-3">采集数据后将显示互动构成</p>
+                          </div>
+                        );
+                        const items = [
+                          { label: "点赞", value: analysis.avgLikes, color: "bg-red-400", pct: ((analysis.avgLikes / total) * 100).toFixed(1) },
+                          { label: "评论", value: analysis.avgComments, color: "bg-emerald-400", pct: ((analysis.avgComments / total) * 100).toFixed(1) },
+                          { label: "收藏", value: analysis.avgCollects, color: "bg-amber-400", pct: ((analysis.avgCollects / total) * 100).toFixed(1) },
+                          { label: "分享", value: analysis.avgShares, color: "bg-rose-400", pct: ((analysis.avgShares / total) * 100).toFixed(1) },
+                        ];
+                        return (
+                          <>
+                            {/* Stacked bar */}
+                            <div className="h-3 rounded-full overflow-hidden flex">
+                              {items.map((item) => (
+                                <div key={item.label} className={cn("h-full transition-all duration-500", item.color)} style={{ width: `${item.pct}%` }} />
+                              ))}
+                            </div>
+                            {/* Legend */}
+                            <div className="grid grid-cols-2 gap-2">
+                              {items.map((item) => (
+                                <div key={item.label} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                                  <div className="flex items-center gap-2">
+                                    <div className={cn("w-2.5 h-2.5 rounded-full", item.color)} />
+                                    <span className="text-xs text-muted-foreground">{item.label}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-xs font-medium">{item.pct}%</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+
+                  {/* Top Posts - Enhanced with mini post cards */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                          <Award className="w-4 h-4 text-amber-500" />
+                          热门笔记
+                        </CardTitle>
+                        <Button variant="ghost" size="sm" className="text-xs text-xhs hover:text-xhs-dark" onClick={() => setActiveTab("content")}>
+                          查看全部 <ArrowUpRight className="w-3 h-3 ml-0.5" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {analysis.topPosts.length > 0 ? (
+                        <div className="space-y-2">
+                          {analysis.topPosts.slice(0, 5).map((post, i) => (
+                            <div
+                              key={post.id}
+                              className="flex items-start gap-3 p-2.5 rounded-lg border border-border/30 hover:bg-muted/30 transition-all duration-200 group"
+                            >
+                              {/* Rank badge */}
+                              <div className={cn(
+                                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold",
+                                i === 0 ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                                i === 1 ? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" :
+                                i === 2 ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" :
+                                "bg-muted text-muted-foreground"
+                              )}>
+                                {i + 1}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium line-clamp-1 group-hover:text-xhs transition-colors">{post.title || "无标题"}</p>
+                                <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
+                                  <span className="flex items-center gap-0.5 text-red-500">
+                                    <Heart className="w-3 h-3" />
+                                    {formatNumber(post.likes)}
+                                  </span>
+                                  <span className="flex items-center gap-0.5 text-emerald-500">
+                                    <MessageCircle className="w-3 h-3" />
+                                    {formatNumber(post.comments)}
+                                  </span>
+                                  <span className="flex items-center gap-0.5 text-amber-500">
+                                    <Bookmark className="w-3 h-3" />
+                                    {formatNumber(post.collects)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-4">
+                          {/* Placeholder mini cards */}
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex items-center gap-3 p-2 mb-2 rounded-lg border border-dashed border-border/50">
+                              <div className="w-7 h-7 rounded-lg bg-muted/30" />
+                              <div className="flex-1">
+                                <div className="h-3 w-3/4 rounded bg-muted/30 mb-1" />
+                                <div className="h-2 w-1/2 rounded bg-muted/20" />
+                              </div>
+                            </div>
+                          ))}
+                          <p className="text-xs text-muted-foreground text-center mt-2">暂无热门笔记数据</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Trends Tab */}
+            <TabsContent value="trends" className="space-y-4 mt-4">
+              <div className={cn(
+                "grid grid-cols-1 lg:grid-cols-2 gap-4 transition-all duration-300",
+                tabAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
+              )}>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-red-500" />
+                      点赞趋势
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <TrendLineChart data={likesTrend} label="近14日点赞" color="#ef4444" />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-emerald-500" />
+                      评论趋势
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <TrendLineChart data={commentsTrend} label="近14日评论" color="#10b981" />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Bookmark className="w-4 h-4 text-amber-500" />
+                      收藏趋势
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <TrendLineChart data={collectsTrend} label="近14日收藏" color="#f59e0b" />
+                  </CardContent>
+                </Card>
+
+                {/* Best Posting Times Heatmap */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-xhs" />
+                      最佳发布时间
+                    </CardTitle>
+                    <CardDescription className="text-[10px]">颜色越深表示该时段平均互动越高</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <PostingTimeHeatmap data={analysis.bestPostingTimes} />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Content Tab */}
+            <TabsContent value="content" className="space-y-4 mt-4">
+              <div className={cn(
+                "grid grid-cols-1 lg:grid-cols-2 gap-4 transition-all duration-300",
+                tabAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
+              )}>
+                {/* Content Categories */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-xhs" />
+                      内容分类
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {analysis.contentCategories.length > 0 ? (
+                      <div className="space-y-2.5">
+                        {analysis.contentCategories.slice(0, 8).map((cat, i) => {
+                          const maxCount = Math.max(...analysis.contentCategories.map((c) => c.count));
+                          const pct = maxCount > 0 ? (cat.count / maxCount) * 100 : 0;
+                          return (
+                            <div key={i} className="flex items-center gap-3">
+                              <span className="text-xs w-20 truncate text-right text-muted-foreground shrink-0">
+                                {cat.name}
                               </span>
+                              <div className="flex-1 h-5 bg-muted/50 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-xhs/60 to-xhs/30 rounded-full transition-all duration-700"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-xs font-medium w-8 text-right">{cat.count}篇</span>
+                                <span className="text-[10px] text-muted-foreground w-16 text-right">
+                                  均{formatNumber(cat.avgEngagement)}
+                                </span>
+                              </div>
                             </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <div className="w-20 h-3 rounded bg-muted/30" />
+                            <div className="flex-1 h-5 rounded-full border border-dashed border-border/50" />
+                            <div className="w-16 h-3 rounded bg-muted/20" />
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground text-center py-4">暂无分类数据</p>
-                  )}
-                </CardContent>
-              </Card>
+                        ))}
+                        <p className="text-xs text-muted-foreground text-center mt-3">暂无分类数据</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-              {/* Content Themes / Tags */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Hash className="w-4 h-4 text-xhs" />
-                    热门标签
-                  </CardTitle>
-                  <CardDescription className="text-[10px]">基于笔记标签的使用频率</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {analysis.contentThemes.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {analysis.contentThemes.slice(0, 20).map((theme, i) => {
-                        const maxCount = Math.max(...analysis.contentThemes.map((t) => t.count));
-                        const intensity = maxCount > 0 ? theme.count / maxCount : 0;
-                        return (
-                          <Badge
-                            key={i}
-                            variant="secondary"
-                            className={cn(
-                              "text-xs border-0 transition-all",
-                              intensity > 0.7 ? "bg-xhs text-white" :
-                              intensity > 0.4 ? "bg-xhs/20 text-xhs" : "bg-muted/80"
-                            )}
-                          >
-                            #{theme.theme}
-                            <span className="ml-1 opacity-70">×{theme.count}</span>
+                {/* Content Themes / Tags */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Hash className="w-4 h-4 text-xhs" />
+                      热门标签
+                    </CardTitle>
+                    <CardDescription className="text-[10px]">基于笔记标签的使用频率</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {analysis.contentThemes.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {analysis.contentThemes.slice(0, 20).map((theme, i) => {
+                          const maxCount = Math.max(...analysis.contentThemes.map((t) => t.count));
+                          const intensity = maxCount > 0 ? theme.count / maxCount : 0;
+                          return (
+                            <Badge
+                              key={i}
+                              variant="secondary"
+                              className={cn(
+                                "text-xs border-0 transition-all",
+                                intensity > 0.7 ? "bg-xhs text-white" :
+                                intensity > 0.4 ? "bg-xhs/20 text-xhs" : "bg-muted/80"
+                              )}
+                            >
+                              #{theme.theme}
+                              <span className="ml-1 opacity-70">×{theme.count}</span>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {["标签1", "标签2", "标签3", "标签4", "标签5"].map((t, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs border-0 border border-dashed border-border/50 opacity-30">
+                            #{t}
                           </Badge>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground text-center py-4">暂无标签数据</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                        ))}
+                        <p className="text-xs text-muted-foreground w-full text-center mt-2">暂无标签数据</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
-          {/* AI Tab */}
-          <TabsContent value="ai" className="space-y-4 mt-4">
-            {analysis.aiInsights ? (
-              <Card className="border-xhs/20 bg-gradient-to-br from-xhs-light/30 to-transparent">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-xhs" />
-                    AI 运营洞察
-                  </CardTitle>
-                  <CardDescription className="text-[10px]">基于账号数据的智能分析与建议</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {/* AI insights rendered as structured content */}
-                    {analysis.aiInsights.split("\n").filter(Boolean).map((line, i) => {
-                      const trimmed = line.trim();
-                      if (trimmed.startsWith("-") || trimmed.startsWith("•") || trimmed.startsWith("*")) {
-                        return (
-                          <div key={i} className="flex items-start gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-xhs mt-1.5 shrink-0" />
-                            <p className="text-sm text-foreground/80 leading-relaxed">{trimmed.replace(/^[-•*]\s*/, "")}</p>
-                          </div>
-                        );
-                      }
-                      if (trimmed.match(/^\d+[.、]/)) {
-                        return (
-                          <div key={i} className="flex items-start gap-2">
-                            <div className="w-5 h-5 rounded-full bg-xhs/10 flex items-center justify-center shrink-0 mt-0.5">
-                              <span className="text-[10px] font-bold text-xhs">{trimmed.match(/^\d+/)?.[0]}</span>
-                            </div>
-                            <p className="text-sm text-foreground/80 leading-relaxed">{trimmed.replace(/^\d+[.、]\s*/, "")}</p>
-                          </div>
-                        );
-                      }
-                      return <p key={i} className="text-sm text-foreground/80 leading-relaxed">{trimmed}</p>;
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Sparkles className="w-10 h-10 text-xhs/30 mx-auto mb-3" />
-                  <p className="text-sm font-medium">暂无AI洞察</p>
-                  <p className="text-xs text-muted-foreground mt-1">采集更多数据后，AI将自动生成运营建议</p>
-                  <Button variant="outline" size="sm" className="mt-3 border-border text-xs" onClick={handleScrape} disabled={scraping}>
-                    <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                    采集数据
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            {/* AI Tab */}
+            <TabsContent value="ai" className="space-y-4 mt-4">
+              <div className={cn(
+                "transition-all duration-300",
+                tabAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
+              )}>
+                {analysis.aiInsights ? (
+                  <Card className="border-xhs/20 bg-gradient-to-br from-xhs-light/30 to-transparent">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-xhs" />
+                        AI 运营洞察
+                      </CardTitle>
+                      <CardDescription className="text-[10px]">基于账号数据的智能分析与建议</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {analysis.aiInsights.split("\n").filter(Boolean).map((line, i) => {
+                          const trimmed = line.trim();
+                          if (trimmed.startsWith("-") || trimmed.startsWith("•") || trimmed.startsWith("*")) {
+                            return (
+                              <div key={i} className="flex items-start gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-xhs mt-1.5 shrink-0" />
+                                <p className="text-sm text-foreground/80 leading-relaxed">{trimmed.replace(/^[-•*]\s*/, "")}</p>
+                              </div>
+                            );
+                          }
+                          if (trimmed.match(/^\d+[.、]/)) {
+                            return (
+                              <div key={i} className="flex items-start gap-2">
+                                <div className="w-5 h-5 rounded-full bg-xhs/10 flex items-center justify-center shrink-0 mt-0.5">
+                                  <span className="text-[10px] font-bold text-xhs">{trimmed.match(/^\d+/)?.[0]}</span>
+                                </div>
+                                <p className="text-sm text-foreground/80 leading-relaxed">{trimmed.replace(/^\d+[.、]\s*/, "")}</p>
+                              </div>
+                            );
+                          }
+                          return <p key={i} className="text-sm text-foreground/80 leading-relaxed">{trimmed}</p>;
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <Sparkles className="w-10 h-10 text-xhs/30 mx-auto mb-3" />
+                      <p className="text-sm font-medium">暂无AI洞察</p>
+                      <p className="text-xs text-muted-foreground mt-1">采集更多数据后，AI将自动生成运营建议</p>
+                      <Button variant="outline" size="sm" className="mt-3 border-border text-xs" onClick={handleScrape} disabled={scraping}>
+                        <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                        采集数据
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Quick Action Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Card className="cursor-pointer card-hover" onClick={() => setActiveTab("creator")}>
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-xl bg-xhs-light flex items-center justify-center mx-auto mb-2">
-                    <PenLine className="w-5 h-5 text-xhs" />
-                  </div>
-                  <p className="text-xs font-medium">创作内容</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">基于分析创作</p>
-                </CardContent>
-              </Card>
-              <Card className="cursor-pointer card-hover" onClick={() => setActiveTab("persona")}>
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center mx-auto mb-2">
-                    <Theater className="w-5 h-5 text-amber-500" />
-                  </div>
-                  <p className="text-xs font-medium">设置人设</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">优化创作风格</p>
-                </CardContent>
-              </Card>
-              <Card className="cursor-pointer card-hover" onClick={handleScrape}>
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center mx-auto mb-2">
-                    <RefreshCw className="w-5 h-5 text-emerald-500" />
-                  </div>
-                  <p className="text-xs font-medium">更新数据</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">重新采集分析</p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      )}
+                {/* Quick Action Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                  <Card className="cursor-pointer card-hover" onClick={() => setActiveTab("creator")}>
+                    <CardContent className="p-4 text-center">
+                      <div className="w-10 h-10 rounded-xl bg-xhs-light flex items-center justify-center mx-auto mb-2">
+                        <PenLine className="w-5 h-5 text-xhs" />
+                      </div>
+                      <p className="text-xs font-medium">创作内容</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">基于分析创作</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="cursor-pointer card-hover" onClick={() => setActiveTab("persona")}>
+                    <CardContent className="p-4 text-center">
+                      <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center mx-auto mb-2">
+                        <Theater className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <p className="text-xs font-medium">设置人设</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">优化创作风格</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="cursor-pointer card-hover" onClick={handleScrape}>
+                    <CardContent className="p-4 text-center">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center mx-auto mb-2">
+                        <RefreshCw className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <p className="text-xs font-medium">更新数据</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">重新采集分析</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
 
-      {/* Edit Account Dialog */}
-      <EditAccountDialog
-        account={account || null}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onSuccess={handleEditSuccess}
-      />
-    </div>
+        {/* Edit Account Dialog */}
+        <EditAccountDialog
+          account={account || null}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSuccess={handleEditSuccess}
+        />
+      </div>
+    </TooltipProvider>
   );
 }
-
-

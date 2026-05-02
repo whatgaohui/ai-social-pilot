@@ -21,6 +21,7 @@ import { PostCard } from "@/components/post-card";
 import { formatNumber } from "@/components/account-card";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ExportDialog } from "@/components/export-dialog";
 import {
   FileText,
   Search,
@@ -32,10 +33,12 @@ import {
   X,
   SlidersHorizontal,
   LayoutGrid,
+  List,
   CalendarDays,
   CalendarClock,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Copy,
   Check,
   Trash2,
@@ -53,10 +56,14 @@ import {
   CheckSquare,
   Download,
   Tag,
+  BookOpen,
 } from "lucide-react";
 
 type SortOption = "date" | "likes" | "comments" | "collects" | "aiScore";
-type ViewMode = "grid" | "calendar" | "schedule";
+type ViewMode = "grid" | "list" | "calendar" | "schedule";
+type CategoryFilter = "全部" | "美食探店" | "穿搭时尚" | "旅行攻略" | "家居装修" | "职场成长" | "美妆护肤";
+
+const CATEGORY_CHIPS: CategoryFilter[] = ["全部", "美食探店", "穿搭时尚", "旅行攻略", "家居装修", "职场成长", "美妆护肤"];
 
 // ─── Schedule Types ─────────────────────────────────────────────────────
 
@@ -109,6 +116,20 @@ function formatDateDisplay(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const weekDays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
   return `${d.getMonth() + 1}月${d.getDate()}日 ${weekDays[d.getDay()]}`;
+}
+
+function formatRelativeDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "今天";
+  if (diffDays === 1) return "昨天";
+  if (diffDays < 7) return `${diffDays}天前`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}周前`;
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${month}月${day}日`;
 }
 
 // ─── ContentCalendar Component ──────────────────────────────────────────
@@ -673,6 +694,9 @@ export function ContentView() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [currentPage, setCurrentPage] = useState(1);
   const [copied, setCopied] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("全部");
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Batch selection state
   const [selectionMode, setSelectionMode] = useState(false);
@@ -735,7 +759,7 @@ export function ContentView() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [sortBy, filterAccountId, searchQuery]);
+  }, [sortBy, filterAccountId, searchQuery, categoryFilter]);
 
   const loadAccounts = async () => {
     try {
@@ -773,6 +797,9 @@ export function ContentView() {
   }, [posts, accounts, scheduledPosts.length, generateSampleSchedule]);
 
   const filteredPosts = posts.filter((post) => {
+    // Category filter
+    if (categoryFilter !== "全部" && (post.category || "") !== categoryFilter) return false;
+    // Search filter
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -943,6 +970,21 @@ export function ContentView() {
     lastClickedIdRef.current = null;
   }, [selectedIds]);
 
+  // Bookmark toggle handler
+  const toggleBookmark = useCallback((postId: string) => {
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+        toast.success("已取消收藏");
+      } else {
+        next.add(postId);
+        toast.success("已收藏");
+      }
+      return next;
+    });
+  }, []);
+
   // Schedule handlers
   const handleSchedulePost = useCallback(
     (data: Omit<ScheduledPost, "id">) => {
@@ -1041,9 +1083,21 @@ export function ContentView() {
                 viewMode === "grid" ? "bg-xhs text-white hover:bg-xhs-dark hover:text-white" : "text-muted-foreground"
               )}
               onClick={() => setViewMode("grid")}
+              title="网格视图"
             >
-              <LayoutGrid className="w-3.5 h-3.5 mr-1" />
-              网格
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-2.5 rounded-none text-xs",
+                viewMode === "list" ? "bg-xhs text-white hover:bg-xhs-dark hover:text-white" : "text-muted-foreground"
+              )}
+              onClick={() => setViewMode("list")}
+              title="列表视图"
+            >
+              <List className="w-3.5 h-3.5" />
             </Button>
             <Button
               variant="ghost"
@@ -1053,9 +1107,9 @@ export function ContentView() {
                 viewMode === "calendar" ? "bg-xhs text-white hover:bg-xhs-dark hover:text-white" : "text-muted-foreground"
               )}
               onClick={() => setViewMode("calendar")}
+              title="日历视图"
             >
-              <CalendarDays className="w-3.5 h-3.5 mr-1" />
-              日历
+              <CalendarDays className="w-3.5 h-3.5" />
             </Button>
             <Button
               variant="ghost"
@@ -1065,9 +1119,9 @@ export function ContentView() {
                 viewMode === "schedule" ? "bg-xhs text-white hover:bg-xhs-dark hover:text-white" : "text-muted-foreground"
               )}
               onClick={() => setViewMode("schedule")}
+              title="排期视图"
             >
-              <CalendarClock className="w-3.5 h-3.5 mr-1" />
-              排期
+              <CalendarClock className="w-3.5 h-3.5" />
             </Button>
           </div>
           {viewMode !== "schedule" && (
@@ -1095,6 +1149,15 @@ export function ContentView() {
               >
                 <Filter className="w-3.5 h-3.5 mr-1" />
                 筛选
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExportDialogOpen(true)}
+                className="text-xs text-muted-foreground"
+              >
+                <Download className="w-3.5 h-3.5 mr-1" />
+                导出
               </Button>
             </>
           )}
@@ -1185,24 +1248,67 @@ export function ContentView() {
         </div>
       )}
 
-      {/* Search (hidden in schedule view) */}
+      {/* Search + Category Chips + Sort (hidden in schedule view) */}
       {viewMode !== "schedule" && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="搜索笔记标题、内容、标签..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-9 h-10 bg-white dark:bg-neutral-950"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-foreground transition-colors"
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
-          )}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="搜索笔记标题、内容、标签..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9 h-10 bg-white dark:bg-neutral-950"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+            {/* Sort dropdown */}
+            <div className="relative">
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                <SelectTrigger className="h-10 w-[120px] bg-white dark:bg-neutral-950 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((opt) => {
+                    const Icon = opt.icon;
+                    return (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <span className="flex items-center gap-1.5">
+                          <Icon className="w-3 h-3" />
+                          {opt.label}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Category filter chips */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {CATEGORY_CHIPS.map((chip) => (
+              <button
+                key={chip}
+                className={cn(
+                  "shrink-0 text-xs px-3 py-1.5 rounded-full font-medium transition-all duration-200 border",
+                  categoryFilter === chip
+                    ? "bg-xhs text-white border-xhs shadow-sm shadow-xhs/20"
+                    : "bg-white dark:bg-neutral-900 text-muted-foreground border-border/60 hover:border-xhs/40 hover:text-xhs"
+                )}
+                onClick={() => setCategoryFilter(chip)}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -1274,7 +1380,7 @@ export function ContentView() {
         </Card>
       )}
 
-      {/* Content area: Grid or Calendar */}
+      {/* Content area: Grid, List, or Calendar */}
       {viewMode === "calendar" ? (
         <Card className="border border-border view-animate">
           <CardContent className="p-4">
@@ -1325,7 +1431,17 @@ export function ContentView() {
                         />
                       </div>
                     )}
-                    <PostCard post={post} />
+                    <PostCard
+                      post={post}
+                      showActions={!selectionMode}
+                      onQuickView={() => setSelectedPost(post)}
+                      onEditAction={() => {
+                        setSelectedPost(post);
+                        setActiveTab("creator");
+                      }}
+                      onBookmarkToggle={() => toggleBookmark(post.id)}
+                      isBookmarked={bookmarkedIds.has(post.id)}
+                    />
                   </div>
                 </div>
               ))}
@@ -1388,6 +1504,216 @@ export function ContentView() {
               </div>
             )}
           </>
+        )
+      ) : viewMode === "list" ? (
+        filteredPosts.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="没有找到笔记"
+            description={searchQuery ? "尝试修改搜索关键词" : "该账号暂无笔记数据"}
+            className="py-8"
+          />
+        ) : (
+          <div className="space-y-2">
+            {paginatedPosts.map((post, i) => {
+              const totalEng = post.likes + post.comments + post.collects;
+              const readsCount = post.likes * 8 + post.comments * 15 + post.shares * 30;
+              return (
+                <div
+                  key={post.id}
+                  className={cn(
+                    "stagger-item relative",
+                    selectionMode && selectedIds.has(post.id) && "ring-2 ring-xhs rounded-xl",
+                    selectionMode && !selectedIds.has(post.id) && "hover:ring-1 hover:ring-muted-foreground/30 rounded-xl"
+                  )}
+                  style={{ animationDelay: `${i * 0.03}s` }}
+                  onClick={(e) => handleCardClick(post, e)}
+                >
+                  {selectionMode && (
+                    <div className="absolute top-3 left-3 z-20">
+                      <Checkbox
+                        checked={selectedIds.has(post.id)}
+                        className={cn(
+                          "h-5 w-5 rounded-md border-2 transition-all duration-200",
+                          selectedIds.has(post.id)
+                            ? "border-xhs bg-xhs text-white"
+                            : "border-white/80 bg-black/40 backdrop-blur-sm hover:border-xhs/60"
+                        )}
+                      />
+                    </div>
+                  )}
+                  <Card className="overflow-hidden hover:shadow-md transition-all duration-200 border-border/60">
+                    <div className="flex">
+                      {/* Thumbnail */}
+                      <div className="w-28 sm:w-36 shrink-0 aspect-[4/3] bg-muted relative overflow-hidden">
+                        {post.coverUrl ? (
+                          <img
+                            src={post.coverUrl}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className={cn(
+                            "w-full h-full flex items-center justify-center bg-gradient-to-br",
+                            (() => {
+                              const cat = post.category || "";
+                              const configs: Record<string, string> = {
+                                "美食探店": "from-orange-400 via-amber-400 to-yellow-300",
+                                "穿搭时尚": "from-pink-400 via-rose-400 to-pink-300",
+                                "旅行攻略": "from-teal-400 via-cyan-400 to-sky-300",
+                                "家居装修": "from-emerald-400 via-green-400 to-emerald-300",
+                                "职场成长": "from-blue-500 via-indigo-500 to-blue-400",
+                                "美妆护肤": "from-purple-400 via-pink-400 to-purple-300",
+                              };
+                              return configs[cat] || "from-xhs via-rose-400 to-pink-300";
+                            })()
+                          )}>
+                            <span className="text-white/80 text-lg font-bold">{(post.title || "笔记").slice(0, 1)}</span>
+                          </div>
+                        )}
+                        {/* AI Score badge */}
+                        {post.aiScore > 0 && (
+                          <div className="absolute top-1.5 right-1.5">
+                            <div className="bg-gradient-to-r from-amber-500 to-yellow-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
+                              <Star className="w-2.5 h-2.5 fill-white/90" />
+                              {post.aiScore.toFixed(0)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 p-3 min-w-0 flex flex-col justify-between">
+                        <div>
+                          {/* Title + Category */}
+                          <div className="flex items-start gap-2 mb-1">
+                            <h3 className="text-sm font-medium line-clamp-1 flex-1 min-w-0">
+                              {post.title || "无标题"}
+                            </h3>
+                            {post.category && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-[18px] shrink-0 border-0 bg-xhs-light/60 text-xhs/80">
+                                {post.category}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* Content excerpt */}
+                          {post.content && (
+                            <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed mb-2">
+                              {post.content.slice(0, 80)}{post.content.length > 80 ? "..." : ""}
+                            </p>
+                          )}
+
+                          {/* Tags */}
+                          {post.tags && post.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {post.tags.slice(0, 3).map((tag, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[10px] px-1.5 py-0.5 rounded-full bg-xhs-light/60 text-xhs/80 font-medium"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                              {post.tags.length > 3 && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground font-medium">
+                                  +{post.tags.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Stats row */}
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Heart className="w-3 h-3" />
+                            <span className="font-medium">{formatNumber(post.likes)}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageCircle className="w-3 h-3" />
+                            <span className="font-medium">{formatNumber(post.comments)}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Bookmark className="w-3 h-3" />
+                            <span className="font-medium">{formatNumber(post.collects)}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" />
+                            <span className="font-medium">{formatNumber(readsCount)}</span>
+                          </span>
+                          {totalEng > 10000 && (
+                            <span className="text-[10px] font-bold text-xhs">🔥 爆款</span>
+                          )}
+                          <span className="ml-auto flex items-center gap-1 text-[10px]">
+                            <Clock className="w-2.5 h-2.5" />
+                            {post.publishDate ? formatRelativeDate(post.publishDate) : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              );
+            })}
+
+            {/* Pagination for list view */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-border"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                  上一页
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "ghost"}
+                        size="sm"
+                        className={cn(
+                          "h-8 w-8 p-0 text-xs",
+                          currentPage === pageNum && "bg-xhs hover:bg-xhs-dark text-white"
+                        )}
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-border"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  下一页
+                  <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+                <span className="text-xs text-muted-foreground ml-2">
+                  共 {filteredPosts.length} 篇
+                </span>
+              </div>
+            )}
+          </div>
         )
       ) : null}
 
@@ -1660,7 +1986,7 @@ export function ContentView() {
       )}
 
       {/* Batch Select All Bar (when in selection mode but nothing selected) */}
-      {selectionMode && selectedIds.size === 0 && viewMode === "grid" && (
+      {selectionMode && selectedIds.size === 0 && (viewMode === "grid" || viewMode === "list") && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
           <div className="backdrop-blur-xl bg-white/80 dark:bg-neutral-950/80 border border-border/60 rounded-2xl shadow-lg shadow-black/10 px-4 py-3 flex items-center gap-3">
             <span className="text-sm text-muted-foreground">点击卡片选择，或</span>
@@ -1676,6 +2002,12 @@ export function ContentView() {
           </div>
         </div>
       )}
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+      />
     </div>
   );
 }

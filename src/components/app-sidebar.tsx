@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { NotificationCenter } from "@/components/notification-center";
+import { Badge } from "@/components/ui/badge";
 
 const navItems = [
   { id: "dashboard" as const, label: "仪表盘", icon: LayoutDashboard },
@@ -35,8 +36,8 @@ export function AppSidebar() {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-56 flex-col border-r border-border bg-white dark:bg-neutral-950 h-screen sticky top-0">
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
-          <div className="w-9 h-9 rounded-xl bg-xhs flex items-center justify-center shadow-sm shadow-xhs/20">
+        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border/60">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-xhs to-xhs-dark flex items-center justify-center shadow-md shadow-xhs/25 group-hover:shadow-lg transition-shadow duration-300">
             <span className="text-white font-bold text-sm">红</span>
           </div>
           <div className="flex-1">
@@ -90,10 +91,15 @@ export function AppSidebar() {
           </button>
         </div>
 
-        <div className="px-5 py-4 border-t border-border">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <p className="text-xs text-muted-foreground">v2.0.0 · 运行中</p>
+        <div className="px-5 py-4 border-t border-border/60">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50 animate-pulse" />
+              <p className="text-xs text-muted-foreground">v2.1.0</p>
+            </div>
+            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-0 font-medium">
+              运行中
+            </Badge>
           </div>
         </div>
       </aside>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +44,11 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
+  Lightbulb,
+  Rocket,
+  Calendar,
 } from "lucide-react";
+import { ExportDialog } from "@/components/export-dialog";
 
 /** Activity feed item type */
 interface ActivityItem {
@@ -53,14 +57,37 @@ interface ActivityItem {
   iconBg: string;
   text: string;
   time: Date;
+  type: "data" | "post" | "ai" | "export";
 }
+
+/** AI Strategy recommendation type */
+interface StrategyRecommendation {
+  id: string;
+  icon: string;
+  title: string;
+  description: string;
+  priority: "高" | "中" | "低";
+}
+
+/** Icon mapping for strategy recommendations */
+const strategyIconMap: Record<string, React.ElementType> = {
+  TrendingUp,
+  Target,
+  Zap,
+  Lightbulb,
+  Calendar,
+  Users,
+  Sparkles,
+  BarChart3,
+  Rocket,
+  Heart,
+};
 
 /** Generate mock activity feed based on accounts and posts */
 function generateActivityFeed(accounts: (XhsAccountInfo & { postsCount?: number })[], posts: XhsPostInfo[]): ActivityItem[] {
   const now = new Date();
   const activities: ActivityItem[] = [];
 
-  // Account-related activities
   accounts.forEach((acc, i) => {
     if (acc.status === "success" || acc.status === "partial") {
       activities.push({
@@ -69,11 +96,11 @@ function generateActivityFeed(accounts: (XhsAccountInfo & { postsCount?: number 
         iconBg: "stat-icon-gradient-emerald",
         text: `${acc.nickname || "账号"} 数据已采集`,
         time: new Date(now.getTime() - (i + 1) * 2 * 60 * 1000),
+        type: "data",
       });
     }
   });
 
-  // Post-related activities
   posts.slice(0, 2).forEach((post, i) => {
     activities.push({
       id: `post-${post.id}`,
@@ -81,10 +108,10 @@ function generateActivityFeed(accounts: (XhsAccountInfo & { postsCount?: number 
       iconBg: "stat-icon-gradient-amber",
       text: `新笔记发布：${(post.title || "无标题").slice(0, 15)}...`,
       time: new Date(now.getTime() - (i + 3) * 5 * 60 * 1000),
+      type: "post",
     });
   });
 
-  // AI content activity
   if (posts.length > 0) {
     activities.push({
       id: "ai-gen",
@@ -92,10 +119,10 @@ function generateActivityFeed(accounts: (XhsAccountInfo & { postsCount?: number 
       iconBg: "stat-icon-gradient-xhs",
       text: "AI内容生成完成",
       time: new Date(now.getTime() - 10 * 60 * 1000),
+      type: "ai",
     });
   }
 
-  // Export activity
   if (accounts.length > 0) {
     activities.push({
       id: "export",
@@ -103,6 +130,7 @@ function generateActivityFeed(accounts: (XhsAccountInfo & { postsCount?: number 
       iconBg: "stat-icon-gradient-rose",
       text: "数据导出完成",
       time: new Date(now.getTime() - 30 * 60 * 1000),
+      type: "export",
     });
   }
 
@@ -123,7 +151,15 @@ function formatRelativeTime(date: Date): string {
   return `${diffDay}天前`;
 }
 
-/** Mini SVG sparkline for stat cards */
+/** Activity type border color mapping */
+const activityBorderColor: Record<ActivityItem["type"], string> = {
+  data: "border-l-blue-400 dark:border-l-blue-500",
+  post: "border-l-amber-400 dark:border-l-amber-500",
+  ai: "border-l-purple-400 dark:border-l-purple-500",
+  export: "border-l-emerald-400 dark:border-l-emerald-500",
+};
+
+/** Mini SVG sparkline for stat cards - enhanced with pulse dot */
 function StatSparkline({ data, color = "#FF2442" }: { data: number[]; color?: string }) {
   if (!data || data.length < 2) return null;
   const max = Math.max(...data);
@@ -141,18 +177,23 @@ function StatSparkline({ data, color = "#FF2442" }: { data: number[]; color?: st
 
   const linePath = `M ${points.map((p) => `${p.x},${p.y}`).join(" L ")}`;
   const areaPath = `${linePath} L ${points[points.length - 1].x},${height} L ${points[0].x},${height} Z`;
+  const colorId = color.replace("#", "");
 
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible mt-1.5">
       <defs>
-        <linearGradient id={`spark-grad-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`spark-grad-${colorId}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.2" />
           <stop offset="100%" stopColor={color} stopOpacity="0.02" />
         </linearGradient>
       </defs>
-      <path d={areaPath} fill={`url(#spark-grad-${color.replace("#", "")})`} />
+      <path d={areaPath} fill={`url(#spark-grad-${colorId})`} />
       <path d={linePath} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      {/* End dot */}
+      {/* End dot with pulse animation */}
+      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="4" fill={color} opacity="0.2">
+        <animate attributeName="r" values="2.5;5;2.5" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.3;0.08;0.3" dur="2s" repeatCount="indefinite" />
+      </circle>
       <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="2.5" fill={color} />
     </svg>
   );
@@ -172,7 +213,6 @@ type DateRange = 7 | 30 | 90;
 
 /** Generate simulated trend data based on date range */
 function generateTrend(key: string, range: DateRange): { value: number; isPositive: boolean } {
-  // Use a deterministic seed based on key + range so trends are stable per session
   const seed = key.split("").reduce((a, c) => a + c.charCodeAt(0), 0) + range;
   const pseudoRandom = ((Math.sin(seed * 9301 + 49297) % 233280) + 233280) % 233280 / 233280;
 
@@ -184,11 +224,269 @@ function generateTrend(key: string, range: DateRange): { value: number; isPositi
 
   const { min, max } = rangeConfig[range];
   const magnitude = min + pseudoRandom * (max - min);
-  const isPositive = pseudoRandom > 0.3; // ~70% chance of positive trend
+  const isPositive = pseudoRandom > 0.3;
   const value = parseFloat(magnitude.toFixed(1));
 
   return { value, isPositive };
 }
+
+/** SVG Area Chart with cubic bezier curves, grid lines, tooltips, and dot markers */
+function AreaChart({ data, labels, height = 160 }: { data: number[]; labels: string[]; height?: number }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  if (!data || data.length < 2) return null;
+
+  const width = 320;
+  const padX = 28;
+  const padY = 16;
+  const chartW = width - padX * 2;
+  const chartH = height - padY * 2;
+
+  const maxVal = Math.max(...data, 1);
+  const minVal = Math.min(...data, 0);
+  const rangeVal = maxVal - minVal || 1;
+
+  const points = data.map((val, i) => {
+    const x = padX + (i / (data.length - 1)) * chartW;
+    const y = padY + (1 - (val - minVal) / rangeVal) * chartH;
+    return { x, y };
+  });
+
+  // Build smooth cubic bezier path
+  const tension = 0.3;
+  let smoothPath = `M ${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(i + 2, points.length - 1)];
+
+    const cp1x = p1.x + (p2.x - p0.x) * tension;
+    const cp1y = p1.y + (p2.y - p0.y) * tension;
+    const cp2x = p2.x - (p3.x - p1.x) * tension;
+    const cp2y = p2.y - (p3.y - p1.y) * tension;
+
+    smoothPath += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+  }
+
+  const areaPath = `${smoothPath} L ${points[points.length - 1].x},${height - padY} L ${points[0].x},${height - padY} Z`;
+
+  // Grid lines
+  const gridLines = 4;
+  const gridYs = Array.from({ length: gridLines + 1 }, (_, i) => padY + (i / gridLines) * chartH);
+  const gridValues = Array.from({ length: gridLines + 1 }, (_, i) => Math.round(maxVal - (i / gridLines) * rangeVal));
+
+  return (
+    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <defs>
+        <linearGradient id="area-chart-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FF2442" stopOpacity="0.25" />
+          <stop offset="60%" stopColor="#FF2442" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#FF2442" stopOpacity="0.01" />
+        </linearGradient>
+      </defs>
+
+      {/* Grid lines */}
+      {gridYs.map((y, i) => (
+        <g key={`grid-${i}`}>
+          <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="currentColor" strokeOpacity="0.06" strokeWidth="1" />
+          <text x={padX - 4} y={y + 3} textAnchor="end" fill="currentColor" fillOpacity="0.3" fontSize="8" fontFamily="system-ui">
+            {formatNumber(gridValues[i])}
+          </text>
+        </g>
+      ))}
+
+      {/* Area fill */}
+      <path d={areaPath} fill="url(#area-chart-grad)" />
+
+      {/* Smooth line */}
+      <path d={smoothPath} fill="none" stroke="#FF2442" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+      {/* Dot markers */}
+      {points.map((p, i) => (
+        <g key={`dot-${i}`}>
+          <circle
+            cx={p.x} cy={p.y} r={hoveredIndex === i ? 5 : 3}
+            fill={hoveredIndex === i ? "#FF2442" : "white"}
+            stroke="#FF2442" strokeWidth="2"
+            className="transition-all duration-200"
+            style={{ cursor: "pointer" }}
+          />
+        </g>
+      ))}
+
+      {/* Hover line & tooltip */}
+      {hoveredIndex !== null && points[hoveredIndex] && (
+        <g>
+          <line x1={points[hoveredIndex].x} y1={padY} x2={points[hoveredIndex].x} y2={height - padY} stroke="#FF2442" strokeOpacity="0.2" strokeWidth="1" strokeDasharray="3,3" />
+          {/* Tooltip bg */}
+          <rect
+            x={points[hoveredIndex].x - 30}
+            y={points[hoveredIndex].y - 28}
+            width="60"
+            height="20"
+            rx="4"
+            fill="#FF2442"
+            fillOpacity="0.9"
+          />
+          <text
+            x={points[hoveredIndex].x}
+            y={points[hoveredIndex].y - 15}
+            textAnchor="middle"
+            fill="white"
+            fontSize="10"
+            fontWeight="600"
+            fontFamily="system-ui"
+          >
+            {formatNumber(data[hoveredIndex])}
+          </text>
+        </g>
+      )}
+
+      {/* X-axis labels */}
+      {points.map((p, i) => (
+        <text key={`label-${i}`} x={p.x} y={height - 2} textAnchor="middle" fill="currentColor" fillOpacity="0.4" fontSize="9" fontFamily="system-ui">
+          {labels[i] || ""}
+        </text>
+      ))}
+
+      {/* Invisible hover areas */}
+      {points.map((p, i) => (
+        <rect
+          key={`hover-${i}`}
+          x={p.x - (chartW / data.length) / 2}
+          y={0}
+          width={chartW / data.length}
+          height={height}
+          fill="transparent"
+          onMouseEnter={() => setHoveredIndex(i)}
+          onMouseLeave={() => setHoveredIndex(null)}
+          style={{ cursor: "pointer" }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+/** SVG Donut/Ring Chart for engagement rate */
+function EngagementRingChart({
+  rate,
+  likeRate,
+  commentRate,
+  collectRate,
+}: {
+  rate: string;
+  likeRate: string;
+  commentRate: string;
+  collectRate: string;
+}) {
+  const size = 120;
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const center = size / 2;
+
+  const numRate = parseFloat(rate) || 0;
+  const numLike = parseFloat(likeRate) || 0;
+  const numComment = parseFloat(commentRate) || 0;
+  const numCollect = parseFloat(collectRate) || 0;
+
+  const total = numLike + numComment + numCollect;
+  const likePct = total > 0 ? numLike / total : 0.4;
+  const commentPct = total > 0 ? numComment / total : 0.3;
+  const collectPct = total > 0 ? numCollect / total : 0.3;
+
+  const likeLen = circumference * likePct;
+  const commentLen = circumference * commentPct;
+  const collectLen = circumference * collectPct;
+
+  const likeOffset = 0;
+  const commentOffset = likeLen;
+  const collectOffset = likeLen + commentLen;
+
+  // Scale the total fill to represent the rate visually (max ~10% = full ring)
+  const fillScale = Math.min(numRate / 10, 1);
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative shrink-0">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
+          {/* Background ring */}
+          <circle
+            cx={center} cy={center} r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeOpacity="0.06"
+            strokeWidth={strokeWidth}
+          />
+          {/* Collect segment - amber */}
+          <circle
+            cx={center} cy={center} r={radius}
+            fill="none"
+            stroke="#f59e0b"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={`${collectLen * fillScale} ${circumference}`}
+            strokeDashoffset={-collectOffset * fillScale}
+            className="transition-all duration-700 ease-out"
+          />
+          {/* Comment segment - emerald */}
+          <circle
+            cx={center} cy={center} r={radius}
+            fill="none"
+            stroke="#10b981"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={`${commentLen * fillScale} ${circumference}`}
+            strokeDashoffset={-commentOffset * fillScale}
+            className="transition-all duration-700 ease-out"
+          />
+          {/* Like segment - red */}
+          <circle
+            cx={center} cy={center} r={radius}
+            fill="none"
+            stroke="#f43f5e"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={`${likeLen * fillScale} ${circumference}`}
+            strokeDashoffset={-likeOffset}
+            className="transition-all duration-700 ease-out"
+          />
+        </svg>
+        {/* Center number */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-xl font-bold tracking-tight">{rate}%</span>
+          <span className="text-[9px] text-muted-foreground">互动率</span>
+        </div>
+      </div>
+      {/* Legend */}
+      <div className="space-y-2.5 text-xs min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-400 shrink-0" />
+          <span className="text-muted-foreground">点赞率</span>
+          <span className="font-semibold ml-auto">{likeRate}%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+          <span className="text-muted-foreground">评论率</span>
+          <span className="font-semibold ml-auto">{commentRate}%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+          <span className="text-muted-foreground">收藏率</span>
+          <span className="font-semibold ml-auto">{collectRate}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Stat card gradient backgrounds */
+const statCardGradients: Record<string, string> = {
+  accounts: "bg-gradient-to-br from-rose-50/80 to-rose-100/30 dark:from-rose-950/20 dark:to-rose-950/5",
+  posts: "bg-gradient-to-br from-amber-50/80 to-amber-100/30 dark:from-amber-950/20 dark:to-amber-950/5",
+  engagement: "bg-gradient-to-br from-emerald-50/80 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-950/5",
+  rate: "bg-gradient-to-br from-xhs-50/80 to-xhs-100/30 dark:from-xhs-950/20 dark:to-xhs-950/5",
+};
 
 export function DashboardView() {
   const { setAddAccountDialogOpen, setActiveTab } = useAppStore();
@@ -196,16 +494,44 @@ export function DashboardView() {
   const [accounts, setAccounts] = useState<(XhsAccountInfo & { postsCount?: number; engagementData?: number[] })[]>([]);
   const [recentPosts, setRecentPosts] = useState<XhsPostInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>(7);
   const [rangeTransitioning, setRangeTransitioning] = useState(false);
 
+  // AI strategy state
+  const [strategyRecommendations, setStrategyRecommendations] = useState<StrategyRecommendation[]>([]);
+  const [strategyLoading, setStrategyLoading] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
+
+  const loadStrategy = useCallback(async () => {
+    setStrategyLoading(true);
+    try {
+      const res = await fetch(
+        `/api/ai/strategy?accountCount=${totalAccounts}&avgEngagement=${avgEngagement}&engagementRate=${engagementRate}&totalPosts=${totalPosts}`
+      );
+      const data = await res.json();
+      if (data.success && data.data) {
+        setStrategyRecommendations(data.data);
+      }
+    } catch {
+      // Silently fail - fallback recommendations are already in the API
+    } finally {
+      setStrategyLoading(false);
+    }
+  }, []);
+
+  // Load strategy after data is loaded
+  useEffect(() => {
+    if (!loading && accounts.length > 0) {
+      loadStrategy();
+    }
+  }, [loading, accounts.length]);
 
   const loadData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -238,40 +564,8 @@ export function DashboardView() {
     }
   };
 
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const res = await fetch("/api/export", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        const dateStr = new Date().toISOString().slice(0, 10);
-        const filename = `xhs-data-export-${dateStr}.json`;
-        const blob = new Blob([JSON.stringify(data.data, null, 2)], {
-          type: "application/json",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success("数据导出成功！");
-        addNotification({
-          type: "export",
-          title: "数据导出完成",
-          message: `已导出 ${data.data.accounts?.length || 0} 个账号的数据`,
-          navigateTo: "dashboard",
-        });
-      } else {
-        toast.error(data.error || "导出失败");
-      }
-    } catch {
-      toast.error("网络错误，请重试");
-    } finally {
-      setExporting(false);
-    }
+  const handleExport = () => {
+    setExportDialogOpen(true);
   };
 
   // Computed stats
@@ -291,6 +585,17 @@ export function DashboardView() {
   // Engagement rate calculation
   const engagementRate = totalFollowers > 0 && recentPosts.length > 0
     ? ((recentPosts.reduce((s, p) => s + p.likes + p.comments + p.collects, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
+    : "0";
+
+  // Engagement rate sub-rates
+  const likeRate = totalFollowers > 0 && recentPosts.length > 0
+    ? ((recentPosts.reduce((s, p) => s + p.likes, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
+    : "0";
+  const commentRate = totalFollowers > 0 && recentPosts.length > 0
+    ? ((recentPosts.reduce((s, p) => s + p.comments, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
+    : "0";
+  const collectRate = totalFollowers > 0 && recentPosts.length > 0
+    ? ((recentPosts.reduce((s, p) => s + p.collects, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
     : "0";
 
   // Best posting time analysis
@@ -326,7 +631,6 @@ export function DashboardView() {
     if (range === dateRange) return;
     setRangeTransitioning(true);
     setDateRange(range);
-    // Simulate a brief loading state for stat cards
     setTimeout(() => setRangeTransitioning(false), 400);
   };
 
@@ -338,6 +642,25 @@ export function DashboardView() {
     { key: "engagement" as const, label: "平均互动", icon: Activity, value: formatNumber(avgEngagement), bg: "stat-icon-gradient-emerald", textColor: "text-white", sparkColor: "#10b981" },
     { key: "rate" as const, label: "互动率", icon: Target, value: `${engagementRate}%`, bg: "stat-icon-gradient-xhs", textColor: "text-white", sparkColor: "#FF2442" },
   ] as const;
+
+  // Area chart data for 7-day trend
+  const areaChartData = (() => {
+    const days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+    return {
+      labels: days,
+      data: days.map((_, i) => {
+        const post = recentPosts[i % recentPosts.length];
+        return (post?.likes || 0) + (post?.comments || 0) + (post?.collects || 0);
+      }),
+    };
+  })();
+
+  // Priority badge colors
+  const priorityBadgeStyle: Record<string, string> = {
+    "高": "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200/50 dark:border-red-900/30",
+    "中": "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-900/30",
+    "低": "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/30",
+  };
 
   if (loading) {
     return (
@@ -436,13 +759,8 @@ export function DashboardView() {
             size="sm"
             className="border-border hidden sm:inline-flex"
             onClick={handleExport}
-            disabled={exporting}
           >
-            {exporting ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4 mr-1" />
-            )}
+            <Download className="w-4 h-4 mr-1" />
             导出
           </Button>
           <Button
@@ -456,16 +774,16 @@ export function DashboardView() {
         </div>
       </div>
 
-      {/* Quick Stats with sparklines & trend indicators */}
+      {/* ─── Quick Stats with enhanced gradients, trend pills, pulse dots ─── */}
       <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-4 transition-opacity duration-300", rangeTransitioning && "opacity-60")}>
         {statCards.map((stat) => {
           const Icon = stat.icon;
           const sparkData = statSparklines[stat.key];
           const trend = statTrends[stat.key];
           return (
-            <Card key={stat.key} className="card-hover overflow-hidden relative group">
+            <Card key={stat.key} className={cn("card-hover overflow-hidden relative group border-0 shadow-sm", statCardGradients[stat.key])}>
               {/* Gradient border accent on top */}
-              <div className={cn("absolute top-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+              <div className={cn("absolute top-0 left-0 right-0 h-[2px] opacity-60 group-hover:opacity-100 transition-opacity duration-300",
                 stat.key === "accounts" ? "bg-gradient-to-r from-rose-400 to-rose-500" :
                 stat.key === "posts" ? "bg-gradient-to-r from-amber-400 to-amber-500" :
                 stat.key === "engagement" ? "bg-gradient-to-r from-emerald-400 to-emerald-500" :
@@ -479,13 +797,13 @@ export function DashboardView() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
                     <div className="flex items-center gap-2">
-                      <p className="text-xl font-bold tracking-tight stat-count-animate">{stat.value}</p>
-                      {/* Trend indicator */}
+                      <p className="text-2xl font-extrabold tracking-tight stat-count-animate">{stat.value}</p>
+                      {/* Trend indicator pill */}
                       <span className={cn(
-                        "text-[11px] font-medium flex items-center gap-0.5 text-appear",
+                        "text-[11px] font-semibold flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-appear",
                         trend.isPositive
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-red-500 dark:text-red-400"
+                          ? "bg-emerald-100/60 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
+                          : "bg-red-100/60 dark:bg-red-950/30 text-red-600 dark:text-red-400"
                       )}>
                         {trend.isPositive
                           ? <TrendingUp className="w-3 h-3" />
@@ -496,7 +814,7 @@ export function DashboardView() {
                     </div>
                   </div>
                 </div>
-                {/* 7-day sparkline */}
+                {/* 7-day sparkline with pulse end dot */}
                 <StatSparkline data={sparkData} color={stat.sparkColor} />
               </CardContent>
             </Card>
@@ -507,9 +825,9 @@ export function DashboardView() {
       {/* Divider between stats and content */}
       <div className="border-b border-border/40" />
 
-      {/* Activity Feed + Weekly Performance Row */}
+      {/* ─── Activity Feed + Weekly Performance Row ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Activity Feed Card */}
+        {/* Activity Feed Card - with left border color coding */}
         <Card className="overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -526,10 +844,11 @@ export function DashboardView() {
                     <div
                       key={item.id}
                       className={cn(
-                        "flex items-center gap-3 py-2.5 stagger-item",
-                        i < activityFeed.length - 1 && "border-b border-border/40"
+                        "flex items-center gap-3 py-2.5 px-2 rounded-lg border-l-[3px] stagger-item transition-colors duration-200 hover:bg-muted/30",
+                        activityBorderColor[item.type],
+                        i < activityFeed.length - 1 && "mb-0.5"
                       )}
-                      style={{ animationDelay: `${i * 0.05}s` }}
+                      style={{ animationDelay: `${i * 0.08}s` }}
                     >
                       <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", item.iconBg)}>
                         <ItemIcon className="w-3.5 h-3.5 text-white" />
@@ -598,7 +917,6 @@ export function DashboardView() {
                   );
                 });
               })()}
-              {/* Summary */}
               <div className="pt-2 mt-1 border-t border-border/40">
                 <p className="text-xs text-muted-foreground text-center">
                   本周互动量较上周 <span className="font-semibold text-emerald-600 dark:text-emerald-400">+15.3%</span>
@@ -609,9 +927,9 @@ export function DashboardView() {
         </Card>
       </div>
 
-      {/* Two-column layout for data overview + insights */}
+      {/* ─── Two-column layout: Data Overview + Insights ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Data Overview - Takes 2 columns */}
+        {/* Data Overview - Enhanced with Area Chart */}
         {recentPosts.length > 0 && (
           <Card className="lg:col-span-2 overflow-hidden">
             <CardHeader className="pb-2">
@@ -659,7 +977,7 @@ export function DashboardView() {
                   });
                 })()}
               </div>
-              {/* Weekly mini bar chart */}
+              {/* Area chart replacing bar chart */}
               {recentPosts.length > 1 && (
                 <div className="mt-4 pt-4 border-t border-border/50">
                   <div className="flex items-center justify-between mb-3">
@@ -668,42 +986,7 @@ export function DashboardView() {
                       总计 {formatNumber(recentPosts.reduce((s, p) => s + p.likes + p.comments + p.collects, 0))} 互动
                     </p>
                   </div>
-                  <div className="relative h-32">
-                    <div className="flex items-end gap-2 h-full">
-                      {(() => {
-                        const days = ["一", "二", "三", "四", "五", "六", "日"];
-                        const dayData = days.map((_, i) => {
-                          const post = recentPosts[i % recentPosts.length];
-                          return (post?.likes || 0) + (post?.comments || 0) + (post?.collects || 0);
-                        });
-                        const maxVal = Math.max(...dayData, 1);
-                        return dayData.map((val, i) => {
-                          const pct = Math.max((val / maxVal) * 100, 5);
-                          const isMax = val === maxVal;
-                          return (
-                            <div key={i} className="flex-1 h-full flex flex-col items-center justify-end gap-1.5 group relative">
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-medium text-foreground bg-foreground/5 px-2 py-1 rounded-md whitespace-nowrap z-10">
-                                {formatNumber(val)} 互动
-                              </div>
-                              <div
-                                className={cn(
-                                  "w-full rounded-md transition-all duration-300 ease-out",
-                                  isMax
-                                    ? "bg-gradient-to-t from-xhs to-xhs/70 shadow-sm shadow-xhs/20"
-                                    : "bg-gradient-to-t from-xhs/40 to-xhs/15 hover:from-xhs/60 hover:to-xhs/30"
-                                )}
-                                style={{ height: `${pct}%` }}
-                              />
-                              <span className={cn(
-                                "text-[10px] font-medium",
-                                isMax ? "text-xhs" : "text-muted-foreground"
-                              )}>{days[i]}</span>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
+                  <AreaChart data={areaChartData.data} labels={areaChartData.labels} height={160} />
                 </div>
               )}
             </CardContent>
@@ -712,56 +995,23 @@ export function DashboardView() {
 
         {/* Insights Panel */}
         <div className="space-y-4">
-          {/* Engagement Rate Card */}
+          {/* Engagement Rate Card - Donut/Ring Chart */}
           <Card className="border-xhs/15 bg-gradient-to-br from-xhs-light/30 to-transparent">
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg stat-icon-gradient-xhs flex items-center justify-center shadow-sm">
                   <Zap className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">互动率</p>
-                  <p className="text-lg font-bold tracking-tight">{engagementRate}%</p>
+                  <p className="text-xs text-muted-foreground">互动率分析</p>
                 </div>
               </div>
-              <div className="space-y-2">
-                {(() => {
-                  const likeRate = totalFollowers > 0 && recentPosts.length > 0
-                    ? ((recentPosts.reduce((s, p) => s + p.likes, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
-                    : "0";
-                  const commentRate = totalFollowers > 0 && recentPosts.length > 0
-                    ? ((recentPosts.reduce((s, p) => s + p.comments, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
-                    : "0";
-                  const collectRate = totalFollowers > 0 && recentPosts.length > 0
-                    ? ((recentPosts.reduce((s, p) => s + p.collects, 0) / recentPosts.length) / totalFollowers * 100).toFixed(1)
-                    : "0";
-
-                  const rateItems = [
-                    { label: "点赞率", value: likeRate, color: "bg-red-400", bg: "bg-red-100 dark:bg-red-950/30" },
-                    { label: "评论率", value: commentRate, color: "bg-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-950/30" },
-                    { label: "收藏率", value: collectRate, color: "bg-amber-400", bg: "bg-amber-100 dark:bg-amber-950/30" },
-                  ];
-
-                  return rateItems.map((item) => {
-                    const numVal = parseFloat(item.value);
-                    const barWidth = Math.min(Math.max(numVal * 3, 4), 100);
-                    return (
-                      <div key={item.label} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">{item.label}</span>
-                          <span className="font-medium">{item.value}%</span>
-                        </div>
-                        <div className={cn("h-1.5 rounded-full overflow-hidden", item.bg)}>
-                          <div
-                            className={cn("h-full rounded-full transition-all duration-500", item.color)}
-                            style={{ width: `${barWidth}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
+              <EngagementRingChart
+                rate={engagementRate}
+                likeRate={likeRate}
+                commentRate={commentRate}
+                collectRate={collectRate}
+              />
             </CardContent>
           </Card>
 
@@ -833,6 +1083,73 @@ export function DashboardView() {
         </div>
       </div>
 
+      {/* ─── AI Content Strategy Card ─── */}
+      <Card className="overflow-hidden border-purple-200/40 dark:border-purple-900/30 bg-gradient-to-br from-purple-50/30 to-transparent dark:from-purple-950/10">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-500" />
+              AI运营建议
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/20 h-7"
+              onClick={loadStrategy}
+              disabled={strategyLoading}
+            >
+              {strategyLoading ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5 mr-1" />
+              )}
+              换一批
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          {strategyLoading && strategyRecommendations.length === 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex gap-3 p-3 rounded-xl bg-muted/20">
+                  <Skeleton className="w-9 h-9 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-3 w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {strategyRecommendations.map((rec, i) => {
+                const RecIcon = strategyIconMap[rec.icon] || Sparkles;
+                return (
+                  <div
+                    key={rec.id}
+                    className="flex gap-3 p-3 rounded-xl bg-background/60 hover:bg-background/80 border border-border/30 transition-all duration-200 stagger-item group"
+                    style={{ animationDelay: `${i * 0.06}s` }}
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-purple-100/60 dark:bg-purple-950/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
+                      <RecIcon className="w-4.5 h-4.5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm font-semibold truncate">{rec.title}</span>
+                        <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 h-4 border font-semibold", priorityBadgeStyle[rec.priority])}>
+                          {rec.priority}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{rec.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Account List */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -886,6 +1203,12 @@ export function DashboardView() {
         onOpenChange={setComparisonOpen}
       />
 
+      {/* Export Dialog */}
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+      />
+
       {/* Recent Posts */}
       {recentPosts.length > 0 && (
         <div>
@@ -916,7 +1239,6 @@ export function DashboardView() {
                       <FileText className="w-8 h-8 text-muted-foreground/40" />
                     </div>
                   )}
-                  {/* AI Score badge */}
                   {post.aiScore > 0 && (
                     <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
                       <Sparkles className="w-2.5 h-2.5 text-amber-400" />

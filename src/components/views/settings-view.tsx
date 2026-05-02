@@ -294,7 +294,7 @@ export function SettingsView() {
             </div>
             <div>
               <p className="font-semibold text-sm">小红书AI运营助手</p>
-              <p className="text-xs text-muted-foreground mt-0.5">版本 2.0.0</p>
+              <p className="text-xs text-muted-foreground mt-0.5">版本 2.1.0</p>
             </div>
           </div>
 
@@ -325,6 +325,25 @@ export function SettingsView() {
             <span>Made with</span>
             <Heart className="w-3 h-3 text-xhs fill-xhs" />
             <span>by Z.ai</span>
+          </div>
+
+          {/* Changelog */}
+          <div className="mt-3 p-3 rounded-xl bg-muted/20 border border-border/30">
+            <p className="text-[10px] font-semibold text-muted-foreground mb-2 uppercase tracking-wider">最新更新</p>
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-2">
+                <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-xhs-light text-xhs border-0 shrink-0 mt-0.5">NEW</Badge>
+                <p className="text-[10px] text-muted-foreground">AI运营建议、创作模板、质量评分、数据导出增强</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-emerald-50 text-emerald-600 border-0 shrink-0 mt-0.5">FIX</Badge>
+                <p className="text-[10px] text-muted-foreground">优化仪表盘图表、内容卡片、漏斗分析视觉体验</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-amber-50 text-amber-600 border-0 shrink-0 mt-0.5">UI</Badge>
+                <p className="text-[10px] text-muted-foreground">全局微动画、暗色模式适配、滚动条优化</p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

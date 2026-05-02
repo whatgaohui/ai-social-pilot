@@ -603,6 +603,71 @@ export function PersonaView() {
 
         {/* Preview Card */}
         <div className="space-y-4">
+          {/* Persona Strength Meter */}
+          <Card className="border-xhs/10 overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-xhs" />
+                人设完整度
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-4">
+              {(() => {
+                const fields = [
+                  { label: "人设名称", filled: !!name.trim() },
+                  { label: "语气风格", filled: true },
+                  { label: "写作风格", filled: true },
+                  { label: "目标受众", filled: !!targetAudience.trim() },
+                  { label: "内容主题", filled: contentThemes.length > 0 },
+                  { label: "核心关键词", filled: keywords.length > 0 },
+                  { label: "人设描述", filled: !!referenceDesc.trim() },
+                  { label: "标志性用语", filled: !!signaturePhrase.trim() },
+                ];
+                const filledCount = fields.filter(f => f.filled).length;
+                const pct = Math.round((filledCount / fields.length) * 100);
+                const level = pct >= 75 ? "完善" : pct >= 50 ? "良好" : pct >= 25 ? "基础" : "待完善";
+                const levelColor = pct >= 75 ? "text-emerald-600 dark:text-emerald-400" : pct >= 50 ? "text-amber-600 dark:text-amber-400" : pct >= 25 ? "text-orange-500" : "text-red-500";
+                const barColor = pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : pct >= 25 ? "bg-orange-500" : "bg-red-500";
+
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className={cn("text-lg font-bold", levelColor)}>{pct}%</span>
+                      <Badge variant="secondary" className={cn("text-[10px] border-0 font-medium",
+                        pct >= 75 ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400" :
+                        pct >= 50 ? "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400" :
+                        "bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400"
+                      )}>
+                        {level}
+                      </Badge>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted/50 overflow-hidden">
+                      <div className={cn("h-full rounded-full transition-all duration-700 ease-out", barColor)} style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {fields.map((f) => (
+                        <div key={f.label} className="flex items-center gap-1.5 text-[10px]">
+                          <div className={cn("w-3 h-3 rounded-full flex items-center justify-center shrink-0",
+                            f.filled ? "bg-emerald-100 dark:bg-emerald-950/30" : "bg-muted/50"
+                          )}>
+                            {f.filled ? (
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+                            ) : (
+                              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />
+                            )}
+                          </div>
+                          <span className={cn("truncate", f.filled ? "text-foreground" : "text-muted-foreground")}>
+                            {f.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
           <Card className="sticky top-6 border-xhs/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -612,7 +677,7 @@ export function PersonaView() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-gradient-to-br from-xhs-light/50 to-xhs-light/10 border border-xhs/10">
-                <div className="w-14 h-14 rounded-full bg-xhs-light flex items-center justify-center border-2 border-xhs/20">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-xhs-light to-xhs-light/30 flex items-center justify-center border-2 border-xhs/20 shadow-sm shadow-xhs/10">
                   <UserCircle className="w-8 h-8 text-xhs" />
                 </div>
                 <div>
