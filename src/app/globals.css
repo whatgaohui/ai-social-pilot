@@ -478,3 +478,991 @@ button:hover:not(:disabled) > [data-lucide] {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ENHANCED GLOBAL STYLES — Micro-animations, Visual Polish & Utilities
+   Task ID: 6 — Added by Style Enhancement Agent
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── 1. Card Hover Animations Enhancement ─────────────────────────────── */
+
+/* Enhanced card-hover with Y-translate lift + subtle scale */
+[data-slot="card"].card-hover:hover {
+  transform: translateY(-4px) scale(1.01);
+}
+
+[data-slot="card"].card-hover:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* Shimmer/shine effect on hover for featured cards */
+@keyframes cardShimmer {
+  0% { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
+}
+
+.card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 60%,
+    transparent 100%
+  );
+  transform: translateX(-100%) skewX(-15deg);
+  transition: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card-shimmer:hover::after {
+  animation: cardShimmer 0.75s ease-out;
+}
+
+.dark .card-shimmer::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 40%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.03) 60%,
+    transparent 100%
+  );
+}
+
+/* ─── 2. View Transition Animations Enhancement ────────────────────────── */
+
+/* Smoother entrance with fade + slight slide up */
+@keyframes viewEnterSmooth {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.view-animate-smooth {
+  animation: viewEnterSmooth 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Enhanced stagger-item with more nuanced timing */
+@keyframes staggerFadeInEnhanced {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.stagger-item-enhanced {
+  opacity: 0;
+  animation: staggerFadeInEnhanced 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Stagger delay utilities for list items */
+.stagger-delay-1 { animation-delay: 0.03s; }
+.stagger-delay-2 { animation-delay: 0.06s; }
+.stagger-delay-3 { animation-delay: 0.09s; }
+.stagger-delay-4 { animation-delay: 0.12s; }
+.stagger-delay-5 { animation-delay: 0.15s; }
+.stagger-delay-6 { animation-delay: 0.18s; }
+.stagger-delay-7 { animation-delay: 0.21s; }
+.stagger-delay-8 { animation-delay: 0.24s; }
+.stagger-delay-9 { animation-delay: 0.27s; }
+.stagger-delay-10 { animation-delay: 0.30s; }
+
+/* Exit animation hints (CSS classes ready for use with libraries like Framer Motion) */
+@keyframes viewExit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideDownExit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.animate-exit {
+  animation: viewExit 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.2s ease forwards;
+}
+
+.animate-slide-down-exit {
+  animation: slideDownExit 0.25s ease forwards;
+}
+
+/* ─── 3. Stat Counter Animation Enhancement ────────────────────────────── */
+
+/* Count-up effect using CSS — a subtle scale bounce when number changes */
+@keyframes countUpBounce {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.85) translateY(4px);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.06) translateY(-1px);
+  }
+  70% {
+    transform: scale(0.98) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.stat-count-animate {
+  animation: countUpBounce 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Subtle bounce when stat value increments */
+@keyframes statBounce {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.08); }
+  60% { transform: scale(0.96); }
+  80% { transform: scale(1.02); }
+}
+
+.stat-bounce {
+  animation: statBounce 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─── 4. Navigation Animations Enhancement ─────────────────────────────── */
+
+/* Left border slide-in for active nav item (enhanced) */
+@keyframes navSlideIn {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.nav-active-indicator::before {
+  animation: navSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Smooth color transitions on nav item hover */
+.nav-item-hover {
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    padding-left 0.2s ease;
+}
+
+.nav-item-hover:hover {
+  padding-left: calc(0.5rem + 2px);
+}
+
+/* Active nav item pulse glow */
+@keyframes navPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 36, 66, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(255, 36, 66, 0.15);
+  }
+}
+
+.nav-active-glow {
+  animation: navPulseGlow 2.5s ease-in-out infinite;
+}
+
+.dark .nav-active-glow {
+  animation: navPulseGlowDark 2.5s ease-in-out infinite;
+}
+
+@keyframes navPulseGlowDark {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 36, 66, 0);
+  }
+  50% {
+    box-shadow: 0 0 12px 3px rgba(255, 36, 66, 0.2);
+  }
+}
+
+/* ─── 5. Skeleton Loading Enhancements ─────────────────────────────────── */
+
+/* Improved, smoother shimmer with more subtle gradient */
+@keyframes shimmerSmooth {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-enhanced {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 30%,
+    hsl(var(--muted) / 0.4) 50%,
+    hsl(var(--muted)) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSmooth 2.5s ease-in-out infinite;
+}
+
+.dark .skeleton-enhanced {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 30%,
+    hsl(var(--muted) / 0.3) 50%,
+    hsl(var(--muted)) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSmooth 2.5s ease-in-out infinite;
+}
+
+/* Additional skeleton delay classes for more staggered loading */
+.skeleton-delay-7 { animation-delay: 0.6s; }
+.skeleton-delay-8 { animation-delay: 0.7s; }
+.skeleton-delay-9 { animation-delay: 0.8s; }
+.skeleton-delay-10 { animation-delay: 0.9s; }
+.skeleton-delay-11 { animation-delay: 1.0s; }
+.skeleton-delay-12 { animation-delay: 1.1s; }
+
+/* Skeleton pulse variant (subtle opacity pulse instead of shimmer) */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.skeleton-pulse {
+  background: hsl(var(--muted));
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+/* ─── 6. Custom Scrollbar Styling Enhancement ──────────────────────────── */
+
+/* Enhanced custom-scrollbar with 6px width, rounded, themed, smooth scroll */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border) / 0.6) transparent;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border) / 0.6);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background: hsl(var(--muted-foreground) / 0.6);
+}
+
+/* Auto-hide scrollbar (visible on hover/scroll only) */
+.scrollbar-auto-hide {
+  scrollbar-width: none;
+}
+
+.scrollbar-auto-hide::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.scrollbar-auto-hide:hover::-webkit-scrollbar,
+.scrollbar-auto-hide:active::-webkit-scrollbar {
+  opacity: 1;
+}
+
+.scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
+  background: hsl(var(--border) / 0.6);
+  border-radius: 3px;
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: hsl(var(--border) / 0.5) transparent;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border) / 0.5);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.3);
+}
+
+/* ─── 7. Button Press Feedback Enhancement ─────────────────────────────── */
+
+/* Button press with scale-down on active */
+.btn-press {
+  transition:
+    transform 0.12s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.12s ease;
+  will-change: transform;
+}
+
+.btn-press:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn-press:active:not(:disabled) .btn-press-content {
+  transform: scale(0.98);
+}
+
+/* Ripple effect hint — position a pseudo-element for JS-driven ripple */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.btn-ripple:active::after {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
+/* ─── 8. Glassmorphism Utility Classes ─────────────────────────────────── */
+
+.glass {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.dark .glass {
+  background: rgba(10, 10, 10, 0.7);
+}
+
+.glass-card {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-card {
+  background: rgba(10, 10, 10, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* Glass with stronger blur for overlays */
+.glass-heavy {
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.dark .glass-heavy {
+  background: rgba(10, 10, 10, 0.85);
+}
+
+/* ─── 9. Gradient Text Utility Enhancement ─────────────────────────────── */
+
+/* XHS to amber gradient text */
+.gradient-text-xhs {
+  background: linear-gradient(135deg, #FF2442, #FF5C72, #F59E0B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Emerald to teal gradient text */
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #10B981, #34D399, #14B8A6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Rose to purple gradient text */
+.gradient-text-rose {
+  background: linear-gradient(135deg, #FB7185, #F472B6, #C084FC);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Amber to orange gradient text */
+.gradient-text-amber {
+  background: linear-gradient(135deg, #F59E0B, #FB923C, #EF4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── 10. Tooltip/Popover Animations ───────────────────────────────────── */
+
+/* Scale + fade animation for tooltips */
+@keyframes tooltipEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes tooltipExit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92) translateY(2px);
+  }
+}
+
+[data-slot="tooltip-content"] {
+  animation: tooltipEnter 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tooltip-exit {
+  animation: tooltipExit 0.1s ease forwards;
+}
+
+/* Slide-down animation for dropdown menus */
+@keyframes dropdownSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+[data-slot="popover-content"] {
+  animation: dropdownSlideDown 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dropdown-animate {
+  animation: dropdownSlideDown 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─── 11. Progress Bar Animations ──────────────────────────────────────── */
+
+/* Animated progress bar with shimmer effect */
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-bar-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: progressShimmer 1.5s ease-in-out infinite;
+}
+
+/* Pulse effect for indeterminate progress */
+@keyframes progressPulse {
+  0% {
+    opacity: 0.6;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+    transform: translateX(200%);
+  }
+}
+
+.progress-indeterminate {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--muted));
+}
+
+.progress-indeterminate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: hsl(var(--primary));
+  border-radius: inherit;
+  animation: progressPulse 1.8s ease-in-out infinite;
+}
+
+/* Animated fill for determinate progress bars */
+@keyframes progressFill {
+  from { width: 0%; }
+}
+
+.progress-animated {
+  animation: progressFill 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ─── 12. Badge Animations ─────────────────────────────────────────────── */
+
+/* Subtle bounce when badge appears */
+@keyframes badgeBounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.badge-animate-in {
+  animation: badgeBounceIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Glow effect for important badges */
+@keyframes badgeGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 36, 66, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(255, 36, 66, 0.2);
+  }
+}
+
+.badge-glow {
+  animation: badgeGlow 2s ease-in-out infinite;
+}
+
+.badge-glow-amber {
+  animation: badgeGlowAmber 2s ease-in-out infinite;
+}
+
+@keyframes badgeGlowAmber {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(245, 158, 11, 0.2);
+  }
+}
+
+.badge-glow-emerald {
+  animation: badgeGlowEmerald 2s ease-in-out infinite;
+}
+
+@keyframes badgeGlowEmerald {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.2);
+  }
+}
+
+/* Badge with subtle scale on hover */
+[data-slot="badge"] {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+[data-slot="badge"]:hover {
+  transform: scale(1.05);
+}
+
+/* ─── 13. Dark Mode Improvements ───────────────────────────────────────── */
+
+/* Better contrast for card hover in dark mode */
+.dark [data-slot="card"].card-hover:hover {
+  box-shadow:
+    0 8px 24px -4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 36, 66, 0.1);
+  border-color: rgba(255, 36, 66, 0.15);
+}
+
+.dark .card-glow:hover {
+  box-shadow:
+    0 8px 30px -6px rgba(255, 36, 66, 0.15),
+    0 0 0 1px rgba(255, 36, 66, 0.12);
+  border-color: rgba(255, 36, 66, 0.2);
+}
+
+/* Dark mode skeleton improvements */
+.dark [data-slot="skeleton"] {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted) / 0.3) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Dark mode selection */
+.dark ::selection {
+  background-color: rgba(255, 36, 66, 0.25);
+}
+
+/* Dark mode tooltip shadow */
+.dark [data-slot="tooltip-content"] {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dark mode card shimmer adjustment */
+.dark .card-shimmer::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.02) 40%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0.02) 60%,
+    transparent 100%
+  );
+}
+
+/* Dark mode progress bar shimmer */
+.dark .progress-bar-shimmer::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+}
+
+/* Dark mode badge glow stronger */
+.dark .badge-glow {
+  animation: badgeGlowDark 2s ease-in-out infinite;
+}
+
+@keyframes badgeGlowDark {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 36, 66, 0);
+  }
+  50% {
+    box-shadow: 0 0 10px 3px rgba(255, 36, 66, 0.25);
+  }
+}
+
+/* Dark mode input subtle glow on focus */
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  box-shadow: 0 0 0 3px rgba(255, 36, 66, 0.15);
+}
+
+/* ─── 14. Mobile Touch Improvements ────────────────────────────────────── */
+
+/* Remove tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch action optimizations for better mobile scrolling */
+.touch-pan-y {
+  touch-action: pan-y;
+}
+
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Improve mobile scrollbar (larger hit target) */
+@media (max-width: 768px) {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--border) / 0.5);
+    border-radius: 4px;
+  }
+
+  /* Slightly larger touch targets for mobile scrollbars */
+  .custom-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .custom-scrollbar:hover {
+    scrollbar-width: thin;
+  }
+}
+
+/* Prevent overscroll bounce on iOS */
+.overscroll-none {
+  overscroll-behavior: none;
+}
+
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+/* Safe area padding for iOS notch devices */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ─── 15. prefers-reduced-motion Support ───────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .view-animate,
+  .view-animate-smooth,
+  .animate-in,
+  .animate-exit,
+  .animate-fade-out,
+  .animate-slide-down-exit {
+    animation: none !important;
+  }
+
+  .stagger-item,
+  .stagger-item-enhanced {
+    opacity: 1;
+    animation: none !important;
+  }
+
+  .card-hover:hover,
+  .card-glow:hover,
+  .card-shimmer:hover::after {
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .stat-count-animate,
+  .stat-bounce,
+  .icon-pulse,
+  .badge-animate-in,
+  .badge-glow,
+  .badge-glow-amber,
+  .badge-glow-emerald,
+  .nav-active-glow {
+    animation: none !important;
+  }
+
+  .animate-float {
+    animation: none !important;
+  }
+
+  .progress-bar-shimmer::after,
+  .progress-indeterminate::after {
+    animation: none !important;
+  }
+
+  .btn-press:active:not(:disabled) {
+    transform: none !important;
+  }
+
+  [data-slot="tooltip-content"],
+  [data-slot="popover-content"] {
+    animation: none !important;
+  }
+
+  .skeleton-enhanced,
+  [data-slot="skeleton"] {
+    animation: none !important;
+  }
+}
+
+/* ─── Additional Utility Classes ───────────────────────────────────────── */
+
+/* Smooth number counter animation placeholder (JS sets --num) */
+.counter-animate {
+  transition: --num 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Subtle text appear animation */
+@keyframes textAppear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.text-appear {
+  animation: textAppear 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Scale on appear animation */
+@keyframes scaleAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.scale-appear {
+  animation: scaleAppear 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Subtle spin animation (for loading indicators) */
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 3s linear infinite;
+}
+
+/* Horizontal line expand animation */
+@keyframes lineExpand {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.line-expand {
+  transform-origin: left;
+  animation: lineExpand 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Gradient border animation */
+@keyframes gradientBorderRotate {
+  0% { --gradient-angle: 0deg; }
+  100% { --gradient-angle: 360deg; }
+}
+
+.gradient-border-animated {
+  position: relative;
+  border: none;
+  background: hsl(var(--card));
+}
+
+.gradient-border-animated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--gradient-angle, 0deg),
+    #FF2442,
+    #F59E0B,
+    #10B981,
+    #FF2442
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: gradientBorderRotate 4s linear infinite;
+}
+
+/* Will-change hints for performant animations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Content visibility for off-screen rendering optimization */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 200px;
+}

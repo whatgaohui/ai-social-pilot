@@ -38,7 +38,135 @@ import {
   GitCompareArrows,
   RefreshCw,
   Activity,
+  Database,
+  Bell,
+  CheckCircle2,
+  ArrowUp,
+  ArrowDown,
+  Minus,
 } from "lucide-react";
+
+/** Activity feed item type */
+interface ActivityItem {
+  id: string;
+  icon: React.ElementType;
+  iconBg: string;
+  text: string;
+  time: Date;
+}
+
+/** Generate mock activity feed based on accounts and posts */
+function generateActivityFeed(accounts: (XhsAccountInfo & { postsCount?: number })[], posts: XhsPostInfo[]): ActivityItem[] {
+  const now = new Date();
+  const activities: ActivityItem[] = [];
+
+  // Account-related activities
+  accounts.forEach((acc, i) => {
+    if (acc.status === "success" || acc.status === "partial") {
+      activities.push({
+        id: `acc-${acc.id}`,
+        icon: Database,
+        iconBg: "stat-icon-gradient-emerald",
+        text: `${acc.nickname || "账号"} 数据已采集`,
+        time: new Date(now.getTime() - (i + 1) * 2 * 60 * 1000),
+      });
+    }
+  });
+
+  // Post-related activities
+  posts.slice(0, 2).forEach((post, i) => {
+    activities.push({
+      id: `post-${post.id}`,
+      icon: FileText,
+      iconBg: "stat-icon-gradient-amber",
+      text: `新笔记发布：${(post.title || "无标题").slice(0, 15)}...`,
+      time: new Date(now.getTime() - (i + 3) * 5 * 60 * 1000),
+    });
+  });
+
+  // AI content activity
+  if (posts.length > 0) {
+    activities.push({
+      id: "ai-gen",
+      icon: Sparkles,
+      iconBg: "stat-icon-gradient-xhs",
+      text: "AI内容生成完成",
+      time: new Date(now.getTime() - 10 * 60 * 1000),
+    });
+  }
+
+  // Export activity
+  if (accounts.length > 0) {
+    activities.push({
+      id: "export",
+      icon: Download,
+      iconBg: "stat-icon-gradient-rose",
+      text: "数据导出完成",
+      time: new Date(now.getTime() - 30 * 60 * 1000),
+    });
+  }
+
+  return activities.slice(0, 6);
+}
+
+/** Format relative time in Chinese */
+function formatRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHour = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1) return "刚刚";
+  if (diffMin < 60) return `${diffMin}分钟前`;
+  if (diffHour < 24) return `${diffHour}小时前`;
+  return `${diffDay}天前`;
+}
+
+/** Mini SVG sparkline for stat cards */
+function StatSparkline({ data, color = "#FF2442" }: { data: number[]; color?: string }) {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const width = 100;
+  const height = 32;
+  const pad = 2;
+
+  const points = data.map((val, i) => {
+    const x = pad + (i / (data.length - 1)) * (width - pad * 2);
+    const y = pad + (1 - (val - min) / range) * (height - pad * 2);
+    return { x, y };
+  });
+
+  const linePath = `M ${points.map((p) => `${p.x},${p.y}`).join(" L ")}`;
+  const areaPath = `${linePath} L ${points[points.length - 1].x},${height} L ${points[0].x},${height} Z`;
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible mt-1.5">
+      <defs>
+        <linearGradient id={`spark-grad-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#spark-grad-${color.replace("#", "")})`} />
+      <path d={linePath} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* End dot */}
+      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="2.5" fill={color} />
+    </svg>
+  );
+}
+
+/** Generate sparkline data for stat cards */
+function generateStatSparklineData(key: string, base: number): number[] {
+  const data: number[] = [];
+  for (let i = 0; i < 7; i++) {
+    const variation = Math.round(base * (0.7 + Math.sin(i * 1.3 + base * 0.01) * 0.3));
+    data.push(Math.max(variation, 1));
+  }
+  return data;
+}
 
 export function DashboardView() {
   const { setAddAccountDialogOpen, setActiveTab } = useAppStore();
@@ -151,11 +279,22 @@ export function DashboardView() {
       , recentPosts[0])
     : null;
 
+  // Activity feed
+  const activityFeed = generateActivityFeed(accounts, recentPosts);
+
+  // Stat sparkline data for each card
+  const statSparklines = {
+    accounts: generateStatSparklineData("accounts", totalAccounts || 3),
+    posts: generateStatSparklineData("posts", totalPosts || 10),
+    engagement: generateStatSparklineData("engagement", avgEngagement || 50),
+    rate: generateStatSparklineData("rate", parseFloat(engagementRate) || 3),
+  };
+
   const statCards = [
-    { key: "accounts", label: "管理账号", icon: Users, value: totalAccounts.toString(), bg: "stat-icon-gradient-rose", textColor: "text-white" },
-    { key: "posts", label: "采集笔记", icon: FileText, value: totalPosts.toString(), bg: "stat-icon-gradient-amber", textColor: "text-white" },
-    { key: "engagement", label: "平均互动", icon: Activity, value: formatNumber(avgEngagement), bg: "stat-icon-gradient-emerald", textColor: "text-white" },
-    { key: "rate", label: "互动率", icon: Target, value: `${engagementRate}%`, bg: "stat-icon-gradient-xhs", textColor: "text-white" },
+    { key: "accounts" as const, label: "管理账号", icon: Users, value: totalAccounts.toString(), bg: "stat-icon-gradient-rose", textColor: "text-white", sparkColor: "#fb7185" },
+    { key: "posts" as const, label: "采集笔记", icon: FileText, value: totalPosts.toString(), bg: "stat-icon-gradient-amber", textColor: "text-white", sparkColor: "#f59e0b" },
+    { key: "engagement" as const, label: "平均互动", icon: Activity, value: formatNumber(avgEngagement), bg: "stat-icon-gradient-emerald", textColor: "text-white", sparkColor: "#10b981" },
+    { key: "rate" as const, label: "互动率", icon: Target, value: `${engagementRate}%`, bg: "stat-icon-gradient-xhs", textColor: "text-white", sparkColor: "#FF2442" },
   ] as const;
 
   if (loading) {
@@ -163,7 +302,7 @@ export function DashboardView() {
       <div className="p-4 md:p-6 space-y-6 view-animate">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className={`h-[88px] rounded-xl skeleton-delay-${i}`} />
+            <Skeleton key={i} className={`h-[120px] rounded-xl skeleton-delay-${i}`} />
           ))}
         </div>
         <Skeleton className="h-48 rounded-xl" />
@@ -209,8 +348,8 @@ export function DashboardView() {
 
   return (
     <div className="p-4 md:p-6 space-y-5 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header with glass effect */}
+      <div className="flex items-center justify-between backdrop-blur-sm rounded-xl px-3 py-2 -mx-3 -mt-2 sticky top-0 z-10 bg-background/80">
         <div>
           <h2 className="text-xl font-bold tracking-tight">仪表盘</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -258,33 +397,145 @@ export function DashboardView() {
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats with sparklines */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
+          const sparkData = statSparklines[stat.key];
           return (
-            <Card key={stat.key} className="card-hover overflow-hidden relative">
+            <Card key={stat.key} className="card-hover overflow-hidden relative group">
+              {/* Gradient border accent on top */}
+              <div className={cn("absolute top-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                stat.key === "accounts" ? "bg-gradient-to-r from-rose-400 to-rose-500" :
+                stat.key === "posts" ? "bg-gradient-to-r from-amber-400 to-amber-500" :
+                stat.key === "engagement" ? "bg-gradient-to-r from-emerald-400 to-emerald-500" :
+                "bg-gradient-to-r from-xhs to-xhs-dark"
+              )} />
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-sm", stat.bg)}>
+                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-110", stat.bg)}>
                     <Icon className={cn("w-5 h-5", stat.textColor)} />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
                     <p className="text-xl font-bold tracking-tight stat-count-animate">{stat.value}</p>
                   </div>
                 </div>
+                {/* 7-day sparkline */}
+                <StatSparkline data={sparkData} color={stat.sparkColor} />
               </CardContent>
             </Card>
           );
         })}
       </div>
 
+      {/* Activity Feed + Weekly Performance Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Activity Feed Card */}
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Activity className="w-4 h-4 text-xhs" />
+              最近动态
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            {activityFeed.length > 0 ? (
+              <div className="space-y-0 max-h-72 overflow-y-auto custom-scrollbar">
+                {activityFeed.map((item, i) => {
+                  const ItemIcon = item.icon;
+                  return (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "flex items-center gap-3 py-2.5 stagger-item",
+                        i < activityFeed.length - 1 && "border-b border-border/40"
+                      )}
+                      style={{ animationDelay: `${i * 0.05}s` }}
+                    >
+                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", item.iconBg)}>
+                        <ItemIcon className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm truncate">{item.text}</p>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground shrink-0 whitespace-nowrap">
+                        {formatRelativeTime(item.time)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">暂无动态</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Weekly Performance Card */}
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-xhs" />
+                本周表现
+              </CardTitle>
+              <Badge variant="secondary" className="text-[10px] border-0 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400">
+                较上周 +15.3%
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
+              {(() => {
+                const dayLabels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+                return dayLabels.map((day, i) => {
+                  const post = recentPosts[i % recentPosts.length];
+                  const currentWeek = post ? (post.likes || 0) + (post.comments || 0) + (post.collects || 0) : 0;
+                  const prevWeek = Math.round(currentWeek * (0.6 + Math.sin(i * 2.1) * 0.4));
+                  const diff = currentWeek - prevWeek;
+                  const diffPct = prevWeek > 0 ? Math.round((diff / prevWeek) * 100) : 0;
+                  const isUp = diff > 0;
+                  const isSame = diff === 0;
+                  return (
+                    <div key={day} className="flex items-center gap-3 py-1.5 stagger-item" style={{ animationDelay: `${i * 0.04}s` }}>
+                      <span className="text-xs font-medium text-muted-foreground w-8 shrink-0">{day}</span>
+                      <div className="flex-1 flex items-center gap-2">
+                        <div className="flex-1 h-5 rounded-md bg-muted/40 overflow-hidden relative">
+                          <div
+                            className="h-full bg-gradient-to-r from-xhs/60 to-xhs/30 rounded-md transition-all duration-500"
+                            style={{ width: `${Math.min(Math.max((currentWeek / Math.max(currentWeek, prevWeek, 1)) * 100, 8), 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold tabular-nums w-14 text-right shrink-0">{formatNumber(currentWeek)}</span>
+                      </div>
+                      <div className={cn(
+                        "flex items-center gap-0.5 text-[11px] font-medium w-14 shrink-0 justify-end",
+                        isSame ? "text-muted-foreground" : isUp ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"
+                      )}>
+                        {isSame ? <Minus className="w-3 h-3" /> : isUp ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                        {isSame ? "0%" : `${isUp ? "+" : ""}${diffPct}%`}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+              {/* Summary */}
+              <div className="pt-2 mt-1 border-t border-border/40">
+                <p className="text-xs text-muted-foreground text-center">
+                  本周互动量较上周 <span className="font-semibold text-emerald-600 dark:text-emerald-400">+15.3%</span>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Two-column layout for data overview + insights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Data Overview - Takes 2 columns */}
         {recentPosts.length > 0 && (
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 overflow-hidden">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-xhs" />

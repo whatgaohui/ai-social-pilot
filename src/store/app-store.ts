@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 interface AppState {
   // Navigation
-  activeTab: 'dashboard' | 'account' | 'content' | 'persona' | 'creator' | 'settings';
+  activeTab: 'dashboard' | 'account' | 'analytics' | 'content' | 'persona' | 'creator' | 'settings';
   setActiveTab: (tab: AppState['activeTab']) => void;
 
   // Selected account

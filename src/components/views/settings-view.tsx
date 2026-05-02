@@ -179,7 +179,7 @@ export function SettingsView() {
               <p className="text-sm font-medium">数据采集完成</p>
               <p className="text-xs text-muted-foreground">账号数据采集成功后通知</p>
             </div>
-            <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-600 border-0">
+            <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-600 border-0 badge-animate-in">
               <CheckCircle2 className="w-3 h-3 mr-0.5" />
               已开启
             </Badge>
@@ -189,7 +189,7 @@ export function SettingsView() {
               <p className="text-sm font-medium">AI创作完成</p>
               <p className="text-xs text-muted-foreground">内容生成或润色完成后通知</p>
             </div>
-            <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-600 border-0">
+            <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-600 border-0 badge-animate-in">
               <CheckCircle2 className="w-3 h-3 mr-0.5" />
               已开启
             </Badge>
@@ -199,7 +199,7 @@ export function SettingsView() {
               <p className="text-sm font-medium">数据导出</p>
               <p className="text-xs text-muted-foreground">数据导出完成后通知</p>
             </div>
-            <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-600 border-0">
+            <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-600 border-0 badge-animate-in">
               <CheckCircle2 className="w-3 h-3 mr-0.5" />
               已开启
             </Badge>
@@ -294,7 +294,7 @@ export function SettingsView() {
             </div>
             <div>
               <p className="font-semibold text-sm">小红书AI运营助手</p>
-              <p className="text-xs text-muted-foreground mt-0.5">版本 1.0.0</p>
+              <p className="text-xs text-muted-foreground mt-0.5">版本 2.0.0</p>
             </div>
           </div>
 
