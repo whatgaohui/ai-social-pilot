@@ -168,6 +168,28 @@ function generateStatSparklineData(key: string, base: number): number[] {
   return data;
 }
 
+type DateRange = 7 | 30 | 90;
+
+/** Generate simulated trend data based on date range */
+function generateTrend(key: string, range: DateRange): { value: number; isPositive: boolean } {
+  // Use a deterministic seed based on key + range so trends are stable per session
+  const seed = key.split("").reduce((a, c) => a + c.charCodeAt(0), 0) + range;
+  const pseudoRandom = ((Math.sin(seed * 9301 + 49297) % 233280) + 233280) % 233280 / 233280;
+
+  const rangeConfig: Record<DateRange, { min: number; max: number }> = {
+    7: { min: 5, max: 25 },
+    30: { min: 3, max: 15 },
+    90: { min: 1, max: 10 },
+  };
+
+  const { min, max } = rangeConfig[range];
+  const magnitude = min + pseudoRandom * (max - min);
+  const isPositive = pseudoRandom > 0.3; // ~70% chance of positive trend
+  const value = parseFloat(magnitude.toFixed(1));
+
+  return { value, isPositive };
+}
+
 export function DashboardView() {
   const { setAddAccountDialogOpen, setActiveTab } = useAppStore();
   const addNotification = useNotificationStore((s) => s.addNotification);
@@ -178,6 +200,8 @@ export function DashboardView() {
   const [refreshing, setRefreshing] = useState(false);
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange>(7);
+  const [rangeTransitioning, setRangeTransitioning] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -290,6 +314,24 @@ export function DashboardView() {
     rate: generateStatSparklineData("rate", parseFloat(engagementRate) || 3),
   };
 
+  // Trend data for each stat card based on date range
+  const statTrends = {
+    accounts: generateTrend("accounts", dateRange),
+    posts: generateTrend("posts", dateRange),
+    engagement: generateTrend("engagement", dateRange),
+    rate: generateTrend("rate", dateRange),
+  };
+
+  const handleDateRangeChange = (range: DateRange) => {
+    if (range === dateRange) return;
+    setRangeTransitioning(true);
+    setDateRange(range);
+    // Simulate a brief loading state for stat cards
+    setTimeout(() => setRangeTransitioning(false), 400);
+  };
+
+  const dateRangeLabels: Record<DateRange, string> = { 7: "近7天", 30: "近30天", 90: "近90天" };
+
   const statCards = [
     { key: "accounts" as const, label: "管理账号", icon: Users, value: totalAccounts.toString(), bg: "stat-icon-gradient-rose", textColor: "text-white", sparkColor: "#fb7185" },
     { key: "posts" as const, label: "采集笔记", icon: FileText, value: totalPosts.toString(), bg: "stat-icon-gradient-amber", textColor: "text-white", sparkColor: "#f59e0b" },
@@ -352,16 +394,33 @@ export function DashboardView() {
       <div className="flex items-center justify-between backdrop-blur-sm rounded-xl px-3 py-2 -mx-3 -mt-2 sticky top-0 z-10 bg-background/80">
         <div>
           <h2 className="text-xl font-bold tracking-tight">仪表盘</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            运营数据概览与洞察
+          <p className="text-sm font-medium text-muted-foreground mt-0.5">
+            运营数据概览 · {dateRangeLabels[dateRange]}
             {lastUpdated && (
-              <span className="text-[10px] ml-2 opacity-60">
+              <span className="text-[11px] ml-2 opacity-50">
                 更新于 {lastUpdated.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}
               </span>
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {/* Date Range Selector */}
+          <div className="hidden sm:flex items-center bg-muted/60 rounded-lg p-0.5 border border-border/50">
+            {([7, 30, 90] as DateRange[]).map((range) => (
+              <button
+                key={range}
+                onClick={() => handleDateRangeChange(range)}
+                className={cn(
+                  "h-7 px-3 rounded-md text-xs font-medium transition-all duration-200",
+                  dateRange === range
+                    ? "bg-xhs text-white shadow-sm shadow-xhs/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                )}
+              >
+                {range}天
+              </button>
+            ))}
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -397,11 +456,12 @@ export function DashboardView() {
         </div>
       </div>
 
-      {/* Quick Stats with sparklines */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      {/* Quick Stats with sparklines & trend indicators */}
+      <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-4 transition-opacity duration-300", rangeTransitioning && "opacity-60")}>
         {statCards.map((stat) => {
           const Icon = stat.icon;
           const sparkData = statSparklines[stat.key];
+          const trend = statTrends[stat.key];
           return (
             <Card key={stat.key} className="card-hover overflow-hidden relative group">
               {/* Gradient border accent on top */}
@@ -418,7 +478,22 @@ export function DashboardView() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
-                    <p className="text-xl font-bold tracking-tight stat-count-animate">{stat.value}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xl font-bold tracking-tight stat-count-animate">{stat.value}</p>
+                      {/* Trend indicator */}
+                      <span className={cn(
+                        "text-[11px] font-medium flex items-center gap-0.5 text-appear",
+                        trend.isPositive
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-red-500 dark:text-red-400"
+                      )}>
+                        {trend.isPositive
+                          ? <TrendingUp className="w-3 h-3" />
+                          : <TrendingDown className="w-3 h-3" />
+                        }
+                        {trend.isPositive ? "+" : "-"}{trend.value}%
+                      </span>
+                    </div>
                   </div>
                 </div>
                 {/* 7-day sparkline */}
@@ -428,6 +503,9 @@ export function DashboardView() {
           );
         })}
       </div>
+
+      {/* Divider between stats and content */}
+      <div className="border-b border-border/40" />
 
       {/* Activity Feed + Weekly Performance Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

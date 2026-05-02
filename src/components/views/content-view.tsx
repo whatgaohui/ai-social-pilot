@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,17 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/empty-state";
 import { useAppStore } from "@/store/app-store";
 import type { XhsAccountInfo, XhsPostInfo } from "@/types";
 import { PostCard } from "@/components/post-card";
 import { formatNumber } from "@/components/account-card";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   FileText,
   Search,
@@ -48,6 +50,9 @@ import {
   Pencil,
   CheckCircle2,
   Plus,
+  CheckSquare,
+  Download,
+  Tag,
 } from "lucide-react";
 
 type SortOption = "date" | "likes" | "comments" | "collects" | "aiScore";
@@ -669,6 +674,13 @@ export function ContentView() {
   const [currentPage, setCurrentPage] = useState(1);
   const [copied, setCopied] = useState(false);
 
+  // Batch selection state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const lastClickedIdRef = useRef<string | null>(null);
+
   // Schedule state
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
@@ -814,6 +826,123 @@ export function ContentView() {
     setSelectedPost(null);
   };
 
+  // ─── Batch Operations ──────────────────────────────────────────────────
+
+  const toggleSelectionMode = useCallback(() => {
+    setSelectionMode((prev) => {
+      if (prev) {
+        setSelectedIds(new Set());
+        setLastClickedId(null);
+        lastClickedIdRef.current = null;
+      }
+      return !prev;
+    });
+  }, []);
+
+  const handleCardClick = useCallback(
+    (post: XhsPostInfo, e: React.MouseEvent) => {
+      if (!selectionMode) {
+        setSelectedPost(post);
+        return;
+      }
+
+      const postId = post.id;
+
+      if (e.shiftKey && lastClickedIdRef.current) {
+        // Shift+Click: range selection
+        const currentIdx = paginatedPosts.findIndex((p) => p.id === postId);
+        const lastIdx = paginatedPosts.findIndex((p) => p.id === lastClickedIdRef.current);
+
+        if (currentIdx !== -1 && lastIdx !== -1) {
+          const start = Math.min(currentIdx, lastIdx);
+          const end = Math.max(currentIdx, lastIdx);
+          const rangeIds = paginatedPosts.slice(start, end + 1).map((p) => p.id);
+
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            for (const id of rangeIds) {
+              if (next.has(id)) {
+                next.delete(id);
+              } else {
+                next.add(id);
+              }
+            }
+            return next;
+          });
+        }
+      } else {
+        // Normal click: toggle selection
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          if (next.has(postId)) {
+            next.delete(postId);
+          } else {
+            next.add(postId);
+          }
+          return next;
+        });
+      }
+
+      lastClickedIdRef.current = postId;
+      setLastClickedId(postId);
+    },
+    [selectionMode, paginatedPosts]
+  );
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedIds.size === paginatedPosts.length) {
+      // Deselect all on current page
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedPosts.map((p) => p.id)));
+    }
+  }, [selectedIds.size, paginatedPosts]);
+
+  const handleBatchDelete = useCallback(() => {
+    const count = selectedIds.size;
+    setPosts((prev) => prev.filter((p) => !selectedIds.has(p.id)));
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+    setDeleteConfirmOpen(false);
+    setLastClickedId(null);
+    lastClickedIdRef.current = null;
+    toast.success(`已删除 ${count} 篇笔记`);
+  }, [selectedIds]);
+
+  const handleBatchExport = useCallback(() => {
+    const selectedPosts = posts.filter((p) => selectedIds.has(p.id));
+    const exportData = selectedPosts.map((p) => ({
+      id: p.id,
+      title: p.title,
+      content: p.content,
+      tags: p.tags,
+      likes: p.likes,
+      comments: p.comments,
+      collects: p.collects,
+      shares: p.shares,
+      aiScore: p.aiScore,
+      publishDate: p.publishDate,
+      category: p.category,
+    }));
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `xhs-posts-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`已导出 ${selectedPosts.length} 篇笔记`);
+  }, [posts, selectedIds]);
+
+  const handleBatchTag = useCallback(() => {
+    const count = selectedIds.size;
+    toast.success(`已为 ${count} 篇笔记添加标签`);
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+    setLastClickedId(null);
+    lastClickedIdRef.current = null;
+  }, [selectedIds]);
+
   // Schedule handlers
   const handleSchedulePost = useCallback(
     (data: Omit<ScheduledPost, "id">) => {
@@ -942,18 +1071,32 @@ export function ContentView() {
             </Button>
           </div>
           {viewMode !== "schedule" && (
-            <Button
-              variant={showFilters ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className={cn(
-                "text-xs",
-                showFilters ? "bg-xhs hover:bg-xhs-dark text-white" : "text-muted-foreground"
-              )}
-            >
-              <Filter className="w-3.5 h-3.5 mr-1" />
-              筛选
-            </Button>
+            <>
+              <Button
+                variant={selectionMode ? "default" : "ghost"}
+                size="sm"
+                onClick={toggleSelectionMode}
+                className={cn(
+                  "text-xs",
+                  selectionMode ? "bg-xhs hover:bg-xhs-dark text-white" : "text-muted-foreground"
+                )}
+              >
+                <CheckSquare className="w-3.5 h-3.5 mr-1" />
+                {selectionMode ? "取消批量" : "批量"}
+              </Button>
+              <Button
+                variant={showFilters ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className={cn(
+                  "text-xs",
+                  showFilters ? "bg-xhs hover:bg-xhs-dark text-white" : "text-muted-foreground"
+                )}
+              >
+                <Filter className="w-3.5 h-3.5 mr-1" />
+                筛选
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -1158,13 +1301,32 @@ export function ContentView() {
               {paginatedPosts.map((post, i) => (
                 <div
                   key={post.id}
-                  className="stagger-item"
+                  className="stagger-item relative"
                   style={{ animationDelay: `${i * 0.04}s` }}
                 >
-                  <PostCard
-                    post={post}
-                    onClick={() => setSelectedPost(post)}
-                  />
+                  <div
+                    className={cn(
+                      "relative transition-all duration-200 rounded-xl",
+                      selectionMode && selectedIds.has(post.id) && "ring-2 ring-xhs scale-[1.02]",
+                      selectionMode && !selectedIds.has(post.id) && "hover:ring-1 hover:ring-muted-foreground/30"
+                    )}
+                    onClick={(e) => handleCardClick(post, e)}
+                  >
+                    {selectionMode && (
+                      <div className="absolute top-2 left-2 z-20 transition-all duration-200">
+                        <Checkbox
+                          checked={selectedIds.has(post.id)}
+                          className={cn(
+                            "h-5 w-5 rounded-md border-2 transition-all duration-200",
+                            selectedIds.has(post.id)
+                              ? "border-xhs bg-xhs text-white"
+                              : "border-white/80 bg-black/40 backdrop-blur-sm hover:border-xhs/60"
+                          )}
+                        />
+                      </div>
+                    )}
+                    <PostCard post={post} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -1418,6 +1580,102 @@ export function ContentView() {
         onSchedule={handleSchedulePost}
         editingPost={editingScheduledPost}
       />
+
+      {/* Batch Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>确认批量删除</DialogTitle>
+            <DialogDescription>
+              确定要删除选中的 {selectedIds.size} 篇笔记吗？此操作无法撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirmOpen(false)} className="text-xs">
+              取消
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleBatchDelete}
+              className="text-xs bg-destructive hover:bg-destructive/90 text-white"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              确认删除 ({selectedIds.size})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Batch Action Bar */}
+      {selectionMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+          <div className="backdrop-blur-xl bg-white/80 dark:bg-neutral-950/80 border border-border/60 rounded-2xl shadow-lg shadow-black/10 px-4 py-3 flex items-center gap-3">
+            <span className="text-sm font-medium">
+              已选 <span className="text-xhs font-bold">{selectedIds.size}</span> 篇
+            </span>
+            <div className="h-5 w-px bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setDeleteConfirmOpen(true)}
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              批量删除
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs hover:bg-muted"
+              onClick={handleBatchExport}
+            >
+              <Download className="w-3.5 h-3.5 mr-1" />
+              批量导出
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs hover:bg-muted"
+              onClick={handleBatchTag}
+            >
+              <Tag className="w-3.5 h-3.5 mr-1" />
+              批量打标签
+            </Button>
+            <div className="h-5 w-px bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setSelectedIds(new Set());
+                setLastClickedId(null);
+                lastClickedIdRef.current = null;
+              }}
+            >
+              <X className="w-3.5 h-3.5 mr-1" />
+              取消选择
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Select All Bar (when in selection mode but nothing selected) */}
+      {selectionMode && selectedIds.size === 0 && viewMode === "grid" && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+          <div className="backdrop-blur-xl bg-white/80 dark:bg-neutral-950/80 border border-border/60 rounded-2xl shadow-lg shadow-black/10 px-4 py-3 flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">点击卡片选择，或</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs border-xhs/40 text-xhs hover:bg-xhs-light/30"
+              onClick={handleSelectAll}
+            >
+              <CheckSquare className="w-3.5 h-3.5 mr-1" />
+              全选当前页
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

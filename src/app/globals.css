@@ -453,6 +453,10 @@ button:active:not(:disabled) {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.animate-slide-up {
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* ─── Progress bar animation ─────────────────────────────────────────────── */
 
 @keyframes progressIndeterminate {

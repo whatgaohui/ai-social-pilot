@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,19 @@ const TITLE_MAX = 20;
 const CONTENT_MIN = 50;
 const CONTENT_MAX = 1000;
 
+// ─── Trending Tag Pools (static, defined outside component) ──────────────
+
+const trendingTagPools: Record<string, string[]> = {
+  default: ["生活日常", "好物推荐", "干货分享", "宝藏发现", "必收藏", "亲测好用", "涨知识", "实用技巧"],
+  好物: ["好物分享", "好物推荐", "必买清单", "种草", "平价好物", "实用好物", "好物测评", "居家好物", "提升幸福感"],
+  探店: ["探店打卡", "美食探店", "宝藏店铺", "探店分享", "网红店", "美食推荐", "必吃榜", "排队美食"],
+  穿搭: ["穿搭灵感", "日常穿搭", "显瘦穿搭", "通勤穿搭", "穿搭分享", "OOTD", "时尚穿搭", "早秋穿搭"],
+  美食: ["美食制作", "家常菜", "快手菜", "减脂餐", "美食教程", "烘焙", "一人食", "懒人食谱"],
+  旅行: ["旅行攻略", "旅游推荐", "周末去哪儿", "小众旅行", "旅行日记", "拍照打卡", "自由行", "出行攻略"],
+  护肤: ["护肤心得", "护肤步骤", "平价护肤", "抗老", "美白", "敏感肌", "秋冬护肤", "成分党"],
+  职场: ["职场干货", "工作效率", "面试技巧", "职场成长", "升职加薪", "办公好物", "职场穿搭", "副业"],
+};
+
 export function CreatorView() {
   const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen } =
     useAppStore();
@@ -78,6 +91,7 @@ export function CreatorView() {
   const [selectedTone, setSelectedTone] = useState<QuickTone>("default");
   const [generating, setGenerating] = useState(false);
   const [polishing, setPolishing] = useState(false);
+  const [optimizingTags, setOptimizingTags] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [showTopicSuggestions, setShowTopicSuggestions] = useState(false);
 
@@ -296,10 +310,10 @@ export function CreatorView() {
     toast.success("草稿已加载");
   };
 
-  const addTag = () => {
-    const val = newTag.trim();
-    if (val && !generatedTags.includes(val)) {
-      setGeneratedTags([...generatedTags, val]);
+  const addTag = (val?: string) => {
+    const tagVal = val || newTag.trim();
+    if (tagVal && !generatedTags.includes(tagVal)) {
+      setGeneratedTags([...generatedTags, tagVal]);
       setNewTag("");
     }
   };
@@ -315,6 +329,58 @@ export function CreatorView() {
     setGeneratedCoverPrompt("");
     setCurrentDraftId(null);
   };
+
+  // ─── AI Hashtag Optimization ────────────────────────────────────────────
+
+  const suggestedTags = useMemo(() => {
+    const content = (topic + " " + generatedTitle + " " + generatedContent).toLowerCase();
+    let tags: string[] = [];
+
+    // Match topic to tag pool
+    for (const [keyword, pool] of Object.entries(trendingTagPools)) {
+      if (keyword !== "default" && content.includes(keyword)) {
+        tags = [...tags, ...pool];
+      }
+    }
+
+    // Always include default pool
+    tags = [...tags, ...trendingTagPools.default];
+
+    // Remove duplicates and already-added tags
+    const unique = [...new Set(tags)].filter((t) => !generatedTags.includes(t));
+    return unique.slice(0, 8);
+  }, [topic, generatedTitle, generatedContent, generatedTags]);
+
+  const handleOptimizeTags = useCallback(async () => {
+    if (!generatedContent) return;
+    setOptimizingTags(true);
+
+    // Simulate AI analysis with 1-2s delay
+    await new Promise((resolve) => setTimeout(resolve, 1200 + Math.random() * 800));
+
+    const content = (topic + " " + generatedTitle + " " + generatedContent).toLowerCase();
+    let trendingTags: string[] = [];
+
+    for (const [keyword, pool] of Object.entries(trendingTagPools)) {
+      if (keyword !== "default" && content.includes(keyword)) {
+        trendingTags = [...trendingTags, ...pool.slice(0, 3)];
+      }
+    }
+
+    // Add some default trending tags if no matches
+    if (trendingTags.length < 3) {
+      trendingTags = [...trendingTags, ...trendingTagPools.default.slice(0, 3)];
+    }
+
+    // Remove duplicates and already-existing tags
+    const newTags = [...new Set(trendingTags)].filter((t) => !generatedTags.includes(t)).slice(0, 3);
+
+    // Reorder: trending first, then existing
+    const optimizedTags = [...newTags, ...generatedTags];
+    setGeneratedTags(optimizedTags);
+    setOptimizingTags(false);
+    toast.success(`标签已优化！新增${newTags.length}个热门标签`);
+  }, [topic, generatedTitle, generatedContent, generatedTags]);
 
   if (loading) {
     return (
@@ -613,10 +679,40 @@ export function CreatorView() {
                         }
                       }}
                     />
-                    <Button size="sm" variant="outline" onClick={addTag} className="shrink-0 border-border">
+                    <Button size="sm" variant="outline" onClick={() => addTag()} className="shrink-0 border-border">
                       <Plus className="w-3 h-3" />
                     </Button>
                   </div>
+
+                  {/* Hashtag Suggestions Panel */}
+                  {suggestedTags.length > 0 && (
+                    <div className="bg-muted/30 rounded-xl p-3 space-y-2">
+                      <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3" />
+                        推荐标签
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {suggestedTags.map((tag) => {
+                          const isAlreadyAdded = generatedTags.includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              onClick={() => !isAlreadyAdded && addTag(tag)}
+                              disabled={isAlreadyAdded}
+                              className={cn(
+                                "badge-animate-in px-2.5 py-1 rounded-full text-xs transition-all duration-200 border",
+                                isAlreadyAdded
+                                  ? "bg-muted/50 text-muted-foreground/40 border-border/30 cursor-not-allowed line-through"
+                                  : "bg-xhs-light/40 text-xhs/80 border-xhs/20 hover:bg-xhs-light/70 hover:text-xhs hover:border-xhs/40 cursor-pointer"
+                              )}
+                            >
+                              #{tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -649,6 +745,25 @@ export function CreatorView() {
                       <>
                         <Wand2 className="w-3.5 h-3.5 mr-1" />
                         AI润色
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOptimizeTags}
+                    disabled={optimizingTags || !generatedContent}
+                    className="border-border text-xs"
+                  >
+                    {optimizingTags ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                        优化中...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 mr-1" />
+                        优化标签
                       </>
                     )}
                   </Button>
