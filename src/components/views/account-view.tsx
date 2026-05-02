@@ -17,6 +17,8 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { AccountCard, formatNumber } from "@/components/account-card";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
+import { CookieInputDialog } from "@/components/cookie-input-dialog";
+import { ManualDataDialog } from "@/components/manual-data-dialog";
 import { useAppStore } from "@/store/app-store";
 import { toast } from "sonner";
 import type { XhsAccountInfo, AccountAnalysis, EngagementTrend } from "@/types";
@@ -388,6 +390,8 @@ export function AccountView() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [scrapeDialogOpen, setScrapeDialogOpen] = useState(false);
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [activeAnalysisTab, setActiveAnalysisTab] = useState("overview");
   const [tabAnimating, setTabAnimating] = useState(false);
 
@@ -449,6 +453,7 @@ export function AccountView() {
       const data = await res.json();
       if (data.success) {
         loadAnalysis(selectedAccountId);
+        loadAccounts();
         toast.success("数据采集成功");
       }
     } catch {
@@ -456,6 +461,13 @@ export function AccountView() {
       toast.error("采集失败");
     } finally {
       setScraping(false);
+    }
+  };
+
+  const handleScrapeDialogSuccess = () => {
+    if (selectedAccountId) {
+      loadAnalysis(selectedAccountId);
+      loadAccounts();
     }
   };
 
@@ -648,10 +660,9 @@ export function AccountView() {
             </Button>
             <Button
               size="sm"
-              variant="outline"
-              className="border-border"
-              onClick={handleScrape}
-              disabled={scraping}
+              className="bg-gradient-to-r from-xhs to-xhs-dark text-white border-0"
+              onClick={() => setScrapeDialogOpen(true)}
+              disabled={scraping || !account}
             >
               {scraping ? (
                 <>
@@ -664,6 +675,16 @@ export function AccountView() {
                   采集
                 </>
               )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-border"
+              onClick={() => setManualDialogOpen(true)}
+              disabled={!account}
+            >
+              <PenLine className="w-4 h-4 mr-1" />
+              手动补充
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -704,9 +725,9 @@ export function AccountView() {
             currentStep={currentStep}
             onAction={() => {
               if (currentStep <= 1) setEditDialogOpen(true);
-              else handleScrape();
+              else setScrapeDialogOpen(true);
             }}
-            actionLabel={currentStep <= 1 ? "补充账号信息" : "重新采集"}
+            actionLabel={currentStep <= 1 ? "补充账号信息" : "开始采集"}
           />
         )}
 
@@ -1220,6 +1241,28 @@ export function AccountView() {
           onOpenChange={setEditDialogOpen}
           onSuccess={handleEditSuccess}
         />
+
+        {/* Cookie Input / Scrape Dialog */}
+        {account && (
+          <CookieInputDialog
+            open={scrapeDialogOpen}
+            onOpenChange={setScrapeDialogOpen}
+            accountUrl={account.xhsUrl}
+            accountId={account.id}
+            onSuccess={handleScrapeDialogSuccess}
+          />
+        )}
+
+        {/* Manual Data Dialog */}
+        {account && (
+          <ManualDataDialog
+            open={manualDialogOpen}
+            onOpenChange={setManualDialogOpen}
+            accountId={account.id}
+            existingData={account}
+            onSuccess={handleScrapeDialogSuccess}
+          />
+        )}
       </div>
     </TooltipProvider>
   );

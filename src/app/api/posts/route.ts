@@ -1,5 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { v4 as uuidv4 } from 'uuid';
+
+// POST /api/posts - Create a new post manually
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { accountId, title, content, tags, likes, comments, collects, shares, category } = body;
+
+    if (!accountId) {
+      return NextResponse.json(
+        { success: false, error: '缺少accountId' },
+        { status: 400 }
+      );
+    }
+
+    const account = await db.xhsAccount.findUnique({ where: { id: accountId } });
+    if (!account) {
+      return NextResponse.json(
+        { success: false, error: '账号不存在' },
+        { status: 404 }
+      );
+    }
+
+    const post = await db.xhsPost.create({
+      data: {
+        id: uuidv4(),
+        accountId,
+        xhsPostId: `manual_${Date.now()}`,
+        title: title || '',
+        content: content || '',
+        coverUrl: '',
+        imageUrls: '[]',
+        postType: 'normal',
+        likes: Number(likes) || 0,
+        comments: Number(comments) || 0,
+        collects: Number(collects) || 0,
+        shares: Number(shares) || 0,
+        tags: JSON.stringify(tags || []),
+        category: category || '',
+        publishDate: new Date().toISOString().split('T')[0],
+      },
+    });
+
+    return NextResponse.json({ success: true, data: post });
+  } catch (error) {
+    console.error('Failed to create post:', error);
+    return NextResponse.json(
+      { success: false, error: '创建笔记失败' },
+      { status: 500 }
+    );
+  }
+}
 
 // GET /api/posts - List posts with filters
 export async function GET(request: NextRequest) {

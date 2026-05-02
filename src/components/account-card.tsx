@@ -4,7 +4,12 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, FileText, RefreshCw, Loader2, CheckCircle2, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Users, FileText, RefreshCw, Loader2, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, XCircle } from "lucide-react";
 import type { XhsAccountInfo } from "@/types";
 
 interface AccountCardProps {
@@ -13,6 +18,7 @@ interface AccountCardProps {
   selected?: boolean;
   compact?: boolean;
   className?: string;
+  onRetry?: () => void;
 }
 
 function formatNumber(num: number): string {
@@ -25,9 +31,9 @@ function StatusIndicator({ status }: { status: string }) {
   switch (status) {
     case "scraping":
       return (
-        <Badge variant="secondary" className="gap-1 text-xs">
+        <Badge variant="secondary" className="gap-1 text-xs border-xhs/30 bg-xhs-light/30 text-xhs">
           <Loader2 className="w-3 h-3 animate-spin" />
-          采集中
+          采集中<span className="animate-pulse">...</span>
         </Badge>
       );
     case "success":
@@ -41,14 +47,14 @@ function StatusIndicator({ status }: { status: string }) {
       return (
         <Badge variant="secondary" className="gap-1 text-xs text-amber-600 bg-amber-50 border-0">
           <AlertCircle className="w-3 h-3" />
-          部分采集
+          部分数据
         </Badge>
       );
     case "error":
       return (
         <Badge variant="secondary" className="gap-1 text-xs text-red-600 bg-red-50 border-0">
-          <AlertCircle className="w-3 h-3" />
-          异常
+          <XCircle className="w-3 h-3" />
+          采集失败
         </Badge>
       );
     default:
@@ -111,24 +117,64 @@ function MiniSparkline({ data, color = "#FF2442" }: { data: number[]; color?: st
   );
 }
 
-export function AccountCard({ account, onClick, selected, compact, className }: AccountCardProps) {
+export function AccountCard({ account, onClick, selected, compact, className, onRetry }: AccountCardProps) {
+  const isScraping = account.status === "scraping";
+  const isPartial = account.status === "partial";
+  const isError = account.status === "error";
+
+  const handleClick = () => {
+    if (isError && onRetry) {
+      onRetry();
+    } else if (onClick) {
+      onClick();
+    }
+  };
+
   return (
     <Card
       className={cn(
         "cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
         selected && "ring-2 ring-xhs/60 border-xhs/40 bg-xhs-light/20",
+        // Scraping state: pulsing border
+        isScraping && "border-xhs/40 ring-2 ring-xhs/20 animate-pulse",
+        // Error state: subtle red border
+        isError && "border-red-200 dark:border-red-900/50",
         className
       )}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <CardContent className={cn("p-4", compact && "p-3")}>
         <div className="flex items-start gap-3">
-          <Avatar className={cn(compact ? "w-9 h-9" : "w-11 h-11", "shrink-0")}>
-            <AvatarImage src={account.avatarUrl} alt={account.nickname} />
-            <AvatarFallback className="bg-xhs-light text-xhs text-sm font-medium">
-              {(account.nickname || "用户").slice(0, 1)}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className={cn(compact ? "w-9 h-9" : "w-11 h-11", "shrink-0")}>
+              <AvatarImage src={account.avatarUrl} alt={account.nickname} />
+              <AvatarFallback className="bg-xhs-light text-xhs text-sm font-medium">
+                {(account.nickname || "用户").slice(0, 1)}
+              </AvatarFallback>
+            </Avatar>
+            {/* Scraping overlay: spinner on avatar */}
+            {isScraping && (
+              <div className="absolute inset-0 rounded-full bg-background/60 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 text-xhs animate-spin" />
+              </div>
+            )}
+            {/* Error: red dot */}
+            {isError && (
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-background" />
+            )}
+            {/* Partial: amber dot */}
+            {isPartial && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-500 border-2 border-background" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p>部分数据缺失</p>
+                  <p className="text-muted-foreground">点击补充完整数据</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-medium text-sm truncate">
@@ -138,6 +184,20 @@ export function AccountCard({ account, onClick, selected, compact, className }: 
             </div>
             {account.bio && !compact && (
               <p className="text-xs text-muted-foreground truncate mb-2">{account.bio}</p>
+            )}
+            {/* Partial data info */}
+            {isPartial && !compact && account.errorMessage && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 truncate mb-1.5 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {account.errorMessage.replace("[部分采集] ", "")}
+              </p>
+            )}
+            {/* Error info */}
+            {isError && !compact && (
+              <p className="text-xs text-red-500 truncate mb-1.5 flex items-center gap-1">
+                <XCircle className="w-3 h-3 shrink-0" />
+                {account.errorMessage || "采集失败，点击重试"}
+              </p>
             )}
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">

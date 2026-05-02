@@ -2,12 +2,17 @@
 
 ## 项目当前状态
 
-**状态: STABLE & FEATURE-RICH v2.1.0**
+**状态: STABLE & FEATURE-RICH v2.1.0 (Anti-Scraping Enhanced)**
 
 - Dev server running on port 3000, Next.js 16 + Turbopack
+- **XHS Scraper micro-service** running on port 3002 with Cookie-based API support
 - All core features working, API endpoints verified, lint clean, zero console errors
 - **7 major views**: Dashboard, Account Analysis, Data Insights, Content Library, Persona Management, AI Creator, Settings
-- **VLM Quality Scores**: Dashboard 7/10, Content 8/10, Analytics 7/10, Account 7/10 (all improved from 6/10)
+- **VLM Quality Scores**: Dashboard 7/10, Content 8/10, Analytics 7/10, Account 7/10
+- **Cookie-Based Scraping** - Users can provide browser cookies for complete data collection
+- **3-Strategy Scraping**: Cookie API (PRIMARY) → Web Search + LLM (FALLBACK) → LLM Only (LAST RESORT)
+- **Scraping UI**: CookieInputDialog with 4-step wizard, ManualDataDialog for manual entry
+- **Account Card Status**: Visual scraping progress (pulse, spinner), partial data (amber), error (red)
 - **Command Palette** (Cmd+K) with search, keyboard navigation, 10 actions
 - **Global Keyboard Shortcuts** (Cmd+1-6, Cmd+N, Cmd+E)
 - **Content Scheduling** with timeline view, date grouping, status badges
@@ -30,7 +35,132 @@
 
 ## 当前目标 / 已完成的修改 / 验证结果
 
-### Session 19 (Current) - Comprehensive Visual Upgrade & Feature Expansion
+### Session 20 - XHS Anti-Scraping Solution & Data Collection Enhancement
+
+---
+Task ID: 20
+Agent: Main Agent
+Task: Solve XHS anti-scraping mechanism, implement multi-strategy data collection
+
+Work Log:
+- Read worklog.md (19 previous sessions, v2.1.0)
+- Analyzed current xhs-scraper.ts (1032 lines) - found 3 existing strategies all failing against XHS anti-scraping
+- Tested agent-browser access to XHS - confirmed "IP at risk" error (300012), even headless browser blocked
+- Identified root cause: XHS has multi-layer anti-scraping (403 HTTP, IP risk detection, captcha)
+- Designed 3-strategy solution: Cookie API → Web Search → LLM fallback
+- Launched 2 sub-agents in parallel:
+  - Task 20-3: XHS Scraper micro-service (port 3002)
+  - Task 20-5: Frontend scraping UI components
+- Rewrote `/api/accounts/[id]/scrape/route.ts` to integrate with scraper micro-service
+  - Added Cookie-based scraping via micro-service (Strategy 1)
+  - Added Search-based scraping via micro-service (Strategy 2)
+  - Kept legacy scraper as final fallback (Strategy 3)
+  - Added POST body parsing for `{ method: "cookie"|"search", cookies: string }`
+- Created `/api/accounts/validate-cookies/route.ts` for cookie validation endpoint
+- Verified all new components render correctly (CookieInputDialog, ManualDataDialog)
+- Verified scraper service health check returns 200
+- Tested search-scraping endpoint - works correctly (falls back to LLM for unknown users)
+- Lint passes with zero errors, zero console errors on all views
+
+### Key Architecture Decisions:
+
+1. **Micro-service approach** for scraping - isolated from main app, can be scaled independently
+2. **Cookie-based API as PRIMARY strategy** - XHS internal APIs (edith.xiaohongshu.com) return structured JSON when called with valid cookies
+3. **User-assisted scraping** - CookieInputDialog guides users through cookie extraction from browser DevTools
+4. **Manual data input** as last resort - ManualDataDialog for when all automated methods fail
+5. **Gateway integration** - All calls to scraper service use `XTransformPort=3002` query parameter
+
+---
+Task ID: 20-3
+Agent: XHS Scraper Service Agent
+Task: Create XHS Scraping Micro-Service
+
+Work Log:
+- Read worklog.md to understand project history (19+ sessions, v2.1)
+- Read existing xhs-scraper.ts, types/index.ts, scrape API route, and project structure
+- Created `mini-services/xhs-scraper/package.json` - Independent bun project with z-ai-web-dev-sdk dependency
+- Created `mini-services/xhs-scraper/index.ts` - 1654-line micro-service with all 6 endpoints
+- Implemented Cookie-Based API strategy (PRIMARY) using XHS edith API:
+  - POST /api/scrape/profile - Cookie-based profile scraping with automatic fallback
+  - POST /api/scrape/posts - Cookie-based posts listing with pagination
+  - POST /api/scrape/note - Cookie-based note detail with image URLs and tags
+- Implemented Web Search + LLM strategy (FALLBACK) using z-ai-web-dev-sdk:
+  - POST /api/scrape/search-profile - Search third-party analytics platforms
+  - POST /api/scrape/search-notes - Search for user's notes via web
+- Implemented LLM fallback strategy when all other strategies fail
+- Added GET /api/health health check endpoint
+- Implemented proper CORS handling for main app (preflight + response headers)
+- Added rate limiting (1.5s delay between XHS API calls)
+- Added structured error handling with scrapeMethod, warnings, and partialData fields
+- Used static imports for http/https modules (avoids bun --hot issues with dynamic imports)
+- Added process.on('uncaughtException'/'unhandledRejection') handlers for stability
+- Added setInterval heartbeat to prevent bun from exiting due to no active handles
+- Set server timeouts to 120s for long-running scraping requests
+- Tested all endpoints: health check, error handling, profile scraping, search endpoints
+- Service runs on port 3002 and responds correctly to all requests
+
+Stage Summary:
+- New micro-service at `mini-services/xhs-scraper/` with 6 API endpoints
+- Cookie-based strategy: Calls XHS internal APIs (edith.xiaohongshu.com) with user-provided cookies
+  - Automatically falls back to web_search when cookies fail/expire
+  - Supports pagination for posts listing
+  - Returns structured profile data + posts in single call
+- Web search strategy: Targets third-party analytics platforms (新红, 千瓜, 灰豚, 蝉妈妈)
+  - Reads top 3 third-party pages for richer data
+  - Uses LLM to extract structured data from combined search results
+- LLM fallback: Generates basic analysis from URL structure when all else fails
+- All responses include: scrapeMethod, warnings[], partialData boolean
+- CORS enabled for main Next.js app on port 3000
+- Service must be started with `bun index.ts` (not `--hot`) for stable operation
+
+---
+
+---
+Task ID: 20-5
+Agent: Scraping UI Agent
+Task: Frontend Scraping UI - Cookie Input, Manual Data, and Scrape Status
+
+Work Log:
+- Read worklog.md to understand project history (19 sessions, v2.1)
+- Read current account-card.tsx, account-view.tsx, types/index.ts, scrape API route, and UI components
+- Created `src/components/cookie-input-dialog.tsx` - multi-step scraping dialog with 4 steps:
+  - Step 1: Method selection (Cookie采集/Search采集/手动输入) with radio-style card selection
+  - Step 2a: Cookie input with browser instructions, textarea, validation button, and status indicator
+  - Step 2b: Search scrape with URL display and warning
+  - Step 2c: Manual input with profile fields (昵称/粉丝/关注/获赞与收藏/笔记数/简介)
+  - Step 3: Progress with 4 animated steps (连接小红书→获取账号信息→获取笔记列表→AI分析中)
+  - Step 4: Result with success card, posts count, data source, warnings, and action buttons
+- Created `src/components/manual-data-dialog.tsx` - manual data entry dialog:
+  - Profile section with input fields for all account info
+  - Notes section with dynamic add/remove entries, each with title/content/tags/likes/comments/collects
+  - Save button that calls PATCH /api/accounts/{id} and POST /api/posts
+- Enhanced `src/components/account-card.tsx` with scrape status visuals:
+  - Scraping: pulsing border animation (animate-pulse), spinner overlay on avatar, "采集中..." badge with dots animation
+  - Partial: amber dot on avatar with tooltip, "部分数据" badge, error message display
+  - Error: red dot on avatar, red border, "采集失败" badge with XCircle icon, click-to-retry support via onRetry prop
+- Updated `src/components/views/account-view.tsx`:
+  - Replaced simple "采集" button with CookieInputDialog trigger (gradient xhs button)
+  - Added "手动补充" button that opens ManualDataDialog
+  - StepGuideCard "重新采集" now opens scrape dialog instead of direct scrape
+  - Added handleScrapeDialogSuccess callback for data refresh
+  - Integrated both new dialogs at bottom of component
+- Added POST endpoint to `src/app/api/posts/route.ts` for manual note creation
+- Installed shadcn alert component for warning displays
+- Fixed API method: Changed PUT to PATCH in manual data dialog (matching existing API)
+- All text in Chinese, uses cn(), shadcn/ui components, lucide-react icons
+- Lint passes with zero errors
+
+Stage Summary:
+- CookieInputDialog: 4-step scraping wizard with Cookie/Search/Manual methods, progress animation, and result display
+- ManualDataDialog: Profile + notes entry with dynamic add/remove and API integration
+- AccountCard: Enhanced status visuals for scraping (pulse border + spinner), partial (amber dot + info), error (red dot + retry)
+- AccountView: Integrated new dialogs, replaced simple scrape button with dialog-based flow
+- Posts API: Added POST endpoint for manual note creation
+- All new components support dark mode, responsive layout, and proper error handling
+
+---
+
+### Session 19 - Comprehensive Visual Upgrade & Feature Expansion
 
 ---
 Task ID: 19
@@ -372,26 +502,21 @@ Work Log:
 ## 未解决问题或风险 / 建议下一阶段优先事项
 
 ### Known Issues:
-1. **XHS scraping limited** - XHS blocks direct access with 403, only web_search+LLM fallback works
-2. **Dev server may crash** under memory pressure in sandbox
-3. **agent-browser click issue** - Some refs don't respond via automation but work in real browser
-4. **Dark mode testing** - Not all views exhaustively tested in dark mode (most tested, some edge cases remain)
-5. **Dashboard VLM score** - Still at 7/10, needs more contextual data (historical trends, benchmarks)
+1. **XHS Cookie collection requires user action** - Users must manually extract cookies from browser DevTools; consider building a browser extension for automation
+2. **XHS internal API signatures** - The X-s/X-t signature headers are not implemented; some API calls may fail without them
+3. **Dev server may crash** under memory pressure in sandbox
+4. **Scraper micro-service stability** - Needs process management (pm2/supervisor) for production use
+5. **Dashboard VLM score** - Still at 7/10, needs more contextual data
 
 ### Next Priority Items:
-1. **Real-time notifications** - WebSocket-based push notifications for scraping/completion events
-2. **Data persistence for schedules** - Save scheduled posts to database (currently in-memory only)
-3. **Dashboard chart improvements** - Add pie chart for engagement breakdown, area chart for growth
-4. **Content A/B testing** - Create variants of content and track performance
-5. **Comprehensive dark mode QA** - Test all views in dark mode and fix any contrast issues
-6. **Performance optimization** - Lazy load view components, virtualize long lists
-7. **Mobile UX** - Add swipe gestures for view switching, pull-to-refresh
-8. **Account comparison deep-dive** - Side-by-side metrics with visual diff
-9. **Content calendar drag-and-drop** - Reschedule by dragging posts between dates
-10. **AI-powered content scheduling** - AI suggests optimal posting times based on engagement data
-11. **Dashboard benchmark context** - Add historical trends and industry benchmarks to metrics
-12. **Settings: Notification toggles** - Make notification toggles functional (currently static)
-13. **Settings: Language preference** - Add i18n support
+1. **Browser extension for Cookie extraction** - Automate cookie extraction with a Chrome/Firefox extension
+2. **XHS API signature implementation** - Reverse-engineer X-s/X-t signature generation for reliable API access
+3. **WebSocket scraping progress** - Real-time scraping progress updates via WebSocket
+4. **Data persistence for schedules** - Save scheduled posts to database
+5. **Content A/B testing** - Create variants of content and track performance
+6. **Comprehensive dark mode QA** - Test all views in dark mode
+7. **Performance optimization** - Lazy load view components, virtualize long lists
+8. **Mobile UX** - Swipe gestures for view switching, pull-to-refresh
 
 ---
 
