@@ -22,7 +22,7 @@ export function PostCard({ post, onClick, className }: PostCardProps) {
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden",
+        "cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm overflow-hidden",
         className
       )}
       onClick={onClick}
@@ -33,16 +33,16 @@ export function PostCard({ post, onClick, className }: PostCardProps) {
           <img
             src={post.coverUrl}
             alt={post.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
             <span className="text-4xl">📝</span>
           </div>
         )}
         {post.aiScore > 0 && (
-          <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Star className="w-3 h-3 text-yellow-400" />
+          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
             {post.aiScore.toFixed(0)}
           </div>
         )}
@@ -57,12 +57,12 @@ export function PostCard({ post, onClick, className }: PostCardProps) {
         {post.tags && post.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
             {post.tags.slice(0, 3).map((tag, i) => (
-              <Badge key={i} variant="secondary" className="text-xs px-1.5 py-0 h-5">
+              <Badge key={i} variant="secondary" className="text-xs px-1.5 py-0 h-5 border-0 bg-muted/80">
                 {tag}
               </Badge>
             ))}
             {post.tags.length > 3 && (
-              <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
+              <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5 border-0 bg-muted/80">
                 +{post.tags.length - 3}
               </Badge>
             )}
@@ -87,7 +87,7 @@ export function PostCard({ post, onClick, className }: PostCardProps) {
 
         {/* Publish date */}
         {post.publishDate && (
-          <p className="text-xs text-muted-foreground mt-1.5">
+          <p className="text-[11px] text-muted-foreground/70 mt-1.5">
             {post.publishDate.slice(0, 10)}
           </p>
         )}

@@ -24,9 +24,9 @@ export async function GET(request: NextRequest) {
 
     const data = {
       ...persona,
-      contentThemes: JSON.parse(persona.contentThemes || '[]'),
-      keywords: JSON.parse(persona.keywords || '[]'),
-      avoidTopics: JSON.parse(persona.avoidTopics || '[]'),
+      contentThemes: safeJsonParse(persona.contentThemes),
+      keywords: safeJsonParse(persona.keywords),
+      avoidTopics: safeJsonParse(persona.avoidTopics),
     };
 
     return NextResponse.json({ success: true, data });
@@ -36,6 +36,17 @@ export async function GET(request: NextRequest) {
       { success: false, error: '获取人设信息失败' },
       { status: 500 }
     );
+  }
+}
+
+/** Safely parse JSON string, returning empty array on failure */
+function safeJsonParse(str: string | null | undefined): string[] {
+  if (!str) return [];
+  try {
+    const parsed = JSON.parse(str);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
 }
 
@@ -102,9 +113,9 @@ export async function POST(request: NextRequest) {
 
     const data = {
       ...persona,
-      contentThemes: JSON.parse(persona.contentThemes || '[]'),
-      keywords: JSON.parse(persona.keywords || '[]'),
-      avoidTopics: JSON.parse(persona.avoidTopics || '[]'),
+      contentThemes: safeJsonParse(persona.contentThemes),
+      keywords: safeJsonParse(persona.keywords),
+      avoidTopics: safeJsonParse(persona.avoidTopics),
     };
 
     return NextResponse.json({ success: true, data }, { status: 201 });
@@ -161,9 +172,9 @@ export async function PUT(request: NextRequest) {
 
     const data = {
       ...persona,
-      contentThemes: JSON.parse(persona.contentThemes || '[]'),
-      keywords: JSON.parse(persona.keywords || '[]'),
-      avoidTopics: JSON.parse(persona.avoidTopics || '[]'),
+      contentThemes: safeJsonParse(persona.contentThemes),
+      keywords: safeJsonParse(persona.keywords),
+      avoidTopics: safeJsonParse(persona.avoidTopics),
     };
 
     return NextResponse.json({ success: true, data });

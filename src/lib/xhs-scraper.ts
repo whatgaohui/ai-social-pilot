@@ -7,11 +7,12 @@ import type { ScrapeResult } from '@/types';
  * Extract user ID from a Xiaohongshu profile URL.
  * Supports:
  *   - https://www.xiaohongshu.com/user/profile/{userId}
+ *   - https://www.xiaohongshu.com/user/profile/{userId}?xsec_token=...
  *   - https://xhslink.com/{shortCode}
  *   - Any URL containing a user ID pattern
  */
 function extractUserIdFromUrl(url: string): string {
-  // Standard profile URL pattern
+  // Standard profile URL pattern (with or without query params)
   const profileMatch = url.match(
     /xiaohongshu\.com\/user\/profile\/([a-f0-9]{24}|[A-Za-z0-9_-]+)/
   );
@@ -29,6 +30,23 @@ function extractUserIdFromUrl(url: string): string {
 }
 
 /**
+ * Extract xsec_token from a Xiaohongshu URL if present.
+ * This token can be used for authenticated access.
+ */
+function extractXsecToken(url: string): string {
+  const tokenMatch = url.match(/[?&]xsec_token=([^&]+)/);
+  return tokenMatch ? decodeURIComponent(tokenMatch[1]) : '';
+}
+
+/**
+ * Extract the xsec_source from a Xiaohongshu URL if present.
+ */
+function extractXsecSource(url: string): string {
+  const sourceMatch = url.match(/[?&]xsec_source=([^&]+)/);
+  return sourceMatch ? decodeURIComponent(sourceMatch[1]) : '';
+}
+
+/**
  * Extract Chinese characters that might indicate a username from a URL or text.
  */
 function extractChineseUsername(text: string): string {
@@ -37,21 +55,44 @@ function extractChineseUsername(text: string): string {
 }
 
 /**
- * Build a search-friendly query string from a XHS URL.
+ * Build multiple search-friendly query strings from a XHS URL.
+ * Returns an array of different search queries to try.
  */
-function buildSearchQuery(url: string): string {
+function buildSearchQueries(url: string): string[] {
   const userId = extractUserIdFromUrl(url);
   const chineseName = extractChineseUsername(url);
-  const parts: string[] = ['小红书'];
+  const queries: string[] = [];
 
-  if (chineseName) {
-    parts.push(chineseName);
-  }
+  // Query 1: Search for the full XHS profile URL (finds pages referencing this user)
+  queries.push(`"${url.split('?')[0]}"`); // URL without query params
+
+  // Query 2: User ID + 小红书
   if (userId) {
-    parts.push(userId);
+    queries.push(`小红书 ${userId}`);
   }
 
-  return parts.join(' ');
+  // Query 3: Chinese name + 小红书 (if available)
+  if (chineseName) {
+    queries.push(`小红书 ${chineseName} 博主`);
+    if (userId) {
+      queries.push(`${chineseName} 小红书 ${userId}`);
+    }
+  }
+
+  // Query 4: General search with all available info
+  const generalParts: string[] = ['小红书'];
+  if (chineseName) generalParts.push(chineseName);
+  if (userId) generalParts.push(userId);
+  if (generalParts.length > 1) {
+    queries.push(generalParts.join(' '));
+  }
+
+  // Query 5: Search for user's notes/posts
+  if (userId) {
+    queries.push(`小红书 ${userId} 笔记 内容`);
+  }
+
+  return queries;
 }
 
 // ─── Strategy 1: page_reader ──────────────────────────────────────────────
@@ -68,7 +109,13 @@ async function tryPageReader(url: string): Promise<PageReaderResult> {
 
   try {
     const zai = await ZAI.create();
-    const result = await zai.functions.invoke('page_reader', { url });
+
+    // If we have a xsec_token, try using the full URL first (might bypass 403)
+    const xsecToken = extractXsecToken(url);
+    let fetchUrl = url;
+
+    // Try with the original URL first (might include xsec_token)
+    const result = await zai.functions.invoke('page_reader', { url: fetchUrl });
 
     // Check for 403 or blocked response
     const statusCode = result.data?.statusCode || result.data?.status || 0;
@@ -96,6 +143,11 @@ async function tryPageReader(url: string): Promise<PageReaderResult> {
       return { success: false, html: '', pageTitle: '', warnings };
     }
 
+    // Log xsec_token availability for debugging
+    if (xsecToken) {
+      console.log(`[Scraper] xsec_token found in URL (length: ${xsecToken.length})`);
+    }
+
     return { success: true, html, pageTitle, warnings };
   } catch (error) {
     const msg =
@@ -103,6 +155,42 @@ async function tryPageReader(url: string): Promise<PageReaderResult> {
     warnings.push(`page_reader策略异常: ${msg}`);
     return { success: false, html: '', pageTitle: '', warnings };
   }
+}
+
+/**
+ * Try page_reader on a third-party URL (not XHS).
+ * These pages won't be blocked by XHS's 403 protection.
+ */
+async function tryReadThirdPartyPage(url: string): Promise<string> {
+  try {
+    // Skip XHS URLs - they'll be blocked
+    if (url.includes('xiaohongshu.com') || url.includes('xhslink.com')) {
+      return '';
+    }
+
+    const zai = await ZAI.create();
+    const result = await zai.functions.invoke('page_reader', { url });
+
+    const html: string = result.data?.html || '';
+    const pageTitle: string = result.data?.title || '';
+
+    // Only return if we got meaningful content
+    if (html && html.length > 100) {
+      // Extract text content from HTML (basic stripping)
+      const textContent = html
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 4000); // Limit to 4000 chars
+
+      return `页面标题: ${pageTitle}\n页面内容: ${textContent}`;
+    }
+  } catch {
+    // Silently fail - third-party pages might not be accessible
+  }
+  return '';
 }
 
 /**
@@ -217,80 +305,167 @@ function parseProfileHtml(
   return { userInfo, posts };
 }
 
-// ─── Strategy 2: web_search + LLM analysis ────────────────────────────────
+// ─── Strategy 2: web_search + web_reader + LLM analysis ──────────────────
+
+interface SearchResultItem {
+  title?: string;
+  snippet?: string;
+  url?: string;
+}
 
 interface WebSearchResult {
   success: boolean;
   searchData: string;
+  thirdPartyUrls: string[];
   warnings: string[];
 }
 
 async function tryWebSearch(url: string): Promise<WebSearchResult> {
   const warnings: string[] = [];
+  const allResults: SearchResultItem[] = [];
+  const thirdPartyUrls: string[] = [];
 
   try {
     const zai = await ZAI.create();
-    const searchQuery = buildSearchQuery(url);
+    const queries = buildSearchQueries(url);
     const userId = extractUserIdFromUrl(url);
 
-    // Search 1: General search
-    const searchResult1 = await zai.functions.invoke('web_search', {
-      query: searchQuery,
-      num: 10,
-    });
+    // Execute search queries SEQUENTIALLY to avoid rate limiting (429 errors)
+    // Try up to 3 queries, stop early if we get results
+    const queriesToExecute = queries.slice(0, 3);
+    const searchResults: Array<{ data?: { results?: SearchResultItem[] } } | null> = [];
 
-    // Search 2: Site-specific search for notes
-    let searchResult2: { data?: { results?: Array<{ snippet?: string; title?: string; url?: string }> } } | null = null;
+    for (const query of queriesToExecute) {
+      try {
+        console.log(`[Scraper] Searching: ${query}`);
+        const result = await zai.functions.invoke('web_search', { query, num: 8 });
+        const resultCount = result?.data?.results?.length || 0;
+        console.log(`[Scraper] Search returned ${resultCount} results`);
+        searchResults.push(result);
+        // If we got results, no need to try more queries
+        if (resultCount > 0) break;
+      } catch (searchErr) {
+        // Individual search query might fail (rate limit, 422, etc.), continue with others
+        console.log(`[Scraper] Search query failed: ${searchErr instanceof Error ? searchErr.message : 'unknown error'}`);
+        searchResults.push(null);
+      }
+    }
+
+    // Combine and deduplicate results
+    const seenUrls = new Set<string>();
+    for (const searchResult of searchResults) {
+      const results = searchResult?.data?.results || [];
+      for (const r of results) {
+        const rUrl = r.url || '';
+        if (rUrl && !seenUrls.has(rUrl)) {
+          seenUrls.add(rUrl);
+          allResults.push({
+            title: r.title || '',
+            snippet: r.snippet || '',
+            url: rUrl,
+          });
+        }
+      }
+    }
+
+    // Also try site-specific search for notes
     if (userId) {
       try {
-        searchResult2 = await zai.functions.invoke('web_search', {
-          query: `site:xiaohongshu.com ${userId} 笔记`,
-          num: 10,
+        const siteResult = await zai.functions.invoke('web_search', {
+          query: `site:xiaohongshu.com ${userId}`,
+          num: 5,
         });
+        const siteResults = siteResult?.data?.results || [];
+        for (const r of siteResults) {
+          const rUrl = r.url || '';
+          if (rUrl && !seenUrls.has(rUrl)) {
+            seenUrls.add(rUrl);
+            allResults.push({
+              title: r.title || '',
+              snippet: r.snippet || '',
+              url: rUrl,
+            });
+          }
+        }
       } catch {
         // Site-specific search might fail, that's okay
         warnings.push('站内搜索失败，仅使用通用搜索结果');
       }
     }
 
-    // Combine search snippets
-    const results1 = searchResult1?.data?.results || [];
-    const results2 = searchResult2?.data?.results || [];
-    const allResults = [...results1, ...results2];
-
     if (allResults.length === 0) {
       warnings.push('搜索引擎未返回相关结果');
-      return { success: false, searchData: '', warnings };
+      return { success: false, searchData: '', thirdPartyUrls: [], warnings };
+    }
+
+    // Collect third-party URLs (non-XHS) for deeper reading
+    for (const r of allResults) {
+      const rUrl = r.url || '';
+      if (rUrl && !rUrl.includes('xiaohongshu.com') && !rUrl.includes('xhslink.com')) {
+        thirdPartyUrls.push(rUrl);
+      }
     }
 
     // Build a text summary of all search results
     const searchSummary = allResults
       .map(
-        (r: { title?: string; snippet?: string; url?: string }, i: number) =>
+        (r, i) =>
           `[${i + 1}] 标题: ${r.title || ''}\n    摘要: ${r.snippet || ''}\n    链接: ${r.url || ''}`
       )
       .join('\n\n');
 
-    return { success: true, searchData: searchSummary, warnings };
+    return { success: true, searchData: searchSummary, thirdPartyUrls, warnings };
   } catch (error) {
     const msg =
       error instanceof Error ? error.message : 'web_search调用失败';
     warnings.push(`web_search策略异常: ${msg}`);
-    return { success: false, searchData: '', warnings };
+    return { success: false, searchData: '', thirdPartyUrls: [], warnings };
   }
 }
 
 /**
- * Use LLM to analyze search results and extract structured profile data.
+ * Read content from third-party pages found in search results.
+ * These pages are not XHS pages, so they won't be blocked by 403.
+ */
+async function readThirdPartyPages(urls: string[]): Promise<string> {
+  if (urls.length === 0) return '';
+
+  const pageContents: string[] = [];
+
+  // Read up to 3 third-party pages (to avoid excessive API calls)
+  const urlsToRead = urls.slice(0, 3);
+
+  const readPromises = urlsToRead.map((url) => tryReadThirdPartyPage(url));
+  const results = await Promise.all(readPromises);
+
+  for (let i = 0; i < results.length; i++) {
+    if (results[i]) {
+      pageContents.push(`\n--- 第三方页面 ${i + 1}: ${urlsToRead[i]} ---\n${results[i]}`);
+    }
+  }
+
+  return pageContents.join('\n\n');
+}
+
+/**
+ * Use LLM to analyze search results and third-party page content
+ * to extract structured profile data.
  */
 async function analyzeSearchResultsWithLLM(
   searchData: string,
+  thirdPartyData: string,
   url: string
 ): Promise<{
   userInfo: Record<string, unknown>;
   posts: Record<string, unknown>[];
 }> {
   const userId = extractUserIdFromUrl(url);
+  const xsecToken = extractXsecToken(url);
+
+  // Combine search snippets with third-party page content
+  const combinedData = thirdPartyData
+    ? `${searchData.slice(0, 4000)}\n\n=== 第三方网站详细内容 ===\n${thirdPartyData.slice(0, 4000)}`
+    : searchData.slice(0, 6000);
 
   try {
     const zai = await ZAI.create();
@@ -299,7 +474,14 @@ async function analyzeSearchResultsWithLLM(
       messages: [
         {
           role: 'system',
-          content: `你是一个数据提取助手。根据搜索引擎返回的结果，提取小红书用户的个人资料信息。
+          content: `你是一个专业的小红书数据提取助手。根据搜索引擎返回的结果和第三方网页内容，提取小红书用户的个人资料信息。
+
+重要规则：
+1. 仔细阅读所有搜索结果和第三方网页内容，从中提取尽可能多的用户信息
+2. 即使信息不完整，也请尽力提取每个可用的字段
+3. 如果搜索结果中提到了粉丝数的范围（如"万粉博主"、"10万+粉丝"），请估算一个合理的数值
+4. 如果提到了用户的笔记内容，请在posts数组中列出
+5. 如果无法确定精确数值，根据上下文估算合理数值
 
 请返回 ONLY 合法的 JSON，格式如下：
 {
@@ -326,12 +508,12 @@ async function analyzeSearchResultsWithLLM(
 }
 
 如果某个字段无法从搜索结果中获取，使用空字符串或0。
-如果搜索结果中提到了该用户的笔记/帖子，请在posts数组中列出。
-已知URL中的用户ID: ${userId || '未知'}`,
+已知URL中的用户ID: ${userId || '未知'}
+${xsecToken ? 'URL包含访问令牌(xsec_token)' : ''}`,
         },
         {
           role: 'user',
-          content: `请从以下搜索结果中提取小红书用户信息:\n\n${searchData.slice(0, 6000)}`,
+          content: `请从以下搜索结果和第三方网页内容中提取小红书用户信息:\n\n${combinedData}`,
         },
       ],
       temperature: 0.1,
@@ -366,6 +548,8 @@ async function llmFallbackAnalysis(url: string): Promise<{
   ];
   const userId = extractUserIdFromUrl(url);
   const chineseName = extractChineseUsername(url);
+  const xsecToken = extractXsecToken(url);
+  const xsecSource = extractXsecSource(url);
 
   try {
     const zai = await ZAI.create();
@@ -376,7 +560,7 @@ async function llmFallbackAnalysis(url: string): Promise<{
           role: 'system',
           content: `你是一个小红书数据分析助手。用户提供了小红书个人主页的URL，但无法直接访问该页面，也无法通过搜索引擎找到相关信息。
 
-请根据URL结构进行基础分析，并返回 ONLY 合法的 JSON，格式如下：
+请根据URL中的信息进行合理推断和基础分析，并返回 ONLY 合法的 JSON，格式如下：
 {
   "nickname": "",
   "xhsId": "从URL提取的用户ID",
@@ -389,11 +573,16 @@ async function llmFallbackAnalysis(url: string): Promise<{
   "suggestions": ["建议1", "建议2", "建议3"]
 }
 
-在suggestions中，请提供用户可以手动补充的信息建议。`,
+分析要点：
+1. 从URL的xsec_source参数推断用户来源（如pc_feed表示来自推荐流，可能是活跃用户）
+2. 如果URL中有用户ID，将其填入xhsId
+3. 不要编造具体数据，所有数值字段保持为0
+4. 不要编造内容方向，bio留空
+5. 在suggestions中，提供用户可以手动补充的具体信息建议，如"请手动输入用户昵称"、"请手动输入粉丝数"等`,
         },
         {
           role: 'user',
-          content: `请分析以下小红书URL:\n${url}\n\nURL中的用户ID: ${userId || '未知'}\nURL中可能的用户名: ${chineseName || '未知'}`,
+          content: `请分析以下小红书URL:\n${url}\n\nURL中的用户ID: ${userId || '未知'}\nURL中可能的用户名: ${chineseName || '未知'}\n访问令牌: ${xsecToken ? '已提供' : '无'}\n来源: ${xsecSource || '未知'}`,
         },
       ],
       temperature: 0.3,
@@ -433,13 +622,20 @@ async function llmFallbackAnalysis(url: string): Promise<{
 
 /**
  * Scrape a Xiaohongshu user profile page.
- * Uses a multi-strategy approach: page_reader → web_search + LLM → LLM fallback.
+ * Uses a multi-strategy approach:
+ *   1. page_reader (direct access)
+ *   2. web_search + web_reader (third-party pages) + LLM analysis
+ *   3. LLM-based profile analysis (fallback)
  */
 export async function scrapeXhsProfile(url: string): Promise<ScrapeResult> {
   const warnings: string[] = [];
   let scrapeMethod: ScrapeResult['scrapeMethod'] = 'page_reader';
   let userInfo: Record<string, unknown> = {};
   let posts: Record<string, unknown>[] = [];
+
+  console.log(`[Scraper] Starting profile scrape for: ${url}`);
+  console.log(`[Scraper] Extracted user ID: ${extractUserIdFromUrl(url) || 'none'}`);
+  console.log(`[Scraper] Has xsec_token: ${!!extractXsecToken(url)}`);
 
   // ── Strategy 1: Try page_reader first ────────────────────────────────
   const pageResult = await tryPageReader(url);
@@ -458,6 +654,7 @@ export async function scrapeXhsProfile(url: string): Promise<ScrapeResult> {
       if (partialData) {
         warnings.push('page_reader获取的数据不完整，部分字段缺失');
       }
+      console.log(`[Scraper] Strategy 1 (page_reader) succeeded. Nickname: ${userInfo.nickname}`);
       return buildScrapeResult(url, userInfo, posts, scrapeMethod, warnings, partialData);
     }
 
@@ -465,13 +662,24 @@ export async function scrapeXhsProfile(url: string): Promise<ScrapeResult> {
     warnings.push('page_reader返回了页面但无法提取结构化数据，尝试搜索引擎策略');
   }
 
-  // ── Strategy 2: web_search + LLM analysis ────────────────────────────
+  // ── Strategy 2: web_search + web_reader + LLM analysis ──────────────
+  console.log('[Scraper] Trying Strategy 2: web_search + web_reader + LLM');
   const searchResult = await tryWebSearch(url);
   warnings.push(...searchResult.warnings);
 
   if (searchResult.success && searchResult.searchData) {
+    // Read third-party pages for richer data
+    console.log(`[Scraper] Found ${searchResult.thirdPartyUrls.length} third-party URLs to read`);
+    const thirdPartyData = await readThirdPartyPages(searchResult.thirdPartyUrls);
+
+    if (thirdPartyData) {
+      console.log('[Scraper] Successfully read third-party pages');
+      warnings.push('通过第三方网页获取了更多数据');
+    }
+
     const llmAnalysis = await analyzeSearchResultsWithLLM(
       searchResult.searchData,
+      thirdPartyData,
       url
     );
 
@@ -479,7 +687,7 @@ export async function scrapeXhsProfile(url: string): Promise<ScrapeResult> {
       scrapeMethod = 'web_search';
       userInfo = { ...userInfo, ...llmAnalysis.userInfo };
       posts = [...posts, ...llmAnalysis.posts];
-      warnings.push('小红书网站屏蔽了直接访问，使用了搜索引擎数据');
+      warnings.push('小红书网站屏蔽了直接访问，使用了搜索引擎和第三方网页数据');
 
       const partialData =
         !userInfo.nickname ||
@@ -490,6 +698,7 @@ export async function scrapeXhsProfile(url: string): Promise<ScrapeResult> {
         warnings.push('搜索引擎获取的数据可能不完整，建议手动补充');
       }
 
+      console.log(`[Scraper] Strategy 2 (web_search) succeeded. Nickname: ${userInfo.nickname}`);
       return buildScrapeResult(url, userInfo, posts, scrapeMethod, warnings, partialData);
     }
 
@@ -497,12 +706,14 @@ export async function scrapeXhsProfile(url: string): Promise<ScrapeResult> {
   }
 
   // ── Strategy 3: LLM-based profile analysis ──────────────────────────
+  console.log('[Scraper] Trying Strategy 3: LLM fallback');
   const fallbackResult = await llmFallbackAnalysis(url);
   warnings.push(...fallbackResult.warnings);
   userInfo = { ...userInfo, ...fallbackResult.userInfo };
   posts = [...posts, ...fallbackResult.posts];
   scrapeMethod = 'llm_fallback';
 
+  console.log(`[Scraper] Using Strategy 3 (LLM fallback). UserID: ${userInfo.xhsId}`);
   return buildScrapeResult(url, userInfo, posts, scrapeMethod, warnings, true);
 }
 
@@ -631,33 +842,70 @@ export async function scrapeXhsPost(url: string): Promise<{
     };
   }
 
-  // ── Strategy 2: web_search for post ──────────────────────────────────
+  // ── Strategy 2: web_search for post + third-party page reading ───────
   try {
     const zai = await ZAI.create();
 
-    // Search for the post URL
-    const searchResult = await zai.functions.invoke('web_search', {
-      query: `小红书 ${url}`,
-      num: 5,
-    });
+    // Extract post ID from URL for more targeted search
+    const postIdMatch = url.match(/\/explore\/([a-f0-9]{24})/);
+    const postIdMatch2 = url.match(/\/discovery\/item\/([a-f0-9]{24})/);
+    const postId = postIdMatch?.[1] || postIdMatch2?.[1] || '';
 
-    const searchResults = searchResult?.data?.results || [];
+    // Search with multiple queries
+    const searchQueries = [
+      postId ? `小红书 笔记 ${postId}` : '',
+      `小红书 ${url}`,
+    ].filter(Boolean);
 
-    if (searchResults.length > 0) {
-      const searchSummary = searchResults
+    let allSearchResults: SearchResultItem[] = [];
+
+    for (const query of searchQueries.slice(0, 2)) {
+      try {
+        const searchResult = await zai.functions.invoke('web_search', {
+          query,
+          num: 5,
+        });
+        const results = searchResult?.data?.results || [];
+        allSearchResults = [...allSearchResults, ...results];
+      } catch {
+        // Continue with other queries
+      }
+    }
+
+    if (allSearchResults.length > 0) {
+      const searchSummary = allSearchResults
         .map(
-          (r: { title?: string; snippet?: string; url?: string }, i: number) =>
+          (r, i) =>
             `[${i + 1}] 标题: ${r.title || ''}\n    摘要: ${r.snippet || ''}\n    链接: ${r.url || ''}`
         )
         .join('\n\n');
 
-      // Use LLM to extract post data from search results
+      // Try reading third-party pages for more details
+      const thirdPartyUrls = allSearchResults
+        .map((r) => r.url || '')
+        .filter((u) => u && !u.includes('xiaohongshu.com') && !u.includes('xhslink.com'))
+        .slice(0, 2);
+
+      let thirdPartyData = '';
+      if (thirdPartyUrls.length > 0) {
+        const readPromises = thirdPartyUrls.map((u) => tryReadThirdPartyPage(u));
+        const readResults = await Promise.all(readPromises);
+        thirdPartyData = readResults.filter(Boolean).join('\n\n');
+      }
+
+      const combinedData = thirdPartyData
+        ? `${searchSummary.slice(0, 3000)}\n\n=== 第三方网页内容 ===\n${thirdPartyData.slice(0, 3000)}`
+        : searchSummary.slice(0, 4000);
+
+      // Use LLM to extract post data from search results + third-party pages
       const llmResult = await zai.chat.completions.create({
         model: 'glm-4-flash',
         messages: [
           {
             role: 'system',
-            content: `你是一个数据提取助手。根据搜索引擎返回的结果，提取小红书笔记/帖子的信息。
+            content: `你是一个数据提取助手。根据搜索引擎返回的结果和第三方网页内容，提取小红书笔记/帖子的信息。
+
+请仔细阅读所有内容，提取尽可能多的信息。如果信息不完整，也请尽力提取每个可用的字段。
 
 请返回 ONLY 合法的 JSON，格式如下：
 {
@@ -673,11 +921,12 @@ export async function scrapeXhsPost(url: string): Promise<{
   "publishDate": ""
 }
 
-如果某个字段无法从搜索结果中获取，使用空字符串、0或空数组。`,
+如果某个字段无法从搜索结果中获取，使用空字符串、0或空数组。
+${postId ? `已知笔记ID: ${postId}` : ''}`,
           },
           {
             role: 'user',
-            content: `请从以下搜索结果中提取小红书笔记信息:\n\n${searchSummary.slice(0, 4000)}`,
+            content: `请从以下搜索结果和网页内容中提取小红书笔记信息:\n\n${combinedData}`,
           },
         ],
         temperature: 0.1,
@@ -688,7 +937,7 @@ export async function scrapeXhsPost(url: string): Promise<{
       if (jsonMatch) {
         const post = JSON.parse(jsonMatch[0]);
         scrapeMethod = 'web_search';
-        warnings.push('小红书网站屏蔽了直接访问，使用了搜索引擎数据');
+        warnings.push('小红书网站屏蔽了直接访问，使用了搜索引擎和第三方网页数据');
 
         return {
           html: '',
@@ -708,6 +957,10 @@ export async function scrapeXhsPost(url: string): Promise<{
   // ── Strategy 3: LLM fallback for post ────────────────────────────────
   try {
     const zai = await ZAI.create();
+    const postIdMatch = url.match(/\/explore\/([a-f0-9]{24})/) ||
+      url.match(/\/discovery\/item\/([a-f0-9]{24})/);
+    const postId = postIdMatch?.[1] || '';
+
     const llmResult = await zai.chat.completions.create({
       model: 'glm-4-flash',
       messages: [
@@ -732,7 +985,7 @@ export async function scrapeXhsPost(url: string): Promise<{
         },
         {
           role: 'user',
-          content: `请分析以下小红书笔记URL:\n${url}`,
+          content: `请分析以下小红书笔记URL:\n${url}\n${postId ? `笔记ID: ${postId}` : ''}`,
         },
       ],
       temperature: 0.3,

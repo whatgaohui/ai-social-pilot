@@ -32,21 +32,21 @@ function StatusIndicator({ status }: { status: string }) {
       );
     case "success":
       return (
-        <Badge variant="secondary" className="gap-1 text-xs text-green-600 bg-green-50">
+        <Badge variant="secondary" className="gap-1 text-xs text-emerald-600 bg-emerald-50 border-0">
           <CheckCircle2 className="w-3 h-3" />
           已同步
         </Badge>
       );
     case "partial":
       return (
-        <Badge variant="secondary" className="gap-1 text-xs text-amber-600 bg-amber-50">
+        <Badge variant="secondary" className="gap-1 text-xs text-amber-600 bg-amber-50 border-0">
           <AlertCircle className="w-3 h-3" />
           部分采集
         </Badge>
       );
     case "error":
       return (
-        <Badge variant="secondary" className="gap-1 text-xs text-red-600 bg-red-50">
+        <Badge variant="secondary" className="gap-1 text-xs text-red-600 bg-red-50 border-0">
           <AlertCircle className="w-3 h-3" />
           异常
         </Badge>
@@ -65,15 +65,15 @@ export function AccountCard({ account, onClick, selected, compact, className }: 
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all duration-200 hover:shadow-md",
-        selected && "ring-2 ring-xhs border-xhs",
+        "cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+        selected && "ring-2 ring-xhs/60 border-xhs/40 bg-xhs-light/20",
         className
       )}
       onClick={onClick}
     >
       <CardContent className={cn("p-4", compact && "p-3")}>
         <div className="flex items-start gap-3">
-          <Avatar className={cn(compact ? "w-9 h-9" : "w-11 h-11")}>
+          <Avatar className={cn(compact ? "w-9 h-9" : "w-11 h-11", "shrink-0")}>
             <AvatarImage src={account.avatarUrl} alt={account.nickname} />
             <AvatarFallback className="bg-xhs-light text-xhs text-sm font-medium">
               {(account.nickname || "用户").slice(0, 1)}
@@ -100,7 +100,7 @@ export function AccountCard({ account, onClick, selected, compact, className }: 
               </span>
             </div>
             {account.lastScrapedAt && !compact && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1.5">
                 最后同步: {new Date(account.lastScrapedAt).toLocaleDateString("zh-CN")}
               </p>
             )}

@@ -96,11 +96,7 @@ export function AccountView() {
       });
       const data = await res.json();
       if (data.success) {
-        if (data.data?.partialData) {
-          loadAnalysis(selectedAccountId);
-        } else {
-          loadAnalysis(selectedAccountId);
-        }
+        loadAnalysis(selectedAccountId);
       }
     } catch {
       console.error("Scrape failed");
@@ -118,7 +114,7 @@ export function AccountView() {
 
   if (loading && !analysis) {
     return (
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6 view-animate">
         <Skeleton className="h-32 rounded-xl" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -131,7 +127,7 @@ export function AccountView() {
 
   if (accounts.length === 0) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6 view-animate">
         <EmptyState
           icon={Users}
           title="还没有添加账号"
@@ -161,7 +157,7 @@ export function AccountView() {
   // No account selected - show list to pick
   if (!selectedAccountId) {
     return (
-      <div className="p-4 md:p-6 space-y-4">
+      <div className="p-4 md:p-6 space-y-4 view-animate">
         <h2 className="text-lg font-bold">选择账号</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {accounts.map((account) => (
@@ -179,33 +175,38 @@ export function AccountView() {
   const account = accountDetail || accounts.find((a) => a.id === selectedAccountId);
 
   return (
-    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6">
+    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
-            className="md:hidden"
+            className="md:hidden -ml-2"
             onClick={() => setSelectedAccountId(null)}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h2 className="text-lg font-bold">账号分析</h2>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">账号分析</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">深度数据洞察</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="outline"
+            className="border-border hidden sm:inline-flex"
             onClick={() => setEditDialogOpen(true)}
             disabled={!account}
           >
             <Pencil className="w-4 h-4 mr-1" />
-            编辑账号
+            编辑
           </Button>
           <Button
             size="sm"
             variant="outline"
+            className="border-border"
             onClick={handleScrape}
             disabled={scraping}
           >
@@ -226,16 +227,16 @@ export function AccountView() {
 
       {/* Warning banner for partial data */}
       {account?.status === "partial" && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 flex items-start gap-2">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 flex items-start gap-2.5">
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium">数据采集不完整</p>
-            <p className="text-xs mt-0.5">小红书网站限制了直接访问。部分信息需要手动补充。</p>
+            <p className="text-xs mt-0.5 text-amber-700">小红书网站限制了直接访问。部分信息需要手动补充。</p>
           </div>
           <Button
             size="sm"
             variant="outline"
-            className="text-amber-700 border-amber-300 hover:bg-amber-100 text-xs h-7"
+            className="text-amber-700 border-amber-300 hover:bg-amber-100 text-xs h-7 shrink-0"
             onClick={() => setEditDialogOpen(true)}
           >
             去补充
@@ -245,18 +246,18 @@ export function AccountView() {
 
       {/* Error banner for error status */}
       {account?.status === "error" && (
-        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 flex items-start gap-2">
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 flex items-start gap-2.5">
           <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium">采集失败</p>
-            <p className="text-xs mt-0.5">
+            <p className="text-xs mt-0.5 text-red-700">
               {account.errorMessage || "小红书网站限制了访问，数据采集失败。你可以手动补充账号信息。"}
             </p>
           </div>
           <Button
             size="sm"
             variant="outline"
-            className="text-red-700 border-red-300 hover:bg-red-100 text-xs h-7"
+            className="text-red-700 border-red-300 hover:bg-red-100 text-xs h-7 shrink-0"
             onClick={() => setEditDialogOpen(true)}
           >
             手动补充
@@ -267,9 +268,9 @@ export function AccountView() {
       {/* Account Profile Card */}
       {account && (
         <Card>
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-5 md:p-6">
             <div className="flex items-start gap-4">
-              <Avatar className="w-16 h-16">
+              <Avatar className="w-16 h-16 shrink-0">
                 <AvatarImage src={account.avatarUrl} alt={account.nickname} />
                 <AvatarFallback className="bg-xhs-light text-xhs text-xl font-medium">
                   {(account.nickname || "用户").slice(0, 1)}
@@ -283,18 +284,20 @@ export function AccountView() {
                 {account.location && (
                   <p className="text-xs text-muted-foreground mt-1">📍 {account.location}</p>
                 )}
-                <div className="flex items-center gap-4 mt-3">
+                <div className="flex items-center gap-5 mt-3">
                   <div className="text-center">
-                    <p className="text-lg font-bold">{formatNumber(account.followers)}</p>
-                    <p className="text-xs text-muted-foreground">粉丝</p>
+                    <p className="text-lg font-bold tracking-tight">{formatNumber(account.followers)}</p>
+                    <p className="text-[11px] text-muted-foreground">粉丝</p>
                   </div>
+                  <div className="w-px h-8 bg-border" />
                   <div className="text-center">
-                    <p className="text-lg font-bold">{formatNumber(account.following)}</p>
-                    <p className="text-xs text-muted-foreground">关注</p>
+                    <p className="text-lg font-bold tracking-tight">{formatNumber(account.following)}</p>
+                    <p className="text-[11px] text-muted-foreground">关注</p>
                   </div>
+                  <div className="w-px h-8 bg-border" />
                   <div className="text-center">
-                    <p className="text-lg font-bold">{formatNumber(account.likedCollected)}</p>
-                    <p className="text-xs text-muted-foreground">获赞与收藏</p>
+                    <p className="text-lg font-bold tracking-tight">{formatNumber(account.likedCollected)}</p>
+                    <p className="text-[11px] text-muted-foreground">获赞与收藏</p>
                   </div>
                 </div>
               </div>
@@ -306,35 +309,26 @@ export function AccountView() {
       {/* Stats Grid */}
       {analysis && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <FileText className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-                <p className="text-xl font-bold">{analysis.totalPosts}</p>
-                <p className="text-xs text-muted-foreground">总笔记数</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <Heart className="w-5 h-5 text-red-500 mx-auto mb-1" />
-                <p className="text-xl font-bold">{formatNumber(analysis.avgLikes)}</p>
-                <p className="text-xs text-muted-foreground">平均点赞</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <MessageCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                <p className="text-xl font-bold">{formatNumber(analysis.avgComments)}</p>
-                <p className="text-xs text-muted-foreground">平均评论</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <Bookmark className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
-                <p className="text-xl font-bold">{formatNumber(analysis.avgCollects)}</p>
-                <p className="text-xs text-muted-foreground">平均收藏</p>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {[
+              { icon: FileText, label: "总笔记数", value: analysis.totalPosts, color: "text-rose-500", bg: "bg-rose-50" },
+              { icon: Heart, label: "平均点赞", value: formatNumber(analysis.avgLikes), color: "text-red-500", bg: "bg-red-50" },
+              { icon: MessageCircle, label: "平均评论", value: formatNumber(analysis.avgComments), color: "text-emerald-500", bg: "bg-emerald-50" },
+              { icon: Bookmark, label: "平均收藏", value: formatNumber(analysis.avgCollects), color: "text-amber-500", bg: "bg-amber-50" },
+            ].map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <Card key={stat.label} className="card-hover">
+                  <CardContent className="p-4 text-center">
+                    <div className={cn("w-9 h-9 rounded-lg mx-auto mb-2 flex items-center justify-center", stat.bg)}>
+                      <Icon className={cn("w-4 h-4", stat.color)} />
+                    </div>
+                    <p className="text-xl font-bold tracking-tight">{stat.value}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {/* Engagement Trend (simple bar chart) */}
@@ -359,11 +353,11 @@ export function AccountView() {
                     return (
                       <div
                         key={i}
-                        className="flex-1 flex flex-col items-center gap-1"
+                        className="flex-1 flex flex-col items-center gap-1 group"
                         title={`${item.date}: ${total} 互动`}
                       >
                         <div
-                          className="w-full bg-xhs/70 rounded-t hover:bg-xhs transition-colors"
+                          className="w-full bg-xhs/60 rounded-t group-hover:bg-xhs transition-colors"
                           style={{ height: `${Math.max(height, 2)}%` }}
                         />
                         {i % 2 === 0 && (
@@ -386,25 +380,25 @@ export function AccountView() {
                 <CardTitle className="text-sm font-semibold">内容分类</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {analysis.contentCategories.slice(0, 6).map((cat, i) => {
                     const maxCount = Math.max(
                       ...analysis.contentCategories.map((c) => c.count)
                     );
                     return (
                       <div key={i} className="flex items-center gap-3">
-                        <span className="text-xs w-20 truncate text-right">
+                        <span className="text-xs w-20 truncate text-right text-muted-foreground">
                           {cat.name}
                         </span>
                         <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-xhs/60 rounded-full transition-all"
+                            className="h-full bg-xhs/50 rounded-full transition-all duration-500"
                             style={{
                               width: `${(cat.count / maxCount) * 100}%`,
                             }}
                           />
                         </div>
-                        <span className="text-xs text-muted-foreground w-16">
+                        <span className="text-xs text-muted-foreground w-12 text-right">
                           {cat.count}篇
                         </span>
                       </div>
@@ -422,11 +416,11 @@ export function AccountView() {
                 <CardTitle className="text-sm font-semibold">热门笔记 Top 5</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {analysis.topPosts.slice(0, 5).map((post, i) => (
                     <div
                       key={post.id}
-                      className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
                     >
                       <span className="text-lg font-bold text-xhs w-6 text-center shrink-0">
                         {i + 1}
@@ -469,7 +463,7 @@ export function AccountView() {
                     <Badge
                       key={i}
                       variant="secondary"
-                      className="text-xs"
+                      className="text-xs border-0 bg-muted/80"
                     >
                       {theme.theme}
                       <span className="ml-1 text-muted-foreground">×{theme.count}</span>
@@ -482,7 +476,7 @@ export function AccountView() {
 
           {/* AI Insights */}
           {analysis.aiInsights && (
-            <Card className="border-xhs/20 bg-xhs-light/30">
+            <Card className="border-xhs/20 bg-xhs-light/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <Lightbulb className="w-4 h-4 text-xhs" />
@@ -508,4 +502,8 @@ export function AccountView() {
       />
     </div>
   );
+}
+
+function cn(...inputs: (string | undefined | false)[]) {
+  return inputs.filter(Boolean).join(" ");
 }

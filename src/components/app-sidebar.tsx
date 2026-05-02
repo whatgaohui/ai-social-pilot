@@ -29,15 +29,15 @@ export function AppSidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-56 flex-col border-r bg-card h-screen sticky top-0">
+      <aside className="hidden md:flex w-56 flex-col border-r border-border bg-white dark:bg-neutral-950 h-screen sticky top-0">
         {/* Logo */}
-        <div className="flex items-center gap-2 px-5 py-5 border-b">
-          <div className="w-8 h-8 rounded-lg bg-xhs flex items-center justify-center">
+        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
+          <div className="w-9 h-9 rounded-xl bg-xhs flex items-center justify-center shadow-sm shadow-xhs/20">
             <span className="text-white font-bold text-sm">红</span>
           </div>
           <div>
-            <h1 className="text-sm font-bold leading-tight">小红书AI运营</h1>
-            <p className="text-xs text-muted-foreground">智能运营助手</p>
+            <h1 className="text-sm font-bold leading-tight tracking-tight">小红书AI运营</h1>
+            <p className="text-[11px] text-muted-foreground mt-0.5">智能运营助手</p>
           </div>
         </div>
 
@@ -53,11 +53,11 @@ export function AppSidebar() {
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "bg-xhs-light text-xhs"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-xhs-light text-xhs shadow-sm shadow-xhs/5"
+                        : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                     )}
                   >
-                    <item.icon className={cn("w-5 h-5", isActive && "text-xhs")} />
+                    <item.icon className={cn("w-5 h-5 transition-colors", isActive && "text-xhs")} />
                     {item.label}
                   </button>
                 </TooltipTrigger>
@@ -70,13 +70,16 @@ export function AppSidebar() {
         </nav>
 
         {/* Footer info */}
-        <div className="px-5 py-4 border-t">
-          <p className="text-xs text-muted-foreground">v1.0.0</p>
+        <div className="px-5 py-4 border-t border-border">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <p className="text-xs text-muted-foreground">v1.0.0 · 运行中</p>
+          </div>
         </div>
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t flex items-center justify-around px-2 py-1 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-md border-t border-border flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -84,12 +87,24 @@ export function AppSidebar() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors",
-                isActive ? "text-xhs" : "text-muted-foreground"
+                "flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-all duration-200 min-w-[56px]",
+                isActive
+                  ? "text-xhs"
+                  : "text-muted-foreground active:scale-95"
               )}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <div className={cn(
+                "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200",
+                isActive ? "bg-xhs-light" : ""
+              )}>
+                <item.icon className="w-5 h-5" />
+              </div>
+              <span className={cn(
+                "text-[10px] font-medium transition-all",
+                isActive && "font-semibold"
+              )}>
+                {item.label}
+              </span>
             </button>
           );
         })}

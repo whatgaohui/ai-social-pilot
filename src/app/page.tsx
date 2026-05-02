@@ -33,7 +33,7 @@ export default function Home() {
       <AppSidebar />
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden h-screen">
+      <main className="flex-1 overflow-hidden h-screen bg-muted/30">
         {renderView()}
       </main>
 

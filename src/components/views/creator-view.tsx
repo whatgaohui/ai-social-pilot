@@ -277,7 +277,7 @@ export function CreatorView() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6 view-animate">
         <Skeleton className="h-12 rounded-xl" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
@@ -286,7 +286,7 @@ export function CreatorView() {
 
   if (accounts.length === 0) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6 view-animate">
         <EmptyState
           icon={Sparkles}
           title="还没有添加账号"
@@ -299,14 +299,17 @@ export function CreatorView() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6">
+    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">AI 创作助手</h2>
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">AI 创作助手</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">智能内容生成与润色</p>
+        </div>
         <select
           value={selectedAccountId || ""}
           onChange={(e) => setSelectedAccountId(e.target.value)}
-          className="text-sm border rounded-lg px-3 py-1.5 bg-background"
+          className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white dark:bg-neutral-950"
         >
           {accounts.map((acc) => (
             <option key={acc.id} value={acc.id}>
@@ -346,8 +349,8 @@ export function CreatorView() {
                   onClick={() => setSelectedTone(opt.value)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all ${
                     selectedTone === opt.value
-                      ? "border-xhs bg-xhs-light text-xhs"
-                      : "border-border hover:border-xhs/30"
+                      ? "border-xhs bg-xhs-light text-xhs shadow-sm shadow-xhs/10"
+                      : "border-border hover:border-xhs/30 hover:bg-muted/50"
                   }`}
                 >
                   <span>{opt.emoji}</span>
@@ -360,7 +363,7 @@ export function CreatorView() {
           <Button
             onClick={handleGenerate}
             disabled={generating || !topic.trim()}
-            className="w-full bg-xhs hover:bg-xhs-dark text-white"
+            className="w-full bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20"
           >
             {generating ? (
               <>
@@ -389,9 +392,10 @@ export function CreatorView() {
                   variant="outline"
                   onClick={handleCopy}
                   disabled={!generatedContent}
+                  className="border-border"
                 >
                   {copied ? (
-                    <Check className="w-4 h-4 mr-1 text-green-500" />
+                    <Check className="w-4 h-4 mr-1 text-emerald-500" />
                   ) : (
                     <Copy className="w-4 h-4 mr-1" />
                   )}
@@ -401,6 +405,7 @@ export function CreatorView() {
                   size="sm"
                   variant="outline"
                   onClick={resetEditor}
+                  className="border-border"
                 >
                   清空
                 </Button>
@@ -410,9 +415,9 @@ export function CreatorView() {
           <CardContent className="space-y-4">
             {generating ? (
               <div className="space-y-3">
-                <Skeleton className="h-8 rounded" />
-                <Skeleton className="h-32 rounded" />
-                <Skeleton className="h-8 rounded w-1/2" />
+                <Skeleton className="h-8 rounded-lg" />
+                <Skeleton className="h-32 rounded-lg" />
+                <Skeleton className="h-8 rounded-lg w-1/2" />
               </div>
             ) : (
               <>
@@ -438,16 +443,18 @@ export function CreatorView() {
 
                 <div className="space-y-2">
                   <Label className="text-xs font-medium">标签</Label>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {generatedTags.map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="gap-1 text-xs">
-                        #{tag}
-                        <button onClick={() => removeTag(i)} className="hover:text-xhs">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
+                  {generatedTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {generatedTags.map((tag, i) => (
+                        <Badge key={i} variant="secondary" className="gap-1 text-xs border-0 bg-muted/80">
+                          #{tag}
+                          <button onClick={() => removeTag(i)} className="hover:text-xhs transition-colors">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <Input
                       value={newTag}
@@ -461,7 +468,7 @@ export function CreatorView() {
                         }
                       }}
                     />
-                    <Button size="sm" variant="outline" onClick={addTag}>
+                    <Button size="sm" variant="outline" onClick={addTag} className="shrink-0 border-border">
                       <Plus className="w-3 h-3" />
                     </Button>
                   </div>
@@ -483,6 +490,7 @@ export function CreatorView() {
                     size="sm"
                     onClick={handlePolish}
                     disabled={polishing || !generatedContent}
+                    className="border-border"
                   >
                     {polishing ? (
                       <>
@@ -498,7 +506,7 @@ export function CreatorView() {
                   </Button>
                   <Button
                     size="sm"
-                    className="bg-xhs hover:bg-xhs-dark text-white"
+                    className="bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20"
                     onClick={handleSaveDraft}
                     disabled={savingDraft}
                   >
@@ -535,7 +543,7 @@ export function CreatorView() {
               {drafts.map((draft) => (
                 <div
                   key={draft.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/30 transition-colors cursor-pointer"
                   onClick={() => handleLoadDraft(draft)}
                 >
                   <div className="flex-1 min-w-0">
@@ -569,6 +577,7 @@ export function CreatorView() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="shrink-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteDraft(draft.id);

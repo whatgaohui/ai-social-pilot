@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
@@ -20,6 +20,13 @@ import {
   MessageCircle,
   Bookmark,
 } from "lucide-react";
+
+const statCards = [
+  { key: "accounts", label: "管理账号", icon: Users, color: "text-rose-500", bg: "bg-rose-50" },
+  { key: "posts", label: "采集笔记", icon: FileText, color: "text-amber-500", bg: "bg-amber-50" },
+  { key: "engagement", label: "平均互动", icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-50" },
+  { key: "ai", label: "AI创作", icon: Sparkles, color: "text-xhs", bg: "bg-xhs-light" },
+] as const;
 
 export function DashboardView() {
   const { setAddAccountDialogOpen, setActiveTab } = useAppStore();
@@ -62,12 +69,19 @@ export function DashboardView() {
         )
       : 0;
 
+  const statValues: Record<string, string> = {
+    accounts: totalAccounts.toString(),
+    posts: totalPosts.toString(),
+    engagement: formatNumber(avgEngagement),
+    ai: "就绪",
+  };
+
   if (loading) {
     return (
-      <div className="p-4 md:p-6 space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="p-4 md:p-6 space-y-6 view-animate">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
+            <Skeleton key={i} className="h-[88px] rounded-xl" />
           ))}
         </div>
         <Skeleton className="h-48 rounded-xl" />
@@ -78,7 +92,7 @@ export function DashboardView() {
 
   if (accounts.length === 0) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6 view-animate">
         <EmptyState
           icon={Users}
           title="还没有添加账号"
@@ -106,17 +120,18 @@ export function DashboardView() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6">
+    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold">仪表盘</h2>
-          <p className="text-sm text-muted-foreground">运营数据概览</p>
+          <h2 className="text-xl font-bold tracking-tight">仪表盘</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">运营数据概览</p>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
+            className="border-border hidden sm:inline-flex"
             onClick={() => setAddAccountDialogOpen(true)}
           >
             <Plus className="w-4 h-4 mr-1" />
@@ -124,7 +139,7 @@ export function DashboardView() {
           </Button>
           <Button
             size="sm"
-            className="bg-xhs hover:bg-xhs-dark text-white"
+            className="bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20"
             onClick={() => setActiveTab("creator")}
           >
             <PenLine className="w-4 h-4 mr-1" />
@@ -134,67 +149,41 @@ export function DashboardView() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">管理账号</p>
-                <p className="text-xl font-bold">{totalAccounts}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-orange-500" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">采集笔记</p>
-                <p className="text-xl font-bold">{totalPosts}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">平均互动</p>
-                <p className="text-xl font-bold">{formatNumber(avgEngagement)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-xhs-light flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-xhs" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">AI创作</p>
-                <p className="text-xl font-bold">就绪</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.key} className="card-hover">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", stat.bg)}>
+                    <Icon className={cn("w-5 h-5", stat.color)} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
+                    <p className="text-xl font-bold tracking-tight">{statValues[stat.key]}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Account List */}
       <div>
-        <h3 className="text-sm font-semibold mb-3">我的账号</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold">我的账号</h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-xhs hover:text-xhs-dark"
+            onClick={() => setAddAccountDialogOpen(true)}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            添加
+          </Button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {accounts.map((account) => (
             <AccountCard
@@ -217,7 +206,7 @@ export function DashboardView() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs text-xhs"
+              className="text-xs text-xhs hover:text-xhs-dark"
               onClick={() => setActiveTab("content")}
             >
               查看全部
@@ -225,7 +214,7 @@ export function DashboardView() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {recentPosts.map((post) => (
-              <Card key={post.id} className="overflow-hidden">
+              <Card key={post.id} className="overflow-hidden card-hover">
                 <div className="aspect-[16/9] bg-muted relative">
                   {post.coverUrl ? (
                     <img
@@ -235,7 +224,7 @@ export function DashboardView() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-muted-foreground" />
+                      <FileText className="w-8 h-8 text-muted-foreground/50" />
                     </div>
                   )}
                 </div>
@@ -265,4 +254,8 @@ export function DashboardView() {
       )}
     </div>
   );
+}
+
+function cn(...inputs: (string | undefined | false)[]) {
+  return inputs.filter(Boolean).join(" ");
 }

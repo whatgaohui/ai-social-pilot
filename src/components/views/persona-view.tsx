@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,16 +72,18 @@ function TagInput({
   return (
     <div className="space-y-2">
       <Label className="text-xs font-medium">{label}</Label>
-      <div className="flex flex-wrap gap-1.5 mb-1.5">
-        {tags.map((tag, i) => (
-          <Badge key={i} variant="secondary" className="gap-1 text-xs">
-            {tag}
-            <button onClick={() => handleRemove(i)} className="hover:text-xhs">
-              <X className="w-3 h-3" />
-            </button>
-          </Badge>
-        ))}
-      </div>
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-1.5">
+          {tags.map((tag, i) => (
+            <Badge key={i} variant="secondary" className="gap-1 text-xs border-0 bg-muted/80">
+              {tag}
+              <button onClick={() => handleRemove(i)} className="hover:text-xhs transition-colors">
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
       <div className="flex gap-2">
         <Input
           value={inputValue}
@@ -99,7 +101,7 @@ function TagInput({
           size="sm"
           variant="outline"
           onClick={handleAdd}
-          className="shrink-0"
+          className="shrink-0 border-border"
         >
           <Plus className="w-3 h-3" />
         </Button>
@@ -144,13 +146,18 @@ export function PersonaView() {
       const res = await fetch("/api/accounts");
       const data = await res.json();
       if (data.success) {
-        setAccounts(data.data || []);
-        if (!selectedAccountId && data.data?.length > 0) {
-          setSelectedAccountId(data.data[0].id);
+        const accountList = data.data || [];
+        setAccounts(accountList);
+        // Auto-select first account if none selected
+        if (!selectedAccountId && accountList.length > 0) {
+          setSelectedAccountId(accountList[0].id);
         }
+      } else {
+        toast.error(data.error || "加载账号列表失败");
       }
     } catch (err) {
       console.error("Failed to load accounts:", err);
+      toast.error("网络错误，无法加载账号列表");
     }
   };
 
@@ -158,20 +165,26 @@ export function PersonaView() {
     setLoading(true);
     try {
       const res = await fetch(`/api/persona?accountId=${accountId}`);
+      if (!res.ok) {
+        throw new Error(`API返回错误: ${res.status}`);
+      }
       const data = await res.json();
       if (data.success && data.data) {
         const p = data.data as XhsPersonaInfo;
         setPersona(p);
         setPersonaExists(true);
-        setName(p.name);
-        setTone(p.tone);
-        setWritingStyle(p.writingStyle);
-        setTargetAudience(p.targetAudience);
-        setContentThemes(p.contentThemes || []);
-        setKeywords(p.keywords || []);
-        setAvoidTopics(p.avoidTopics || []);
-        setReferenceDesc(p.referenceDesc);
-        setSignaturePhrase(p.signaturePhrase);
+        setName(p.name || "");
+        // Validate tone and writingStyle against allowed values
+        const validTones = ["warm", "professional", "witty", "casual", "elegant"] as const;
+        const validStyles = ["concise", "detailed", "emotional", "balanced"] as const;
+        setTone(validTones.includes(p.tone as typeof validTones[number]) ? p.tone : "warm");
+        setWritingStyle(validStyles.includes(p.writingStyle as typeof validStyles[number]) ? p.writingStyle : "balanced");
+        setTargetAudience(p.targetAudience || "");
+        setContentThemes(Array.isArray(p.contentThemes) ? p.contentThemes : []);
+        setKeywords(Array.isArray(p.keywords) ? p.keywords : []);
+        setAvoidTopics(Array.isArray(p.avoidTopics) ? p.avoidTopics : []);
+        setReferenceDesc(p.referenceDesc || "");
+        setSignaturePhrase(p.signaturePhrase || "");
       } else {
         setPersona(null);
         setPersonaExists(false);
@@ -179,6 +192,10 @@ export function PersonaView() {
       }
     } catch (err) {
       console.error("Failed to load persona:", err);
+      setPersona(null);
+      setPersonaExists(false);
+      resetForm();
+      toast.error("加载人设信息失败，请重试");
     } finally {
       setLoading(false);
     }
@@ -237,7 +254,7 @@ export function PersonaView() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6 view-animate">
         <Skeleton className="h-12 rounded-xl" />
         <Skeleton className="h-64 rounded-xl" />
         <Skeleton className="h-32 rounded-xl" />
@@ -247,7 +264,7 @@ export function PersonaView() {
 
   if (accounts.length === 0) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6 view-animate">
         <EmptyState
           icon={Theater}
           title="还没有添加账号"
@@ -261,7 +278,7 @@ export function PersonaView() {
 
   if (!selectedAccountId) {
     return (
-      <div className="p-4 md:p-6 space-y-4">
+      <div className="p-4 md:p-6 space-y-4 view-animate">
         <h2 className="text-lg font-bold">选择账号</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {accounts.map((account) => (
@@ -277,25 +294,28 @@ export function PersonaView() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6">
+    <div className="p-4 md:p-6 space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
-            className="md:hidden"
+            className="md:hidden -ml-2"
             onClick={() => setSelectedAccountId(null)}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h2 className="text-lg font-bold">人设管理</h2>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">人设管理</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">定制AI创作风格</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={selectedAccountId}
             onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="text-sm border rounded-lg px-3 py-1.5 bg-background"
+            className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white dark:bg-neutral-950"
           >
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id}>
@@ -305,7 +325,7 @@ export function PersonaView() {
           </select>
           <Button
             size="sm"
-            className="bg-xhs hover:bg-xhs-dark text-white"
+            className="bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20"
             onClick={handleSave}
             disabled={saving}
           >
@@ -326,7 +346,7 @@ export function PersonaView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-5">
           {/* Basic Info */}
           <Card>
             <CardHeader className="pb-3">
@@ -349,10 +369,10 @@ export function PersonaView() {
                     <button
                       key={opt.value}
                       onClick={() => setTone(opt.value)}
-                      className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border transition-all text-xs ${
+                      className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all text-xs ${
                         tone === opt.value
-                          ? "border-xhs bg-xhs-light text-xhs"
-                          : "border-border hover:border-xhs/30"
+                          ? "border-xhs bg-xhs-light text-xhs shadow-sm shadow-xhs/10"
+                          : "border-border hover:border-xhs/30 hover:bg-muted/50"
                       }`}
                     >
                       <span className="text-lg">{opt.emoji}</span>
@@ -369,10 +389,10 @@ export function PersonaView() {
                     <button
                       key={opt.value}
                       onClick={() => setWritingStyle(opt.value)}
-                      className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border transition-all text-xs ${
+                      className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all text-xs ${
                         writingStyle === opt.value
-                          ? "border-xhs bg-xhs-light text-xhs"
-                          : "border-border hover:border-xhs/30"
+                          ? "border-xhs bg-xhs-light text-xhs shadow-sm shadow-xhs/10"
+                          : "border-border hover:border-xhs/30 hover:bg-muted/50"
                       }`}
                     >
                       <span className="text-lg">{opt.emoji}</span>
@@ -489,7 +509,7 @@ export function PersonaView() {
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {contentThemes.map((theme, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
+                      <Badge key={i} variant="secondary" className="text-xs border-0 bg-muted/80">
                         {theme}
                       </Badge>
                     ))}
@@ -532,12 +552,12 @@ export function PersonaView() {
                   <p className="text-xs font-medium text-muted-foreground mb-1">
                     人设描述
                   </p>
-                  <p className="text-xs line-clamp-3">{referenceDesc}</p>
+                  <p className="text-xs line-clamp-3 leading-relaxed">{referenceDesc}</p>
                 </div>
               )}
 
               {signaturePhrase && (
-                <div className="pt-2 border-t">
+                <div className="pt-2 border-t border-border">
                   <p className="text-xs italic text-xhs font-medium">
                     &ldquo;{signaturePhrase}&rdquo;
                   </p>
@@ -545,7 +565,7 @@ export function PersonaView() {
               )}
 
               {name && (
-                <div className="pt-2 border-t flex items-center gap-1 text-xs text-muted-foreground">
+                <div className="pt-2 border-t border-border flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Sparkles className="w-3 h-3 text-xhs" />
                   AI将基于此人设进行内容创作
                 </div>
