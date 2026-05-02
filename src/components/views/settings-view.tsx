@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,14 +33,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-type ThemeMode = "light" | "dark" | "system";
-
 export function SettingsView() {
   const { setAddAccountDialogOpen } = useAppStore();
   const addNotification = useNotificationStore((s) => s.addNotification);
+  const { theme, setTheme } = useTheme();
   const [clearingData, setClearingData] = useState(false);
   const [exportingData, setExportingData] = useState(false);
-  const [theme, setTheme] = useState<ThemeMode>("light");
 
   const handleExportAll = async () => {
     setExportingData(true);
@@ -138,9 +137,9 @@ export function SettingsView() {
             <Label className="text-xs font-medium">主题模式</Label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: "light" as ThemeMode, label: "浅色", icon: Sun, desc: "明亮清爽" },
-                { value: "dark" as ThemeMode, label: "深色", icon: Moon, desc: "护眼模式" },
-                { value: "system" as ThemeMode, label: "跟随系统", icon: Monitor, desc: "自动适配" },
+                { value: "light", label: "浅色", icon: Sun, desc: "明亮清爽" },
+                { value: "dark", label: "深色", icon: Moon, desc: "护眼模式" },
+                { value: "system", label: "跟随系统", icon: Monitor, desc: "自动适配" },
               ].map((opt) => {
                 const Icon = opt.icon;
                 return (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -17,27 +18,34 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
       <body className={inter.className}>
-        <TooltipProvider>
-          {children}
-        </TooltipProvider>
-        <Toaster
-          position="top-right"
-          richColors
-          toastOptions={{
-            style: {
-              borderRadius: '12px',
-              fontSize: '14px',
-            },
-            classNames: {
-              success: 'border-l-4 border-l-emerald-500',
-              error: 'border-l-4 border-l-xhs',
-              warning: 'border-l-4 border-l-amber-500',
-              info: 'border-l-4 border-l-blue-500',
-            },
-          }}
-        />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
+          <Toaster
+            position="top-right"
+            richColors
+            toastOptions={{
+              style: {
+                borderRadius: '12px',
+                fontSize: '14px',
+              },
+              classNames: {
+                success: 'border-l-4 border-l-emerald-500',
+                error: 'border-l-4 border-l-xhs',
+                warning: 'border-l-4 border-l-amber-500',
+                info: 'border-l-4 border-l-blue-500',
+              },
+            }}
+          />
+        </ThemeProvider>
       </body>
     </html>
   );
