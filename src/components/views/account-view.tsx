@@ -14,6 +14,17 @@ import { useAppStore } from "@/store/app-store";
 import { toast } from "sonner";
 import type { XhsAccountInfo, AccountAnalysis } from "@/types";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Users,
   Heart,
   MessageCircle,
@@ -27,6 +38,7 @@ import {
   Pencil,
   AlertTriangle,
   XCircle,
+  Trash2,
 } from "lucide-react";
 
 export function AccountView() {
@@ -112,13 +124,35 @@ export function AccountView() {
     }
   };
 
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!selectedAccountId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/accounts/${selectedAccountId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("账号已删除");
+        setSelectedAccountId(null);
+        loadAccounts();
+      } else {
+        toast.error(data.error || "删除失败");
+      }
+    } catch {
+      toast.error("网络错误，请重试");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading && !analysis) {
     return (
       <div className="p-4 md:p-6 space-y-6 view-animate">
         <Skeleton className="h-32 rounded-xl" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
+            <Skeleton key={i} className={`h-24 rounded-xl skeleton-delay-${i}`} />
           ))}
         </div>
       </div>
@@ -222,6 +256,39 @@ export function AccountView() {
               </>
             )}
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                disabled={deleting || !account}
+              >
+                {deleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>确定删除该账号？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  所有相关数据（笔记、人设、草稿）将被永久删除。此操作无法撤销。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  onClick={handleDeleteAccount}
+                >
+                  确定删除
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -311,19 +378,19 @@ export function AccountView() {
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
-              { icon: FileText, label: "总笔记数", value: analysis.totalPosts, color: "text-rose-500", bg: "bg-rose-50" },
-              { icon: Heart, label: "平均点赞", value: formatNumber(analysis.avgLikes), color: "text-red-500", bg: "bg-red-50" },
-              { icon: MessageCircle, label: "平均评论", value: formatNumber(analysis.avgComments), color: "text-emerald-500", bg: "bg-emerald-50" },
-              { icon: Bookmark, label: "平均收藏", value: formatNumber(analysis.avgCollects), color: "text-amber-500", bg: "bg-amber-50" },
+              { icon: FileText, label: "总笔记数", value: analysis.totalPosts, color: "text-white", bg: "stat-icon-gradient-rose" },
+              { icon: Heart, label: "平均点赞", value: formatNumber(analysis.avgLikes), color: "text-white", bg: "stat-icon-gradient-xhs" },
+              { icon: MessageCircle, label: "平均评论", value: formatNumber(analysis.avgComments), color: "text-white", bg: "stat-icon-gradient-emerald" },
+              { icon: Bookmark, label: "平均收藏", value: formatNumber(analysis.avgCollects), color: "text-white", bg: "stat-icon-gradient-amber" },
             ].map((stat) => {
               const Icon = stat.icon;
               return (
                 <Card key={stat.label} className="card-hover">
                   <CardContent className="p-4 text-center">
-                    <div className={cn("w-9 h-9 rounded-lg mx-auto mb-2 flex items-center justify-center", stat.bg)}>
+                    <div className={cn("w-9 h-9 rounded-lg mx-auto mb-2 flex items-center justify-center shadow-sm", stat.bg)}>
                       <Icon className={cn("w-4 h-4", stat.color)} />
                     </div>
-                    <p className="text-xl font-bold tracking-tight">{stat.value}</p>
+                    <p className="text-xl font-bold tracking-tight stat-count-animate">{stat.value}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</p>
                   </CardContent>
                 </Card>

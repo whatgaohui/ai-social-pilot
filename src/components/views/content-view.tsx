@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,9 +24,156 @@ import {
   Star,
   X,
   SlidersHorizontal,
+  LayoutGrid,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 type SortOption = "date" | "likes" | "comments" | "collects" | "aiScore";
+type ViewMode = "grid" | "calendar";
+
+function ContentCalendar({
+  posts,
+  onPostClick,
+  currentMonth,
+  onPrevMonth,
+  onNextMonth,
+}: {
+  posts: XhsPostInfo[];
+  onPostClick: (post: XhsPostInfo) => void;
+  currentMonth: Date;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+}) {
+  const today = new Date();
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+
+  // Posts grouped by date string "YYYY-MM-DD"
+  const postsByDate = useMemo(() => {
+    const map: Record<string, XhsPostInfo[]> = {};
+    for (const post of posts) {
+      const dateStr = post.publishDate ? post.publishDate.slice(0, 10) : "";
+      if (dateStr) {
+        if (!map[dateStr]) map[dateStr] = [];
+        map[dateStr].push(post);
+      }
+    }
+    return map;
+  }, [posts]);
+
+  // Calendar grid calculation
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startPad = firstDay.getDay(); // 0=Sun
+  const daysInMonth = lastDay.getDate();
+  const totalCells = Math.ceil((startPad + daysInMonth) / 7) * 7;
+
+  const monthLabel = `${year}年${month + 1}月`;
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+
+  const cells: { day: number | null; dateStr: string; isToday: boolean }[] = [];
+  for (let i = 0; i < totalCells; i++) {
+    const dayNum = i - startPad + 1;
+    if (dayNum < 1 || dayNum > daysInMonth) {
+      cells.push({ day: null, dateStr: "", isToday: false });
+    } else {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+      cells.push({ day: dayNum, dateStr, isToday: dateStr === todayStr });
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Month navigation */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">{monthLabel}</h3>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onPrevMonth}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-7"
+            onClick={() => {
+              // Reset to today's month - handled by parent
+            }}
+          >
+            今天
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onNextMonth}>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Week day headers */}
+      <div className="grid grid-cols-7 gap-1">
+        {weekDays.map((d) => (
+          <div key={d} className="text-center text-xs text-muted-foreground font-medium py-1">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar cells */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((cell, i) => {
+          const dayPosts = cell.dateStr ? postsByDate[cell.dateStr] || [] : [];
+          return (
+            <div
+              key={i}
+              className={cn(
+                "min-h-[72px] border border-border/50 rounded-lg p-1 transition-colors",
+                cell.day === null && "bg-muted/20",
+                cell.isToday && "bg-xhs-light/30 border-xhs/30",
+                cell.day !== null && !cell.isToday && "bg-white dark:bg-neutral-950"
+              )}
+            >
+              {cell.day !== null && (
+                <>
+                  <span
+                    className={cn(
+                      "text-xs font-medium inline-flex items-center justify-center w-5 h-5 rounded-full",
+                      cell.isToday && "bg-xhs text-white"
+                    )}
+                  >
+                    {cell.day}
+                  </span>
+                  <div className="mt-0.5 space-y-0.5">
+                    {dayPosts.slice(0, 2).map((post) => (
+                      <button
+                        key={post.id}
+                        className="w-full text-left text-[10px] leading-tight px-1 py-0.5 rounded bg-xhs/10 text-xhs hover:bg-xhs/20 transition-colors truncate"
+                        onClick={() => onPostClick(post)}
+                        title={post.title || "无标题"}
+                      >
+                        {post.title || "无标题"}
+                      </button>
+                    ))}
+                    {dayPosts.length > 2 && (
+                      <span className="text-[10px] text-muted-foreground px-1">
+                        +{dayPosts.length - 2}更多
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function cn(...inputs: (string | undefined | false)[]) {
+  return inputs.filter(Boolean).join(" ");
+}
 
 export function ContentView() {
   const { setAddAccountDialogOpen } = useAppStore();
@@ -38,6 +185,8 @@ export function ContentView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPost, setSelectedPost] = useState<XhsPostInfo | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
 
   useEffect(() => {
     loadAccounts();
@@ -90,6 +239,22 @@ export function ContentView() {
     { value: "aiScore", label: "AI评分" },
   ];
 
+  const handlePrevMonth = () => {
+    setCurrentMonth((prev) => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() - 1);
+      return d;
+    });
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth((prev) => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() + 1);
+      return d;
+    });
+  };
+
   if (loading && posts.length === 0) {
     return (
       <div className="p-4 md:p-6 space-y-6 view-animate">
@@ -125,15 +290,44 @@ export function ContentView() {
           <h2 className="text-xl font-bold tracking-tight">内容库</h2>
           <p className="text-sm text-muted-foreground mt-0.5">浏览和管理笔记</p>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-          className="text-muted-foreground"
-        >
-          <SlidersHorizontal className="w-4 h-4 mr-1" />
-          筛选
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* View mode toggle */}
+          <div className="flex items-center border border-border rounded-lg overflow-hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-2.5 rounded-none text-xs",
+                viewMode === "grid" ? "bg-xhs text-white hover:bg-xhs-dark hover:text-white" : "text-muted-foreground"
+              )}
+              onClick={() => setViewMode("grid")}
+            >
+              <LayoutGrid className="w-3.5 h-3.5 mr-1" />
+              网格
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-2.5 rounded-none text-xs",
+                viewMode === "calendar" ? "bg-xhs text-white hover:bg-xhs-dark hover:text-white" : "text-muted-foreground"
+              )}
+              onClick={() => setViewMode("calendar")}
+            >
+              <CalendarDays className="w-3.5 h-3.5 mr-1" />
+              日历
+            </Button>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="text-muted-foreground"
+          >
+            <SlidersHorizontal className="w-4 h-4 mr-1" />
+            筛选
+          </Button>
+        </div>
       </div>
 
       {/* Search and filters */}
@@ -192,24 +386,38 @@ export function ContentView() {
         )}
       </div>
 
-      {/* Posts grid */}
-      {filteredPosts.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="没有找到笔记"
-          description={searchQuery ? "尝试修改搜索关键词" : "该账号暂无笔记数据"}
-          className="py-8"
-        />
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-          {filteredPosts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onClick={() => setSelectedPost(post)}
+      {/* Content area: Grid or Calendar */}
+      {viewMode === "calendar" ? (
+        <Card className="border border-border">
+          <CardContent className="p-4">
+            <ContentCalendar
+              posts={filteredPosts}
+              onPostClick={setSelectedPost}
+              currentMonth={currentMonth}
+              onPrevMonth={handlePrevMonth}
+              onNextMonth={handleNextMonth}
             />
-          ))}
-        </div>
+          </CardContent>
+        </Card>
+      ) : (
+        filteredPosts.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="没有找到笔记"
+            description={searchQuery ? "尝试修改搜索关键词" : "该账号暂无笔记数据"}
+            className="py-8"
+          />
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+            {filteredPosts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                onClick={() => setSelectedPost(post)}
+              />
+            ))}
+          </div>
+        )
       )}
 
       {/* Post Detail Modal */}

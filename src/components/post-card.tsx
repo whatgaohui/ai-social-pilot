@@ -22,7 +22,7 @@ export function PostCard({ post, onClick, className }: PostCardProps) {
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm overflow-hidden",
+        "cursor-pointer card-glow overflow-hidden active:scale-[0.97]",
         className
       )}
       onClick={onClick}

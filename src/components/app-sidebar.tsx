@@ -14,6 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { NotificationCenter } from "@/components/notification-center";
 
 const navItems = [
   { id: "dashboard" as const, label: "仪表盘", icon: LayoutDashboard },
@@ -35,10 +36,11 @@ export function AppSidebar() {
           <div className="w-9 h-9 rounded-xl bg-xhs flex items-center justify-center shadow-sm shadow-xhs/20">
             <span className="text-white font-bold text-sm">红</span>
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-sm font-bold leading-tight tracking-tight">小红书AI运营</h1>
             <p className="text-[11px] text-muted-foreground mt-0.5">智能运营助手</p>
           </div>
+          <NotificationCenter />
         </div>
 
         {/* Navigation */}
@@ -51,13 +53,13 @@ export function AppSidebar() {
                   <button
                     onClick={() => setActiveTab(item.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.97]",
                       isActive
-                        ? "bg-xhs-light text-xhs shadow-sm shadow-xhs/5"
+                        ? "nav-active-indicator bg-gradient-to-r from-xhs-light to-xhs-light/40 text-xhs shadow-sm shadow-xhs/5"
                         : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                     )}
                   >
-                    <item.icon className={cn("w-5 h-5 transition-colors", isActive && "text-xhs")} />
+                    <item.icon className={cn("w-5 h-5 transition-all duration-150", isActive && "text-xhs")} />
                     {item.label}
                   </button>
                 </TooltipTrigger>
@@ -87,15 +89,15 @@ export function AppSidebar() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-all duration-200 min-w-[56px]",
+                "flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-all duration-150 min-w-[56px] active:scale-[0.97]",
                 isActive
                   ? "text-xhs"
-                  : "text-muted-foreground active:scale-95"
+                  : "text-muted-foreground"
               )}
             >
               <div className={cn(
-                "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200",
-                isActive ? "bg-xhs-light" : ""
+                "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150",
+                isActive ? "bg-gradient-to-br from-xhs-light to-xhs-light/40" : ""
               )}>
                 <item.icon className="w-5 h-5" />
               </div>

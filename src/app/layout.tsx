@@ -22,7 +22,22 @@ export default function RootLayout({
         <TooltipProvider>
           {children}
         </TooltipProvider>
-        <Toaster position="top-right" richColors />
+        <Toaster
+          position="top-right"
+          richColors
+          toastOptions={{
+            style: {
+              borderRadius: '12px',
+              fontSize: '14px',
+            },
+            classNames: {
+              success: 'border-l-4 border-l-emerald-500',
+              error: 'border-l-4 border-l-xhs',
+              warning: 'border-l-4 border-l-amber-500',
+              info: 'border-l-4 border-l-blue-500',
+            },
+          }}
+        />
       </body>
     </html>
   );

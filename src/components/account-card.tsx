@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, FileText, RefreshCw, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Users, FileText, RefreshCw, Loader2, CheckCircle2, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
 import type { XhsAccountInfo } from "@/types";
 
 interface AccountCardProps {
-  account: XhsAccountInfo & { postsCount?: number; draftsCount?: number };
+  account: XhsAccountInfo & { postsCount?: number; draftsCount?: number; engagementData?: number[] };
   onClick?: () => void;
   selected?: boolean;
   compact?: boolean;
@@ -61,6 +61,56 @@ function StatusIndicator({ status }: { status: string }) {
   }
 }
 
+function MiniSparkline({ data, color = "#FF2442" }: { data: number[]; color?: string }) {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const width = 80;
+  const height = 28;
+  const padding = 2;
+
+  const points = data.map((val, i) => {
+    const x = padding + (i / (data.length - 1)) * (width - padding * 2);
+    const y = padding + (1 - (val - min) / range) * (height - padding * 2);
+    return `${x},${y}`;
+  });
+
+  const pathD = `M ${points.join(" L ")}`;
+
+  // Calculate trend percentage
+  const firstVal = data[0] || 0;
+  const lastVal = data[data.length - 1] || 0;
+  const trendPct = firstVal > 0 ? Math.round(((lastVal - firstVal) / firstVal) * 100) : 0;
+  const isUp = trendPct >= 0;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        className="overflow-visible"
+      >
+        <path
+          d={pathD}
+          fill="none"
+          stroke={color}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      {firstVal > 0 && (
+        <span className={cn("text-[10px] font-medium flex items-center", isUp ? "text-emerald-600" : "text-red-500")}>
+          {isUp ? <TrendingUp className="w-2.5 h-2.5 mr-0.5" /> : <TrendingDown className="w-2.5 h-2.5 mr-0.5" />}
+          {isUp ? "+" : ""}{trendPct}%
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function AccountCard({ account, onClick, selected, compact, className }: AccountCardProps) {
   return (
     <Card
@@ -99,6 +149,12 @@ export function AccountCard({ account, onClick, selected, compact, className }: 
                 {account.postsCount ?? account.notesCount}笔记
               </span>
             </div>
+            {/* Mini sparkline for engagement trend */}
+            {account.engagementData && account.engagementData.length >= 2 && !compact && (
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <MiniSparkline data={account.engagementData} />
+              </div>
+            )}
             {account.lastScrapedAt && !compact && (
               <p className="text-xs text-muted-foreground mt-1.5">
                 最后同步: {new Date(account.lastScrapedAt).toLocaleDateString("zh-CN")}
@@ -111,4 +167,4 @@ export function AccountCard({ account, onClick, selected, compact, className }: 
   );
 }
 
-export { formatNumber };
+export { formatNumber, MiniSparkline };

@@ -217,27 +217,216 @@ select:focus {
 
 /* ─── View transition animations ────────────────────────────────────────── */
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes viewEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .view-animate {
-  animation: fadeIn 0.3s ease-out;
+  animation: viewEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ─── Card hover effects ────────────────────────────────────────────────── */
+/* ─── Card hover effects (premium) ──────────────────────────────────────── */
 
 [data-slot="card"].card-hover {
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.35s ease;
 }
 
 [data-slot="card"].card-hover:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
+  box-shadow:
+    0 8px 24px -4px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 36, 66, 0.06);
+  transform: translateY(-2px);
+  border-color: hsl(var(--border) / 0.8);
 }
 
 [data-slot="card"].card-hover:active {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transform: translateY(0);
+}
+
+/* ─── Card glow on hover (XHS accent) ──────────────────────────────────── */
+
+.card-glow {
+  transition:
+    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.4s ease;
+}
+
+.card-glow:hover {
+  box-shadow:
+    0 8px 30px -6px rgba(255, 36, 66, 0.12),
+    0 0 0 1px rgba(255, 36, 66, 0.08);
+  transform: translateY(-2px);
+  border-color: rgba(255, 36, 66, 0.15);
+}
+
+.card-glow:active {
+  box-shadow: 0 2px 8px rgba(255, 36, 66, 0.08);
+  transform: translateY(0);
+}
+
+/* ─── Stat card gradient icons ──────────────────────────────────────────── */
+
+.stat-icon-gradient-rose {
+  background: linear-gradient(135deg, #fb7185, #FF2442);
+}
+.stat-icon-gradient-amber {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+.stat-icon-gradient-emerald {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+.stat-icon-gradient-xhs {
+  background: linear-gradient(135deg, #FF5C72, #FF2442);
+}
+
+/* ─── Stat count-up animation ───────────────────────────────────────────── */
+
+@keyframes countPulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.stat-count-animate {
+  animation: countPulse 0.4s ease-out;
+}
+
+/* ─── Icon pulse on data load ───────────────────────────────────────────── */
+
+@keyframes iconPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.icon-pulse {
+  animation: iconPulse 0.5s ease-out;
+}
+
+/* ─── Floating animation (empty states) ─────────────────────────────────── */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ─── Gradient text utility ─────────────────────────────────────────────── */
+
+.text-gradient-xhs {
+  background: linear-gradient(135deg, #FF5C72, #FF2442, #D91A37);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Decorative background dots ────────────────────────────────────────── */
+
+.bg-dots {
+  background-image: radial-gradient(circle, hsl(var(--muted-foreground) / 0.12) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* ─── Sidebar active indicator ──────────────────────────────────────────── */
+
+@keyframes slideDown {
+  from { transform: scaleY(0); transform-origin: top; }
+  to { transform: scaleY(1); transform-origin: top; }
+}
+
+.nav-active-indicator {
+  position: relative;
+}
+.nav-active-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #FF2442;
+  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Dialog animations ─────────────────────────────────────────────────── */
+
+[data-slot="dialog-overlay"] {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+[data-slot="dialog-content"] {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+/* ─── Scrollbar (global, elegant, XHS-themed) ──────────────────────────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── Shimmer loading stagger ───────────────────────────────────────────── */
+
+.skeleton-delay-1 { animation-delay: 0s; }
+.skeleton-delay-2 { animation-delay: 0.1s; }
+.skeleton-delay-3 { animation-delay: 0.2s; }
+.skeleton-delay-4 { animation-delay: 0.3s; }
+.skeleton-delay-5 { animation-delay: 0.4s; }
+.skeleton-delay-6 { animation-delay: 0.5s; }
+
+/* ─── Stagger fade in for list items ────────────────────────────────────── */
+
+@keyframes staggerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-item {
+  opacity: 0;
+  animation: staggerFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
