@@ -35,6 +35,38 @@
 
 ## 当前目标 / 已完成的修改 / 验证结果
 
+### Session 21 - 定时任务端到端验证增强
+
+---
+Task ID: 21
+Agent: Main Agent
+Task: 定时任务增加端到端验证
+
+Work Log:
+- 读取 worklog.md 了解项目当前状态 (v2.1.0, 20个历史session)
+- 检查现有 cron 任务列表，发现3个重复/过期的定时任务：
+  - Job 123525: 已失败 (failed - "active long term lifecycle not found")
+  - Job 123572: 旧版 (已成功执行过)
+  - Job 124380: 最新版 (未执行)
+- 清理所有旧定时任务 (删除 123525, 123572, 124380)
+- 创建新定时任务 (Job 124771)，包含完整的端到端验证流程：
+  - 检查 dev server 运行状态 (读取 dev.log)
+  - 检查 XHS scraper micro-service 健康状态
+  - 使用 agent-browser 进行全页面自动化QA测试
+  - 验证关键API端点响应 (accounts, posts, ai/strategy)
+  - 检查数据库连接 (Prisma/SQLite)
+  - 每次验证结果必须包含各视图/API/Micro-service状态汇总
+- 定时任务频率: 每15分钟 (fixed_rate: 900s)
+- 优先级: 10 (高优先级)
+
+Stage Summary:
+- 清理了3个重复/过期的定时任务
+- 新建 Job 124771，包含6步端到端验证流程
+- E2E验证覆盖: Dev Server → Micro-service → 全页面QA → API端点 → 数据库 → 结果汇总
+- 定时任务会自动执行验证、修复问题、并继续开发
+
+---
+
 ### Session 20 - XHS Anti-Scraping Solution & Data Collection Enhancement
 
 ---
