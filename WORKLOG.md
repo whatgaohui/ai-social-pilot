@@ -322,8 +322,69 @@
 
 #### 下一步计划
 - [ ] 内容库模块完整实现（上传 API + 列表页 + 详情页 + 批量导入）
-- [ ] 账号概览重构（健康评分 + 指标看板 + AI 建议 + 活动时间线）
-- [ ] 笔记日历核心重构（日历联动 + 笔记详情 + 数据分析 + 新建笔记 + AI 创作）
 - [ ] 自动巡检系统实现（定时调度 + Playwright 检查 + 问题追踪）
 - [ ] 用户体验改进（骨架屏 + 错误边界 + 数据刷新 + 移动端适配）
+
+---
+
+### Iteration 008 — 账号中心重构：健康评分 + AI 建议 + 笔记日历增强
+
+**日期:** 2026-05-06
+**触发:** 用户反馈 — 账号概览无意义数据、AI 建议为空；笔记日历仅展示 12 篇、卡片过大、无详情/新建功能
+
+#### 完成内容
+
+**1. 账号概览重构 (OverviewTab)**
+- 新增 `HealthScoreCard` 组件：圆形进度环展示总健康分 (0-100)，4 维度子分数条 (发布频率/互动表现/粉丝基础/内容多样性)
+- 新增 `AISuggestionsPanel` 组件：从数据库读取 ContentSuggestion 记录，空时自动调用 AI 生成，支持忽略/应用操作
+- 新增 `ActivityTimeline` 组件：最近 10 篇笔记紧凑时间线，含互动数据徽章
+- 6 项核心指标卡片：粉丝、笔记数、总点赞、总收藏、总分享、平均互动
+- 保留互动数据分布卡片，与 AI 建议面板并排展示
+
+**2. 笔记日历重构 (CalendarTab)**
+- 日历格子优化：按总互动量着色 (红>1000, 深红>500, xhs>100, xhs-light>0)，显示笔记篇数
+- 全部笔记列表：移除 12 篇限制，支持搜索/筛选，20 篇/页分页
+- 笔记卡片缩小：aspect-[4/3] 缩略图，紧凑布局
+- 新增 `NoteDetailDrawer` 组件：点击笔记打开侧边栏，展示完整数据分析 (浏览/点赞/评论/收藏/分享/互动率/AI评分/标签/内容预览)
+- 新增 `NoteCreationDialog` 组件：新建笔记对话框，含标题/内容/标签/媒体上传占位/排程/AI辅助按钮
+- 新增 `NoteCard` 组件：可复用的紧凑/标准两种模式笔记卡片
+
+**3. 新增 API**
+- `GET /api/accounts/[id]/health` — 计算并保存健康评分 (发布频率30% + 互动表现40% + 粉丝基础15% + 内容多样性15%)
+- `GET /api/accounts/[id]/suggestions` — 获取 AI 建议 (空时自动生成)
+- `POST /api/accounts/[id]/suggestions` — 忽略/应用建议
+- `GET /api/accounts/[id]/notes?noteId=xxx` — 获取笔记详情 (含 NotePerformance)
+- `POST /api/accounts/[id]/notes` — 创建排程笔记 (ScheduledNote)
+- `GET /api/accounts/[id]/calendar` — 日历数据 (从旧位置迁移)
+
+**4. 前端验证**
+- E2E 浏览器截图验证：健康评分卡 ✓、AI 建议面板 ✓、活动时间线 ✓、新建笔记按钮 ✓、笔记详情抽屉 ✓
+- 所有页面中文正常渲染
+- TypeScript 编译 0 errors (src/)
+
+#### 修改文件清单
+
+| 文件 | 变更 |
+|------|------|
+| `src/components/account/health-score-card.tsx` | 新增 — 健康评分卡片 (SVG 圆形进度 + 子分数条) |
+| `src/components/account/ai-suggestions-panel.tsx` | 新增 — AI 建议面板 (生成/忽略/应用) |
+| `src/components/account/activity-timeline.tsx` | 新增 — 活动动态时间线 |
+| `src/components/account/note-card.tsx` | 新增 — 可复用笔记卡片 (紧凑/标准双模式) |
+| `src/components/account/note-detail-drawer.tsx` | 新增 — 笔记详情抽屉 (完整数据分析) |
+| `src/components/account/note-creation-dialog.tsx` | 新增 — 新建笔记对话框 |
+| `src/app/api/accounts/[id]/health/route.ts` | 新增 — 健康评分 API |
+| `src/app/api/accounts/[id]/suggestions/route.ts` | 新增 — AI 建议 CRUD |
+| `src/app/api/accounts/[id]/notes/route.ts` | 新增 — 笔记详情 GET + 创建 POST |
+| `src/app/api/accounts/[id]/calendar/route.ts` | 新增 — 日历数据 API |
+| `src/components/views/account-hub-view.tsx` | 重写 — 替换 OverviewTab + CalendarTab，保留 PersonaTab |
+
+#### Git 提交
+- `93f66f0` feat(iteration-008): 账号中心重构 - 健康评分 + AI 建议 + 笔记日历增强 (11 files, +2269 lines)
+
+#### 已知限制
+- 健康评分中"内容多样性"为 0 (因当前数据无分类/标签)
+- 新建笔记的媒体上传为占位 UI，尚未实现真实上传
+- AI 辅助创作按钮为 placeholder，功能开发中
+
+---
 
