@@ -1,10 +1,77 @@
-import ZAI from 'z-ai-web-dev-sdk';
+import OpenAI from 'openai';
+import { getProviderById, getDefaultProvider } from '@/lib/ai-config';
+import { readFileSync, existsSync } from 'fs';
+import path from 'path';
 import type {
   XhsAccountInfo,
   XhsPostInfo,
   XhsPersonaInfo,
   AccountAnalysis,
 } from '@/types';
+
+// ─── Runtime AI config (reads from JSON file, not env) ───────────────────
+
+interface RuntimeAiConfig {
+  provider: string;
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+}
+
+function loadRuntimeConfig(): RuntimeAiConfig | null {
+  // Try reading from the ai-config.json file first
+  const configPath = path.join(process.cwd(), 'ai-config.json');
+  if (existsSync(configPath)) {
+    try {
+      const raw = readFileSync(configPath, 'utf-8');
+      return JSON.parse(raw) as RuntimeAiConfig;
+    } catch {
+      // ignore
+    }
+  }
+
+  // Fallback to env vars
+  const apiKey = process.env.AI_API_KEY;
+  if (!apiKey) return null;
+
+  const providerId = process.env.AI_PROVIDER || 'zhipu';
+  const provider = getProviderById(providerId) || getDefaultProvider();
+
+  return {
+    provider: providerId,
+    apiKey,
+    model: process.env.AI_MODEL || provider.defaultModel,
+    baseUrl: process.env.AI_BASE_URL || provider.baseUrl,
+  };
+}
+
+// ─── OpenAI client singleton ─────────────────────────────────────────────
+
+let _openai: OpenAI | null = null;
+let _model: string = '';
+let _configHash: string = '';
+
+function getOpenAIClient(): { client: OpenAI; model: string } | null {
+  const config = loadRuntimeConfig();
+  if (!config || !config.apiKey) return null;
+
+  const hash = `${config.provider}:${config.apiKey.slice(-8)}:${config.model}:${config.baseUrl}`;
+  if (_openai && _model && _configHash === hash) {
+    return { client: _openai, model: _model };
+  }
+
+  _configHash = hash;
+  _openai = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseUrl });
+  _model = config.model;
+  return { client: _openai, model: _model };
+}
+
+// Reset client to pick up new config
+export function resetAIClient() {
+  _openai = null;
+  _model = '';
+  _configHash = '';
+}
 
 // ─── Helper: safely parse JSON from LLM response ───────────────────────
 
@@ -24,7 +91,8 @@ export async function analyzeAccount(
   account: XhsAccountInfo,
   posts: XhsPostInfo[]
 ): Promise<string> {
-  const zai = await ZAI.create();
+  const client = getOpenAIClient();
+  if (!client) return 'AI 服务未配置，请在设置中配置 AI 大模型。';
 
   const postSummaries = posts.slice(0, 20).map((p) => ({
     title: p.title,
@@ -62,8 +130,8 @@ ${JSON.stringify(postSummaries, null, 2)}
 
 请用中文回复，条理清晰。`;
 
-  const result = await zai.chat.completions.create({
-    model: 'glm-4-flash',
+  const result = await client.client.chat.completions.create({
+    model: client.model,
     messages: [
       {
         role: 'system',
@@ -99,7 +167,9 @@ export interface GeneratedContent {
 export async function generateContent(
   params: GenerateContentParams
 ): Promise<GeneratedContent> {
-  const zai = await ZAI.create();
+  const client = getOpenAIClient();
+  if (!client) throw new Error('AI 服务未配置，请在设置中配置 AI 大模型。');
+
   const { topic, style, tone, persona, referencePosts } = params;
 
   const personaContext = persona
@@ -150,8 +220,8 @@ ${referenceContext}
 - 标签5-8个，包含热门标签和精准标签
 - 封面提示词要具象、有美感、适合小红书风格`;
 
-  const result = await zai.chat.completions.create({
-    model: 'glm-4-flash',
+  const result = await client.client.chat.completions.create({
+    model: client.model,
     messages: [
       {
         role: 'system',
@@ -198,7 +268,9 @@ export interface PolishedContent {
 export async function polishContent(
   params: PolishContentParams
 ): Promise<PolishedContent> {
-  const zai = await ZAI.create();
+  const client = getOpenAIClient();
+  if (!client) throw new Error('AI 服务未配置，请在设置中配置 AI 大模型。');
+
   const { content, persona, polishGoal } = params;
 
   const personaContext = persona
@@ -241,8 +313,8 @@ ${content}
 - 强化行动号召（引导互动）
 - 标签组合兼顾热度与精准度`;
 
-  const result = await zai.chat.completions.create({
-    model: 'glm-4-flash',
+  const result = await client.client.chat.completions.create({
+    model: client.model,
     messages: [
       {
         role: 'system',
@@ -275,7 +347,8 @@ export async function generateTags(
   content: string,
   count: number = 8
 ): Promise<string[]> {
-  const zai = await ZAI.create();
+  const client = getOpenAIClient();
+  if (!client) return [];
 
   const prompt = `请为以下小红书笔记内容生成${count}个标签。标签应包含热门标签和精准标签的组合，有助于提高笔记的搜索曝光和推荐。
 
@@ -284,8 +357,8 @@ ${content.slice(0, 500)}
 
 请只返回一个JSON数组，例如：["标签1", "标签2", "标签3"]。不要包含任何其他文字。`;
 
-  const result = await zai.chat.completions.create({
-    model: 'glm-4-flash',
+  const result = await client.client.chat.completions.create({
+    model: client.model,
     messages: [
       {
         role: 'system',
@@ -330,7 +403,19 @@ export async function analyzePost(post: {
   content: string;
   tags: string[];
 }): Promise<PostAnalysis> {
-  const zai = await ZAI.create();
+  const client = getOpenAIClient();
+  if (!client) {
+    return {
+      score: 50,
+      titleScore: 50,
+      contentScore: 50,
+      tagScore: 50,
+      engagementPrediction: 'medium',
+      strengths: ['AI 服务未配置，无法分析'],
+      weaknesses: [],
+      suggestions: ['请在设置中配置 AI 大模型'],
+    };
+  }
 
   const prompt = `你是一位小红书笔记质量评估专家。请对以下笔记进行全面评分和分析。
 
@@ -357,8 +442,8 @@ export async function analyzePost(post: {
 - tagScore: 标签优化度
 - engagementPrediction: 互动预测 (low/medium/high/viral)`;
 
-  const result = await zai.chat.completions.create({
-    model: 'glm-4-flash',
+  const result = await client.client.chat.completions.create({
+    model: client.model,
     messages: [
       {
         role: 'system',
@@ -395,7 +480,8 @@ export async function generateAccountInsights(
   account: XhsAccountInfo,
   analysis: Omit<AccountAnalysis, 'aiInsights'>
 ): Promise<string> {
-  const zai = await ZAI.create();
+  const client = getOpenAIClient();
+  if (!client) return 'AI 服务未配置，请在设置中配置 AI 大模型。';
 
   const prompt = `基于以下小红书账号数据分析，请给出专业的AI洞察和运营建议。
 
@@ -414,8 +500,8 @@ export async function generateAccountInsights(
 3. 关键增长策略
 4. 下一步行动建议`;
 
-  const result = await zai.chat.completions.create({
-    model: 'glm-4-flash',
+  const result = await client.client.chat.completions.create({
+    model: client.model,
     messages: [
       {
         role: 'system',

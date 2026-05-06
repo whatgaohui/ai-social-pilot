@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+function normalizeXhsUrl(input: string): string {
+  const trimmed = input.trim();
+
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase();
+
+    if (!host.includes('xiaohongshu.com') && !host.includes('xhslink.com')) {
+      return '';
+    }
+
+    parsed.hash = '';
+
+    if (host.includes('xiaohongshu.com')) {
+      const profileMatch = parsed.pathname.match(/^\/user\/profile\/([^/?#]+)/);
+      if (!profileMatch) return '';
+
+      return `${parsed.origin}/user/profile/${profileMatch[1]}`;
+    }
+
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return '';
+  }
+}
+
 // GET /api/accounts - List all accounts
 export async function GET() {
   try {
@@ -23,7 +49,7 @@ export async function GET() {
   } catch (error) {
     console.error('Failed to list accounts:', error);
     return NextResponse.json(
-      { success: false, error: '获取账号列表失败' },
+      { success: false, error: '获取账号列表失败，请检查数据库配置' },
       { status: 500 }
     );
   }
@@ -42,19 +68,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate URL format
-    if (
-      !xhsUrl.includes('xiaohongshu.com') &&
-      !xhsUrl.includes('xhslink.com')
-    ) {
+    const normalizedUrl = normalizeXhsUrl(xhsUrl);
+
+    if (!normalizedUrl) {
       return NextResponse.json(
-        { success: false, error: '请提供有效的小红书链接' },
+        { success: false, error: '请输入有效的小红书主页链接' },
         { status: 400 }
       );
     }
 
-    // Check for duplicate
-    const existing = await db.xhsAccount.findUnique({ where: { xhsUrl } });
+    const existing = await db.xhsAccount.findUnique({
+      where: { xhsUrl: normalizedUrl },
+    });
+
     if (existing) {
       return NextResponse.json(
         { success: false, error: '该账号已存在' },
@@ -62,10 +88,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create account with idle status (scraping will be triggered separately)
     const account = await db.xhsAccount.create({
       data: {
-        xhsUrl,
+        xhsUrl: normalizedUrl,
+        xhsId: normalizedUrl.split('/').pop() || '',
         status: 'idle',
       },
     });
@@ -74,7 +100,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Failed to create account:', error);
     return NextResponse.json(
-      { success: false, error: '创建账号失败' },
+      { success: false, error: '创建账号失败，请检查数据库配置后重试' },
       { status: 500 }
     );
   }

@@ -47,7 +47,6 @@ import {
   Flame,
   Clock,
   Zap,
-  ChevronRight,
   Activity,
 } from "lucide-react";
 
@@ -147,30 +146,20 @@ export function AnalyticsView() {
   const totalFollowers = accounts.reduce((s, a) => s + (a.followers || 0), 0);
 
   const funnelData = useMemo((): FunnelStage[] => {
-    const totalImpressions = Math.max(
-      posts.reduce((s, p) => s + (p.likes + p.comments + p.collects + p.shares) * 8, 0),
-      10000
-    );
-    const totalViews = Math.round(totalImpressions * 0.62);
-    const totalLikes = posts.reduce((s, p) => s + p.likes, 0) || 1250;
-    const totalComments = posts.reduce((s, p) => s + p.comments, 0) || 380;
-    const totalCollects = posts.reduce((s, p) => s + p.collects, 0) || 520;
-    const totalShares = posts.reduce((s, p) => s + p.shares, 0) || 145;
+    // Only use real scraped data - XHS doesn't expose impression/view counts via scraping
+    const totalLikes = posts.reduce((s, p) => s + p.likes, 0);
+    const totalComments = posts.reduce((s, p) => s + p.comments, 0);
+    const totalCollects = posts.reduce((s, p) => s + p.collects, 0);
+    const totalShares = posts.reduce((s, p) => s + p.shares, 0);
+    const totalEngagement = totalLikes + totalComments + totalCollects + totalShares;
 
     return [
       {
-        label: "曝光",
-        icon: <Eye className="w-4 h-4" />,
-        count: totalImpressions,
+        label: "总互动",
+        icon: <Activity className="w-4 h-4" />,
+        count: totalEngagement,
         color: "text-xhs",
         bgColor: "bg-xhs/15",
-      },
-      {
-        label: "浏览",
-        icon: <BarChart3 className="w-4 h-4" />,
-        count: totalViews,
-        color: "text-xhs-600",
-        bgColor: "bg-xhs-200/50",
       },
       {
         label: "点赞",
@@ -206,12 +195,22 @@ export function AnalyticsView() {
   const categoryData = useMemo((): CategoryItem[] => {
     if (posts.length === 0) return getSimulatedCategories();
 
-    const catMap = new Map<string, { count: number; totalEng: number }>();
+    const catMap = new Map<string, { count: number; totalEng: number; olderEng: number; olderCount: number; newerEng: number; newerCount: number }>();
     for (const p of posts) {
       const cat = p.category || "未分类";
-      const existing = catMap.get(cat) || { count: 0, totalEng: 0 };
+      const existing = catMap.get(cat) || { count: 0, totalEng: 0, olderEng: 0, olderCount: 0, newerEng: 0, newerCount: 0 };
       existing.count++;
-      existing.totalEng += p.likes + p.comments + p.collects;
+      const engagement = p.likes + p.comments + p.collects;
+      existing.totalEng += engagement;
+
+      // Calculate trend: compare first half vs second half engagement
+      if (existing.count % 2 === 0) {
+        existing.olderEng += engagement;
+        existing.olderCount++;
+      } else {
+        existing.newerEng += engagement;
+        existing.newerCount++;
+      }
       catMap.set(cat, existing);
     }
 
@@ -222,14 +221,24 @@ export function AnalyticsView() {
     ];
 
     return Array.from(catMap.entries())
-      .map(([name, data], i) => ({
-        name,
-        count: data.count,
-        avgEngagement: data.count > 0 ? Math.round(data.totalEng / data.count) : 0,
-        trend: (Math.random() > 0.4 ? "up" : Math.random() > 0.5 ? "down" : "stable") as "up" | "down" | "stable",
-        color: colors[i % colors.length],
-        percentage: Math.round((data.count / total) * 100),
-      }))
+      .map(([name, data], i) => {
+        // Calculate trend from real engagement comparison
+        const olderAvg = data.olderCount > 0 ? data.olderEng / data.olderCount : 0;
+        const newerAvg = data.newerCount > 0 ? data.newerEng / data.newerCount : 0;
+        let trend: "up" | "down" | "stable" = "stable";
+        if (data.count >= 2) {
+          if (newerAvg > olderAvg * 1.1) trend = "up";
+          else if (newerAvg < olderAvg * 0.9) trend = "down";
+        }
+        return {
+          name,
+          count: data.count,
+          avgEngagement: data.count > 0 ? Math.round(data.totalEng / data.count) : 0,
+          trend,
+          color: colors[i % colors.length],
+          percentage: Math.round((data.count / total) * 100),
+        };
+      })
       .sort((a, b) => b.count - a.count);
   }, [posts]);
 
@@ -403,7 +412,7 @@ export function AnalyticsView() {
                   转化漏斗
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  从曝光到分享的完整转化路径，各阶段转化率一目了然
+                  从互动到点赞/评论/收藏/分享的完整转化路径
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -411,27 +420,26 @@ export function AnalyticsView() {
               </CardContent>
             </Card>
 
-            {/* Conversion Rate Cards - Enhanced with labels */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {funnelData.slice(0, -1).map((stage, i) => {
-                const nextStage = funnelData[i + 1];
-                const convRate = stage.count > 0
-                  ? ((nextStage.count / stage.count) * 100).toFixed(1)
+            {/* Conversion Rate Cards - share of total engagement */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {funnelData.slice(1).map((stage, i) => {
+                // Show each stage as percentage of total engagement
+                const totalEng = funnelData[0]?.count || 0;
+                const sharePct = totalEng > 0
+                  ? ((stage.count / totalEng) * 100).toFixed(1)
                   : "0";
-                const isGood = parseFloat(convRate) > 50;
+                const isGood = parseFloat(sharePct) > 50 && stage.label === "点赞";
                 return (
-                  <Card key={stage.label + "-conv"} className="card-hover shadow-sm group">
+                  <Card key={stage.label + "-share"} className="card-hover shadow-sm group">
                     <CardContent className="p-4 text-center">
                       <div className="flex items-center justify-center gap-1 mb-1.5">
-                        <span className={cn("text-[10px]", stage.color)}>{stage.label}</span>
-                        <ChevronRight className="w-2.5 h-2.5 text-muted-foreground/50" />
-                        <span className={cn("text-[10px]", nextStage.color)}>{nextStage.label}</span>
+                        <span className={cn("text-[10px] font-medium", stage.color)}>{stage.label}</span>
                       </div>
                       <p className="text-2xl font-bold tracking-tight text-xhs">
-                        {convRate}%
+                        {sharePct}%
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        转化率
+                        占总互动
                       </p>
                       <div className={cn(
                         "mt-2 h-1 rounded-full overflow-hidden bg-muted/50",
@@ -441,7 +449,7 @@ export function AnalyticsView() {
                             "h-full rounded-full transition-all duration-700",
                             isGood ? "bg-gradient-to-r from-emerald-400 to-emerald-500" : "bg-gradient-to-r from-xhs/60 to-xhs"
                           )}
-                          style={{ width: `${Math.min(parseFloat(convRate), 100)}%` }}
+                          style={{ width: `${Math.min(parseFloat(sharePct), 100)}%` }}
                         />
                       </div>
                     </CardContent>
@@ -461,28 +469,31 @@ export function AnalyticsView() {
               <CardContent>
                 <div className="space-y-3">
                   {(() => {
-                    const browseRate = funnelData[0].count > 0
-                      ? ((funnelData[1].count / funnelData[0].count) * 100).toFixed(1)
-                      : "0";
-                    const likeRate = funnelData[1].count > 0
-                      ? ((funnelData[2].count / funnelData[1].count) * 100).toFixed(1)
-                      : "0";
+                    // Calculate real conversion rates from funnel data
+                    const totalEng = funnelData[0]?.count || 0;
+                    const likePct = totalEng > 0 ? ((funnelData[1].count / totalEng) * 100).toFixed(1) : "0";
+                    const commentPct = totalEng > 0 ? ((funnelData[2].count / totalEng) * 100).toFixed(1) : "0";
+                    const collectPct = totalEng > 0 ? ((funnelData[3].count / totalEng) * 100).toFixed(1) : "0";
+                    const sharePct = totalEng > 0 ? ((funnelData[4].count / totalEng) * 100).toFixed(1) : "0";
+                    const likeNum = parseFloat(likePct);
+                    const commentNum = parseFloat(commentPct);
+
                     const insights = [
                       {
-                        text: `曝光→浏览转化率 ${browseRate}%，${parseFloat(browseRate) > 60 ? "高于" : "低于"}行业平均水平（62%）`,
-                        type: parseFloat(browseRate) > 60 ? "positive" as const : "negative" as const,
+                        text: `点赞占总互动 ${likePct}%，${likeNum > 60 ? "互动以点赞为主，内容吸引力强" : likeNum > 40 ? "点赞比例正常，可优化首图和标题" : "点赞比例偏低，建议提升内容质量"}`,
+                        type: likeNum > 40 ? "positive" as const : "neutral" as const,
                       },
                       {
-                        text: `浏览→点赞转化率 ${likeRate}%，建议优化首图和标题提升点击率`,
-                        type: parseFloat(likeRate) > 12 ? "positive" as const : "neutral" as const,
+                        text: `评论占总互动 ${commentPct}%，${commentNum > 15 ? "评论区活跃，粉丝互动良好" : "可引导更多评论，增加互动深度"}`,
+                        type: commentNum > 15 ? "positive" as const : "neutral" as const,
                       },
                       {
-                        text: "评论→收藏转化较好，内容深度获认可",
-                        type: "positive" as const,
+                        text: `收藏占比 ${collectPct}%，${parseFloat(collectPct) > 15 ? "收藏比高，内容实用性强" : "可增加干货类内容提升收藏"}`,
+                        type: parseFloat(collectPct) > 15 ? "positive" as const : "neutral" as const,
                       },
                       {
-                        text: "收藏→分享转化有提升空间，可增加实用型内容",
-                        type: "neutral" as const,
+                        text: `分享占比 ${sharePct}%，${parseFloat(sharePct) > 8 ? "分享传播效果好" : "可增加实用/情感共鸣类内容提升分享"}`,
+                        type: parseFloat(sharePct) > 8 ? "positive" as const : "neutral" as const,
                       },
                     ];
                     return insights.map((insight, i) => (
@@ -639,6 +650,16 @@ export function AnalyticsView() {
 
           {/* ─── Tab 3: 受众画像 ──────────────────────────────────────── */}
           <TabsContent value="audience" className="space-y-5 mt-4">
+            {/* Disclaimer banner for audience data */}
+            <Card className="border-amber-200/50 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-950/10">
+              <CardContent className="p-3 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  受众画像数据基于小红书平台整体用户分布估算，不代表实际粉丝构成。XHS 未对外公开粉丝画像 API 接口。
+                </p>
+              </CardContent>
+            </Card>
+
             <div className={cn(
               "grid grid-cols-1 lg:grid-cols-2 gap-4 transition-all duration-300",
               tabAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
@@ -646,12 +667,17 @@ export function AnalyticsView() {
               {/* Age Distribution */}
               <Card className="shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Users className="w-4 h-4 text-xhs" />
-                    年龄分布
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Users className="w-4 h-4 text-xhs" />
+                      年龄分布
+                    </CardTitle>
+                    <Badge variant="outline" className="text-[9px] h-5 border-amber-200/50 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20">
+                      估算
+                    </Badge>
+                  </div>
                   <CardDescription className="text-xs">
-                    粉丝年龄结构分析
+                    基于平台数据的参考分布
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -694,12 +720,17 @@ export function AnalyticsView() {
               {/* Gender Split */}
               <Card className="shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <PieChart className="w-4 h-4 text-xhs" />
-                    性别分布
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <PieChart className="w-4 h-4 text-xhs" />
+                      性别分布
+                    </CardTitle>
+                    <Badge variant="outline" className="text-[9px] h-5 border-amber-200/50 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20">
+                      估算
+                    </Badge>
+                  </div>
                   <CardDescription className="text-xs">
-                    粉丝性别构成分析
+                    基于小红书平台整体用户分布
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -711,12 +742,17 @@ export function AnalyticsView() {
             {/* Interests Tag Cloud - Enhanced with varying sizes */}
             <Card className="shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500" />
-                  兴趣标签
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-500" />
+                    兴趣标签
+                  </CardTitle>
+                  <Badge variant="outline" className="text-[9px] h-5 border-amber-200/50 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20">
+                    估算
+                  </Badge>
+                </div>
                 <CardDescription className="text-xs">
-                  粉丝最感兴趣的话题领域
+                  基于平台热门话题的参考分布
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -727,12 +763,17 @@ export function AnalyticsView() {
             {/* Active Hours Heatmap - Enhanced */}
             <Card className="shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-emerald-500" />
-                  活跃时段
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-emerald-500" />
+                    活跃时段
+                  </CardTitle>
+                  <Badge variant="outline" className="text-[9px] h-5 border-amber-200/50 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20">
+                    参考
+                  </Badge>
+                </div>
                 <CardDescription className="text-xs">
-                  粉丝活跃度按时间段分布（越深代表越活跃）
+                  小红书用户活跃时段参考（越深代表越活跃）
                 </CardDescription>
               </CardHeader>
               <CardContent>

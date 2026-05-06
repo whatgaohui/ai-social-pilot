@@ -12,69 +12,108 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ExternalLink, AlertTriangle } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 import { useAppStore } from "@/store/app-store";
 import { toast } from "sonner";
 import type { XhsAccountInfo } from "@/types";
+
+type ScrapeResult = {
+  success: boolean;
+  data?: {
+    partialData?: boolean;
+    warnings?: string[];
+    scrapeMethod?: string;
+  };
+  error?: string;
+};
+
+function normalizeXhsUrl(input: string): string {
+  const trimmed = input.trim();
+
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase();
+
+    if (!host.includes("xiaohongshu.com") && !host.includes("xhslink.com")) {
+      return "";
+    }
+
+    parsed.hash = "";
+
+    if (host.includes("xiaohongshu.com")) {
+      const profileMatch = parsed.pathname.match(/^\/user\/profile\/([^/?#]+)/);
+
+      if (!profileMatch) {
+        return "";
+      }
+
+      return `${parsed.origin}/user/profile/${profileMatch[1]}`;
+    }
+
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return "";
+  }
+}
 
 export function AddAccountDialog() {
   const { addAccountDialogOpen, setAddAccountDialogOpen } = useAppStore();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [partialMessage, setPartialMessage] = useState<string | null>(null);
+
+  const resetAndClose = () => {
+    setUrl("");
+    setAddAccountDialogOpen(false);
+  };
 
   const handleSubmit = async () => {
+    const normalizedUrl = normalizeXhsUrl(url);
+
     if (!url.trim()) {
       toast.error("请输入小红书主页链接");
       return;
     }
 
-    if (!url.includes("xiaohongshu.com") && !url.includes("xhslink.com")) {
-      toast.error("请输入有效的小红书链接");
+    if (!normalizedUrl) {
+      toast.error("请输入有效的小红书主页链接");
       return;
     }
 
     setLoading(true);
-    setPartialMessage(null);
+
     try {
       const res = await fetch("/api/accounts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ xhsUrl: url.trim() }),
+        body: JSON.stringify({ xhsUrl: normalizedUrl }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (!data.success) {
-        toast.error(data.error || "添加账号失败");
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error || "添加账号失败");
         return;
       }
 
       const account = data.data as XhsAccountInfo;
+      let scrapeData: ScrapeResult | null = null;
 
-      // Trigger scraping
-      let scrapeData: { success: boolean; data?: { partialData?: boolean; warnings?: string[]; scrapeMethod?: string }; error?: string } | null = null;
       try {
-        const scrapeRes = await fetch(`/api/accounts/${account.id}/scrape`, { method: "POST" });
-        scrapeData = await scrapeRes.json();
+        const scrapeRes = await fetch(`/api/accounts/${account.id}/scrape`, {
+          method: "POST",
+        });
+        scrapeData = await scrapeRes.json().catch(() => null);
       } catch {
-        toast.error("启动采集失败，请手动触发");
+        scrapeData = null;
       }
 
-      if (scrapeData?.success && scrapeData.data) {
-        if (scrapeData.data.partialData) {
-          // Partial data - keep dialog open, show warning
-          toast.warning("⚠️ 小红书网站限制了直接访问，部分数据可能不完整。你可以手动补充账号信息。");
-          setPartialMessage('⚠️ 数据采集不完整 - 小红书网站限制了直接访问，部分信息需要手动补充。你可以关闭此对话框，在账号详情中点击"编辑账号"来手动补充信息。');
-        } else {
-          toast.success("账号添加成功，数据采集完成！");
-          setUrl("");
-          setAddAccountDialogOpen(false);
-        }
+      if (scrapeData?.success && scrapeData.data && !scrapeData.data.partialData) {
+        toast.success("账号添加成功，数据采集完成");
       } else {
-        // Scraping failed completely - keep account, show error
-        toast.error("账号已添加，但采集失败。小红书网站限制了访问，你可以手动补充账号信息。");
-        setPartialMessage('采集失败，小红书网站限制了直接访问。你可以关闭此对话框，在账号详情中点击"编辑账号"来手动补充信息。');
+        toast.success("账号添加成功");
+        toast.warning("小红书可能限制直接采集，稍后可重试采集或手动补充账号信息");
       }
+
+      resetAndClose();
     } catch {
       toast.error("网络错误，请重试");
     } finally {
@@ -85,7 +124,6 @@ export function AddAccountDialog() {
   const handleClose = (open: boolean) => {
     if (!open) {
       setUrl("");
-      setPartialMessage(null);
     }
     setAddAccountDialogOpen(open);
   };
@@ -96,7 +134,7 @@ export function AddAccountDialog() {
         <DialogHeader>
           <DialogTitle>添加小红书账号</DialogTitle>
           <DialogDescription>
-            输入小红书用户主页链接，系统将自动采集账号信息和笔记数据
+            输入小红书用户主页链接，系统会添加账号并尝试采集公开主页信息。
           </DialogDescription>
         </DialogHeader>
 
@@ -107,57 +145,44 @@ export function AddAccountDialog() {
               id="xhs-url"
               placeholder="https://www.xiaohongshu.com/user/profile/..."
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !loading) handleSubmit();
+              onChange={(event) => setUrl(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !loading) handleSubmit();
               }}
               disabled={loading}
             />
           </div>
-
-          {partialMessage && (
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>{partialMessage}</span>
-            </div>
-          )}
 
           <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1.5">
             <p className="font-medium text-foreground flex items-center gap-1">
               <ExternalLink className="w-3 h-3" />
               如何获取链接
             </p>
-            <p>1. 打开小红书App或网页版</p>
+            <p>1. 打开小红书 App 或网页版</p>
             <p>2. 进入目标用户的主页</p>
             <p>3. 复制浏览器地址栏中的链接</p>
-            <p>4. 链接格式通常为 xiaohongshu.com/user/profile/xxx</p>
+            <p>4. 支持带参数的链接，系统会自动保留干净主页地址</p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => handleClose(false)}
-            disabled={loading}
-          >
-            {partialMessage ? "关闭" : "取消"}
+          <Button variant="outline" onClick={() => handleClose(false)} disabled={loading}>
+            取消
           </Button>
-          {!partialMessage && (
-            <Button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="bg-xhs hover:bg-xhs-dark text-white"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  添加中...
-                </>
-              ) : (
-                "添加账号"
-              )}
-            </Button>
-          )}
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-xhs hover:bg-xhs-dark text-white"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                添加中...
+              </>
+            ) : (
+              "添加账号"
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

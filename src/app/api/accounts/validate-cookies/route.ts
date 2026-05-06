@@ -1,81 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const SCRAPER_SERVICE_URL = 'http://localhost:3002';
+function normalizeCookieInput(input: string): string {
+  const trimmed = input
+    .trim()
+    .replace(/^[Cc]ookie:\s*/, '')
+    .replace(/[，,。\s]+$/g, '');
 
-/**
- * POST /api/accounts/validate-cookies
- * Validate XHS cookies by making a test request to the scraper service.
- */
+  if (!trimmed) return '';
+
+  try {
+    const parsed = JSON.parse(trimmed);
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((item) => item?.name && item?.value !== undefined)
+        .map((item) => `${item.name}=${item.value}`)
+        .join('; ');
+    }
+
+    if (typeof parsed === 'object' && parsed) {
+      if (typeof parsed.cookie === 'string') return normalizeCookieInput(parsed.cookie);
+      if (typeof parsed.cookies === 'string') return normalizeCookieInput(parsed.cookies);
+      if (Array.isArray(parsed.cookies)) return normalizeCookieInput(JSON.stringify(parsed.cookies));
+    }
+  } catch {
+    // Plain Cookie header string.
+  }
+
+  return trimmed;
+}
+
+function hasCookieKey(cookies: string, key: string): boolean {
+  return new RegExp(`(?:^|;\\s*)${key}=`).test(cookies);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { cookies } = await request.json();
 
     if (!cookies || typeof cookies !== 'string') {
       return NextResponse.json(
-        { success: false, error: '请提供Cookie' },
+        { success: false, error: 'Please provide Cookie text.' },
         { status: 400 }
       );
     }
 
-    // Try a lightweight profile request to validate cookies
-    // Use a test URL - the important thing is whether the cookies are accepted
-    try {
-      const res = await fetch(
-        `${SCRAPER_SERVICE_URL}/api/scrape/profile?XTransformPort=3002`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: 'https://www.xiaohongshu.com/explore',
-            cookies,
-          }),
-          signal: AbortSignal.timeout(15000),
-        }
-      );
+    const normalizedCookies = normalizeCookieInput(cookies);
+    const hasA1 = hasCookieKey(normalizedCookies, 'a1');
+    const hasSession =
+      hasCookieKey(normalizedCookies, 'web_session') ||
+      hasCookieKey(normalizedCookies, 'webId');
 
-      const data = await res.json();
-
-      if (data.success && data.data?.scrapeMethod === 'cookie_api') {
-        return NextResponse.json({
-          success: true,
-          valid: true,
-          message: 'Cookie有效，可以采集数据',
-        });
-      }
-
-      // Cookies didn't work for API access
+    if (!hasA1 || !hasSession) {
       return NextResponse.json({
         success: true,
         valid: false,
-        message: 'Cookie无效或已过期，请重新获取',
-      });
-    } catch {
-      // Scraper service might be down
-      // Do a basic check: cookies should contain key XHS identifiers
-      const hasXhsCookies =
-        cookies.includes('web_session') ||
-        cookies.includes('a1') ||
-        cookies.includes('webId');
-
-      if (hasXhsCookies) {
-        return NextResponse.json({
-          success: true,
-          valid: true,
-          message: 'Cookie格式正确（无法验证有效性，采集服务离线）',
-        });
-      }
-
-      return NextResponse.json({
-        success: true,
-        valid: false,
-        message: 'Cookie格式不正确，请确保复制了完整的小红书Cookie',
+        message: 'Cookie is incomplete. It must include a1 and web_session or webId.',
       });
     }
+
+    return NextResponse.json({
+      success: true,
+      valid: true,
+      message:
+        'Cookie format looks correct. If scraping still returns 0 posts, the XHS internal API may require request signing or a fresher browser Cookie.',
+      cookies: normalizedCookies,
+    });
   } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '验证失败',
+        error: error instanceof Error ? error.message : 'Validation failed',
       },
       { status: 500 }
     );

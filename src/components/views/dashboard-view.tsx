@@ -83,58 +83,41 @@ const strategyIconMap: Record<string, React.ElementType> = {
   Heart,
 };
 
-/** Generate mock activity feed based on accounts and posts */
+/** Generate activity feed from real account/post events */
 function generateActivityFeed(accounts: (XhsAccountInfo & { postsCount?: number })[], posts: XhsPostInfo[]): ActivityItem[] {
-  const now = new Date();
   const activities: ActivityItem[] = [];
 
-  accounts.forEach((acc, i) => {
+  // Real account data collection events
+  accounts.forEach((acc) => {
     if (acc.status === "success" || acc.status === "partial") {
+      const scrapeTime = acc.lastScrapedAt ? new Date(acc.lastScrapedAt) : null;
       activities.push({
         id: `acc-${acc.id}`,
         icon: Database,
         iconBg: "stat-icon-gradient-emerald",
         text: `${acc.nickname || "账号"} 数据已采集`,
-        time: new Date(now.getTime() - (i + 1) * 2 * 60 * 1000),
+        time: scrapeTime || new Date(),
         type: "data",
       });
     }
   });
 
-  posts.slice(0, 2).forEach((post, i) => {
+  // Real post publish events
+  posts.filter(p => p.publishDate).slice(0, 3).forEach((post) => {
     activities.push({
       id: `post-${post.id}`,
       icon: FileText,
       iconBg: "stat-icon-gradient-amber",
       text: `新笔记发布：${(post.title || "无标题").slice(0, 15)}...`,
-      time: new Date(now.getTime() - (i + 3) * 5 * 60 * 1000),
+      time: new Date(post.publishDate),
       type: "post",
     });
   });
 
-  if (posts.length > 0) {
-    activities.push({
-      id: "ai-gen",
-      icon: Sparkles,
-      iconBg: "stat-icon-gradient-xhs",
-      text: "AI内容生成完成",
-      time: new Date(now.getTime() - 10 * 60 * 1000),
-      type: "ai",
-    });
-  }
-
-  if (accounts.length > 0) {
-    activities.push({
-      id: "export",
-      icon: Download,
-      iconBg: "stat-icon-gradient-rose",
-      text: "数据导出完成",
-      time: new Date(now.getTime() - 30 * 60 * 1000),
-      type: "export",
-    });
-  }
-
-  return activities.slice(0, 6);
+  // Sort by time (newest first) and take top 6
+  return activities
+    .sort((a, b) => b.time.getTime() - a.time.getTime())
+    .slice(0, 6);
 }
 
 /** Format relative time in Chinese */
@@ -199,35 +182,70 @@ function StatSparkline({ data, color = "#FF2442" }: { data: number[]; color?: st
   );
 }
 
-/** Generate sparkline data for stat cards */
-function generateStatSparklineData(key: string, base: number): number[] {
-  const data: number[] = [];
-  for (let i = 0; i < 7; i++) {
-    const variation = Math.round(base * (0.7 + Math.sin(i * 1.3 + base * 0.01) * 0.3));
-    data.push(Math.max(variation, 1));
-  }
+/** Generate sparkline data for stat cards from real posts */
+function generateStatSparklineData(posts: XhsPostInfo[], key: string): number[] {
+  if (!posts || posts.length === 0) return [0, 0, 0, 0, 0, 0, 0];
+
+  const sorted = [...posts].sort((a, b) => {
+    if (a.publishDate && b.publishDate) return a.publishDate.localeCompare(b.publishDate);
+    return 0;
+  });
+  const recent = sorted.slice(-7);
+
+  // Build 7 data points from posts
+  const data = recent.map((p) => {
+    switch (key) {
+      case 'posts': return 1;
+      case 'engagement': return (p.likes || 0) + (p.comments || 0) + (p.collects || 0);
+      case 'accounts': return 1;
+      case 'rate': {
+        const total = (p.likes || 0) + (p.comments || 0) + (p.collects || 0);
+        return total > 0 ? parseFloat(((total / 1) * 0.1).toFixed(1)) : 0;
+      }
+      default: return (p.likes || 0) + (p.comments || 0) + (p.collects || 0);
+    }
+  });
+
+  // Pad to 7 if fewer posts
+  while (data.length < 7) data.unshift(0);
   return data;
 }
 
 type DateRange = 7 | 30 | 90;
 
-/** Generate simulated trend data based on date range */
-function generateTrend(key: string, range: DateRange): { value: number; isPositive: boolean } {
-  const seed = key.split("").reduce((a, c) => a + c.charCodeAt(0), 0) + range;
-  const pseudoRandom = ((Math.sin(seed * 9301 + 49297) % 233280) + 233280) % 233280 / 233280;
+/** Calculate real trend from posts data by comparing first half vs second half */
+function calculateTrend(posts: XhsPostInfo[], key: string, range: DateRange): { value: number; isPositive: boolean } {
+  if (posts.length < 2) return { value: 0, isPositive: true };
 
-  const rangeConfig: Record<DateRange, { min: number; max: number }> = {
-    7: { min: 5, max: 25 },
-    30: { min: 3, max: 15 },
-    90: { min: 1, max: 10 },
+  const sorted = [...posts].sort((a, b) => {
+    if (a.publishDate && b.publishDate) return a.publishDate.localeCompare(b.publishDate);
+    return 0;
+  });
+
+  const mid = Math.max(1, Math.floor(sorted.length / 2));
+  const older = sorted.slice(0, mid);
+  const newer = sorted.slice(mid);
+
+  const getMetric = (p: XhsPostInfo) => {
+    switch (key) {
+      case 'accounts': return 1;
+      case 'posts': return 1;
+      case 'engagement': return (p.likes || 0) + (p.comments || 0) + (p.collects || 0);
+      case 'rate': return (p.likes || 0) + (p.comments || 0) + (p.collects || 0);
+      default: return (p.likes || 0) + (p.comments || 0) + (p.collects || 0);
+    }
   };
 
-  const { min, max } = rangeConfig[range];
-  const magnitude = min + pseudoRandom * (max - min);
-  const isPositive = pseudoRandom > 0.3;
-  const value = parseFloat(magnitude.toFixed(1));
+  const olderAvg = older.reduce((s, p) => s + getMetric(p), 0) / older.length;
+  const newerAvg = newer.reduce((s, p) => s + getMetric(p), 0) / newer.length;
 
-  return { value, isPositive };
+  if (olderAvg === 0) return { value: 0, isPositive: newerAvg > 0 };
+
+  const pctChange = ((newerAvg - olderAvg) / olderAvg) * 100;
+  return {
+    value: Math.abs(pctChange).toFixed(1),
+    isPositive: pctChange >= 0,
+  };
 }
 
 /** SVG Area Chart with cubic bezier curves, grid lines, tooltips, and dot markers */
@@ -608,23 +626,23 @@ export function DashboardView() {
       , recentPosts[0])
     : null;
 
-  // Activity feed
+  // Activity feed - now uses real timestamps
   const activityFeed = generateActivityFeed(accounts, recentPosts);
 
-  // Stat sparkline data for each card
+  // Stat sparkline data from real posts
   const statSparklines = {
-    accounts: generateStatSparklineData("accounts", totalAccounts || 3),
-    posts: generateStatSparklineData("posts", totalPosts || 10),
-    engagement: generateStatSparklineData("engagement", avgEngagement || 50),
-    rate: generateStatSparklineData("rate", parseFloat(engagementRate) || 3),
+    accounts: generateStatSparklineData(recentPosts, "accounts"),
+    posts: generateStatSparklineData(recentPosts, "posts"),
+    engagement: generateStatSparklineData(recentPosts, "engagement"),
+    rate: generateStatSparklineData(recentPosts, "rate"),
   };
 
-  // Trend data for each stat card based on date range
+  // Real trend calculation from posts data
   const statTrends = {
-    accounts: generateTrend("accounts", dateRange),
-    posts: generateTrend("posts", dateRange),
-    engagement: generateTrend("engagement", dateRange),
-    rate: generateTrend("rate", dateRange),
+    accounts: calculateTrend(recentPosts, "accounts", dateRange),
+    posts: calculateTrend(recentPosts, "posts", dateRange),
+    engagement: calculateTrend(recentPosts, "engagement", dateRange),
+    rate: calculateTrend(recentPosts, "rate", dateRange),
   };
 
   const handleDateRangeChange = (range: DateRange) => {
@@ -643,15 +661,45 @@ export function DashboardView() {
     { key: "rate" as const, label: "互动率", icon: Target, value: `${engagementRate}%`, bg: "stat-icon-gradient-xhs", textColor: "text-white", sparkColor: "#FF2442" },
   ] as const;
 
-  // Area chart data for 7-day trend
+  // Area chart data: real 7-day engagement trend grouped by date
   const areaChartData = (() => {
     const days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+    // Map posts to day-of-week
+    const dayEngagement = Array(7).fill(0) as number[];
+    const dayCount = Array(7).fill(0) as number[];
+    for (const post of recentPosts) {
+      if (!post.publishDate) continue;
+      const date = new Date(post.publishDate);
+      // JS getDay(): 0=Sun, 1=Mon... Convert to 0=Mon, 6=Sun
+      const dayIndex = (date.getDay() + 6) % 7;
+      dayEngagement[dayIndex] += (post.likes || 0) + (post.comments || 0) + (post.collects || 0);
+      dayCount[dayIndex]++;
+    }
+    // Use average engagement per post per day (handles uneven distribution)
+    const avgData = dayEngagement.map((total, i) => dayCount[i] > 0 ? Math.round(total / dayCount[i]) : 0);
+    // If all zeros, show zeros
+    if (avgData.every(v => v === 0)) {
+      return { labels: days, data: [0, 0, 0, 0, 0, 0, 0] };
+    }
+    return { labels: days, data: avgData };
+  })();
+
+  // Weekly performance: calculate real comparison if we have enough posts
+  const weeklyPerformanceData = (() => {
+    if (recentPosts.length < 2) return null;
+    const sorted = [...recentPosts].sort((a, b) => {
+      if (a.publishDate && b.publishDate) return a.publishDate.localeCompare(b.publishDate);
+      return 0;
+    });
+    const mid = Math.max(1, Math.floor(sorted.length / 2));
+    const older = sorted.slice(0, mid);
+    const newer = sorted.slice(mid);
+    const olderEng = older.reduce((s, p) => s + (p.likes || 0) + (p.comments || 0) + (p.collects || 0), 0) / older.length;
+    const newerEng = newer.reduce((s, p) => s + (p.likes || 0) + (p.comments || 0) + (p.collects || 0), 0) / newer.length;
+    const pctChange = olderEng > 0 ? (((newerEng - olderEng) / olderEng) * 100).toFixed(1) : "0";
     return {
-      labels: days,
-      data: days.map((_, i) => {
-        const post = recentPosts[i % recentPosts.length];
-        return (post?.likes || 0) + (post?.comments || 0) + (post?.collects || 0);
-      }),
+      pctChange: parseFloat(pctChange),
+      isPositive: parseFloat(pctChange) >= 0,
     };
   })();
 
@@ -869,60 +917,63 @@ export function DashboardView() {
           </CardContent>
         </Card>
 
-        {/* Weekly Performance Card */}
+        {/* Weekly Performance Card - real data by day-of-week */}
         <Card className="overflow-hidden">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-xhs" />
-                本周表现
+                互动趋势
               </CardTitle>
-              <Badge variant="secondary" className="text-[10px] border-0 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400">
-                较上周 +15.3%
-              </Badge>
+              {weeklyPerformanceData && (
+                <Badge variant="secondary" className={cn(
+                  "text-[10px] border-0",
+                  weeklyPerformanceData.isPositive
+                    ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400"
+                    : "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400"
+                )}>
+                  较前期 {weeklyPerformanceData.isPositive ? "+" : ""}{weeklyPerformanceData.pctChange}%
+                </Badge>
+              )}
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
-              {(() => {
-                const dayLabels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-                return dayLabels.map((day, i) => {
-                  const post = recentPosts[i % recentPosts.length];
-                  const currentWeek = post ? (post.likes || 0) + (post.comments || 0) + (post.collects || 0) : 0;
-                  const prevWeek = Math.round(currentWeek * (0.6 + Math.sin(i * 2.1) * 0.4));
-                  const diff = currentWeek - prevWeek;
-                  const diffPct = prevWeek > 0 ? Math.round((diff / prevWeek) * 100) : 0;
-                  const isUp = diff > 0;
-                  const isSame = diff === 0;
-                  return (
-                    <div key={day} className="flex items-center gap-3 py-1.5 stagger-item" style={{ animationDelay: `${i * 0.04}s` }}>
-                      <span className="text-xs font-medium text-muted-foreground w-8 shrink-0">{day}</span>
-                      <div className="flex-1 flex items-center gap-2">
-                        <div className="flex-1 h-5 rounded-md bg-muted/40 overflow-hidden relative">
-                          <div
-                            className="h-full bg-gradient-to-r from-xhs/60 to-xhs/30 rounded-md transition-all duration-500"
-                            style={{ width: `${Math.min(Math.max((currentWeek / Math.max(currentWeek, prevWeek, 1)) * 100, 8), 100)}%` }}
-                          />
+            {recentPosts.length > 0 ? (
+              <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
+                {(() => {
+                  // Group posts by day-of-week and sum engagement
+                  const dayLabels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+                  const dayEngagement = Array(7).fill(0) as number[];
+                  for (const post of recentPosts) {
+                    if (!post.publishDate) continue;
+                    const date = new Date(post.publishDate);
+                    const dayIndex = (date.getDay() + 6) % 7;
+                    dayEngagement[dayIndex] += (post.likes || 0) + (post.comments || 0) + (post.collects || 0);
+                  }
+                  const maxEng = Math.max(...dayEngagement, 1);
+                  return dayLabels.map((day, i) => {
+                    const currentWeek = dayEngagement[i];
+                    const barPct = Math.round((currentWeek / maxEng) * 100);
+                    return (
+                      <div key={day} className="flex items-center gap-3 py-1.5 stagger-item" style={{ animationDelay: `${i * 0.04}s` }}>
+                        <span className="text-xs font-medium text-muted-foreground w-8 shrink-0">{day}</span>
+                        <div className="flex-1 flex items-center gap-2">
+                          <div className="flex-1 h-5 rounded-md bg-muted/40 overflow-hidden relative">
+                            <div
+                              className="h-full bg-gradient-to-r from-xhs/60 to-xhs/30 rounded-md transition-all duration-500"
+                              style={{ width: `${Math.max(barPct, 4)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-semibold tabular-nums w-14 text-right shrink-0">{formatNumber(currentWeek)}</span>
                         </div>
-                        <span className="text-xs font-semibold tabular-nums w-14 text-right shrink-0">{formatNumber(currentWeek)}</span>
                       </div>
-                      <div className={cn(
-                        "flex items-center gap-0.5 text-[11px] font-medium w-14 shrink-0 justify-end",
-                        isSame ? "text-muted-foreground" : isUp ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"
-                      )}>
-                        {isSame ? <Minus className="w-3 h-3" /> : isUp ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                        {isSame ? "0%" : `${isUp ? "+" : ""}${diffPct}%`}
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-              <div className="pt-2 mt-1 border-t border-border/40">
-                <p className="text-xs text-muted-foreground text-center">
-                  本周互动量较上周 <span className="font-semibold text-emerald-600 dark:text-emerald-400">+15.3%</span>
-                </p>
+                    );
+                  });
+                })()}
               </div>
-            </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">暂无笔记数据</p>
+            )}
           </CardContent>
         </Card>
       </div>

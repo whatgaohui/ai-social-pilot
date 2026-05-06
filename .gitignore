@@ -42,6 +42,7 @@ yarn-error.log*
 next-env.d.ts
 local-*
 .claude
+ai-config.json
 .z-ai-config
 *.log
 dev.log
@@ -65,4 +66,4 @@ mini-services/*/node_modules/
 .cache/
 
 # Agent context
-/agent-ctx/
+/agent-ctx/ai-config.json

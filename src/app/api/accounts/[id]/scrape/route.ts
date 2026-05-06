@@ -1,9 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import path from 'node:path';
 import { db } from '@/lib/db';
 import { scrapeXhsProfile } from '@/lib/xhs-scraper';
 import { analyzePost } from '@/lib/ai-service';
 
 const SCRAPER_SERVICE_URL = 'http://localhost:3002';
+
+function extractUserIdFromUrl(url: string): string {
+  const profileMatch = url.match(
+    /xiaohongshu\.com\/user\/profile\/([a-f0-9]{24}|[A-Za-z0-9_-]+)/
+  );
+  return profileMatch?.[1] || '';
+}
+
+function hasZaiConfig(): boolean {
+  return [
+    path.join(process.cwd(), '.z-ai-config'),
+    path.join(homedir(), '.z-ai-config'),
+    'C:\\etc\\.z-ai-config',
+    '/etc/.z-ai-config',
+  ].some((configPath) => {
+    try {
+      return existsSync(configPath);
+    } catch {
+      return false;
+    }
+  });
+}
+
+async function isScraperServiceOnline(): Promise<boolean> {
+  try {
+    const res = await fetch(`${SCRAPER_SERVICE_URL}/api/health`, {
+      signal: AbortSignal.timeout(2500),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function buildUrlOnlyScrapeResult(url: string, warnings: string[]): ScrapeResultData {
+  const userId = extractUserIdFromUrl(url);
+
+  return {
+    account: { xhsId: userId },
+    posts: [],
+    totalFound: 0,
+    scrapeMethod: 'manual_required',
+    warnings,
+    partialData: true,
+  };
+}
+
+function normalizeCookieInput(input: string): string {
+  const trimmed = input
+    .trim()
+    .replace(/^[Cc]ookie:\s*/, '')
+    .replace(/[，,。\s]+$/g, '');
+
+  if (!trimmed) return '';
+
+  if (trimmed.toLowerCase().startsWith('cookie:')) {
+    return trimmed.slice(trimmed.indexOf(':') + 1).trim();
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((item) => item?.name && item?.value !== undefined)
+        .map((item) => `${item.name}=${item.value}`)
+        .join('; ');
+    }
+
+    if (typeof parsed === 'object' && parsed) {
+      if (typeof parsed.cookie === 'string') return normalizeCookieInput(parsed.cookie);
+      if (typeof parsed.cookies === 'string') return normalizeCookieInput(parsed.cookies);
+      if (Array.isArray(parsed.cookies)) return normalizeCookieInput(JSON.stringify(parsed.cookies));
+    }
+  } catch {
+    // Plain Cookie header string.
+  }
+
+  return trimmed;
+}
 
 /**
  * Check if a string looks like auto-generated placeholder content
@@ -103,6 +186,12 @@ async function scrapeWithCookies(
     const warnings = profileData.data?.warnings || [];
     const partialData = profileData.data?.partialData || false;
 
+    if (scrapeMethod !== 'cookie_api') {
+      warnings.unshift(
+        'Cookie 没有通过小红书接口验证，已退回到备用采集；如果需要笔记列表，请重新复制完整登录 Cookie。'
+      );
+    }
+
     // Step 2: If we got a userId, try to get more posts
     const userId = account.xhsId || '';
     if (userId && scrapeMethod === 'cookie_api') {
@@ -175,6 +264,8 @@ async function scrapeWithSearch(url: string): Promise<ScrapeResultData | null> {
     const warnings = profileData.data?.warnings || [];
     const partialData = profileData.data?.partialData ?? true;
 
+    console.log('[ScrapeRoute] search-profile result: account=', account.nickname, ', posts=', posts.length, ', method=', scrapeMethod);
+
     // Try to get more notes via search
     const userId = account.xhsId || '';
     const nickname = account.nickname || '';
@@ -205,6 +296,7 @@ async function scrapeWithSearch(url: string): Promise<ScrapeResultData | null> {
       }
     }
 
+    console.log('[ScrapeRoute] scrapeWithSearch returning: posts=', posts.length, ', totalFound=', posts.length);
     return {
       account,
       posts,
@@ -244,7 +336,29 @@ export async function POST(
     }
 
     const scrapeMethod = body.method || 'search'; // 'cookie' | 'search'
-    const cookies = body.cookies || '';
+    const cookies = normalizeCookieInput(body.cookies || '');
+    const scraperOnline = await isScraperServiceOnline();
+    const zaiConfigured = hasZaiConfig();
+    const preflightWarnings: string[] = [];
+
+    if (!scraperOnline) {
+      preflightWarnings.push(
+        '采集服务未启动，请先运行 npm run scraper；否则只能使用基础兜底数据。'
+      );
+    }
+
+    if (!zaiConfigured) {
+      preflightWarnings.push(
+        '搜索采集和 AI 兜底需要 .z-ai-config；没有配置时建议使用 Cookie 采集。'
+      );
+    }
+
+    if (scrapeMethod === 'cookie' && !cookies.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Cookie 采集需要先粘贴小红书登录 Cookie。' },
+        { status: 400 }
+      );
+    }
 
     // Set status to scraping
     await db.xhsAccount.update({
@@ -269,16 +383,30 @@ export async function POST(
 
       // Strategy 3: Legacy xhs-scraper (final fallback)
       if (!scrapeResult) {
-        console.log('[ScrapeRoute] Falling back to legacy scraper');
-        const legacyResult = await scrapeXhsProfile(account.xhsUrl);
-        scrapeResult = {
-          account: legacyResult.account as ScrapeAccountData,
-          posts: legacyResult.posts as ScrapePostData[],
-          totalFound: legacyResult.totalFound,
-          scrapeMethod: legacyResult.scrapeMethod,
-          warnings: legacyResult.warnings,
-          partialData: legacyResult.partialData,
-        };
+        if (zaiConfigured) {
+          console.log('[ScrapeRoute] Falling back to legacy scraper');
+          const legacyResult = await scrapeXhsProfile(account.xhsUrl);
+          scrapeResult = {
+            account: legacyResult.account as ScrapeAccountData,
+            posts: legacyResult.posts as ScrapePostData[],
+            totalFound: legacyResult.totalFound,
+            scrapeMethod: legacyResult.scrapeMethod,
+            warnings: legacyResult.warnings,
+            partialData: legacyResult.partialData,
+          };
+        } else {
+          scrapeResult = buildUrlOnlyScrapeResult(account.xhsUrl, [
+            '当前环境无法执行搜索采集或 AI 兜底，只保留了主页链接中的用户 ID。',
+          ]);
+        }
+      }
+
+      scrapeResult.warnings = [...preflightWarnings, ...scrapeResult.warnings];
+
+      if (scrapeResult.totalFound === 0 && !cookies.trim()) {
+        scrapeResult.warnings.push(
+          '未采集到笔记列表。小红书笔记列表通常需要登录 Cookie，请在采集弹窗中选择 Cookie 采集。'
+        );
       }
 
       // Determine status based on whether data is partial

@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppStore } from "@/store/app-store";
 import { useNotificationStore } from "@/store/notification-store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AI_PROVIDERS } from "@/lib/ai-config";
 import {
   Settings,
   Database,
@@ -18,7 +21,6 @@ import {
   RefreshCw,
   Info,
   ExternalLink,
-  Shield,
   Heart,
   Sparkles,
   FileText,
@@ -27,10 +29,11 @@ import {
   Sun,
   Monitor,
   Bell,
-  Globe,
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export function SettingsView() {
@@ -39,6 +42,90 @@ export function SettingsView() {
   const { theme, setTheme } = useTheme();
   const [clearingData, setClearingData] = useState(false);
   const [exportingData, setExportingData] = useState(false);
+
+  // AI Provider state
+  const [aiProvider, setAiProvider] = useState("zhipu");
+  const [apiKey, setApiKey] = useState("");
+  const [aiModel, setAiModel] = useState("");
+  const [customBaseUrl, setCustomBaseUrl] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [testingConfig, setTestingConfig] = useState(false);
+
+  // Load config on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("xhs-ai-config");
+    if (saved) {
+      try {
+        const config = JSON.parse(saved);
+        setAiProvider(config.provider || "zhipu");
+        setApiKey(config.apiKey || "");
+        setAiModel(config.model || "");
+        setCustomBaseUrl(config.baseUrl || "");
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  const currentProvider = AI_PROVIDERS.find((p) => p.id === aiProvider);
+  const aiConfigured = apiKey.trim().length > 0;
+
+  const handleSaveConfig = async () => {
+    setSavingConfig(true);
+    try {
+      const config = {
+        provider: aiProvider,
+        apiKey: apiKey.trim(),
+        model: aiModel || currentProvider?.defaultModel || "",
+        baseUrl: aiProvider === "custom" ? customBaseUrl.trim() : (currentProvider?.baseUrl || ""),
+      };
+      localStorage.setItem("xhs-ai-config", JSON.stringify(config));
+
+      // Also save to .env via API
+      const res = await fetch("/api/ai/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("AI 配置已保存！");
+      } else {
+        toast.error(data.error || "保存失败");
+      }
+    } catch {
+      toast.error("网络错误，请重试");
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleTestConfig = async () => {
+    setTestingConfig(true);
+    try {
+      const res = await fetch("/api/ai/config/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: aiProvider,
+          apiKey: apiKey.trim(),
+          model: aiModel || currentProvider?.defaultModel || "",
+          baseUrl: aiProvider === "custom" ? customBaseUrl.trim() : (currentProvider?.baseUrl || ""),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`连接成功！模型: ${data.data?.model || aiModel}`);
+      } else {
+        toast.error(data.error || "连接失败，请检查配置");
+      }
+    } catch {
+      toast.error("网络错误，请重试");
+    } finally {
+      setTestingConfig(false);
+    }
+  };
 
   const handleExportAll = async () => {
     setExportingData(true);
@@ -83,6 +170,7 @@ export function SettingsView() {
         toast.success("数据已清空");
         addNotification({
           type: "info",
+          category: "system",
           title: "数据已清空",
           message: "所有账号和相关数据已删除",
           navigateTo: "dashboard",
@@ -103,6 +191,7 @@ export function SettingsView() {
         toast.success("演示数据加载成功！");
         addNotification({
           type: "info",
+          category: "system",
           title: "演示数据已加载",
           message: "已加载示例账号和笔记数据",
           navigateTo: "dashboard",
@@ -122,6 +211,178 @@ export function SettingsView() {
         <h2 className="text-xl font-bold tracking-tight">设置</h2>
         <p className="text-sm text-muted-foreground mt-0.5">应用偏好与数据管理</p>
       </div>
+
+      {/* AI Provider Settings */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-xhs" />
+            AI 大模型
+          </CardTitle>
+          <CardDescription className="text-xs">配置 AI 内容创作和分析的大模型服务</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">选择提供商</Label>
+            <div className="grid gap-2">
+              {AI_PROVIDERS.map((provider) => (
+                <button
+                  key={provider.id}
+                  onClick={() => setAiProvider(provider.id)}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl border transition-all text-left",
+                    aiProvider === provider.id
+                      ? "border-xhs bg-xhs-light/30 shadow-sm shadow-xhs/10"
+                      : "border-border hover:border-xhs/30 hover:bg-muted/50"
+                  )}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{provider.name}</span>
+                      {provider.pricing === 'free' && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-emerald-50 text-emerald-600 border-0">
+                          免费
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{provider.description}</p>
+                    {provider.freeQuota && (
+                      <p className="text-[10px] text-emerald-600 mt-0.5">{provider.freeQuota}</p>
+                    )}
+                  </div>
+                  {aiProvider === provider.id && (
+                    <CheckCircle2 className="w-4 h-4 text-xhs shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {aiProvider === 'custom' && (
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">自定义 Base URL</Label>
+              <Input
+                placeholder="https://your-api-server/v1"
+                value={customBaseUrl}
+                onChange={(e) => setCustomBaseUrl(e.target.value)}
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">如 Ollama: http://localhost:11434/v1</p>
+            </div>
+          )}
+
+          {aiProvider && (
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">API Key</Label>
+              <div className="flex gap-2">
+                <Input
+                  type={showKey ? 'text' : 'password'}
+                  placeholder="粘贴你的 API Key"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="text-sm"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 h-9 w-9"
+                  onClick={() => setShowKey(!showKey)}
+                >
+                  {showKey ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {currentProvider && currentProvider.models.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">模型选择</Label>
+              <Select value={aiModel} onValueChange={setAiModel}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currentProvider.models.map((m) => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+            <div>
+              <p className="text-sm font-medium">连接状态</p>
+              <p className="text-xs text-muted-foreground">
+                {aiConfigured ? '已配置，可以使用 AI 功能' : '未配置 API Key，AI 功能暂不可用'}
+              </p>
+            </div>
+            <Badge
+              variant="secondary"
+              className={cn(
+                "text-xs border-0 badge-animate-in",
+                aiConfigured
+                  ? "bg-emerald-50 text-emerald-600"
+                  : "bg-amber-50 text-amber-600"
+              )}
+            >
+              {aiConfigured ? (
+                <><CheckCircle2 className="w-3 h-3 mr-0.5" /> 已就绪</>
+              ) : (
+                <><AlertCircle className="w-3 h-3 mr-0.5" /> 待配置</>
+              )}
+            </Badge>
+          </div>
+
+          {currentProvider?.signupUrl && (
+            <a
+              href={currentProvider.signupUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-xhs hover:underline"
+            >
+              前往 {currentProvider.name} 注册获取 API Key
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+
+          <Separator />
+
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs border-border flex-1"
+              onClick={handleTestConfig}
+              disabled={testingConfig || !aiConfigured}
+            >
+              {testingConfig ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 mr-1" />
+              )}
+              测试连接
+            </Button>
+            <Button
+              size="sm"
+              className="text-xs bg-xhs text-white hover:bg-xhs/90 flex-1"
+              onClick={handleSaveConfig}
+              disabled={savingConfig || !aiConfigured}
+            >
+              {savingConfig ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+              )}
+              保存配置
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Appearance */}
       <Card>
