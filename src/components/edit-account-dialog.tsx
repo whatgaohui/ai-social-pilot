@@ -41,8 +41,11 @@ export function EditAccountDialog({
     notesCount: 0,
   });
 
+  // Sync form data when account changes
+  // This is a valid pattern for syncing state with props
   useEffect(() => {
     if (account && open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing form state with account prop
       setFormData({
         nickname: account.nickname || "",
         bio: account.bio || "",

@@ -118,9 +118,9 @@ async function tryPageReader(url: string): Promise<PageReaderResult> {
     const result = await zai.functions.invoke('page_reader', { url: fetchUrl });
 
     // Check for 403 or blocked response
-    const statusCode = result.data?.statusCode || result.data?.status || 0;
-    const html: string = result.data?.html || '';
-    const pageTitle: string = result.data?.title || '';
+    const statusCode = (result as { statusCode?: number; status?: number }).statusCode || (result as { statusCode?: number; status?: number }).status || 0;
+    const html: string = (result as { html?: string }).html || '';
+    const pageTitle: string = (result as { title?: string }).title || '';
 
     if (statusCode === 403 || (html && html.includes('403'))) {
       warnings.push('小红书网站屏蔽了直接访问（403），page_reader策略失败');
@@ -338,7 +338,7 @@ async function tryWebSearch(url: string): Promise<WebSearchResult> {
     for (const query of queriesToExecute) {
       try {
         console.log(`[Scraper] Searching: ${query}`);
-        const result = await zai.functions.invoke('web_search', { query, num: 8 });
+        const result = await zai.functions.invoke('web_search', { query, num: 8 }) as { data?: { results?: SearchResultItem[] } } | null;
         const resultCount = result?.data?.results?.length || 0;
         console.log(`[Scraper] Search returned ${resultCount} results`);
         searchResults.push(result);
@@ -374,7 +374,7 @@ async function tryWebSearch(url: string): Promise<WebSearchResult> {
         const siteResult = await zai.functions.invoke('web_search', {
           query: `site:xiaohongshu.com ${userId}`,
           num: 5,
-        });
+        }) as { data?: { results?: SearchResultItem[] } } | null;
         const siteResults = siteResult?.data?.results || [];
         for (const r of siteResults) {
           const rUrl = r.url || '';
@@ -749,7 +749,7 @@ function buildScrapeResult(
       comments: (p.comments as number) || 0,
       collects: (p.collects as number) || 0,
       shares: (p.shares as number) || 0,
-      postType: (p.postType as string) || 'normal',
+      postType: ((p.postType as string) || 'normal') as 'normal' | 'video',
       publishDate: (p.publishDate as string) || '',
     })),
     totalFound: posts.length,
@@ -864,7 +864,7 @@ export async function scrapeXhsPost(url: string): Promise<{
         const searchResult = await zai.functions.invoke('web_search', {
           query,
           num: 5,
-        });
+        }) as { data?: { results?: SearchResultItem[] } } | null;
         const results = searchResult?.data?.results || [];
         allSearchResults = [...allSearchResults, ...results];
       } catch {

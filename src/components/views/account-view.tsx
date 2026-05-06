@@ -395,19 +395,7 @@ export function AccountView() {
   const [activeAnalysisTab, setActiveAnalysisTab] = useState("overview");
   const [tabAnimating, setTabAnimating] = useState(false);
 
-  useEffect(() => {
-    loadAccounts();
-  }, []);
-
-  useEffect(() => {
-    if (selectedAccountId) {
-      loadAnalysis(selectedAccountId);
-    } else {
-      setLoading(false);
-    }
-  }, [selectedAccountId]);
-
-  const loadAccounts = async () => {
+  const loadAccounts = useCallback(async () => {
     try {
       const res = await fetch("/api/accounts");
       const data = await res.json();
@@ -415,14 +403,17 @@ export function AccountView() {
         setAccounts(data.data || []);
         if (!selectedAccountId && data.data?.length > 0) {
           setSelectedAccountId(data.data[0].id);
+        } else if (!data.data?.length) {
+          setLoading(false);
         }
       }
     } catch (err) {
       console.error("Failed to load accounts:", err);
+      setLoading(false);
     }
-  };
+  }, [selectedAccountId, setSelectedAccountId]);
 
-  const loadAnalysis = async (accountId: string) => {
+  const loadAnalysis = useCallback(async (accountId: string) => {
     setAnalysisLoading(true);
     setLoading(true);
     try {
@@ -441,7 +432,19 @@ export function AccountView() {
       setLoading(false);
       setAnalysisLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load on mount
+    loadAccounts();
+  }, [loadAccounts]);
+
+  useEffect(() => {
+    if (selectedAccountId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- load data when account selection changes
+      loadAnalysis(selectedAccountId);
+    }
+  }, [selectedAccountId, loadAnalysis]);
 
   const handleScrape = async () => {
     if (!selectedAccountId) return;
@@ -1259,7 +1262,7 @@ export function AccountView() {
             open={manualDialogOpen}
             onOpenChange={setManualDialogOpen}
             accountId={account.id}
-            existingData={account}
+            existingData={{ ...account }}
             onSuccess={handleScrapeDialogSuccess}
           />
         )}

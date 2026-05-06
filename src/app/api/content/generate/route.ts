@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
           contentThemes: JSON.parse(account.persona.contentThemes || '[]'),
           keywords: JSON.parse(account.persona.keywords || '[]'),
           avoidTopics: JSON.parse(account.persona.avoidTopics || '[]'),
+          tone: account.persona.tone as "warm" | "professional" | "witty" | "casual" | "elegant",
+          writingStyle: account.persona.writingStyle as "concise" | "detailed" | "emotional" | "balanced",
         }
       : null;
 

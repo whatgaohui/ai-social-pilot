@@ -30,13 +30,14 @@ export async function GET() {
   try {
     const zai = await ZAI.create();
 
-    // Use web_search to find real XHS trending topics
-    const searchResults = await zai.web.search.query({
+    // Use web_search function to find real XHS trending topics
+    const searchResponse = await zai.functions.invoke('web_search', {
       query: "小红书 热门话题 热搜榜 2025",
-    });
+      num: 8,
+    }) as { data?: { results?: Array<{ title?: string; snippet?: string; url?: string }> } } | null;
 
     const searchContext =
-      searchResults?.items?.slice(0, 8).map((item: { title?: string; snippet?: string; url?: string }) => ({
+      searchResponse?.data?.results?.slice(0, 8).map((item) => ({
         title: item.title || "",
         snippet: item.snippet || "",
       })) || [];
@@ -129,12 +130,13 @@ export async function POST(request: NextRequest) {
     const zai = await ZAI.create();
 
     // First, search for related content about this topic
-    const searchResults = await zai.web.search.query({
+    const searchResponse = await zai.functions.invoke('web_search', {
       query: `小红书 ${topic} 爆款笔记 创作技巧`,
-    });
+      num: 5,
+    }) as { data?: { results?: Array<{ title?: string; snippet?: string }> } } | null;
 
     const searchContext =
-      searchResults?.items?.slice(0, 5).map((item: { title?: string; snippet?: string }) => ({
+      searchResponse?.data?.results?.slice(0, 5).map((item) => ({
         title: item.title || "",
         snippet: item.snippet || "",
       })) || [];

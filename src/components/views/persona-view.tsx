@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,38 +163,20 @@ export function PersonaView() {
     originalValues.signaturePhrase !== signaturePhrase
   );
 
-  useEffect(() => {
-    loadAccounts();
+  const resetForm = useCallback(() => {
+    setName("");
+    setTone("warm");
+    setWritingStyle("balanced");
+    setTargetAudience("");
+    setContentThemes([]);
+    setKeywords([]);
+    setAvoidTopics([]);
+    setReferenceDesc("");
+    setSignaturePhrase("");
+    setOriginalValues(null);
   }, []);
 
-  useEffect(() => {
-    if (selectedAccountId) {
-      loadPersona(selectedAccountId);
-    } else {
-      setLoading(false);
-    }
-  }, [selectedAccountId]);
-
-  const loadAccounts = async () => {
-    try {
-      const res = await fetch("/api/accounts");
-      const data = await res.json();
-      if (data.success) {
-        const accountList = data.data || [];
-        setAccounts(accountList);
-        if (!selectedAccountId && accountList.length > 0) {
-          setSelectedAccountId(accountList[0].id);
-        }
-      } else {
-        toast.error(data.error || "加载账号列表失败");
-      }
-    } catch (err) {
-      console.error("Failed to load accounts:", err);
-      toast.error("网络错误，无法加载账号列表");
-    }
-  };
-
-  const loadPersona = async (accountId: string) => {
+  const loadPersona = useCallback(async (accountId: string) => {
     setLoading(true);
     try {
       const res = await fetch(`/api/persona?accountId=${accountId}`);
@@ -244,20 +226,43 @@ export function PersonaView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [resetForm]);
 
-  const resetForm = () => {
-    setName("");
-    setTone("warm");
-    setWritingStyle("balanced");
-    setTargetAudience("");
-    setContentThemes([]);
-    setKeywords([]);
-    setAvoidTopics([]);
-    setReferenceDesc("");
-    setSignaturePhrase("");
-    setOriginalValues(null);
-  };
+  const loadAccounts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/accounts");
+      const data = await res.json();
+      if (data.success) {
+        const accountList = data.data || [];
+        setAccounts(accountList);
+        if (!selectedAccountId && accountList.length > 0) {
+          setSelectedAccountId(accountList[0].id);
+        } else if (accountList.length === 0) {
+          // No accounts exist, stop loading
+          setLoading(false);
+        }
+      } else {
+        toast.error(data.error || "加载账号列表失败");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Failed to load accounts:", err);
+      toast.error("网络错误，无法加载账号列表");
+      setLoading(false);
+    }
+  }, [selectedAccountId, setSelectedAccountId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load on mount
+    loadAccounts();
+  }, [loadAccounts]);
+
+  useEffect(() => {
+    if (selectedAccountId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- load persona when account selection changes
+      loadPersona(selectedAccountId);
+    }
+  }, [selectedAccountId, loadPersona]);
 
   const handleReset = () => {
     if (originalValues) {

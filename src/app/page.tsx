@@ -41,6 +41,7 @@ function ExportHandler() {
           toast.success("数据导出成功！");
           addNotification({
             type: "export",
+            category: "export",
             title: "数据导出完成",
             message: `已导出 ${data.data.accounts?.length || 0} 个账号的数据`,
             navigateTo: "dashboard",

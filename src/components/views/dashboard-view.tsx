@@ -243,7 +243,7 @@ function calculateTrend(posts: XhsPostInfo[], key: string, range: DateRange): { 
 
   const pctChange = ((newerAvg - olderAvg) / olderAvg) * 100;
   return {
-    value: Math.abs(pctChange).toFixed(1),
+    value: parseFloat(Math.abs(pctChange).toFixed(1)),
     isPositive: pctChange >= 0,
   };
 }
@@ -523,35 +523,11 @@ export function DashboardView() {
   const [strategyRecommendations, setStrategyRecommendations] = useState<StrategyRecommendation[]>([]);
   const [strategyLoading, setStrategyLoading] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Computed stats (declared early for loadStrategy dependency)
+  const totalAccounts = accounts.length;
+  const totalPosts = accounts.reduce((sum, a) => sum + (a.postsCount || a.notesCount || 0), 0);
 
-  const loadStrategy = useCallback(async () => {
-    setStrategyLoading(true);
-    try {
-      const res = await fetch(
-        `/api/ai/strategy?accountCount=${totalAccounts}&avgEngagement=${avgEngagement}&engagementRate=${engagementRate}&totalPosts=${totalPosts}`
-      );
-      const data = await res.json();
-      if (data.success && data.data) {
-        setStrategyRecommendations(data.data);
-      }
-    } catch {
-      // Silently fail - fallback recommendations are already in the API
-    } finally {
-      setStrategyLoading(false);
-    }
-  }, []);
-
-  // Load strategy after data is loaded
-  useEffect(() => {
-    if (!loading && accounts.length > 0) {
-      loadStrategy();
-    }
-  }, [loading, accounts.length]);
-
-  const loadData = async (isRefresh = false) => {
+  const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
@@ -580,15 +556,18 @@ export function DashboardView() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load on mount
+    loadData();
+  }, [loadData]);
 
   const handleExport = () => {
     setExportDialogOpen(true);
   };
 
   // Computed stats
-  const totalAccounts = accounts.length;
-  const totalPosts = accounts.reduce((sum, a) => sum + (a.postsCount || a.notesCount || 0), 0);
   const totalFollowers = accounts.reduce((sum, a) => sum + (a.followers || 0), 0);
   const avgEngagement =
     recentPosts.length > 0
@@ -644,6 +623,32 @@ export function DashboardView() {
     engagement: calculateTrend(recentPosts, "engagement", dateRange),
     rate: calculateTrend(recentPosts, "rate", dateRange),
   };
+
+  // Load strategy recommendations (defined after computed stats)
+  const loadStrategy = useCallback(async () => {
+    setStrategyLoading(true);
+    try {
+      const res = await fetch(
+        `/api/ai/strategy?accountCount=${totalAccounts}&avgEngagement=${avgEngagement}&engagementRate=${engagementRate}&totalPosts=${totalPosts}`
+      );
+      const data = await res.json();
+      if (data.success && data.data) {
+        setStrategyRecommendations(data.data);
+      }
+    } catch {
+      // Silently fail - fallback recommendations are already in the API
+    } finally {
+      setStrategyLoading(false);
+    }
+  }, [totalAccounts, avgEngagement, engagementRate, totalPosts]);
+
+  // Load strategy after data is loaded
+  useEffect(() => {
+    if (!loading && accounts.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- load strategy recommendations after data loads
+      loadStrategy();
+    }
+  }, [loading, accounts.length, loadStrategy]);
 
   const handleDateRangeChange = (range: DateRange) => {
     if (range === dateRange) return;
@@ -742,6 +747,7 @@ export function DashboardView() {
                 toast.success("演示数据加载成功！");
                 addNotification({
                   type: "info",
+                  category: "system",
                   title: "演示数据已加载",
                   message: "已加载示例账号和笔记数据",
                   navigateTo: "dashboard",

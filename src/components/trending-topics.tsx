@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,11 +68,7 @@ export function TrendingTopics({ onNavigateToCreator, compact = false }: Trendin
   const [suggestionLoading, setSuggestionLoading] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  useEffect(() => {
-    loadTopics();
-  }, []);
-
-  const loadTopics = async () => {
+  const loadTopics = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/trending");
@@ -85,7 +81,12 @@ export function TrendingTopics({ onNavigateToCreator, compact = false }: Trendin
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load on mount
+    loadTopics();
+  }, [loadTopics]);
 
   const handleTopicClick = async (topic: TrendingTopic) => {
     setSelectedTopic(topic);

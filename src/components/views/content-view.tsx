@@ -748,20 +748,7 @@ export function ContentView() {
     []
   );
 
-  useEffect(() => {
-    loadAccounts();
-  }, []);
-
-  useEffect(() => {
-    loadPosts();
-  }, [sortBy, filterAccountId]);
-
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [sortBy, filterAccountId, searchQuery, categoryFilter]);
-
-  const loadAccounts = async () => {
+  const loadAccounts = useCallback(async () => {
     try {
       const res = await fetch("/api/accounts");
       const data = await res.json();
@@ -769,9 +756,9 @@ export function ContentView() {
     } catch (err) {
       console.error("Failed to load accounts:", err);
     }
-  };
+  }, []);
 
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ sortBy, limit: "100" });
@@ -787,11 +774,28 @@ export function ContentView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sortBy, filterAccountId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load on mount
+    loadAccounts();
+  }, [loadAccounts]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load posts when sort/filter changes
+    loadPosts();
+  }, [loadPosts]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset pagination when filters change
+    setCurrentPage(1);
+  }, [sortBy, filterAccountId, searchQuery, categoryFilter]);
 
   // Generate sample schedule data once posts and accounts are loaded
   useEffect(() => {
     if (posts.length > 0 && accounts.length > 0 && scheduledPosts.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- generate sample schedule once data is loaded
       setScheduledPosts(generateSampleSchedule(posts, accounts));
     }
   }, [posts, accounts, scheduledPosts.length, generateSampleSchedule]);

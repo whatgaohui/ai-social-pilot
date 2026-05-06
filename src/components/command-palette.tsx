@@ -88,7 +88,9 @@ export function CommandPalette() {
     : allActions;
 
   // Reset selected index when query changes
+  // This is a valid pattern for resetting derived state when source changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting derived state when query changes
     setSelectedIndex(0);
   }, [query]);
 
@@ -105,8 +107,10 @@ export function CommandPalette() {
   }, []);
 
   // Focus input when dialog opens
+  // This is a valid pattern for resetting state when dialog opens
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state when dialog opens
       setQuery("");
       setSelectedIndex(0);
       // Small delay to let dialog animation finish

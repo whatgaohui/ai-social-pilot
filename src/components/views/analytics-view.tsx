@@ -113,11 +113,7 @@ export function AnalyticsView() {
   const [activeTab, setActiveTab] = useState("funnel");
   const [tabAnimating, setTabAnimating] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [accRes, postsRes] = await Promise.all([
@@ -133,7 +129,12 @@ export function AnalyticsView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load on mount
+    loadData();
+  }, [loadData]);
 
   const handleTabChange = useCallback((value: string) => {
     setTabAnimating(true);
@@ -501,7 +502,6 @@ export function AnalyticsView() {
                         <div className={cn(
                           "w-1.5 h-1.5 rounded-full mt-1.5 shrink-0",
                           insight.type === "positive" && "bg-emerald-500",
-                          insight.type === "negative" && "bg-red-500",
                           insight.type === "neutral" && "bg-amber-500",
                         )} />
                         <p className="text-sm text-muted-foreground leading-relaxed">{insight.text}</p>

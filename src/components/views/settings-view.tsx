@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AI_PROVIDERS } from "@/lib/ai-config";
 import {
-  Settings,
   Database,
   Trash2,
   Download,
@@ -28,7 +27,6 @@ import {
   Moon,
   Sun,
   Monitor,
-  Bell,
   Loader2,
   CheckCircle2,
   AlertCircle,
@@ -36,43 +34,50 @@ import {
   EyeOff,
 } from "lucide-react";
 
+type ConnectionStatus = "idle" | "testing" | "success" | "error";
+
+// Helper to load config from localStorage (used for initial state)
+function loadSavedConfig() {
+  try {
+    const saved = localStorage.getItem("xhs-ai-config");
+    if (saved) {
+      const config = JSON.parse(saved);
+      return {
+        provider: config.provider || "zhipu",
+        apiKey: config.apiKey || "",
+        model: config.model || "",
+        baseUrl: config.baseUrl || "",
+      };
+    }
+  } catch {
+    // ignore
+  }
+  return { provider: "zhipu", apiKey: "", model: "", baseUrl: "" };
+}
+
 export function SettingsView() {
-  const { setAddAccountDialogOpen } = useAppStore();
   const addNotification = useNotificationStore((s) => s.addNotification);
   const { theme, setTheme } = useTheme();
   const [clearingData, setClearingData] = useState(false);
   const [exportingData, setExportingData] = useState(false);
 
-  // AI Provider state
-  const [aiProvider, setAiProvider] = useState("zhipu");
-  const [apiKey, setApiKey] = useState("");
-  const [aiModel, setAiModel] = useState("");
-  const [customBaseUrl, setCustomBaseUrl] = useState("");
+  // AI Provider state - initialize from localStorage
+  const savedConfig = loadSavedConfig();
+  const [aiProvider, setAiProvider] = useState(savedConfig.provider);
+  const [apiKey, setApiKey] = useState(savedConfig.apiKey);
+  const [aiModel, setAiModel] = useState(savedConfig.model);
+  const [customBaseUrl, setCustomBaseUrl] = useState(savedConfig.baseUrl);
   const [showKey, setShowKey] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
   const [testingConfig, setTestingConfig] = useState(false);
-
-  // Load config on mount
-  useEffect(() => {
-    const saved = localStorage.getItem("xhs-ai-config");
-    if (saved) {
-      try {
-        const config = JSON.parse(saved);
-        setAiProvider(config.provider || "zhipu");
-        setApiKey(config.apiKey || "");
-        setAiModel(config.model || "");
-        setCustomBaseUrl(config.baseUrl || "");
-      } catch {
-        // ignore
-      }
-    }
-  }, []);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("idle");
 
   const currentProvider = AI_PROVIDERS.find((p) => p.id === aiProvider);
   const aiConfigured = apiKey.trim().length > 0;
 
   const handleSaveConfig = async () => {
     setSavingConfig(true);
+    setConnectionStatus("idle");
     try {
       const config = {
         provider: aiProvider,
@@ -82,7 +87,6 @@ export function SettingsView() {
       };
       localStorage.setItem("xhs-ai-config", JSON.stringify(config));
 
-      // Also save to .env via API
       const res = await fetch("/api/ai/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,6 +107,7 @@ export function SettingsView() {
 
   const handleTestConfig = async () => {
     setTestingConfig(true);
+    setConnectionStatus("testing");
     try {
       const res = await fetch("/api/ai/config/test", {
         method: "POST",
@@ -116,11 +121,14 @@ export function SettingsView() {
       });
       const data = await res.json();
       if (data.success) {
+        setConnectionStatus("success");
         toast.success(`连接成功！模型: ${data.data?.model || aiModel}`);
       } else {
+        setConnectionStatus("error");
         toast.error(data.error || "连接失败，请检查配置");
       }
     } catch {
+      setConnectionStatus("error");
       toast.error("网络错误，请重试");
     } finally {
       setTestingConfig(false);
@@ -160,7 +168,6 @@ export function SettingsView() {
 
     setClearingData(true);
     try {
-      // Delete all accounts (cascades to posts, personas, etc.)
       const res = await fetch("/api/accounts");
       const data = await res.json();
       if (data.success) {
@@ -204,6 +211,30 @@ export function SettingsView() {
     }
   };
 
+  const getStatusDot = () => {
+    if (testingConfig) {
+      return <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />;
+    }
+    if (connectionStatus === "success") {
+      return <span className="w-2 h-2 rounded-full bg-emerald-500" />;
+    }
+    if (connectionStatus === "error") {
+      return <span className="w-2 h-2 rounded-full bg-red-500" />;
+    }
+    if (aiConfigured) {
+      return <span className="w-2 h-2 rounded-full bg-emerald-500" />;
+    }
+    return <span className="w-2 h-2 rounded-full bg-amber-500" />;
+  };
+
+  const getStatusText = () => {
+    if (testingConfig) return "测试中...";
+    if (connectionStatus === "success") return "连接成功";
+    if (connectionStatus === "error") return "连接失败";
+    if (aiConfigured) return "已配置";
+    return "待配置";
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-5 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
       {/* Header */}
@@ -222,165 +253,154 @@ export function SettingsView() {
           <CardDescription className="text-xs">配置 AI 内容创作和分析的大模型服务</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Provider Grid - 2x3 layout for 5 providers */}
           <div className="space-y-2">
             <Label className="text-xs font-medium">选择提供商</Label>
-            <div className="grid gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {AI_PROVIDERS.map((provider) => (
                 <button
                   key={provider.id}
-                  onClick={() => setAiProvider(provider.id)}
+                  onClick={() => {
+                    setAiProvider(provider.id);
+                    setConnectionStatus("idle");
+                  }}
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-xl border transition-all text-left",
+                    "relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center",
                     aiProvider === provider.id
                       ? "border-xhs bg-xhs-light/30 shadow-sm shadow-xhs/10"
                       : "border-border hover:border-xhs/30 hover:bg-muted/50"
                   )}
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{provider.name}</span>
-                      {provider.pricing === 'free' && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-emerald-50 text-emerald-600 border-0">
-                          免费
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{provider.description}</p>
-                    {provider.freeQuota && (
-                      <p className="text-[10px] text-emerald-600 mt-0.5">{provider.freeQuota}</p>
-                    )}
-                  </div>
+                  {provider.pricing === "free" && (
+                    <Badge
+                      variant="secondary"
+                      className="absolute -top-1.5 -right-1.5 text-[9px] px-1 py-0 h-4 bg-emerald-50 text-emerald-600 border-0"
+                    >
+                      免费
+                    </Badge>
+                  )}
+                  <span className="text-xs font-medium">{provider.name}</span>
                   {aiProvider === provider.id && (
-                    <CheckCircle2 className="w-4 h-4 text-xhs shrink-0" />
+                    <CheckCircle2 className="w-3 h-3 text-xhs absolute bottom-1.5 right-1.5" />
                   )}
                 </button>
               ))}
             </div>
           </div>
 
-          {aiProvider === 'custom' && (
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">自定义 Base URL</Label>
-              <Input
-                placeholder="https://your-api-server/v1"
-                value={customBaseUrl}
-                onChange={(e) => setCustomBaseUrl(e.target.value)}
-                className="text-sm"
-              />
-              <p className="text-[10px] text-muted-foreground">如 Ollama: http://localhost:11434/v1</p>
-            </div>
-          )}
+          {/* Configuration fields shown below the grid when provider is selected */}
+          {currentProvider && (
+            <>
+              {/* Base URL for custom provider */}
+              {aiProvider === "custom" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Base URL</Label>
+                  <Input
+                    placeholder="https://your-api-server/v1"
+                    value={customBaseUrl}
+                    onChange={(e) => setCustomBaseUrl(e.target.value)}
+                    className="text-sm h-9"
+                  />
+                  <p className="text-[10px] text-muted-foreground">如 Ollama: http://localhost:11434/v1</p>
+                </div>
+              )}
 
-          {aiProvider && (
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">API Key</Label>
+              {/* Model selection - directly visible */}
+              {currentProvider.models.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">模型选择</Label>
+                  <Select value={aiModel} onValueChange={setAiModel}>
+                    <SelectTrigger className="text-sm h-9">
+                      <SelectValue placeholder={currentProvider.defaultModel} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currentProvider.models.map((m) => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* API Key with show/hide toggle */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">API Key</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type={showKey ? "text" : "password"}
+                    placeholder="粘贴你的 API Key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="text-sm h-9"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0 h-9 w-9"
+                    onClick={() => setShowKey(!showKey)}
+                  >
+                    {showKey ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Connection status with dot indicator */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/30">
+                <div className="flex items-center gap-2">
+                  {getStatusDot()}
+                  <span className="text-sm font-medium">{getStatusText()}</span>
+                </div>
+                {currentProvider?.signupUrl && (
+                  <a
+                    href={currentProvider.signupUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-xhs hover:underline"
+                  >
+                    获取 API Key
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Test and Save buttons side by side */}
               <div className="flex gap-2">
-                <Input
-                  type={showKey ? 'text' : 'password'}
-                  placeholder="粘贴你的 API Key"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="text-sm"
-                />
                 <Button
+                  size="sm"
                   variant="outline"
-                  size="icon"
-                  className="shrink-0 h-9 w-9"
-                  onClick={() => setShowKey(!showKey)}
+                  className="text-xs border-border flex-1 h-9"
+                  onClick={handleTestConfig}
+                  disabled={testingConfig || !aiConfigured}
                 >
-                  {showKey ? (
-                    <EyeOff className="w-4 h-4" />
+                  {testingConfig ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Sparkles className="w-3.5 h-3.5 mr-1" />
                   )}
+                  测试连接
+                </Button>
+                <Button
+                  size="sm"
+                  className="text-xs bg-xhs text-white hover:bg-xhs/90 flex-1 h-9"
+                  onClick={handleSaveConfig}
+                  disabled={savingConfig || !aiConfigured}
+                >
+                  {savingConfig ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                  )}
+                  保存配置
                 </Button>
               </div>
-            </div>
+            </>
           )}
-
-          {currentProvider && currentProvider.models.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">模型选择</Label>
-              <Select value={aiModel} onValueChange={setAiModel}>
-                <SelectTrigger className="text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currentProvider.models.map((m) => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-            <div>
-              <p className="text-sm font-medium">连接状态</p>
-              <p className="text-xs text-muted-foreground">
-                {aiConfigured ? '已配置，可以使用 AI 功能' : '未配置 API Key，AI 功能暂不可用'}
-              </p>
-            </div>
-            <Badge
-              variant="secondary"
-              className={cn(
-                "text-xs border-0 badge-animate-in",
-                aiConfigured
-                  ? "bg-emerald-50 text-emerald-600"
-                  : "bg-amber-50 text-amber-600"
-              )}
-            >
-              {aiConfigured ? (
-                <><CheckCircle2 className="w-3 h-3 mr-0.5" /> 已就绪</>
-              ) : (
-                <><AlertCircle className="w-3 h-3 mr-0.5" /> 待配置</>
-              )}
-            </Badge>
-          </div>
-
-          {currentProvider?.signupUrl && (
-            <a
-              href={currentProvider.signupUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-xhs hover:underline"
-            >
-              前往 {currentProvider.name} 注册获取 API Key
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
-
-          <Separator />
-
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs border-border flex-1"
-              onClick={handleTestConfig}
-              disabled={testingConfig || !aiConfigured}
-            >
-              {testingConfig ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              ) : (
-                <Sparkles className="w-3.5 h-3.5 mr-1" />
-              )}
-              测试连接
-            </Button>
-            <Button
-              size="sm"
-              className="text-xs bg-xhs text-white hover:bg-xhs/90 flex-1"
-              onClick={handleSaveConfig}
-              disabled={savingConfig || !aiConfigured}
-            >
-              {savingConfig ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-              )}
-              保存配置
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -393,7 +413,7 @@ export function SettingsView() {
           </CardTitle>
           <CardDescription className="text-xs">自定义应用显示主题</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="space-y-2">
             <Label className="text-xs font-medium">主题模式</Label>
             <div className="grid grid-cols-3 gap-2">
@@ -421,49 +441,6 @@ export function SettingsView() {
                 );
               })}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Bell className="w-4 h-4 text-emerald-500" />
-            通知
-          </CardTitle>
-          <CardDescription className="text-xs">管理应用通知偏好</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-            <div>
-              <p className="text-sm font-medium">数据采集完成</p>
-              <p className="text-xs text-muted-foreground">账号数据采集成功后通知</p>
-            </div>
-            <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-600 border-0 badge-animate-in">
-              <CheckCircle2 className="w-3 h-3 mr-0.5" />
-              已开启
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-            <div>
-              <p className="text-sm font-medium">AI创作完成</p>
-              <p className="text-xs text-muted-foreground">内容生成或润色完成后通知</p>
-            </div>
-            <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-600 border-0 badge-animate-in">
-              <CheckCircle2 className="w-3 h-3 mr-0.5" />
-              已开启
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-            <div>
-              <p className="text-sm font-medium">数据导出</p>
-              <p className="text-xs text-muted-foreground">数据导出完成后通知</p>
-            </div>
-            <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-600 border-0 badge-animate-in">
-              <CheckCircle2 className="w-3 h-3 mr-0.5" />
-              已开启
-            </Badge>
           </div>
         </CardContent>
       </Card>
@@ -582,14 +559,8 @@ export function SettingsView() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground pt-2">
-            <span>Made with</span>
-            <Heart className="w-3 h-3 text-xhs fill-xhs" />
-            <span>by Z.ai</span>
-          </div>
-
           {/* Changelog */}
-          <div className="mt-3 p-3 rounded-xl bg-muted/20 border border-border/30">
+          <div className="p-3 rounded-xl bg-muted/20 border border-border/30">
             <p className="text-[10px] font-semibold text-muted-foreground mb-2 uppercase tracking-wider">最新更新</p>
             <div className="space-y-1.5">
               <div className="flex items-start gap-2">

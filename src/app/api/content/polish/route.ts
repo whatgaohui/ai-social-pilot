@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
           contentThemes: JSON.parse(personaRecord.contentThemes || '[]'),
           keywords: JSON.parse(personaRecord.keywords || '[]'),
           avoidTopics: JSON.parse(personaRecord.avoidTopics || '[]'),
+          tone: personaRecord.tone as "warm" | "professional" | "witty" | "casual" | "elegant",
+          writingStyle: personaRecord.writingStyle as "concise" | "detailed" | "emotional" | "balanced",
         }
       : null;
 

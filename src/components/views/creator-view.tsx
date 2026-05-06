@@ -276,6 +276,146 @@ function calculateQualityScore(
   };
 }
 
+// ─── Quality Score Panel Component (moved outside to avoid static component warning) ──────────────
+
+function QualityScorePanel({ score }: { score: QualityBreakdown }) {
+  const getScoreColor = (value: number) => {
+    if (value > 70) return "text-emerald-600 dark:text-emerald-400";
+    if (value >= 40) return "text-amber-600 dark:text-amber-400";
+    return "text-red-500 dark:text-red-400";
+  };
+
+  const getProgressColor = (value: number) => {
+    if (value > 70) return "[&>div]:bg-emerald-500";
+    if (value >= 40) return "[&>div]:bg-amber-500";
+    return "[&>div]:bg-red-500";
+  };
+
+  const subScores = [
+    { label: "标题吸引力", value: score.titleAttractiveness, icon: Type },
+    { label: "内容可读性", value: score.contentReadability, icon: BookOpen },
+    { label: "互动引导", value: score.engagementGuidance, icon: MessageSquare },
+    { label: "标签优化", value: score.tagOptimization, icon: Hash },
+  ];
+
+  // SVG circular progress
+  const circumference = 2 * Math.PI * 40;
+  const strokeDashoffset = circumference - (score.overall / 100) * circumference;
+
+  return (
+    <div className="p-4 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/50 space-y-4">
+      <div className="flex items-center gap-4">
+        {/* Circular score indicator */}
+        <div className="relative shrink-0">
+          <svg width="96" height="96" viewBox="0 0 96 96" className="transform -rotate-90">
+            <circle cx="48" cy="48" r="40" fill="none" stroke="currentColor" strokeOpacity="0.08" strokeWidth="6" />
+            <circle
+              cx="48" cy="48" r="40" fill="none"
+              stroke={score.overall > 70 ? "#10b981" : score.overall >= 40 ? "#f59e0b" : "#ef4444"}
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              className="transition-all duration-700 ease-out"
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className={cn("text-2xl font-extrabold", getScoreColor(score.overall))}>
+              {score.overall}
+            </span>
+            <span className="text-[10px] text-muted-foreground">总体评分</span>
+          </div>
+        </div>
+
+        {/* Sub-score breakdown */}
+        <div className="flex-1 space-y-2.5">
+          {subScores.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <Icon className="w-3 h-3" />
+                    {item.label}
+                  </span>
+                  <span className={cn("text-[11px] font-bold", getScoreColor(item.value))}>
+                    {item.value}
+                  </span>
+                </div>
+                <Progress value={item.value} className={cn("h-1.5", getProgressColor(item.value))} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Suggestions */}
+      {score.suggestions.length > 0 && (
+        <div className="space-y-1.5 pt-2 border-t border-border/40">
+          <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+            <Lightbulb className="w-3 h-3" />
+            改进建议
+          </p>
+          {score.suggestions.slice(0, 3).map((suggestion, i) => (
+            <div key={i} className="flex items-start gap-1.5 text-[11px]">
+              <span className="text-xhs shrink-0 mt-0.5">•</span>
+              <span className="text-muted-foreground">{suggestion}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Diff Highlighting Component (moved outside to avoid static component warning) ──────────────
+
+function DiffView({ original, modified }: { original: string; modified: string }) {
+  const originalLines = original.split("\n");
+  const modifiedLines = modified.split("\n");
+
+  // Simple line-by-line diff
+  const renderLine = (line: string, type: "same" | "added" | "removed") => {
+    if (type === "added") {
+      return (
+        <div className="bg-emerald-100/60 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 text-xs font-medium border-l-2 border-emerald-400">
+          + {line}
+        </div>
+      );
+    }
+    if (type === "removed") {
+      return (
+        <div className="bg-red-100/60 dark:bg-red-950/30 text-red-800 dark:text-red-300 px-2 py-0.5 text-xs line-through opacity-70 border-l-2 border-red-400">
+          - {line}
+        </div>
+      );
+    }
+    return <div className="px-2 py-0.5 text-xs text-muted-foreground">{line}</div>;
+  };
+
+  // Find differences
+  const allLines: { text: string; type: "same" | "added" | "removed" }[] = [];
+  const maxLen = Math.max(originalLines.length, modifiedLines.length);
+  for (let i = 0; i < maxLen; i++) {
+    const orig = originalLines[i] || "";
+    const mod = modifiedLines[i] || "";
+    if (orig === mod) {
+      allLines.push({ text: orig, type: "same" });
+    } else {
+      if (orig) allLines.push({ text: orig, type: "removed" });
+      if (mod) allLines.push({ text: mod, type: "added" });
+    }
+  }
+
+  return (
+    <div className="space-y-px rounded-lg overflow-hidden border border-border/50 bg-muted/20 max-h-48 overflow-y-auto custom-scrollbar">
+      {allLines.map((line, i) => (
+        <div key={i}>{renderLine(line.text, line.type)}</div>
+      ))}
+    </div>
+  );
+}
+
 export function CreatorView() {
   const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen } =
     useAppStore();
@@ -333,17 +473,7 @@ export function CreatorView() {
   const qualityLabel = contentQuality >= 75 ? "优秀" : contentQuality >= 50 ? "良好" : contentQuality >= 25 ? "待完善" : "未开始";
   const qualityColor = contentQuality >= 75 ? "text-emerald-600" : contentQuality >= 50 ? "text-amber-600" : contentQuality >= 25 ? "text-orange-500" : "text-muted-foreground";
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (selectedAccountId) {
-      loadDrafts(selectedAccountId);
-    }
-  }, [selectedAccountId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/accounts");
@@ -359,9 +489,9 @@ export function CreatorView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedAccountId, setSelectedAccountId]);
 
-  const loadDrafts = async (accountId: string) => {
+  const loadDrafts = useCallback(async (accountId: string) => {
     try {
       const res = await fetch(`/api/drafts?accountId=${accountId}`);
       const data = await res.json();
@@ -369,7 +499,19 @@ export function CreatorView() {
     } catch (err) {
       console.error("Failed to load drafts:", err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load on mount
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    if (selectedAccountId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- load drafts when account selection changes
+      loadDrafts(selectedAccountId);
+    }
+  }, [selectedAccountId, loadDrafts]);
 
   const handleGenerate = async () => {
     if (!selectedAccountId) {
@@ -624,146 +766,6 @@ export function CreatorView() {
     setOptimizingTags(false);
     toast.success(`标签已优化！新增${newTags.length}个热门标签`);
   }, [topic, generatedTitle, generatedContent, generatedTags]);
-
-  // ─── Diff Highlighting ────────────────────────────────────────────────
-
-  const DiffView = ({ original, modified }: { original: string; modified: string }) => {
-    const originalLines = original.split("\n");
-    const modifiedLines = modified.split("\n");
-
-    // Simple line-by-line diff
-    const renderLine = (line: string, type: "same" | "added" | "removed") => {
-      if (type === "added") {
-        return (
-          <div className="bg-emerald-100/60 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 text-xs font-medium border-l-2 border-emerald-400">
-            + {line}
-          </div>
-        );
-      }
-      if (type === "removed") {
-        return (
-          <div className="bg-red-100/60 dark:bg-red-950/30 text-red-800 dark:text-red-300 px-2 py-0.5 text-xs line-through opacity-70 border-l-2 border-red-400">
-            - {line}
-          </div>
-        );
-      }
-      return <div className="px-2 py-0.5 text-xs text-muted-foreground">{line}</div>;
-    };
-
-    // Find differences
-    const allLines: { text: string; type: "same" | "added" | "removed" }[] = [];
-    const maxLen = Math.max(originalLines.length, modifiedLines.length);
-    for (let i = 0; i < maxLen; i++) {
-      const orig = originalLines[i] || "";
-      const mod = modifiedLines[i] || "";
-      if (orig === mod) {
-        allLines.push({ text: orig, type: "same" });
-      } else {
-        if (orig) allLines.push({ text: orig, type: "removed" });
-        if (mod) allLines.push({ text: mod, type: "added" });
-      }
-    }
-
-    return (
-      <div className="space-y-px rounded-lg overflow-hidden border border-border/50 bg-muted/20 max-h-48 overflow-y-auto custom-scrollbar">
-        {allLines.map((line, i) => (
-          <div key={i}>{renderLine(line.text, line.type)}</div>
-        ))}
-      </div>
-    );
-  };
-
-  // ─── Quality Score Panel ──────────────────────────────────────────────
-
-  const QualityScorePanel = ({ score }: { score: QualityBreakdown }) => {
-    const getScoreColor = (value: number) => {
-      if (value > 70) return "text-emerald-600 dark:text-emerald-400";
-      if (value >= 40) return "text-amber-600 dark:text-amber-400";
-      return "text-red-500 dark:text-red-400";
-    };
-
-    const getProgressColor = (value: number) => {
-      if (value > 70) return "[&>div]:bg-emerald-500";
-      if (value >= 40) return "[&>div]:bg-amber-500";
-      return "[&>div]:bg-red-500";
-    };
-
-    const subScores = [
-      { label: "标题吸引力", value: score.titleAttractiveness, icon: Type },
-      { label: "内容可读性", value: score.contentReadability, icon: BookOpen },
-      { label: "互动引导", value: score.engagementGuidance, icon: MessageSquare },
-      { label: "标签优化", value: score.tagOptimization, icon: Hash },
-    ];
-
-    // SVG circular progress
-    const circumference = 2 * Math.PI * 40;
-    const strokeDashoffset = circumference - (score.overall / 100) * circumference;
-
-    return (
-      <div className="p-4 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/50 space-y-4">
-        <div className="flex items-center gap-4">
-          {/* Circular score indicator */}
-          <div className="relative shrink-0">
-            <svg width="96" height="96" viewBox="0 0 96 96" className="transform -rotate-90">
-              <circle cx="48" cy="48" r="40" fill="none" stroke="currentColor" strokeOpacity="0.08" strokeWidth="6" />
-              <circle
-                cx="48" cy="48" r="40" fill="none"
-                stroke={score.overall > 70 ? "#10b981" : score.overall >= 40 ? "#f59e0b" : "#ef4444"}
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-700 ease-out"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className={cn("text-2xl font-extrabold", getScoreColor(score.overall))}>
-                {score.overall}
-              </span>
-              <span className="text-[10px] text-muted-foreground">总体评分</span>
-            </div>
-          </div>
-
-          {/* Sub-score breakdown */}
-          <div className="flex-1 space-y-2.5">
-            {subScores.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.label} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                      <Icon className="w-3 h-3" />
-                      {item.label}
-                    </span>
-                    <span className={cn("text-[11px] font-bold", getScoreColor(item.value))}>
-                      {item.value}
-                    </span>
-                  </div>
-                  <Progress value={item.value} className={cn("h-1.5", getProgressColor(item.value))} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Suggestions */}
-        {score.suggestions.length > 0 && (
-          <div className="space-y-1.5 pt-2 border-t border-border/40">
-            <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
-              <Lightbulb className="w-3 h-3" />
-              改进建议
-            </p>
-            {score.suggestions.slice(0, 3).map((suggestion, i) => (
-              <div key={i} className="flex items-start gap-1.5 text-[11px]">
-                <span className="text-xhs shrink-0 mt-0.5">•</span>
-                <span className="text-muted-foreground">{suggestion}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   if (loading) {
     return (
