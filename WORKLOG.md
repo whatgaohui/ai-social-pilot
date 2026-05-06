@@ -147,3 +147,183 @@
 
 > **后续迭代格式:** 按 `Iteration NNN — 标题` 格式追加。
 > 包含: 日期、触发原因、完成内容、修改文件清单、待办事项。
+
+---
+
+### Iteration 003 — Phase 1 完成: 设置重构 + TS 修复 + 文档体系
+
+**日期:** 2026-05-06
+**触发:** Phase 1 启动
+
+#### 完成内容
+
+**1. 设置模块重构**
+- 删除通知设置卡片
+- AI 配置改为紧凑 2x3 网格布局
+- 移除 "Made by Z.ai" 署名
+
+**2. TypeScript + ESLint 修复**
+- tsconfig target ES2018
+- 修复全部 TS 编译错误
+- 修复 ESLint react-hooks 警告
+
+**3. 项目文档**
+- PROJECT.md 新增
+- WORKLOG.md 新增
+- 添加 agent-browser 可视化 QA 测试规范 (7.4 节)
+
+---
+
+### Iteration 004 — Phase 2 完成: 账号中心核心开发
+
+**日期:** 2026-05-06
+**触发:** Phase 2 启动
+
+#### 完成内容
+
+**1. 导航重构 (7→4)**
+- 仪表盘 / 账号中心 / 内容库 / 设置
+- 侧边栏、快捷键、命令面板、通知中心全部更新
+
+**2. Account Hub 主框架**
+- `src/store/account-hub-store.ts` — 新增 Zustand store
+- `src/store/app-store.ts` — activeTab 从 7 项改为 4 项
+- `src/components/views/account-hub-view.tsx` — 3 Tab 主组件
+
+**3. Tab 1: 账号概览**
+- 账号信息卡片 (头像/昵称/简介)
+- 4 指标卡片 (粉丝/平均互动/笔记/AI洞察)
+- 互动数据分布 (点赞/评论/收藏/分享)
+- 内容分类表现
+- 最佳笔记 Top 5
+- AI 运营建议
+
+**4. Tab 2: 笔记日历**
+- 月历视图 (周一至周日)
+- 日期圆点标记 (1篇/2-3篇/4篇+)
+- 点击日期展示当天笔记列表
+- 全部笔记网格展示 (最多12篇)
+- 封面图 + 视频标识
+- 互动数据展示
+
+**5. Tab 3: 人设管理**
+- 完整表单 (名称/语气/写作风格/受众/主题/关键词/描述)
+- 标签输入组件 (回车添加/点击删除)
+- 人设完整度百分比
+- 实时人设预览卡片
+
+**6. 新增 API**
+- `/api/accounts/[id]/calendar` — 笔记日历数据
+
+**7. 质量检查**
+- TypeScript: 0 errors in src/
+- ESLint: 0 errors
+- Dev server: HTTP 200
+
+#### 待办
+
+- [x] Phase 2: 账号中心核心开发 (已完成)
+- [x] Phase 3: 内容库重构 + 数据库迁移 (已完成)
+- [x] Phase 4: 旧文件清理 + 质量验证 (已完成)
+- [ ] 下一步: SSE 采集进度 + 完整 E2E 验收测试
+
+---
+
+### Iteration 005 — Phase 3 完成: 数据库迁移 + 内容库重构
+
+**日期:** 2026-05-06
+**触发:** Phase 3 启动
+
+#### 完成内容
+
+**1. 数据库模型新增**
+- `ContentAsset` — 内容资产模型 (text/image/video)
+- `ContentSchedule` — 排程数据持久化
+- XhsAccount 新增反向关系: assets, schedules
+- Prisma db:push 同步完成
+
+**2. 新增 API**
+- `GET /api/assets` — 素材列表 (支持 accountId/assetType 筛选)
+- `POST /api/assets` — 创建素材
+- `DELETE /api/assets/[id]` — 删除素材
+
+**3. 内容库重构**
+- content-view.tsx 从 2017 行重写为 300 行
+- 从笔记列表改为纯素材资产管理
+- 网格/列表双视图
+- 按类型筛选 (全部/文字/图片/视频)
+- 搜索功能
+- 删除操作
+
+**4. 质量检查**
+- TypeScript: 0 errors
+- ESLint: 0 errors
+
+---
+
+### Iteration 006 — Phase 4 完成: 旧文件清理
+
+**日期:** 2026-05-06
+**触发:** Phase 4 启动
+
+#### 完成内容
+
+**1. 旧文件删除**
+- account-view.tsx (57KB) — 合并到账号中心
+- analytics-view.tsx (71KB) — 合并到账号中心
+- creator-view.tsx (61KB) — 合并到账号中心
+- persona-view.tsx (31KB) — 合并到账号中心
+- content-view.tsx.bak — 备份文件
+
+**2. 质量验证**
+- TypeScript: 0 errors in src/
+- ESLint: 0 errors
+- Dev server: HTTP 200
+- 所有 4 个视图正常加载
+
+---
+
+### Iteration 007 — 循环开发机制建立 + 数据库扩展 + 开发原则文档化
+
+**日期:** 2026-05-06
+**触发:** 用户需求 — 建立循环迭代机制、修复账号中心/内容库问题、建立定时巡检
+
+#### 完成内容
+
+**1. 开发原则文档化 (PROJECT.md)**
+- 第十一章：开发原则与工作流程
+- 循环开发机制定义（发现问题→分析→修复→验证→记录→提交→下一轮）
+- 工作日志规范（每次迭代必须记录，作为后续 AI 了解历史的主要途径）
+- Git 版本控制规范（每次迭代必须提交，不提交敏感文件）
+- 自动巡检机制说明（15 分钟周期、检查内容、问题处理流程）
+- 使用者视角审视清单（功能价值、交互直觉、数据意义、空状态处理等 7 项）
+
+**2. 数据库 Schema 扩展 (prisma/schema.prisma)**
+- `Material` — 素材库（name, type, fileUrl, thumbnailUrl, size, tags, status, usageCount）
+- `MaterialUsage` — 素材使用记录（materialId, postId, usedAt）
+- `Tag` — 标签注册表（name, color, count）
+- `AccountMetrics` — 账号指标时间序列（followers, totalNotes, engagementRate, calculatedAt）
+- `NotePerformance` — 笔记性能快照（views, likes, comments, collects, shares, engagementRate）
+- `ContentSuggestion` — AI 运营建议（type, title, description, priority, isDismissed）
+- `ScheduledNote` — 新建笔记/排程（title, content, mediaUrls, tags, scheduledAt, status）
+- `AccountHealthScore` — 账号健康评分（score, postingScore, engagementScore, followerScore, diversityScore）
+- `InspectionIssue` — 巡检问题追踪（issueCode, category, severity, status, screenshotPath）
+- `InspectionRun` — 巡检运行记录（totalChecks, passedChecks, failedChecks, durationMs）
+- `XhsPost` 新增字段：`publishTime`, `views`, `engagementRate`
+- `XhsAccount` 新增反向关系：metrics, suggestions, scheduledNotes, healthScores
+- `XhsPost` 新增反向关系：performances
+- `bun run db:push` 成功同步，Prisma Client 重新生成
+- 数据库备份：`db/custom.db.backup`
+
+**3. 中文字体修复**
+- 配置 `~/.config/fontconfig/fonts.conf` 映射 Windows 中文字体
+- 使用 `Noto Sans SC` 和 `Microsoft YaHei` 作为 CJK 字体回退
+- Playwright E2E 测试截图验证中文正常渲染
+
+#### 下一步计划
+- [ ] 内容库模块完整实现（上传 API + 列表页 + 详情页 + 批量导入）
+- [ ] 账号概览重构（健康评分 + 指标看板 + AI 建议 + 活动时间线）
+- [ ] 笔记日历核心重构（日历联动 + 笔记详情 + 数据分析 + 新建笔记 + AI 创作）
+- [ ] 自动巡检系统实现（定时调度 + Playwright 检查 + 问题追踪）
+- [ ] 用户体验改进（骨架屏 + 错误边界 + 数据刷新 + 移动端适配）
+

@@ -1,6 +1,6 @@
 # 小红书AI运营助手 — 项目文档
 
-> 最后更新: 2026-05-06 | 当前版本: v0.3.0-beta | 重构阶段: Phase 1 待启动
+> 最后更新: 2026-05-06 | 当前版本: v0.3.0-beta | 重构阶段: Phase 2/3/4 已完成
 
 ---
 
@@ -41,14 +41,12 @@ workspace/
 │   │       ├── export/         # 数据导出
 │   │       └── assets/         # 内容资产 (待实现)
 │   ├── components/
-│   │   ├── views/              # 7 个主视图组件
-│   │   │   ├── dashboard-view.tsx    # 仪表盘 (59KB)
-│   │   │   ├── account-view.tsx      # 账号分析 (57KB)
-│   │   │   ├── analytics-view.tsx    # 数据洞察 (71KB)
-│   │   │   ├── content-view.tsx      # 内容库 (82KB)
-│   │   │   ├── persona-view.tsx      # 人设管理 (31KB)
-│   │   │   ├── creator-view.tsx      # AI 创作 (61KB)
-│   │   │   └── settings-view.tsx     # 设置 (25KB)
+│   │   ├── views/              # 4 个主视图组件
+│   │   │   ├── dashboard-view.tsx      # 仪表盘
+│   │   │   ├── account-hub-view.tsx    # 账号中心 (3 Tab)
+│   │   │   ├── content-view.tsx        # 内容库 (素材管理)
+│   │   │   └── settings-view.tsx       # 设置
+│   │   ├── account-hub/        # 账号中心子组件 (开发中)
 │   │   ├── app-sidebar.tsx     # 侧边栏导航
 │   │   ├── post-card.tsx       # 笔记卡片
 │   │   └── ...                 # 其他 UI 组件
@@ -89,11 +87,12 @@ workspace/
 | `XhsPersona` | 人设 | name, tone, writingStyle, targetAudience, contentThemes, keywords |
 | `ContentDraft` | AI 草稿 | title, content, tags, status, aiModel |
 
-### 3.2 待新增模型（重构 Phase 3）
+### 3.2 已新增模型（重构 Phase 3 完成）
 
 | 模型 | 说明 | 关键字段 |
 |------|------|---------|
-| `ContentAsset` | 内容资产（素材管理） | assetType(text/image/video), filePath, originalUrl, thumbnailPath, scrapedAt |
+| `ContentAsset` | 内容资产（素材管理） | assetType(text/image/video), filePath, originalUrl, title, scrapedAt |
+| `ContentSchedule` | 排程数据 | accountId, title, scheduledDate, status |
 
 ### 3.3 待新增字段
 
@@ -111,7 +110,7 @@ workspace/
 - **端口:** 3000
 - **启动:** `bun dev` (Turbopack 模式)
 - **路由:** 客户端 SPA 路由，通过 Zustand `activeTab` 控制视图切换
-- **7 个视图:** dashboard / account / analytics / content / persona / creator / settings
+- **4 个视图:** dashboard / account-hub / content / settings
 
 ### 4.2 采集微服务 (XHS Scraper)
 
@@ -243,6 +242,14 @@ bun run lint                     # ESLint
 - TDD 方法: 先写测试 (RED) → 实现 (GREEN) → 重构 (IMPROVE)
 - 当前状态: 无任何测试文件（技术债务）
 
+### 7.4 可视化 QA 测试
+
+- 使用 **agent-browser** 进行端到端可视化 QA 测试
+- 测试覆盖关键用户流程：账号添加 → 数据采集 → 数据分析 → AI 创作 → 笔记日历
+- 每个 Phase 完成后必须通过 agent-browser 视觉验证
+- 最终验收前执行一次完整的 E2E 可视化测试
+- 测试报告记录到 WORKLOG.md
+
 ---
 
 ## 八、重构计划概要
@@ -272,18 +279,111 @@ bun run lint                     # ESLint
 
 | # | 问题 | 严重度 | 状态 |
 |---|------|--------|------|
-| 1 | View 文件过大 (50-82KB) | HIGH | 待 Phase 2 拆分 |
-| 2 | 无测试文件 | HIGH | 待 Phase 4 补充 |
+| 1 | View 文件过大 (dashboard 60KB) | HIGH | 待拆分 |
+| 2 | 无测试文件 | HIGH | 待补充 |
 | 3 | ZAI SDK 遗留引用 | HIGH | 部分已清理 |
 | 4 | 受众画像 100% 假数据 | MEDIUM | 已加免责声明 |
-| 5 | 发布排程仅存 localStorage | MEDIUM | 待持久化 |
-| 6 | 采集无进度反馈 | MEDIUM | 待 Phase 3 SSE |
+| 5 | 发布排程仅存 localStorage | MEDIUM | ContentSchedule 模型已建 |
+| 6 | 采集无进度反馈 | MEDIUM | 待 SSE 实现 |
+| 7 | Cookie 过期无自动提示 | LOW | 待优化 |
+| 8 | 内容库暂无实际素材数据 | LOW | 采集归档待实现 |
 | 7 | Cookie 过期无自动提示 | LOW | 待优化 |
 | 8 | TypeScript 编译警告 (~15 处) | MEDIUM | Phase 1 修复 |
 
 ---
 
-## 十、常用操作速查
+## 十一、开发原则与工作流程
+
+### 11.1 循环开发机制
+
+**核心理念：** 产品不是一次就能做好的，必须通过反复迭代、反复发现问题、反复优化，才能持续改进。
+
+```
+发现问题 → 分析原因 → 实施修复 → 验证测试 → 记录日志 → Git 提交 → 下一轮迭代
+    ↑                                                              ↓
+    └──────────────────────── 循环持续进行 ─────────────────────────┘
+```
+
+**每轮迭代流程：**
+1. **自动巡检** — 定时任务每 15 分钟自动触发
+2. **问题优先级** — 按 severity (critical > high > medium > low) 排序处理
+3. **端到端测试** — 无待修复问题时，执行完整的浏览器可视化测试
+4. **使用者视角审视** — 模拟真实用户操作，发现体验问题
+5. **记录与版本控制** — 每次迭代必须记录日志并 Git 提交
+
+### 11.2 工作日志规范
+
+**文件：** `WORKLOG.md`
+
+**每次迭代必须记录：**
+- 迭代编号（如 Iteration 007）
+- 日期与触发原因
+- 完成内容的详细说明（文件修改列表、功能描述）
+- 数据库变更
+- API 变更
+- 已知问题与待办
+- 质量验证结果（TypeScript 错误数、ESLint 结果、服务状态）
+
+**原则：**
+- 日志是后续 AI 了解项目历史的主要途径，必须详细准确
+- 不写空话，聚焦"做了什么"和"为什么这么做"
+- 代码变更用文件路径标注，不要贴大段代码
+
+### 11.3 Git 版本控制规范
+
+**每次迭代必须提交：**
+```bash
+# 提交格式
+git add <具体文件>  # 不要 git add -A，避免提交敏感文件
+git commit -m "feat(scope): 简要描述
+
+详细变更：
+- 文件1: 变更说明
+- 文件2: 变更说明"
+```
+
+**分支策略：**
+- `main` — 稳定版本
+- `feat/xxx` — 功能开发
+- `fix/xxx` — 问题修复
+
+**提交前检查：**
+- [ ] 工作日志已更新
+- [ ] TypeScript 无错误
+- [ ] 服务可正常启动
+- [ ] 不提交 .env、cookie-store.json 等敏感文件
+
+### 11.4 自动巡检机制
+
+**调度器：** `scripts/inspection-scheduler.ts`
+**频率：** 每 15 分钟
+**检查内容：**
+- 服务健康状态（端口 3000, 3002）
+- 页面加载与渲染验证
+- 导航与交互测试
+- 数据完整性检查
+- 视觉回归检测（截图对比）
+
+**问题处理流程：**
+- 发现 open 问题 → 优先修复
+- 无 open 问题 → 端到端测试 + 体验审视
+- 新问题自动记录到 `InspectionIssue` 表
+- 历史问题自动标记为 fixed（如验证通过）
+
+### 11.5 使用者视角审视清单
+
+每次迭代额外审视：
+- [ ] 功能是否解决了真实用户需求？
+- [ ] 交互是否直观？需要几步完成核心操作？
+- [ ] 数据是否有意义？能否提供决策价值？
+- [ ] 空状态/加载状态/错误状态是否友好？
+- [ ] 有没有多余的功能或信息？
+- [ ] 移动端/窄屏是否可用？
+- [ ] 性能是否可接受？（首屏 < 3s）
+
+---
+
+## 十二、常用操作速查
 
 | 操作 | 命令/路径 |
 |------|----------|
@@ -294,6 +394,8 @@ bun run lint                     # ESLint
 | 测试 AI 连接 | POST `/api/ai/config/test` |
 | 数据库操作 | `bun run db:push / db:migrate / db:reset` |
 | 代码检查 | `bun run lint` |
+| 手动巡检 | `bun scripts/inspection-scheduler.ts --once` |
+| 运行 E2E 测试 | `npx playwright test tests/e2e/visual-qa.spec.ts` |
 | 查看项目文档 | 本文件 |
 | 查看工作日志 | `WORKLOG.md` |
 | 查看重构方案 | `docs/refactor-plan.md` |

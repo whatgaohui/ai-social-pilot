@@ -36,6 +36,12 @@ model XhsAccount {
   posts         XhsPost[]
   persona       XhsPersona?
   drafts        ContentDraft[]
+  assets        ContentAsset[]
+  schedules     ContentSchedule[]
+  metrics       AccountMetrics[]
+  suggestions   ContentSuggestion[]
+  scheduledNotes ScheduledNote[]
+  healthScores  AccountHealthScore[]
 }
 
 // ─── 小红书笔记 ──────────────────────────────────────────────────────────
@@ -66,6 +72,9 @@ model XhsPost {
   aiAnalysis    String   @default("")  // AI分析摘要
   
   publishDate   String   @default("")  // 发布日期 "2025-01-15"
+  publishTime   String   @default("")  // 发布时间 "14:30"
+  views         Int      @default(0)   // 浏览量
+  engagementRate Float   @default(0)   // 互动率
   scrapedAt     DateTime @default(now())
   
   createdAt     DateTime @default(now())
@@ -73,6 +82,7 @@ model XhsPost {
   
   @@index([accountId])
   @@index([publishDate])
+  performances    NotePerformance[]
 }
 
 // ─── 人设管理 ─────────────────────────────────────────────────────────────
@@ -126,4 +136,208 @@ model ContentDraft {
   
   @@index([accountId])
   @@index([status])
+}
+
+// ─── 内容资产（素材管理，不与笔记关联）───────────────────────────────────
+
+model ContentAsset {
+  id            String   @id @default(cuid())
+  accountId     String
+  account       XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  // 资产类型
+  assetType     String   // text, image, video
+  title         String   @default("")       // 标题/文案内容
+  filePath      String   @default("")       // 本地存储路径
+  originalUrl   String   @default("")       // 原始链接
+  thumbnailPath String   @default("")       // 缩略图路径（视频用）
+  fileSize      Int      @default(0)        // 文件大小(字节)
+  scrapedAt     String   @default("")       // 采集时间 YYYY-MM-DD
+
+  createdAt     DateTime @default(now())
+
+  @@index([accountId])
+  @@index([assetType])
+  @@index([scrapedAt])
+}
+
+// ─── 排程数据持久化 ─────────────────────────────────────────────────────
+
+model ContentSchedule {
+  id            String   @id @default(cuid())
+  accountId     String
+  account       XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  draftId       String?
+  title         String   @default("")
+  content       String   @default("")
+  scheduledDate String   // YYYY-MM-DD
+  scheduledTime String   // HH:mm
+  status        String   @default("pending") // pending, published, skipped
+  notes         String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@index([accountId])
+  @@index([scheduledDate])
+}
+
+// ─── 素材库 ──────────────────────────────────────────────────────────────
+
+model Material {
+  id            String   @id @default(cuid())
+  name          String   @default("")
+  type          String   // image, video, text
+  fileUrl       String   @default("")
+  thumbnailUrl  String   @default("")
+  size          Int      @default(0)
+  mimeType      String   @default("")
+  tags          String   @default("[]")  // JSON
+  status        String   @default("active")  // active, archived, deleted
+  usageCount    Int      @default(0)
+
+  usages        MaterialUsage[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model MaterialUsage {
+  id          String   @id @default(cuid())
+  materialId  String
+  material    Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  postId      String   @default("")  // 关联笔记ID或草稿ID
+  usedAt      DateTime @default(now())
+
+  @@index([materialId])
+  @@index([postId])
+}
+
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  color       String   @default("#FF2442")
+  count       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([name])
+}
+
+// ─── 账号指标与数据分析 ──────────────────────────────────────────────────
+
+model AccountMetrics {
+  id              String   @id @default(cuid())
+  accountId       String
+  account         XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  followers       Int      @default(0)
+  following       Int      @default(0)
+  totalNotes      Int      @default(0)
+  totalLikes      Int      @default(0)
+  totalCollects   Int      @default(0)
+  totalShares     Int      @default(0)
+  engagementRate  Float    @default(0)
+  calculatedAt    DateTime @default(now())
+
+  @@index([accountId, calculatedAt])
+}
+
+model NotePerformance {
+  id              String   @id @default(cuid())
+  postId          String
+  post            XhsPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  views           Int      @default(0)
+  likes           Int      @default(0)
+  comments        Int      @default(0)
+  collects        Int      @default(0)
+  shares          Int      @default(0)
+  engagementRate  Float    @default(0)
+  calculatedAt    DateTime @default(now())
+
+  @@index([postId, calculatedAt])
+}
+
+model ContentSuggestion {
+  id            String   @id @default(cuid())
+  accountId     String
+  account       XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type          String   // best_time, content_gap, trending, competitor, general
+  title         String   @default("")
+  description   String   @default("")
+  priority      String   @default("medium")
+  metadata      String   @default("{}")
+  isDismissed   Boolean  @default(false)
+  generatedAt   DateTime @default(now())
+
+  @@index([accountId])
+  @@index([type])
+  @@index([priority])
+}
+
+model ScheduledNote {
+  id            String   @id @default(cuid())
+  accountId     String
+  account       XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  title         String   @default("")
+  content       String   @default("")
+  mediaUrls     String   @default("[]")
+  tags          String   @default("[]")
+  coverPrompt   String   @default("")
+  scheduledAt   DateTime
+  status        String   @default("draft")  // draft, scheduled, published, cancelled
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model AccountHealthScore {
+  id              String   @id @default(cuid())
+  accountId       String
+  account         XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  score           Int      @default(0)
+  postingScore    Int      @default(0)
+  engagementScore Int      @default(0)
+  followerScore   Int      @default(0)
+  diversityScore  Int      @default(0)
+  factors         String   @default("{}")
+  calculatedAt    DateTime @default(now())
+
+  @@index([accountId, calculatedAt(desc)])
+}
+
+// ─── 自动巡检 ────────────────────────────────────────────────────────────
+
+model InspectionIssue {
+  id             String   @id @default(cuid())
+  issueCode      String   @unique
+  category       String
+  title          String
+  description    String
+  severity       String   // critical, high, medium, low, info
+  status         String   @default("open")  // open, acknowledged, fixed, false-positive
+  foundAt        DateTime @default(now())
+  fixedAt        DateTime?
+  screenshotPath String?
+  runId          String
+
+  @@index([status])
+  @@index([foundAt])
+}
+
+model InspectionRun {
+  id            String   @id @default(cuid())
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  totalChecks   Int      @default(0)
+  passedChecks  Int      @default(0)
+  failedChecks  Int      @default(0)
+  issuesFound   Int      @default(0)
+  newIssues     Int      @default(0)
+  durationMs    Int      @default(0)
+  status        String   @default("running")  // running, completed, failed, skipped
+  skipReason    String?
 }
