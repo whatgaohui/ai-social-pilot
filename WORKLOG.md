@@ -88,12 +88,60 @@
 
 #### 待办
 
-- [ ] Phase 1: 设置模块重构（删除通知设置、重构 AI 配置 UI、移除 Made by Z.ai）
-- [ ] Phase 1: TypeScript 编译警告修复
-- [ ] Phase 1: 添加账号对话框中文化
+- [x] Phase 1: 设置模块重构（删除通知设置、重构 AI 配置 UI、移除 Made by Z.ai）
+- [x] Phase 1: TypeScript 编译警告修复
+- [x] Phase 1: 添加账号对话框中文化（已确认全中文）
 - [ ] Phase 2: 账号中心核心开发 (3 Tab)
 - [ ] Phase 3: SSE 采集进度 + 内容库重构
 - [ ] Phase 4: 旧文件清理 + 测试
+
+---
+
+### Iteration 002 — Phase 1: 设置重构 + TS 修复 + 文档体系
+
+**日期:** 2026-05-06
+**触发:** 重构方案 Phase 1 启动
+
+#### 完成内容
+
+**1. 设置模块重构 (settings-view.tsx)**
+- 删除通知设置卡片（只读无意义）
+- AI 配置 UI 改为紧凑 2x3 提供商网格（替代垂直列表）
+- 移除 "Made by Z.ai" 署名
+- 连接状态改为圆点指示灯（绿/橙/红）
+
+**2. TypeScript 编译警告修复**
+- `tsconfig.json` target ES2017 → ES2018（支持 regex `s` flag）
+- 修复 21 个 TS 编译错误（类型不匹配、缺失字段、死代码）
+- 修复 25 个 ESLint 错误（react-hooks/exhaustive-deps）
+- 最终: `bun run lint` 0 errors, `tsc --noEmit` 0 errors
+
+**3. Add Account 对话框**
+- 确认已全中文化，无需修改
+
+**4. 项目文档体系**
+- `PROJECT.md` — 项目文档（架构、技术栈、运行机制、开发规范）
+- `WORKLOG.md` — 工作日志（历史摘要 + 迭代记录模板）
+- 版本号统一为 `v0.3.0-beta`
+
+#### 修改文件清单
+
+| 文件 | 变更 |
+|------|------|
+| `src/components/views/settings-view.tsx` | 设置重构（-35行） |
+| `src/components/views/*.tsx` (7 files) | useCallback 修复 |
+| `src/app/api/content/generate/route.ts` | TS 类型修复 |
+| `src/app/api/content/polish/route.ts` | TS 类型修复 |
+| `src/app/api/trending/route.ts` | ZAI SDK API 修复 |
+| `src/app/page.tsx` | TS 类型修复 |
+| `src/lib/xhs-scraper.ts` | TS 类型修复 |
+| `src/components/command-palette.tsx` | ESLint 修复 |
+| `src/components/trending-topics.tsx` | ESLint 修复 |
+| `tsconfig.json` | target ES2018 |
+| `PROJECT.md` | 新增 |
+| `WORKLOG.md` | 新增 |
+
+#### 下一: Phase 2 — 账号中心核心开发
 
 ---
 
