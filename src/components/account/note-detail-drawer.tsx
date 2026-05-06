@@ -165,7 +165,7 @@ export function NoteDetailDrawer({ accountId, noteId, onClose }: { accountId: st
                   <label className="text-xs text-muted-foreground mb-1.5 block flex items-center gap-1">
                     <FileText className="w-3 h-3" />内容预览
                   </label>
-                  <div className="text-xs leading-relaxed whitespace-pre-wrap line-clamp-6 text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                  <div className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground bg-muted/30 p-3 rounded-lg">
                     {detail.content}
                   </div>
                 </div>
@@ -178,7 +178,7 @@ export function NoteDetailDrawer({ accountId, noteId, onClose }: { accountId: st
                 <label className="text-xs text-muted-foreground mb-1.5 block flex items-center gap-1">
                   <Star className="w-3 h-3 text-amber-500" />AI 分析
                 </label>
-                <div className="text-xs leading-relaxed whitespace-pre-wrap line-clamp-4 text-muted-foreground bg-xhs-light/5 p-3 rounded-lg">
+                <div className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground bg-xhs-light/5 p-3 rounded-lg">
                   {detail.aiAnalysis}
                 </div>
               </div>

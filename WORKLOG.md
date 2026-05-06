@@ -18,6 +18,11 @@
 - 数据库: Prisma + SQLite (`db/dev.db`)
 - Cookie 需定期更新（XHS 安全验证约 1-2 周过期）
 
+**巡检系统:**
+- 自动巡检引擎: Playwright E2E + HTTP 健康检查 (14 检查点)
+- 定时任务: 每小时 :35 执行 (CronCreate, session-level, 7天过期)
+- 巡检记录: 持久化到 InspectionRun 表，设置页可查看状态
+
 ---
 
 ## 历史 Session 摘要 (Session 1-23)
@@ -385,6 +390,79 @@
 - 健康评分中"内容多样性"为 0 (因当前数据无分类/标签)
 - 新建笔记的媒体上传为占位 UI，尚未实现真实上传
 - AI 辅助创作按钮为 placeholder，功能开发中
+
+---
+
+### Iteration 010 — UI/UX 全面优化：弹层/网格/导航/新增入口
+
+**日期:** 2026-05-07
+**触发:** 用户反馈 — 弹层 UI 有问题、图片尺寸不一致、笔记日历关联不上时间、账号头像重复、缺少添加账号入口
+
+#### 完成内容
+
+**1. 内容管理网格优化 (material-card.tsx, material-list-view.tsx)**
+- 素材卡片从 `grid-cols-6` 改为 `flex-wrap` 固定 `w-20 h-20` 正方形缩略图
+- 每行可显示 10-20+ 个素材，空间利用率大幅提升
+- 名称缩略显示在缩略图下方，hover 显示选中框
+
+**2. 仪表盘笔记卡片优化 (dashboard-view.tsx)**
+- 最近笔记从 3 列 16:9 大卡片改为 `w-20 h-20` 正方形缩略图 flex-wrap
+- 展示数量从 6 篇提升到 20 篇
+- 移除冗余的 metrics 展示（点赞/评论/收藏），仅保留缩略图+标题+AI 评分
+
+**3. 笔记日历网格优化 (account-hub-view.tsx)**
+- 全部笔记列表从 `grid-cols-4` 改为 `flex-wrap` 正方形 `w-20 h-20` 卡片
+- 选中日期的笔记列表也改为正方形缩略图 flex-wrap
+- 统一内容管理和笔记管理的图片展示风格
+
+**4. 新建笔记弹层优化 (note-creation-dialog.tsx)**
+- 从自定义 fixed 弹层改为 shadcn/ui Dialog 组件
+- 宽度从 `max-w-lg` 提升到 `max-w-2xl`，居中展示
+- 内容 textarea 高度从 120px 提升到 200px
+
+**5. 笔记详情弹层优化 (note-detail-drawer.tsx, account-hub-view.tsx)**
+- 从右侧面板 (`max-w-md` 靠右) 改为居中模态框 (`max-w-2xl` 居中)
+- 移除内容预览的 `line-clamp-6` 限制和 AI 分析的 `line-clamp-4` 限制
+- 完整展示内容和 AI 分析，字体从 `text-xs` 提升为 `text-sm`
+
+**6. 账号中心添加账号入口 (account-hub-view.tsx)**
+- 在账号中心 header 添加"添加账号"按钮，打开 AddAccountDialog
+
+**7. DashboardView 重构 (dashboard-view.tsx)**
+- 从 1424 行单文件拆分为 636 行主文件 + 7 个独立模块
+- `lib/dashboard-stats.ts` — 类型、工具函数、常量 (310 行)
+- `dashboard/stat-sparkline.tsx` — 迷你 SVG 趋势线 (40 行)
+- `dashboard/area-chart.tsx` — SVG 面积图 (140 行)
+- `dashboard/engagement-ring-chart.tsx` — SVG 环形图 (111 行)
+- `dashboard/activity-feed.tsx` — 动态列表卡片 (52 行)
+- `dashboard/weekly-performance.tsx` — 周表现卡片 (84 行)
+- `dashboard/stats-overview.tsx` — 4 指标统计卡片 (63 行)
+- `dashboard/ai-strategy-panel.tsx` — AI 建议面板 (87 行)
+
+#### 修改文件清单
+
+| 文件 | 变更 |
+|------|------|
+| `src/components/material/material-card.tsx` | 正方形 w-20 h-20 缩略图，flex-wrap |
+| `src/components/material/material-list-view.tsx` | grid → flex-wrap |
+| `src/components/views/dashboard-view.tsx` | 重构拆分 + 笔记卡片正方形化 |
+| `src/components/views/account-hub-view.tsx` | 日历/弹层/添加账号按钮 |
+| `src/components/account/note-creation-dialog.tsx` | shadcn Dialog + max-w-2xl |
+| `src/components/account/note-detail-drawer.tsx` | 移除 line-clamp 限制 |
+| `src/lib/dashboard-stats.ts` | 新增 — 仪表盘工具函数 |
+| `src/components/dashboard/index.ts` | 新增 — barrel export |
+| `src/components/dashboard/stat-sparkline.tsx` | 新增 — 迷你趋势线 |
+| `src/components/dashboard/area-chart.tsx` | 新增 — 面积图 |
+| `src/components/dashboard/engagement-ring-chart.tsx` | 新增 — 环形图 |
+| `src/components/dashboard/activity-feed.tsx` | 新增 — 动态列表 |
+| `src/components/dashboard/weekly-performance.tsx` | 新增 — 周表现 |
+| `src/components/dashboard/stats-overview.tsx` | 新增 — 统计卡片 |
+| `src/components/dashboard/ai-strategy-panel.tsx` | 新增 — AI 面板 |
+
+#### 已知问题
+- 账号头像：scraper 提取逻辑正确，但若 XHS 403 阻止访问则头像为空，显示默认占位符
+- 笔记日历时间关联：依赖 scraper 提取的 publishDate，若为空则笔记不显示在日历上
+- 新建笔记的媒体上传为占位 UI，尚未实现真实上传
 
 ---
 

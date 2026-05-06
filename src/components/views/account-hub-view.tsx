@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils";
 import { HealthScoreCard } from "@/components/account/health-score-card";
 import { AISuggestionsPanel } from "@/components/account/ai-suggestions-panel";
 import { ActivityTimeline } from "@/components/account/activity-timeline";
-import { NoteCard } from "@/components/account/note-card";
 import { NoteDetailDrawer } from "@/components/account/note-detail-drawer";
 import { NoteCreationDialog } from "@/components/account/note-creation-dialog";
 import {
@@ -36,6 +35,7 @@ import {
   BarChart3,
   Lightbulb,
   Clock,
+  FileText,
 } from "lucide-react";
 
 // ─── Utility: format numbers ────────────────────────────────────────────
@@ -364,18 +364,18 @@ function CalendarTab({ accountId }: { accountId: string | null }) {
               return (
                 <button
                   key={i}
-                  onClick={() => { setSelectedDate(postCount > 0 ? dateStr : null); setNotePage(0); }}
+                  onClick={() => { setSelectedDate(dateStr); setNotePage(0); }}
                   className={cn(
-                    "relative flex flex-col items-center justify-center h-12 rounded-lg text-sm transition-colors",
-                    isToday && "ring-1 ring-xhs-light/50",
-                    isSelected && "bg-xhs-light/30 ring-1 ring-xhs",
+                    "relative flex flex-col items-center justify-center h-10 rounded-lg text-xs transition-all",
+                    isToday && "bg-xhs/10 font-bold",
+                    isSelected && "bg-xhs-light/40 ring-1 ring-xhs",
                     postCount > 0 && "cursor-pointer hover:bg-muted/50",
-                    postCount === 0 && "text-muted-foreground/50"
+                    postCount === 0 && "cursor-pointer hover:bg-muted/30"
                   )}
                 >
                   <span className={postCount > 0 ? engColor : ""}>{day}</span>
                   {postCount > 0 && (
-                    <span className="text-[9px] text-muted-foreground/70">{postCount}篇</span>
+                    <span className="text-[9px] text-muted-foreground/70 leading-none">{postCount}篇</span>
                   )}
                 </button>
               );
@@ -396,19 +396,26 @@ function CalendarTab({ accountId }: { accountId: string | null }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {selectedDatePosts.map(post => (
-              <NoteCard
-                key={post.id}
-                post={{
-                  id: post.id, title: post.title, coverUrl: post.coverUrl,
-                  postType: post.postType, likes: post.likes, comments: post.comments,
-                  collects: post.collects, publishDate: post.publishDate,
-                  category: post.category, aiScore: post.aiScore,
-                }}
-                onClick={() => setSelectedNoteId(post.id)}
-                compact
-              />
-            ))}
+            <div className="flex flex-wrap gap-2">
+              {selectedDatePosts.map(post => (
+                <div
+                  key={post.id}
+                  className="group relative w-20 flex-shrink-0 border rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-xhs-light transition-colors"
+                  onClick={() => setSelectedNoteId(post.id)}
+                >
+                  <div className="relative w-20 h-20 bg-muted">
+                    {post.coverUrl ? (
+                      <img src={post.coverUrl} alt={post.title} className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                        <FileText className="w-5 h-5 text-muted-foreground/40" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-medium truncate px-1 py-0.5 leading-tight">{post.title || "无标题"}</p>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -435,21 +442,32 @@ function CalendarTab({ accountId }: { accountId: string | null }) {
               )}
             </div>
 
-            {/* Grid */}
+            {/* Grid — square thumbnails, many per row */}
             {pagedNotes.length > 0 ? (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="flex flex-wrap gap-2">
                   {pagedNotes.map(post => (
-                    <NoteCard
+                    <div
                       key={post.id}
-                      post={{
-                        id: post.id, title: post.title, coverUrl: post.coverUrl,
-                        postType: post.postType, likes: post.likes, comments: post.comments,
-                        collects: post.collects, publishDate: post.publishDate,
-                        category: post.category, aiScore: post.aiScore,
-                      }}
+                      className="group relative w-20 flex-shrink-0 border rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-xhs-light transition-colors"
                       onClick={() => setSelectedNoteId(post.id)}
-                    />
+                    >
+                      <div className="relative w-20 h-20 bg-muted">
+                        {post.coverUrl ? (
+                          <img src={post.coverUrl} alt={post.title} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                            <FileText className="w-5 h-5 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        {post.aiScore > 0 && (
+                          <div className="absolute top-0.5 right-0.5 bg-black/60 text-white text-[8px] font-medium px-1 py-0 rounded">
+                            {Math.round(post.aiScore)}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[10px] font-medium truncate px-1 py-0.5 leading-tight">{post.title || "无标题"}</p>
+                    </div>
                   ))}
                 </div>
 
@@ -473,10 +491,10 @@ function CalendarTab({ accountId }: { accountId: string | null }) {
         </Card>
       )}
 
-      {/* Note Detail Drawer */}
+      {/* Note Detail Modal */}
       {selectedNoteId && accountId && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/20" onClick={() => setSelectedNoteId(null)}>
-          <div className="w-96 border-l bg-background h-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setSelectedNoteId(null)}>
+          <div className="bg-background rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-auto mx-4" onClick={(e) => e.stopPropagation()}>
             <NoteDetailDrawer accountId={accountId} noteId={selectedNoteId} onClose={() => setSelectedNoteId(null)} />
           </div>
         </div>
@@ -836,6 +854,10 @@ export function AccountHubView() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold tracking-tight">账号中心</h2>
         <div className="flex items-center gap-2">
+          <Button size="sm" className="bg-xhs text-white" onClick={() => setAddAccountDialogOpen(true)}>
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            添加账号
+          </Button>
           <select value={selectedAccountId || ""} onChange={e => setSelectedAccountId(e.target.value)}
             className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white dark:bg-neutral-950">
             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.nickname || "未命名用户"}</option>)}

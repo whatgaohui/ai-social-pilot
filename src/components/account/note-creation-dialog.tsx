@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, X, Plus, Image } from 'lucide-react';
@@ -75,24 +76,19 @@ export function NoteCreationDialog({ accountId, open, onClose, onSuccess }: { ac
     toast.info('AI 辅助创作功能开发中');
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-background rounded-xl border shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">新建笔记</h3>
-          <Button variant="ghost" size="icon" onClick={onClose}><X className="w-4 h-4" /></Button>
-        </div>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
+        <DialogHeader>
+          <DialogTitle>新建笔记</DialogTitle>
+        </DialogHeader>
 
-        {/* Form */}
-        <div className="p-4 space-y-4">
+        <div className="space-y-4 py-2">
           {/* Title */}
-          <div className="space-y-1.5">
+          <div>
             <label className="text-xs font-medium">标题</label>
             <input
-              className="w-full px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="输入笔记标题..."
@@ -100,10 +96,10 @@ export function NoteCreationDialog({ accountId, open, onClose, onSuccess }: { ac
           </div>
 
           {/* Content */}
-          <div className="space-y-1.5">
+          <div>
             <label className="text-xs font-medium">内容</label>
             <textarea
-              className="w-full px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring min-h-[120px]"
+              className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring min-h-[200px]"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="输入笔记正文..."
@@ -117,10 +113,10 @@ export function NoteCreationDialog({ accountId, open, onClose, onSuccess }: { ac
           </Button>
 
           {/* Tags */}
-          <div className="space-y-1.5">
+          <div>
             <label className="text-xs font-medium">标签</label>
             {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-1.5">
+              <div className="flex flex-wrap gap-1.5 mt-1.5 mb-1.5">
                 {tags.map((tag, i) => (
                   <Badge key={i} variant="secondary" className="gap-1 text-xs">
                     {tag}
@@ -129,7 +125,7 @@ export function NoteCreationDialog({ accountId, open, onClose, onSuccess }: { ac
                 ))}
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-1">
               <input
                 className="flex-1 px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
                 value={tagInput}
@@ -142,19 +138,19 @@ export function NoteCreationDialog({ accountId, open, onClose, onSuccess }: { ac
           </div>
 
           {/* Media placeholder */}
-          <div className="space-y-1.5">
+          <div>
             <label className="text-xs font-medium">媒体素材</label>
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-xhs/30 transition-colors">
-              <Image className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">拖拽图片或点击上传</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-0.5">支持 JPG, PNG, WebP</p>
+            <div className="mt-1 border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-xhs/30 transition-colors">
+              <Image className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">拖拽图片或点击上传</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">支持 JPG, PNG, WebP</p>
             </div>
           </div>
 
           {/* Schedule */}
-          <div className="space-y-1.5">
+          <div>
             <label className="text-xs font-medium">发布排程（可选）</label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-1">
               <input
                 type="date"
                 className="flex-1 px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
@@ -163,7 +159,7 @@ export function NoteCreationDialog({ accountId, open, onClose, onSuccess }: { ac
               />
               <input
                 type="time"
-                className="w-28 px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-32 px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
                 value={scheduledTime}
                 onChange={(e) => setScheduledTime(e.target.value)}
               />
@@ -172,13 +168,13 @@ export function NoteCreationDialog({ accountId, open, onClose, onSuccess }: { ac
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 p-4 border-t">
+        <div className="flex items-center gap-2 pt-2 border-t">
           <Button variant="outline" className="flex-1" onClick={onClose}>取消</Button>
           <Button className="flex-1 bg-xhs hover:bg-xhs-dark text-white" onClick={handleSubmit} disabled={submitting}>
             {submitting ? '保存中...' : scheduledDate ? '创建并排程' : '保存草稿'}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
