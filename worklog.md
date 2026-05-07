@@ -918,3 +918,112 @@ Stage Summary:
 - ExportDialog: Glass-styled dialog with format/scope/date selection, progress bar, success state
 - Export API: GET endpoint with CSV generation, scope filtering, date range support
 - Creator View: 7 writing templates with structure hints, detailed quality score with SVG circular progress, polish style options with diff highlighting
+
+---
+
+## Session: 改善方案执行 — 从混乱到规范 (2026-05-07 PM)
+
+**目标**: 执行 `docs/improvement-plan.md` 中的全部改善任务
+
+### Phase 1: 基础设施搭建 ✅
+
+1. **工作区结构完善**:
+   - `assets/` 目录已创建
+   - `notes/` 目录已创建，包含 3 篇知识笔记
+   - `docs/decisions/` 目录已创建，包含 3 份 ADR 文档
+
+2. **AGENTS.md 创建** — AI 入职说明书:
+   - 项目一句话简介、技术栈速查、运行命令
+   - 当前版本和阶段、已知问题清单
+   - Git 分支和提交规范、工作区说明
+
+3. **技术决策记录 (ADR)**:
+   - `adr-001-merge-inspection-e2e.md` — 巡检与 E2E 测试合并
+   - `adr-002-batch-note-detail.md` — 笔记详情批量采集策略
+   - `adr-003-ui-enhance.md` — 笔记详情前端展示增强
+
+### Phase 2: Git 提交流程修复 ✅
+
+4. **"提交闸门" 规则建立**:
+   - 代码完成 → lint/tsc → git add → commit → worklog → 下一个需求
+   - 禁止只写文档不提交代码
+   - E2E 报告 N 轮合并为 1 次 commit
+
+5. **E2E 重复提交压缩**:
+   - 将 9 个 E2E 报告更新提交压缩为 1 个 (917c118)
+   - 节省 8 个无效 commit
+
+### Phase 3: 开发流程修复 ✅
+
+6. **四步构建循环引入**:
+   - 讨论 (docs/) → Demo → 计划 (docs/decisions/) → 开发+测试+学习 (notes/)
+   - 已写入 improvement-plan.md，后续开发强制执行
+
+7. **知识沉淀规范**:
+   - `notes/git-execution-lesson.md` — Git 执行缺失教训
+   - `notes/scraper-p0-detail-collection.md` — P0 采集器详情采集经验
+   - `notes/note-detail-ui-enhance.md` — 笔记详情 UI 增强经验
+
+### Phase 4: 历史债务清理 ✅
+
+8. **无用文件清理**:
+   - 删除 `e2e-test.js`、`e2e-test.sh`、`screenshot-script.js` — 一次性脚本
+   - 删除 `mini-services/xhs-scraper/index.old.ts` — 旧代码备份
+   - `.gitignore` 新增排除: `test-results/`, `playwright-report/`, `public/upload/`, `cookie-store.json`, `*.old.ts`, `*.db.backup`
+
+### P0: 笔记详情完整采集 ✅
+
+9. **Schema 扩展** (`prisma/schema.prisma`):
+   - 新增 `videoUrl String @default("")` — 视频笔记播放地址
+   - 新增 `detailScrapedAt DateTime?` — 详情页已采集时间
+
+10. **采集器增强** (`mini-services/xhs-scraper/strategies/browser-strategy.ts`):
+    - `parseNoteFromApi` 提取 videoUrl (三级 fallback: stream.url → h264 → h265)
+    - 提取完整图片组 (image_list → url_default)
+    - 提取标签列表 (tag_list → name)
+    - 提取精确发布时间 (Unix timestamp → ISO)
+
+11. **批量详情采集集成** (`src/app/api/accounts/[id]/scrape/route.ts`):
+    - 列表采集后筛选缺少正文的笔记 (content < 10 字符)
+    - 并发限制=3，批次间隔 2-3s，Promise.allSettled 容忍部分失败
+    - 详情合并回原 post 对象，设置 detailScrapedAt
+
+### P1: 采集进度追踪 ✅
+
+12. **笔记卡片状态 Badge** (`src/components/account/note-card.tsx`):
+    - 绿色 CheckCircle2 + 相对时间 = 已采集
+    - 橙色 AlertCircle + "待采集" = 未采集
+    - `fmtDate` 相对时间格式化 (分钟前/小时前/天前)
+
+### P2: 前端媒体展示增强 ✅
+
+13. **图片轮播组件** (`src/components/account/note-detail-drawer.tsx`):
+    - 自定义 ImageCarousel 组件 (约 50 行，无第三方依赖)
+    - 左右箭头导航 + 底部圆点指示器 + 右上角页码计数
+    - 媒体降级链: videoUrl → ImageCarousel → coverUrl
+
+14. **视频播放器**:
+    - HTML5 `<video>` 元素 (controls, preload="metadata")
+    - 小红书视频 URL 有防盗链时效性，原生播放器足够
+
+15. **采集状态提示框**:
+    - 底部绿色提示: "已采集 · 时间"
+    - 底部橙色提示: "待采集 — 仅列表页数据"
+
+### 提交统计
+
+| 类型 | 数量 | 说明 |
+|------|------|------|
+| 新功能代码 | 3 commits | scraper-p0, ui-p1p2, batch note detail |
+| 文档 | 4 commits | ADRs ×3, 知识笔记 ×1 |
+| 清理 | 1 commit | E2E 压缩 + 无用文件删除 |
+| **合计** | **7 commits** | caf3d26..c571538 |
+
+### 遗留 TypeScript 错误 (预存，非本次引入)
+
+- `examples/websocket/` — socket.io 依赖缺失 (示例代码，非生产)
+- `playwright.config.ts` — args 类型不匹配 (配置问题)
+- `skills/` — 内部技能类型不匹配 (独立模块)
+- `src/lib/xhs-scraper.ts` — regex flag es2018 (构建目标问题)
+
+---
