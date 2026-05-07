@@ -1107,3 +1107,21 @@ Stage Summary:
 | PRD-005 笔记创建重构 | ✅ 100% |
 
 **总体完成度: 5/5 PRD 核心功能完成**
+
+---
+
+## Session: E2E回归修复 + AccountHubView替换 (2026-05-08 Morning)
+
+### 问题诊断
+- 8个E2E测试失败，全部与账号中心页面有关
+- 根因: page.tsx 使用旧的 AccountView (数据总览/趋势分析/内容洞察/AI建议)
+- 测试期望: AccountHubView (账号概览/笔记日历/人设管理)
+
+### 修复
+- page.tsx: AccountView → AccountHubView
+- app-sidebar.tsx: "账号分析" → "账号中心"
+- E2E测试: 修复加载等待时序 + 按钮多匹配问题
+
+### 最终结果
+- E2E: 15/15 通过 (100%)
+- Git: ab899c1
