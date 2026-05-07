@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useAppStore } from "@/store/app-store";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardView } from "@/components/views/dashboard-view";
-import { AccountView } from "@/components/views/account-view";
+import { AccountHubView } from "@/components/views/account-hub-view";
 import { ContentView } from "@/components/views/content-view";
 import { PersonaView } from "@/components/views/persona-view";
 import { CreatorView } from "@/components/views/creator-view";
@@ -69,7 +69,7 @@ export default function Home() {
       case "dashboard":
         return <DashboardView />;
       case "account":
-        return <AccountView />;
+        return <AccountHubView />;
       case "analytics":
         return <AnalyticsView />;
       case "content":

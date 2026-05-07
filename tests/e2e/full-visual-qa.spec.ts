@@ -27,11 +27,12 @@ test.describe('Xiaohongshu AI Operations Assistant - Full E2E', () => {
 
   test('2. Account Hub - 3 tabs interactive', async ({ page }) => {
     await page.getByRole('button', { name: '账号中心' }).click();
-    await page.waitForTimeout(500);
+    // Wait for account to load and tabs to render
+    await page.getByRole('button', { name: '账号概览' }).first().waitFor({ state: 'visible', timeout: 10000 });
 
     const expectedTabs = ['账号概览', '笔记日历', '人设管理'];
     for (const tabText of expectedTabs) {
-      const tab = page.getByRole('button', { name: tabText });
+      const tab = page.getByRole('tab').or(page.getByRole('button', { name: tabText })).first();
       await expect(tab).toBeVisible({ timeout: 5000 });
       await tab.click();
       await page.waitForTimeout(300);
@@ -41,7 +42,8 @@ test.describe('Xiaohongshu AI Operations Assistant - Full E2E', () => {
 
   test('3. Calendar - clickable days', async ({ page }) => {
     await page.getByRole('button', { name: '账号中心' }).click();
-    await page.waitForTimeout(500);
+    // Wait for tabs to render
+    await page.getByRole('button', { name: '账号概览' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.getByRole('button', { name: '笔记日历' }).click();
     await page.waitForTimeout(500);
 
@@ -86,9 +88,9 @@ test.describe('Xiaohongshu AI Operations Assistant - Full E2E', () => {
 
   test('6. Note creation dialog opens', async ({ page }) => {
     await page.getByRole('button', { name: '账号中心' }).click();
-    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: '账号概览' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.getByRole('button', { name: '笔记日历' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(300);
 
     await page.locator('button', { hasText: '新建' }).first().click();
     await page.waitForTimeout(500);
@@ -117,7 +119,7 @@ test.describe('Xiaohongshu AI Operations Assistant - Full E2E', () => {
   test('8. Console errors check', async ({ page }) => {
     // Navigate through all pages to trigger potential errors
     await page.getByRole('button', { name: '账号中心' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
     await page.getByRole('button', { name: '内容库' }).click();
     await page.waitForTimeout(500);
     await page.getByRole('button', { name: '设置' }).click();

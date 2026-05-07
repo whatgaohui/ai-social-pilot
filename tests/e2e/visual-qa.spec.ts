@@ -68,7 +68,8 @@ test.describe('Xiaohongshu AI Operations Assistant - Visual QA', () => {
 
     const accountHubNav = page.getByRole('button', { name: '账号中心' }).first();
     await accountHubNav.click();
-    await page.waitForLoadState('networkidle');
+    // Wait for account to load and tabs to render
+    await page.getByRole('button', { name: '账号概览' }).waitFor({ state: 'visible', timeout: 10000 });
 
     await page.screenshot({ path: 'test-results/04-account-hub.png', fullPage: true });
 

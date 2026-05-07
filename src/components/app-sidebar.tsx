@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 
 const navItems = [
   { id: "dashboard" as const, label: "仪表盘", icon: LayoutDashboard },
-  { id: "account" as const, label: "账号分析", icon: UserCircle },
+  { id: "account" as const, label: "账号中心", icon: UserCircle },
   { id: "analytics" as const, label: "数据洞察", icon: BarChart3 },
   { id: "content" as const, label: "内容库", icon: FileText },
   { id: "persona" as const, label: "人设管理", icon: Theater },
