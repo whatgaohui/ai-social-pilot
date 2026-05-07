@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { X, Heart, MessageCircle, Bookmark, Share2, Eye, Star, FileText, BarChart3 } from 'lucide-react';
+import { X, Heart, MessageCircle, Bookmark, Share2, Eye, Star, FileText, BarChart3, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 
 function fmt(n: number): string {
   if (n >= 10000) return `${(n / 10000).toFixed(1)}万`;
@@ -23,6 +23,7 @@ interface NoteDetail {
   content: string;
   coverUrl: string;
   imageUrls: string[];
+  videoUrl: string;
   postType: string;
   likes: number;
   comments: number;
@@ -36,6 +37,7 @@ interface NoteDetail {
   aiAnalysis: string;
   publishDate: string;
   publishTime: string;
+  detailScrapedAt: string | null;
 }
 
 export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountId: string; noteId: string; open: boolean; onClose: () => void }) {
@@ -69,12 +71,24 @@ export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountI
             <div className="flex items-center justify-center h-40 text-muted-foreground">加载中...</div>
           ) : detail ? (
             <>
-              {/* Cover image */}
-              {detail.coverUrl && (
-                <div className="rounded-xl border bg-muted/30 overflow-hidden mb-4 flex justify-center">
-                  <img src={detail.coverUrl} alt={detail.title} className="max-h-[28rem] w-auto object-contain" />
-                </div>
-              )}
+              {/* Media: Video player or Image carousel */}
+              <div className="rounded-xl border bg-muted/30 overflow-hidden mb-4">
+                {detail.videoUrl ? (
+                  <video
+                    key={detail.videoUrl}
+                    src={detail.videoUrl}
+                    controls
+                    className="w-full max-h-[28rem] bg-black"
+                    preload="metadata"
+                  />
+                ) : detail.imageUrls.length > 0 ? (
+                  <ImageCarousel images={detail.imageUrls} />
+                ) : detail.coverUrl ? (
+                  <div className="flex justify-center">
+                    <img src={detail.coverUrl} alt={detail.title} className="max-h-[28rem] w-auto object-contain" />
+                  </div>
+                ) : null}
+              </div>
 
               {/* Title + metadata */}
               <div className="mb-4">
@@ -177,6 +191,21 @@ export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountI
                   </div>
                 </>
               )}
+
+              {/* Detail scrape status */}
+              {detail.detailScrapedAt ? (
+                <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800">
+                  <p className="text-xs text-green-700 dark:text-green-400">
+                    ✅ 笔记详情已采集 · {new Date(detail.detailScrapedAt).toLocaleString('zh-CN')}
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    ⏳ 笔记详情待采集 — 仅列表页数据，正文/图片/视频需重新采集获取
+                  </p>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex items-center justify-center h-40 text-muted-foreground">加载失败</div>
@@ -184,5 +213,58 @@ export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountI
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Image Carousel Component ─────────────────────────────────────────────
+
+function ImageCarousel({ images }: { images: string[] }) {
+  const [index, setIndex] = useState(0);
+  const go = (dir: number) => setIndex((prev) => (prev + dir + images.length) % images.length);
+
+  return (
+    <div className="relative">
+      <div className="flex justify-center">
+        <img
+          key={images[index]}
+          src={images[index]}
+          alt={`图片 ${index + 1}`}
+          className="max-h-[28rem] w-auto object-contain"
+          loading="lazy"
+        />
+      </div>
+      {images.length > 1 && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full h-8 w-8"
+            onClick={() => go(-1)}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full h-8 w-8"
+            onClick={() => go(1)}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                className={`w-2 h-2 rounded-full transition-all ${i === index ? 'bg-white w-4' : 'bg-white/50'}`}
+                onClick={() => setIndex(i)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      <div className="absolute top-3 right-3 bg-black/70 text-white text-xs px-2 py-0.5 rounded-full">
+        {index + 1} / {images.length}
+      </div>
+    </div>
   );
 }
