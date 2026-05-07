@@ -38,7 +38,12 @@ export interface XhsPostInfo {
   aiScore: number;
   aiAnalysis: string;
   publishDate: string;
+  publishTime?: string;
   detailScrapedAt?: string | null;
+  // Media download fields
+  imagePaths?: string[];
+  videoPath?: string;
+  videoThumbnail?: string;
 }
 
 // ─── Persona Types ─────────────────────────────────────────────────────
@@ -156,4 +161,65 @@ export interface ContentSuggestion {
   tags: string[];
   contentOutline: string;
   tips: string[];
+}
+
+// ─── Action Plan Types (PRD-003) ───────────────────────────────────────
+
+export type PlanType = 'content' | 'timing' | 'engagement' | 'persona' | 'strategy';
+export type PlanStatus = 'pending' | 'applied' | 'rejected';
+
+export interface ContentPlanData {
+  title: string;
+  contentBody: string;
+  tags: string[];
+  mediaType: 'image' | 'video';
+  suggestedTime: string;
+}
+
+export interface TimingPlanData {
+  slots: Array<{
+    time: string;
+    activity: 'high' | 'medium' | 'low';
+  }>;
+  affectedNoteIds: string[];
+}
+
+export interface EngagementPlanData {
+  scenarios: Array<{
+    scenario: string;
+    template: string;
+  }>;
+}
+
+export interface PersonaPlanData {
+  currentTags: string[];
+  suggestedTags: string[];
+  currentDesc: string;
+  suggestedDesc: string;
+}
+
+export interface StrategyPlanData {
+  weekStart: string;
+  goals: string[];
+  dailyPlans: Array<{
+    date: string;
+    time: string;
+    topic: string;
+    type: string;
+  }>;
+}
+
+export interface ActionPlan {
+  id: string;
+  suggestionId: string;
+  type: PlanType;
+  status: PlanStatus;
+  title: string;
+  description: string;
+  content?: ContentPlanData;
+  timing?: TimingPlanData;
+  engagement?: EngagementPlanData;
+  persona?: PersonaPlanData;
+  strategy?: StrategyPlanData;
+  createdAt: string;
 }

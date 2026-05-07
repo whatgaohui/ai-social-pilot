@@ -28,6 +28,7 @@ export interface PostData {
   tags: string[];
   postType: string;
   publishDate: string;
+  publishTime?: string;
   // New fields for local media storage
   imagePaths?: string[];
   videoPath?: string;
@@ -76,6 +77,7 @@ export interface NoteScrapeResult {
       tags: string[];
       postType: string;
       publishDate: string;
+      publishTime?: string;
       authorNickname: string;
       authorAvatar: string;
       commentCount: number;

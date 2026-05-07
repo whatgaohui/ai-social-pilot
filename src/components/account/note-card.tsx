@@ -1,6 +1,7 @@
-import { Heart, Bookmark, Star, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Heart, Bookmark, Star, Clock, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
 
 function fmt(n: number): string {
   if (n >= 10000) return `${(n / 10000).toFixed(1)}万`;
@@ -33,13 +34,38 @@ interface NoteCardProps {
     category?: string;
     aiScore?: number;
     detailScrapedAt?: string | null;
+    accountId?: string;
   };
   onClick: () => void;
   compact?: boolean;
+  onPublishDateUpdate?: (postId: string, publishDate: string) => Promise<void>;
 }
 
-export function NoteCard({ post, onClick, compact = false }: NoteCardProps) {
+export function NoteCard({ post, onClick, compact = false, onPublishDateUpdate }: NoteCardProps) {
   const detailStatus = post.detailScrapedAt;
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [currentPublishDate, setCurrentPublishDate] = useState(post.publishDate);
+
+  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setSelectedDate(newDate);
+
+    if (newDate && post.accountId && onPublishDateUpdate) {
+      setIsUpdating(true);
+      try {
+        await onPublishDateUpdate(post.id, newDate);
+        setCurrentPublishDate(newDate);
+        setShowDatePicker(false);
+      } catch (error) {
+        console.error('Failed to update publish date:', error);
+        alert('更新发布日期失败，请重试');
+      } finally {
+        setIsUpdating(false);
+      }
+    }
+  };
 
   if (compact) {
     return (
@@ -58,7 +84,31 @@ export function NoteCard({ post, onClick, compact = false }: NoteCardProps) {
           <p className="text-sm font-medium line-clamp-2">{post.title || '无标题'}</p>
           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-0.5"><Heart className="w-3 h-3" /> {fmt(post.likes)}</span>
-            <span>{post.publishDate}</span>
+            <span>
+              {currentPublishDate || (
+                showDatePicker ? (
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={handleDateChange}
+                    disabled={isUpdating}
+                    className="w-auto h-5 px-1 text-xs border rounded bg-background focus:outline-none focus:ring-1 focus:ring-xhs"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDatePicker(true);
+                    }}
+                    className="flex items-center gap-1 text-muted-foreground hover:text-xhs transition-colors"
+                  >
+                    <Calendar className="w-3 h-3" />
+                    <span>设置</span>
+                  </button>
+                )
+              )}
+            </span>
           </div>
         </div>
       </div>
@@ -103,7 +153,31 @@ export function NoteCard({ post, onClick, compact = false }: NoteCardProps) {
       <div className="p-2">
         <p className="text-sm font-medium line-clamp-2">{post.title || '无标题'}</p>
         <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
-          <span>{post.publishDate}</span>
+          <span>
+            {currentPublishDate || (
+              showDatePicker ? (
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={handleDateChange}
+                  disabled={isUpdating}
+                  className="w-auto h-6 px-1 text-xs border rounded bg-background focus:outline-none focus:ring-1 focus:ring-xhs"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDatePicker(true);
+                  }}
+                  className="flex items-center gap-1 text-muted-foreground hover:text-xhs transition-colors"
+                >
+                  <Calendar className="w-3 h-3" />
+                  <span>设置日期</span>
+                </button>
+              )
+            )}
+          </span>
           <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> {fmt(post.likes)}</span>
         </div>
       </div>

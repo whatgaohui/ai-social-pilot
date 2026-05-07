@@ -145,7 +145,12 @@ interface ScrapePostData {
   tags?: string[];
   category?: string;
   publishDate?: string;
+  publishTime?: string;
   detailScrapedAt?: string;
+  // Media download fields
+  imagePaths?: string[];
+  videoPath?: string;
+  videoThumbnail?: string;
 }
 
 interface ScrapeResultData {
@@ -454,6 +459,10 @@ export async function POST(
                 if (detail.videoUrl) target.videoUrl = detail.videoUrl;
                 if (detail.tags?.length) target.tags = detail.tags;
                 if (detail.publishDate) target.publishDate = detail.publishDate;
+                if (detail.publishTime) target.publishTime = detail.publishTime;
+                if (detail.imagePaths?.length) target.imagePaths = detail.imagePaths;
+                if (detail.videoPath) target.videoPath = detail.videoPath;
+                if (detail.videoThumbnail) target.videoThumbnail = detail.videoThumbnail;
                 target.detailScrapedAt = new Date().toISOString();
                 detailsFetched++;
               }
@@ -528,6 +537,10 @@ export async function POST(
           tags: JSON.stringify(postData.tags || []),
           category: (postData.category as string) || '',
           publishDate: (postData.publishDate as string) || '',
+          publishTime: (postData.publishTime as string) || '',
+          imagePaths: JSON.stringify(postData.imagePaths || []),
+          videoPath: (postData.videoPath as string) || '',
+          videoThumbnail: (postData.videoThumbnail as string) || '',
           detailScrapedAt: postData.detailScrapedAt ? new Date(postData.detailScrapedAt) : null,
         };
 

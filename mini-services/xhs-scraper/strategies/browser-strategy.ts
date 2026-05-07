@@ -628,6 +628,133 @@ export async function scrapeNoteWithBrowser(
   }
 }
 
+// ─── Time Parsing Helpers ───────────────────────────────────────────────
+
+/**
+ * Parse relative time string like "3天前", "5小时前", "刚刚" into ISO date
+ * Returns null if parsing fails
+ */
+function parseRelativeTime(relativeStr: string): string | null {
+  if (!relativeStr || typeof relativeStr !== 'string') return null;
+
+  const now = new Date();
+  const trimmed = relativeStr.trim();
+
+  // "刚刚" means "just now"
+  if (trimmed === '刚刚' || trimmed.includes('刚刚')) {
+    return now.toISOString();
+  }
+
+  // Parse patterns like "3天前", "5小时前", "2分钟前"
+  const patterns: Array<{ regex: RegExp; unit: 'days' | 'hours' | 'minutes' }> = [
+    { regex: /(\d+)\s*天前/, unit: 'days' },
+    { regex: /(\d+)\s*小时前/, unit: 'hours' },
+    { regex: /(\d+)\s*分钟前/, unit: 'minutes' },
+    { regex: /(\d+)\s*周前/, unit: 'days' }, // 1周 = 7天
+    { regex: /(\d+)\s*月前/, unit: 'days' }, // 1月 ≈ 30天
+  ];
+
+  for (const { regex, unit } of patterns) {
+    const match = trimmed.match(regex);
+    if (match) {
+      const value = parseInt(match[1]) || 1;
+      let offsetMs = 0;
+
+      if (unit === 'days') {
+        // Handle weeks and months as days
+        if (trimmed.includes('周')) {
+          offsetMs = value * 7 * 24 * 60 * 60 * 1000;
+        } else if (trimmed.includes('月')) {
+          offsetMs = value * 30 * 24 * 60 * 60 * 1000;
+        } else {
+          offsetMs = value * 24 * 60 * 60 * 1000;
+        }
+      } else if (unit === 'hours') {
+        offsetMs = value * 60 * 60 * 1000;
+      } else if (unit === 'minutes') {
+        offsetMs = value * 60 * 1000;
+      }
+
+      const resultDate = new Date(now.getTime() - offsetMs);
+      return resultDate.toISOString();
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Parse date string in format "YYYY-MM-DD" or "YYYY-MM-DD HH:mm"
+ * Returns null if parsing fails
+ */
+function parseDateString(dateStr: string): string | null {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+
+  const trimmed = dateStr.trim();
+
+  // Try YYYY-MM-DD HH:mm format
+  const fullMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{1,2})$/);
+  if (fullMatch) {
+    const [, year, month, day, hour, minute] = fullMatch;
+    const date = new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      parseInt(hour),
+      parseInt(minute)
+    );
+    if (!isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  }
+
+  // Try YYYY-MM-DD format
+  const dateMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (dateMatch) {
+    const [, year, month, day] = dateMatch;
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (!isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Three-level fallback for publish time extraction
+ * 1. Unix timestamp (noteCard.time)
+ * 2. Date string (noteCard.publish_time)
+ * 3. Relative time (noteCard.display_time)
+ * Returns null if all three fail
+ */
+function extractPublishTime(noteCard: any): string | null {
+  // Level 1: Unix timestamp (seconds)
+  if (noteCard.time !== undefined && noteCard.time !== null) {
+    const timestamp = Number(noteCard.time);
+    if (!isNaN(timestamp) && timestamp > 0) {
+      const date = new Date(timestamp * 1000);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    }
+  }
+
+  // Level 2: Date string (YYYY-MM-DD or YYYY-MM-DD HH:mm)
+  if (noteCard.publish_time) {
+    const parsed = parseDateString(noteCard.publish_time);
+    if (parsed) return parsed;
+  }
+
+  // Level 3: Relative time (e.g., "3天前", "5小时前")
+  if (noteCard.display_time) {
+    const parsed = parseRelativeTime(noteCard.display_time);
+    if (parsed) return parsed;
+  }
+
+  return null;
+}
+
 // ─── API Response Parsers ─────────────────────────────────────────────────
 
 function parseAccountFromApi(json: any, fallbackId: string): AccountData | null {
@@ -688,10 +815,9 @@ function parsePostsFromApi(json: any): { posts: PostData[]; nextCursor: string; 
 
       const likes = Number(String(interact.liked_count || '0').replace(/\D/g, '')) || 0;
 
-      // Extract publish date from multiple possible fields
-      const publishDate = note.create_time || note.publish_time ||
-        note.last_update_time || note.time ||
-        note.display_time || '';
+      // Extract publish date using three-level fallback
+      const publishTime = extractPublishTime(note);
+      const publishDate = publishTime ? publishTime.split('T')[0] : '';
 
       return {
         xhsPostId: note.note_id || '',
@@ -709,6 +835,7 @@ function parsePostsFromApi(json: any): { posts: PostData[]; nextCursor: string; 
         ).filter(Boolean),
         postType: note.type === 'video' ? 'video' : 'normal',
         publishDate,
+        publishTime: publishTime || '',
       };
     });
 
@@ -734,9 +861,11 @@ function parseNoteFromApi(json: any, fallbackNoteId: string) {
       || video.media?.stream?.h265?.[0]?.master_url
       || video.url || '';
 
-    // Publish time: note_card.time is Unix timestamp in seconds
-    const publishDate = noteCard.time
-      ? new Date(Number(noteCard.time) * 1000).toISOString()
+    // Publish time: three-level fallback extraction
+    const publishTime = extractPublishTime(noteCard);
+    const publishDate = publishTime ? publishTime.split('T')[0] : '';
+    const publishTimeStr = publishTime
+      ? publishTime.split('T')[1]?.substring(0, 5) || ''
       : '';
 
     // Image list extraction (higher quality URLs)
@@ -773,6 +902,7 @@ function parseNoteFromApi(json: any, fallbackNoteId: string) {
       tags,
       postType: noteData.type === 'video' || noteCard.type === 'video' ? 'video' : 'normal',
       publishDate,
+      publishTime: publishTime || '',
       authorNickname: noteData.user?.nickname || noteCard.user?.nickname || '',
       authorAvatar: noteData.user?.avatar || noteCard.user?.avatar || '',
       commentCount: Number(noteData.interact_info?.comment_count || noteCard.interact_info?.comment_count || 0),
@@ -796,6 +926,7 @@ function parseNoteFromApi(json: any, fallbackNoteId: string) {
       tags: [],
       postType: 'normal',
       publishDate: '',
+      publishTime: '',
       authorNickname: '',
       authorAvatar: '',
       commentCount: 0,
@@ -1021,6 +1152,7 @@ async function parsePostsFromDom(page: any): Promise<PostData[]> {
           tags: [],
           postType: item.querySelector('video, [class*="video"]') ? 'video' : 'normal',
           publishDate: dateEl?.textContent?.trim() || '',
+          publishTime: '',
           _debug: debug,
         };
       }).filter((p) => p.title && p.title.length > 1);
@@ -1075,6 +1207,7 @@ async function parseNoteFromDom(page: any, noteId: string) {
       tags: [],
       postType: 'normal',
       publishDate: '',
+      publishTime: '',
       authorNickname: info.authorNickname || '',
       authorAvatar: '',
       commentCount: 0,
@@ -1098,6 +1231,7 @@ async function parseNoteFromDom(page: any, noteId: string) {
       tags: [],
       postType: 'normal',
       publishDate: '',
+      publishTime: '',
       authorNickname: '',
       authorAvatar: '',
       commentCount: 0,
