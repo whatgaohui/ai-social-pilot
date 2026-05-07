@@ -175,3 +175,157 @@
 - **30 分钟频率** — 平衡及时性和资源消耗
 - **Playwright 特性** — 视频录制、并行执行、截图存档
 
+
+---
+
+## 第四轮测试（2026-05-07 14:07:30）— 合并后首轮
+
+| 测试项 | 状态 | 耗时 |
+|--------|------|------|
+| 1. Dashboard loads with data | ✅ 通过 | 3.8s |
+| 2. Account Hub - 3 tabs interactive | ✅ 通过 | 10.3s |
+| 3. Calendar - clickable days | ✅ 通过 | 5.1s |
+| 4. Content Library - filters, grid | ✅ 通过 | 9.2s |
+| 5. Settings - AI config + Help manual | ✅ 通过 | 6.2s |
+| 6. Note creation dialog opens | ✅ 通过 | 10.5s |
+| 7. New text material dialog | ✅ 通过 | 9.0s |
+| 8. Console errors check | ✅ 通过 | 9.0s |
+| 9. Broken images check | ✅ 通过 | 5.3s |
+
+**总计**: 9/9 通过 ✅ — 无新增问题
+
+### 分析
+合并后首轮全部通过。新增的 2 项检查（控制台错误、破损图片）正常工作，无回归。合并方案验证有效。
+
+
+---
+
+## 第五轮测试（2026-05-07 14:38:00）
+
+| 测试项 | 状态 | 耗时 |
+|--------|------|------|
+| 1. Dashboard loads with data | ✅ 通过 | 8.4s |
+| 2. Account Hub - 3 tabs interactive | ✅ 通过 | 11.4s |
+| 3. Calendar - clickable days | ✅ 通过 | 9.5s |
+| 4. Content Library - filters, grid | ✅ 通过 | 9.0s |
+| 5. Settings - AI config + Help manual | ✅ 通过 | 8.7s |
+| 6. Note creation dialog opens | ✅ 通过 | 11.8s |
+| 7. New text material dialog | ✅ 通过 | 8.0s |
+| 8. Console errors check | ✅ 通过 | 10.7s |
+| 9. Broken images check | ✅ 通过 | 13.1s |
+
+**总计**: 9/9 通过 ✅ — 无新增问题
+
+### 分析
+第五轮全部通过，连续 4 轮稳定（合并后 3 轮 + 合并前 1 轮）。执行时间 18.9s 略增，但仍在可接受范围。无回归，应用状态健康。
+
+
+---
+
+## 第六轮测试（2026-05-07 15:07:53）
+
+| 测试项 | 状态 | 耗时 |
+|--------|------|------|
+| 1. Dashboard loads with data | ✅ 通过 | 8.6s |
+| 2. Account Hub - 3 tabs interactive | ✅ 通过 | 11.8s |
+| 3. Calendar - clickable days | ✅ 通过 | 11.3s |
+| 4. Content Library - filters, grid | ✅ 通过 | 11.0s |
+| 5. Settings - AI config + Help manual | ✅ 通过 | 10.1s |
+| 6. Note creation dialog opens | ✅ 通过 | 12.2s |
+| 7. New text material dialog | ✅ 通过 | 12.2s |
+| 8. Console errors check | ✅ 通过 | 11.0s |
+| 9. Broken images check | ✅ 通过 | 10.8s |
+
+**总计**: 9/9 通过 ✅ — 无新增问题
+
+### 分析
+第六轮全部通过，连续 6 轮稳定。执行时间 19.4s，无回归。应用状态健康。
+
+
+---
+
+## 第七轮测试（2026-05-07 15:37:26）
+
+| 测试项 | 状态 | 耗时 |
+|--------|------|------|
+| 1. Dashboard loads with data | ✅ 通过 | 7.8s |
+| 2. Account Hub - 3 tabs interactive | ✅ 通过 | 10.9s |
+| 3. Calendar - clickable days | ✅ 通过 | 10.1s |
+| 4. Content Library - filters, grid | ✅ 通过 | 10.4s |
+| 5. Settings - AI config + Help manual | ✅ 通过 | 12.1s |
+| 6. Note creation dialog opens | ✅ 通过 | 12.2s |
+| 7. New text material dialog | ✅ 通过 | 10.0s |
+| 8. Console errors check | ✅ 通过 | 9.7s |
+| 9. Broken images check | ✅ 通过 | 8.1s |
+
+**总计**: 9/9 通过 ✅ — 无新增问题
+
+### 分析
+第七轮全部通过，连续 7 轮稳定。执行时间 19.1s，无回归。应用状态健康。
+
+
+---
+
+## 第八轮测试（2026-05-07 16:07:42）
+
+| 测试项 | 状态 | 耗时 |
+|--------|------|------|
+| 1. Dashboard loads with data | ✅ 通过 | 8.2s |
+| 2. Account Hub - 3 tabs interactive | ✅ 通过 | 10.9s |
+| 3. Calendar - clickable days | ✅ 通过 | 10.1s |
+| 4. Content Library - filters, grid | ✅ 通过 | 10.1s |
+| 5. Settings - AI config + Help manual | ✅ 通过 | 8.3s |
+| 6. Note creation dialog opens | ✅ 通过 | 6.8s |
+| 7. New text material dialog | ✅ 通过 | 10.0s |
+| 8. Console errors check | ✅ 通过 | 10.1s |
+| 9. Broken images check | ✅ 通过 | 10.5s |
+
+**总计**: 9/9 通过 ✅ — 无新增问题
+
+### 分析
+第八轮全部通过，连续 8 轮稳定。执行时间 18.3s，无回归。应用状态健康。
+
+
+---
+
+## 第九轮测试（2026-05-07 16:37:40）
+
+| 测试项 | 状态 | 耗时 |
+|--------|------|------|
+| 1. Dashboard loads with data | ✅ 通过 | 7.8s |
+| 2. Account Hub - 3 tabs interactive | ✅ 通过 | 10.3s |
+| 3. Calendar - clickable days | ✅ 通过 | 10.6s |
+| 4. Content Library - filters, grid | ✅ 通过 | 9.1s |
+| 5. Settings - AI config + Help manual | ✅ 通过 | 7.1s |
+| 6. Note creation dialog opens | ✅ 通过 | 11.1s |
+| 7. New text material dialog | ✅ 通过 | 8.7s |
+| 8. Console errors check | ✅ 通过 | 9.9s |
+| 9. Broken images check | ✅ 通过 | 6.2s |
+
+**总计**: 9/9 通过 ✅ — 无新增问题
+
+### 分析
+第九轮全部通过，连续 9 轮稳定。执行时间 18.4s，无回归。应用状态健康。
+
+
+---
+
+## 第十轮测试（2026-05-07 17:07:49）
+
+| 测试项 | 状态 | 耗时 |
+|--------|------|------|
+| 1. Dashboard loads with data | ✅ 通过 | 8.0s |
+| 2. Account Hub - 3 tabs interactive | ✅ 通过 | 13.0s |
+| 3. Calendar - clickable days | ✅ 通过 | 10.1s |
+| 4. Content Library - filters, grid | ✅ 通过 | 10.7s |
+| 5. Settings - AI config + Help manual | ✅ 通过 | 10.8s |
+| 6. Note creation dialog opens | ✅ 通过 | 12.4s |
+| 7. New text material dialog | ✅ 通过 | 10.0s |
+| 8. Console errors check | ✅ 通过 | 10.4s |
+| 9. Broken images check | ✅ 通过 | 11.1s |
+
+**总计**: 9/9 通过 ✅ — 无新增问题
+
+### 分析
+第十轮全部通过，连续 10 轮稳定（已运行 5 小时）。执行时间 19.4s，无回归。应用状态健康。
+
