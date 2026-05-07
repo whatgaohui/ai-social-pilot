@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppStore } from "@/store/app-store";
 import { useNotificationStore } from "@/store/notification-store";
@@ -517,25 +518,112 @@ export function SettingsView() {
         </CardContent>
       </Card>
 
-      {/* About */}
+
+      {/* About + Help Manual */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <Info className="w-4 h-4 text-muted-foreground" />
-            关于
+            关于 & 帮助
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* App info */}
           <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-xhs-light/40 to-xhs-light/10 border border-xhs/10">
             <div className="w-12 h-12 rounded-xl bg-xhs flex items-center justify-center shadow-sm shadow-xhs/20">
               <span className="text-white font-bold text-lg">红</span>
             </div>
             <div>
               <p className="font-semibold text-sm">小红书AI运营助手</p>
-              <p className="text-xs text-muted-foreground mt-0.5">版本 2.1.0</p>
+              <p className="text-xs text-muted-foreground mt-0.5">版本 v0.3.0-beta</p>
             </div>
           </div>
 
+          {/* Quick Start Guide */}
+          <div className="rounded-xl border border-border/50 overflow-hidden">
+            <div className="bg-muted/50 px-4 py-2.5">
+              <p className="text-xs font-semibold flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                快速上手
+              </p>
+            </div>
+            <div className="p-4 space-y-3 text-xs">
+              <div className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-xhs text-white flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                <div>
+                  <p className="font-medium">添加账号</p>
+                  <p className="text-muted-foreground">点击侧边栏「账号中心」→「添加账号」，粘贴小红书主页链接并选择 Cookie 采集方式</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-xhs text-white flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                <div>
+                  <p className="font-medium">采集数据</p>
+                  <p className="text-muted-foreground">添加后系统自动采集账号信息和笔记列表，推荐使用 Cookie 采集获取完整数据</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-xhs text-white flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                <div>
+                  <p className="font-medium">查看分析</p>
+                  <p className="text-muted-foreground">在「账号概览」查看健康评分、AI 运营建议、笔记表现和活动时间线</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-xhs text-white flex items-center justify-center text-xs font-bold shrink-0">4</span>
+                <div>
+                  <p className="font-medium">笔记日历</p>
+                  <p className="text-muted-foreground">左侧日历查看发布频率，右侧浏览全部笔记，点击可看详情和 AI 评分分析</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-xhs text-white flex items-center justify-center text-xs font-bold shrink-0">5</span>
+                <div>
+                  <p className="font-medium">AI 创作 & 内容库</p>
+                  <p className="text-muted-foreground">使用 AI 模型生成内容，上传的素材存储在内容库，支持图片/视频/文案分类管理</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ */}
+          <div className="rounded-xl border border-border/50 overflow-hidden">
+            <div className="bg-muted/50 px-4 py-2.5">
+              <p className="text-xs font-semibold">常见问题</p>
+            </div>
+            <div className="p-4 space-y-3 text-xs">
+              <details className="group">
+                <summary className="cursor-pointer font-medium text-foreground hover:text-xhs transition-colors list-none flex items-center gap-1">
+                  <svg className="w-3 h-3 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                  Cookie 过期了怎么办？
+                </summary>
+                <p className="text-muted-foreground mt-1 ml-4">Cookie 通常 1-2 周过期，需要重新从浏览器 DevTools 复制。过期后采集会返回 partialData 或失败。</p>
+              </details>
+              <details className="group">
+                <summary className="cursor-pointer font-medium text-foreground hover:text-xhs transition-colors list-none flex items-center gap-1">
+                  <svg className="w-3 h-3 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                  AI 运营建议如何使用？
+                </summary>
+                <p className="text-muted-foreground mt-1 ml-4">在账号概览页查看 AI 生成的运营建议，点击「应用」可将建议转为排程笔记草稿，点击「×」忽略不需要的建议。</p>
+              </details>
+              <details className="group">
+                <summary className="cursor-pointer font-medium text-foreground hover:text-xhs transition-colors list-none flex items-center gap-1">
+                  <svg className="w-3 h-3 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                  如何配置 AI 大模型？
+                </summary>
+                <p className="text-muted-foreground mt-1 ml-4">在设置页「AI 大模型」卡片选择提供商，粘贴 API Key，点击「测试连接」验证后保存。支持智谱、通义千问、DeepSeek、Ollama 等。</p>
+              </details>
+              <details className="group">
+                <summary className="cursor-pointer font-medium text-foreground hover:text-xhs transition-colors list-none flex items-center gap-1">
+                  <svg className="w-3 h-3 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                  快捷键有哪些？
+                </summary>
+                <p className="text-muted-foreground mt-1 ml-4">按 <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Ctrl+K</kbd>（Mac: <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Cmd+K</kbd>）打开指令面板，可快速切换视图、添加账号、切换主题等。</p>
+              </details>
+            </div>
+          </div>
+
+          {/* Feature badges */}
           <div className="grid grid-cols-2 gap-2">
             <div className="p-3 rounded-xl bg-muted/30 text-center">
               <Sparkles className="w-5 h-5 mx-auto text-xhs mb-1" />
@@ -583,10 +671,3 @@ export function SettingsView() {
   );
 }
 
-function Label({ className, children, ...props }: React.LabelHTMLAttributes<HTMLLabelElement> & { className?: string }) {
-  return (
-    <label className={cn("text-xs font-medium", className)} {...props}>
-      {children}
-    </label>
-  );
-}
