@@ -537,3 +537,30 @@
 
 ---
 
+### Iteration 013 — 添加账号界面增加 Cookie 采集
+
+**日期:** 2026-05-07
+**触发:** 用户反馈 — 添加账号界面只有输入 URL，没有输入 Cookie 的地方
+
+#### 问题分析
+
+- `add-account-dialog.tsx` 仅接受小红书主页链接
+- 提交时调用 `POST /api/accounts/[id]/scrape` 不带任何 body
+- scrape API 默认 `method: 'search'`，无 Cookie → 只能搜索采集 → partialData
+- scrape 路由已完整支持 `method: 'cookie'` + `cookies` 参数，但 UI 从未暴露
+
+#### 完成内容
+
+**1. 添加账号对话框重写 (add-account-dialog.tsx)**
+- 新增 shadcn Tabs: Cookie 采集 (默认) / 搜索采集
+- Cookie 采集: Textarea 输入框，`font-mono text-xs` 方便阅读长字符串
+- 搜索采集: 显示 amber 警告提示，说明局限性
+- 提交时根据 method 发送 scrapeBody: `{ method, cookies? }`
+- 窗口关闭时清理 URL、Cookie、method 状态
+
+#### 验证
+- E2E: 13/13 passed
+- TypeScript: 0 errors in src/
+
+---
+
