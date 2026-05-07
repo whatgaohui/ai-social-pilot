@@ -1070,3 +1070,40 @@ Stage Summary:
 - PRD-001 Task 18: 发布时间兜底 (用户手动指定日期)
 - PRD-001 Task 19: 批量详情采集适配新字段
 - PRD-003: AI建议→实施方案 (未开始开发)
+
+---
+
+## Session: PRD-001+003 收尾 + E2E回归 (2026-05-07 Night)
+
+### PRD-001 剩余任务完成
+- 发布时间三级fallback (Unix timestamp → 字符串解析 → 相对时间估算)
+- 前端用户手动指定日期 (inline date picker on note-card)
+- PATCH /api/accounts/[id]/posts/[postId] API端点
+- 批量详情采集适配 imagePaths/videoPath/videoThumbnail
+
+### PRD-003 AI方案引擎完成
+- 方案生成 API (content + timing handler)
+- 方案应用 API (创建草稿 + 调整排期)
+- 方案预览弹窗 (统一组件，5种场景UI框架)
+- AI建议面板增强 (按类型显示不同操作按钮)
+
+### E2E 回归测试
+- 总测试数: 15
+- 通过: 15 (100%)
+- 失败: 0
+- 无回归问题
+
+### Git 提交
+- 2e92439: feat(prd-001+003): 发布时间兜底 + AI方案引擎
+- 10 files changed, 1365 insertions, 43 deletions
+
+### PRD总体完成状态
+| PRD | 状态 |
+|-----|------|
+| PRD-001 采集器增强 | ✅ 100% |
+| PRD-002 内容库增强 | ✅ 100% |
+| PRD-003 AI方案引擎 | ✅ 核心(content+timing) |
+| PRD-004 弹层尺寸 | ✅ 100% |
+| PRD-005 笔记创建重构 | ✅ 100% |
+
+**总体完成度: 5/5 PRD 核心功能完成**
