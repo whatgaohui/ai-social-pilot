@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { generateContent } from '@/lib/ai-service';
 import type { ActionPlan, PlanType } from '@/types';
+import OpenAI from 'openai';
+import { readFileSync, existsSync } from 'fs';
+import path from 'path';
+
+// ─── Helper: Get OpenAI client (same pattern as ai-service.ts) ───────────
+
+interface RuntimeAiConfig {
+  provider: string;
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+}
+
+function getAiClient(): { client: OpenAI; model: string } | null {
+  const configPath = path.join(process.cwd(), 'ai-config.json');
+  let config: RuntimeAiConfig | null = null;
+  if (existsSync(configPath)) {
+    try {
+      config = JSON.parse(readFileSync(configPath, 'utf-8')) as RuntimeAiConfig;
+    } catch { /* ignore */ }
+  }
+  if (!config?.apiKey) return null;
+  const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseUrl });
+  return { client, model: config.model };
+}
 
 // ─── Plan Handlers ──────────────────────────────────────────────────────
 
@@ -190,6 +215,286 @@ async function handleTimingPlan(
   return plan;
 }
 
+async function handleEngagementPlan(
+  accountId: string,
+  suggestionText: string,
+  suggestionId: string
+): Promise<ActionPlan> {
+  const account = await db.xhsAccount.findUnique({
+    where: { id: accountId },
+    include: {
+      posts: { orderBy: { publishDate: 'desc' }, take: 10 },
+      persona: true,
+    },
+  });
+
+  if (!account) throw new Error('账号不存在');
+
+  const personaTone = account.persona?.tone || 'casual';
+  const signaturePhrase = account.persona?.signaturePhrase || '';
+
+  // Generate engagement templates via AI
+  const aiClient = getAiClient();
+  let templates: Array<{ scenario: string; template: string }> | null = null;
+
+  if (aiClient) {
+    try {
+      const prompt = `你是一位小红书互动运营专家。请根据以下账号信息，为常见的互动场景生成回复话术模板。
+
+账号昵称：${account.nickname}
+粉丝数：${account.followers}
+语气风格：${personaTone}
+${signaturePhrase ? `标志性用语：${signaturePhrase}` : ''}
+
+请为以下5个场景各生成一个话术模板：
+1. 新用户关注后的第一条欢迎评论
+2. 笔记收到点赞后的感谢回复
+3. 有人提问时的专业回复
+4. 引导用户收藏和分享的号召
+5. 处理负面评论的应对话术
+
+请严格按照以下JSON格式返回：
+{
+  "scenarios": [
+    { "scenario": "场景名称", "template": "话术模板" }
+  ]
+}`;
+      const result = await aiClient.client.chat.completions.create({
+        model: aiClient.model,
+        messages: [
+          { role: 'system', content: '你是一位小红书互动运营专家，擅长编写高互动率的回复话术。请始终返回JSON格式。' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.7,
+      });
+      const text = result.choices?.[0]?.message?.content || '';
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed?.scenarios && Array.isArray(parsed.scenarios)) {
+          templates = parsed.scenarios;
+        }
+      }
+    } catch { /* fallback to defaults */ }
+  }
+
+  const scenarios = templates || [
+    { scenario: '关注欢迎', template: `感谢关注！${signaturePhrase ? signaturePhrase + ' ' : ''}我会持续分享更多精彩内容～` },
+    { scenario: '点赞感谢', template: '谢谢你的喜欢！如果对你有帮助记得收藏哦 💕' },
+    { scenario: '问题回复', template: '好问题！我详细说一下我的看法...' },
+    { scenario: '引导互动', template: '觉得有用的话，点赞收藏让更多人看到吧！' },
+    { scenario: '负面应对', template: '感谢你的反馈，每个人的体验可能不同，我会继续优化内容 💪' },
+  ];
+
+  const plan: ActionPlan = {
+    id: `plan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    suggestionId,
+    type: 'engagement',
+    status: 'pending',
+    title: 'AI 互动话术方案',
+    description: `基于建议"${suggestionText}"生成的评论回复模板`,
+    engagement: { scenarios },
+    createdAt: new Date().toISOString(),
+  };
+
+  return plan;
+}
+
+async function handlePersonaPlan(
+  accountId: string,
+  suggestionText: string,
+  suggestionId: string
+): Promise<ActionPlan> {
+  const account = await db.xhsAccount.findUnique({
+    where: { id: accountId },
+    include: { persona: true },
+  });
+
+  if (!account) throw new Error('账号不存在');
+
+  const currentTags = account.persona
+    ? JSON.parse(account.persona.keywords || '[]') as string[]
+    : [];
+  const currentDesc = account.persona?.referenceDesc || '';
+
+  // Generate persona suggestions via AI
+  const personaClient = getAiClient();
+
+  let suggestedTags = currentTags;
+  let suggestedDesc = currentDesc;
+
+  if (personaClient) {
+    try {
+      const prompt = `你是一位小红书人设定位专家。请根据以下建议，为人设提供优化方案。
+
+当前关键词：${currentTags.join('、') || '无'}
+当前描述：${currentDesc || '无'}
+优化建议：${suggestionText}
+
+请返回JSON格式：
+{
+  "suggestedTags": ["新关键词1", "新关键词2", "新关键词3"],
+  "suggestedDesc": "优化后的定位描述"
+}`;
+      const result = await personaClient.client.chat.completions.create({
+        model: personaClient.model,
+        messages: [
+          { role: 'system', content: '你是小红书人设定位专家，请返回JSON格式。' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.6,
+      });
+      const text = result.choices?.[0]?.message?.content || '';
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed?.suggestedTags) suggestedTags = parsed.suggestedTags;
+        if (parsed?.suggestedDesc) suggestedDesc = parsed.suggestedDesc;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  // Fallback: derive suggestions from the suggestion text
+  if (suggestedTags === currentTags && suggestedDesc === currentDesc) {
+    const keywords = suggestionText
+      .replace(/[，。！？、\s]/g, ' ')
+      .split(' ')
+      .filter((w) => w.length > 1)
+      .slice(0, 5);
+    suggestedTags = keywords.length > 0 ? [...new Set([...currentTags, ...keywords])] : currentTags;
+    suggestedDesc = suggestionText.slice(0, 100);
+  }
+
+  const plan: ActionPlan = {
+    id: `plan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    suggestionId,
+    type: 'persona',
+    status: 'pending',
+    title: 'AI 人设调整方案',
+    description: `基于建议"${suggestionText}"的人设优化建议`,
+    persona: {
+      currentTags,
+      suggestedTags,
+      currentDesc,
+      suggestedDesc,
+    },
+    createdAt: new Date().toISOString(),
+  };
+
+  return plan;
+}
+
+async function handleStrategyPlan(
+  accountId: string,
+  suggestionText: string,
+  suggestionId: string
+): Promise<ActionPlan> {
+  const account = await db.xhsAccount.findUnique({
+    where: { id: accountId },
+    include: {
+      posts: { orderBy: { publishDate: 'desc' }, take: 20 },
+      persona: true,
+    },
+  });
+
+  if (!account) throw new Error('账号不存在');
+
+  // Analyze recent posting patterns
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const postsThisWeek = account.posts.filter(
+    (p) => p.publishDate && new Date(p.publishDate) >= weekStart
+  );
+
+  const dailyPlans: Array<{ date: string; time: string; topic: string; type: string }> = [];
+  const topics = account.persona
+    ? JSON.parse(account.persona.contentThemes || '[]') as string[]
+    : ['日常分享', '教程', '干货'];
+
+  for (let day = 0; day < 7; day++) {
+    const date = new Date(weekStart);
+    date.setDate(date.getDate() + day);
+    const topic = topics[day % topics.length];
+
+    // Recommend posting time based on account history
+    const hourStats = new Map<number, number>();
+    account.posts.forEach((p) => {
+      if (p.publishTime) {
+        const h = parseInt(p.publishTime.split(':')[0] || '0', 10);
+        hourStats.set(h, (hourStats.get(h) || 0) + 1);
+      }
+    });
+    const bestHour = Array.from(hourStats.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || 18;
+
+    dailyPlans.push({
+      date: date.toISOString().split('T')[0],
+      time: `${bestHour}:00`,
+      topic,
+      type: postsThisWeek.length >= day ? '建议发布' : '建议休息',
+    });
+  }
+
+  const goals = [
+    `本周发布 ${Math.max(postsThisWeek.length + 1, 5)} 篇笔记`,
+    `平均互动率提升 10%`,
+    `粉丝增长 ${Math.ceil(account.followers * 0.05) || 50}+`,
+  ];
+
+  // AI-enhanced goals if available
+  const strategyClient = getAiClient();
+
+  if (strategyClient) {
+    try {
+      const prompt = `你是一位小红书周运营计划专家。基于以下数据，生成本周运营目标（3条）。
+
+账号：${account.nickname} | 粉丝：${account.followers} | 本周已发：${postsThisWeek.length} 篇
+建议方向：${suggestionText}
+
+请返回JSON格式：{ "goals": ["目标1", "目标2", "目标3"] }`;
+      const result = await strategyClient.client.chat.completions.create({
+        model: strategyClient.model,
+        messages: [
+          { role: 'system', content: '你是小红书运营专家，请返回JSON格式。' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.6,
+      });
+      const text = result.choices?.[0]?.message?.content || '';
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed?.goals && Array.isArray(parsed.goals)) {
+          goals.splice(0, goals.length, ...parsed.goals);
+        }
+      }
+    } catch {
+      // keep default goals
+    }
+  }
+
+  const plan: ActionPlan = {
+    id: `plan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    suggestionId,
+    type: 'strategy',
+    status: 'pending',
+    title: 'AI 周运营计划',
+    description: `基于建议"${suggestionText}"生成的7天运营计划`,
+    strategy: {
+      weekStart: weekStart.toISOString(),
+      goals,
+      dailyPlans,
+    },
+    createdAt: new Date().toISOString(),
+  };
+
+  return plan;
+}
+
 // ─── API Handler ─────────────────────────────────────────────────────────
 
 export async function POST(
@@ -243,23 +548,14 @@ export async function POST(
         plan = await handleTimingPlan(accountId, suggestionText, suggestionId);
         break;
       case 'engagement':
-        // TODO: Implement engagement handler
-        return NextResponse.json(
-          { success: false, error: '互动优化功能开发中' },
-          { status: 501 }
-        );
+        plan = await handleEngagementPlan(accountId, suggestionText, suggestionId);
+        break;
       case 'persona':
-        // TODO: Implement persona handler
-        return NextResponse.json(
-          { success: false, error: '人设调整功能开发中' },
-          { status: 501 }
-        );
+        plan = await handlePersonaPlan(accountId, suggestionText, suggestionId);
+        break;
       case 'strategy':
-        // TODO: Implement strategy handler
-        return NextResponse.json(
-          { success: false, error: '运营计划功能开发中' },
-          { status: 501 }
-        );
+        plan = await handleStrategyPlan(accountId, suggestionText, suggestionId);
+        break;
       default:
         return NextResponse.json(
           { success: false, error: '未知的建议类型' },

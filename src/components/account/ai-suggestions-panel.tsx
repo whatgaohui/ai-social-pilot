@@ -26,6 +26,8 @@ const priorityMap: Record<string, { label: string; className: string }> = {
 const suggestionTypeMap: Record<string, { planType: 'content' | 'timing' | 'engagement' | 'persona' | 'strategy' | null; buttonLabel: string; buttonIcon: React.ReactNode }> = {
   content_gap: { planType: 'content', buttonLabel: '生成方案', buttonIcon: <Wand2 className="w-3 h-3" /> },
   best_time: { planType: 'timing', buttonLabel: '应用', buttonIcon: <Clock className="w-3 h-3" /> },
+  engagement: { planType: 'engagement', buttonLabel: '生成话术', buttonIcon: <MessageSquare className="w-3 h-3" /> },
+  persona: { planType: 'persona', buttonLabel: '调整人设', buttonIcon: <User className="w-3 h-3" /> },
   trending: { planType: 'strategy', buttonLabel: '生成计划', buttonIcon: <BarChart3 className="w-3 h-3" /> },
   general: { planType: null, buttonLabel: '应用', buttonIcon: <CheckCircle className="w-3 h-3" /> },
 };
