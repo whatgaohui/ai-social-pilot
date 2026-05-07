@@ -78,7 +78,7 @@ export function NoteCreationDialog({ accountId, open, onClose, onSuccess }: { ac
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-auto">
         <DialogHeader>
           <DialogTitle>新建笔记</DialogTitle>
         </DialogHeader>
@@ -99,7 +99,7 @@ export function NoteCreationDialog({ accountId, open, onClose, onSuccess }: { ac
           <div>
             <label className="text-xs font-medium">内容</label>
             <textarea
-              className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring min-h-[200px]"
+              className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring min-h-[280px]"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="输入笔记正文..."

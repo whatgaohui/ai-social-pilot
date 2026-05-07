@@ -77,15 +77,15 @@ export function MaterialDetailView() {
 
   return (
     <Dialog open={!!selectedMaterial} onOpenChange={(o) => { if (!o) setSelectedMaterial(null); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0">
+        <DialogHeader className="px-8 pt-6 pb-4">
           <DialogTitle className="flex items-center justify-between">
             <span className="text-lg font-bold">素材详情</span>
             <Button variant="ghost" size="icon" onClick={() => setSelectedMaterial(null)} className="h-7 w-7"><X className="w-4 h-4" /></Button>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 pb-6">
+        <div className="px-8 pb-8">
           {loading ? (
             <div className="flex items-center justify-center h-40 text-muted-foreground">加载中...</div>
           ) : detail ? (
@@ -93,9 +93,9 @@ export function MaterialDetailView() {
               {/* Preview */}
               <div className="rounded-xl border bg-muted/30 overflow-hidden mb-4 flex justify-center">
                 {detail.type === 'image' ? (
-                  <img src={detail.fileUrl} alt={detail.name} className="max-h-96 w-auto object-contain" />
+                  <img src={detail.fileUrl} alt={detail.name} className="max-h-[28rem] w-auto object-contain" />
                 ) : detail.type === 'video' ? (
-                  <video src={detail.fileUrl} controls className="max-h-96 w-full max-w-2xl" />
+                  <video src={detail.fileUrl} controls className="max-h-[28rem] w-full max-w-2xl" />
                 ) : (
                   <div className="w-full p-4 max-h-96 overflow-auto">
                     {textContent ? (

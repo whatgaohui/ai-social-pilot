@@ -72,7 +72,7 @@ function NewTextDialog({ open, onClose, onSuccess }: { open: boolean; onClose: (
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-500" />

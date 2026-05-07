@@ -22,6 +22,25 @@ interface MaterialCardProps {
   material: Material;
 }
 
+function ThumbnailImage({ src, alt, icon, className }: { src: string; alt: string; icon: React.ReactNode; className?: string }) {
+  return (
+    <div className={className}>
+      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+        {icon}
+      </div>
+      {src && (
+        <img
+          src={src}
+          alt={alt}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).remove(); }}
+        />
+      )}
+    </div>
+  );
+}
+
 export function MaterialGridCard({ material }: MaterialCardProps) {
   const { setSelectedMaterial, selectedIds, toggleSelect } = useMaterialStore();
   const isSelected = selectedIds.includes(material.id);
@@ -31,25 +50,34 @@ export function MaterialGridCard({ material }: MaterialCardProps) {
       className={`group relative w-20 flex-shrink-0 border transition-colors cursor-pointer hover:ring-1 hover:ring-xhs-light ${isSelected ? 'ring-2 ring-xhs-light' : ''}`}
       onClick={() => setSelectedMaterial(material)}
     >
-      {/* Thumbnail — fixed 20x20 square */}
       <div className="relative w-20 h-20 bg-muted overflow-hidden">
         {material.type === 'text' ? (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
             <Sparkles className="w-5 h-5 text-amber-500/60" />
           </div>
         ) : material.thumbnailUrl ? (
-          <img src={material.thumbnailUrl || material.fileUrl} alt={material.name} className="w-full h-full object-cover" loading="lazy" />
+          <ThumbnailImage
+            src={material.thumbnailUrl}
+            alt={material.name}
+            icon={material.type === 'image' ? <Image className="w-5 h-5 text-muted-foreground/40" /> : <Video className="w-5 h-5 text-muted-foreground/40" />}
+            className="relative w-full h-full"
+          />
+        ) : material.fileUrl ? (
+          <ThumbnailImage
+            src={material.fileUrl}
+            alt={material.name}
+            icon={material.type === 'image' ? <Image className="w-5 h-5 text-muted-foreground/40" /> : <Video className="w-5 h-5 text-muted-foreground/40" />}
+            className="relative w-full h-full"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            {material.type === 'image' ? <Image className="w-5 h-5" /> : material.type === 'video' ? <Video className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+            {getTypeIcon(material.type)}
           </div>
         )}
-        {/* Checkbox overlay */}
         <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(material.id)} onClick={(e) => e.stopPropagation()} className="w-3.5 h-3.5 bg-background/80" />
         </div>
       </div>
-      {/* Name label below */}
       <p className="text-[10px] font-medium truncate px-1 py-0.5 leading-tight">{material.name}</p>
     </div>
   );
@@ -65,14 +93,22 @@ export function MaterialListRow({ material }: MaterialCardProps) {
       onClick={() => setSelectedMaterial(material)}
     >
       <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(material.id)} onClick={(e) => e.stopPropagation()} className="w-3.5 h-3.5" />
-      {/* Fixed 36px thumbnail/icon */}
-      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground flex-shrink-0">
+      <div className="relative w-9 h-9 rounded-lg bg-muted flex-shrink-0 overflow-hidden">
         {material.type === 'text' ? (
-          <Sparkles className="w-4 h-4 text-amber-500/60" />
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+            <Sparkles className="w-4 h-4 text-amber-500/60" />
+          </div>
         ) : material.thumbnailUrl ? (
-          <img src={material.thumbnailUrl || material.fileUrl} alt="" className="w-full h-full object-cover rounded-lg" loading="lazy" />
+          <ThumbnailImage
+            src={material.thumbnailUrl}
+            alt=""
+            icon={getTypeIcon(material.type)}
+            className="w-full h-full"
+          />
         ) : (
-          getTypeIcon(material.type)
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+            {getTypeIcon(material.type)}
+          </div>
         )}
       </div>
       <div className="flex-1 min-w-0">

@@ -1,6 +1,6 @@
-"use client";
-
 import { useState, useEffect, useCallback, useMemo } from "react";
+
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { AISuggestionsPanel } from "@/components/account/ai-suggestions-panel";
 import { ActivityTimeline } from "@/components/account/activity-timeline";
 import { NoteDetailModal } from "@/components/account/note-detail-drawer";
 import { NoteCreationDialog } from "@/components/account/note-creation-dialog";
+import { CalendarTab } from '@/components/account/calendar-tab';
 import {
   UserCircle,
   CalendarDays,
@@ -194,327 +195,8 @@ function OverviewTab({ accountId }: { accountId: string | null }) {
   );
 }
 
-// ─── Calendar Tab ───────────────────────────────────────────────────────
-
-const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
-const MONTH_NAMES = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-const NOTES_PER_PAGE = 20;
-
-function CalendarTab({ accountId }: { accountId: string | null }) {
-  const [posts, setPosts] = useState<XhsPostInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [notePage, setNotePage] = useState(0);
-  const [noteSearch, setNoteSearch] = useState("");
-
-  useEffect(() => {
-    if (!accountId) return;
-    setLoading(true);
-    fetch(`/api/accounts/${accountId}/calendar`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.success && data.data) {
-          setPosts(data.data);
-        }
-      })
-      .catch(() => toast.error("加载笔记数据失败"))
-      .finally(() => setLoading(false));
-  }, [accountId]);
-
-  // Group posts by date
-  const postsByDate = useMemo(() => {
-    const map = new Map<string, XhsPostInfo[]>();
-    for (const p of posts) {
-      if (p.publishDate) {
-        const key = p.publishDate.slice(0, 10);
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(p);
-      }
-    }
-    return map;
-  }, [posts]);
-
-  // Calendar days
-  const calendarDays = useMemo(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const days: (number | null)[] = [];
-
-    let startDay = firstDay.getDay() - 1;
-    if (startDay < 0) startDay = 6;
-
-    for (let i = 0; i < startDay; i++) days.push(null);
-    for (let d = 1; d <= lastDay.getDate(); d++) days.push(d);
-
-    return { year, month, days };
-  }, [currentMonth]);
-
-  const prevMonth = () => setCurrentMonth(new Date(calendarDays.year, calendarDays.month - 1, 1));
-  const nextMonth = () => setCurrentMonth(new Date(calendarDays.year, calendarDays.month + 1, 1));
-
-  const formatDate = (d: number) => {
-    const y = calendarDays.year;
-    const m = String(calendarDays.month + 1).padStart(2, "0");
-    const day = String(d).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  };
-
-  // Engagement per day for color coding
-  const engagementByDate = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const p of posts) {
-      if (p.publishDate) {
-        const key = p.publishDate.slice(0, 10);
-        const eng = (p.likes || 0) + (p.comments || 0) + (p.collects || 0) + (p.shares || 0);
-        map.set(key, (map.get(key) || 0) + eng);
-      }
-    }
-    return map;
-  }, [posts]);
-
-  const selectedDatePosts = selectedDate ? (postsByDate.get(selectedDate) || []) : [];
-
-  // Filtered + paginated all notes
-  const filteredNotes = useMemo(() => {
-    if (!noteSearch.trim()) return posts;
-    const q = noteSearch.toLowerCase();
-    return posts.filter(p =>
-      (p.title || '').toLowerCase().includes(q) ||
-      (p.category || '').toLowerCase().includes(q)
-    );
-  }, [posts, noteSearch]);
-
-  const totalPages = Math.ceil(filteredNotes.length / NOTES_PER_PAGE);
-  const pagedNotes = filteredNotes.slice(notePage * NOTES_PER_PAGE, (notePage + 1) * NOTES_PER_PAGE);
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-80 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
-    );
-  }
-
-  if (posts.length === 0) {
-    return (
-      <EmptyState
-        icon={CalendarDays}
-        title="暂无笔记数据"
-        description="采集账号后，笔记会展示在日历上"
-        actionLabel="立即采集"
-        onAction={() => toast.info("采集功能待实现")}
-      />
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      {/* Calendar */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button onClick={prevMonth} className="p-1 rounded hover:bg-muted">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="font-bold">{calendarDays.year}年 {MONTH_NAMES[calendarDays.month]}</span>
-              <button onClick={nextMonth} className="p-1 rounded hover:bg-muted">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground hidden sm:inline">按日期点击查看笔记</span>
-              <Button size="sm" onClick={() => setShowCreateDialog(true)}>
-                <Plus className="w-3.5 h-3.5 mr-1" />新建笔记
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-1 mb-1">
-            {WEEKDAYS.map(d => (
-              <div key={d} className="text-center text-xs text-muted-foreground py-1">{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {calendarDays.days.map((day, i) => {
-              if (day === null) return <div key={i} />;
-              const dateStr = formatDate(day);
-              const dayPosts = postsByDate.get(dateStr) || [];
-              const postCount = dayPosts.length;
-              const dayEngagement = engagementByDate.get(dateStr) || 0;
-              const isToday = dateStr === new Date().toISOString().slice(0, 10);
-              const isSelected = dateStr === selectedDate;
-
-              // Color code by engagement level
-              let engColor = "";
-              if (postCount > 0) {
-                if (dayEngagement > 1000) engColor = "text-red-500 font-bold";
-                else if (dayEngagement > 500) engColor = "text-xhs-dark font-semibold";
-                else if (dayEngagement > 100) engColor = "text-xhs";
-                else engColor = "text-xhs-light";
-              }
-
-              return (
-                <button
-                  key={i}
-                  onClick={() => { setSelectedDate(dateStr); setNotePage(0); }}
-                  className={cn(
-                    "relative flex flex-col items-center justify-center h-10 rounded-lg text-xs transition-all",
-                    isToday && "bg-xhs/10 font-bold",
-                    isSelected && "bg-xhs-light/40 ring-1 ring-xhs",
-                    postCount > 0 && "cursor-pointer hover:bg-muted/50",
-                    postCount === 0 && "cursor-pointer hover:bg-muted/30"
-                  )}
-                >
-                  <span className={postCount > 0 ? engColor : ""}>{day}</span>
-                  {postCount > 0 && (
-                    <span className="text-[9px] text-muted-foreground/70 leading-none">{postCount}篇</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Selected date notes */}
-      {selectedDate && selectedDatePosts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center justify-between">
-              <span>{selectedDate} · {selectedDatePosts.length}篇笔记</span>
-              <Button size="sm" variant="outline" onClick={() => setSelectedDate(null)}>
-                关闭
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex flex-wrap gap-2">
-              {selectedDatePosts.map(post => (
-                <div
-                  key={post.id}
-                  className="group relative w-20 flex-shrink-0 border rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-xhs-light transition-colors"
-                  onClick={() => setSelectedNoteId(post.id)}
-                >
-                  <div className="relative w-20 h-20 bg-muted">
-                    {post.coverUrl ? (
-                      <img src={post.coverUrl} alt={post.title} className="w-full h-full object-cover" loading="lazy" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                        <FileText className="w-5 h-5 text-muted-foreground/40" />
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-[10px] font-medium truncate px-1 py-0.5 leading-tight">{post.title || "无标题"}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* All notes list (when no date selected) */}
-      {!selectedDate && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center justify-between">
-              <span>全部笔记 ({posts.length}篇)</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Search */}
-            <div className="relative">
-              <input
-                className="w-full px-3 py-2 text-sm border border-border rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring pr-8"
-                placeholder="搜索笔记标题或分类..."
-                value={noteSearch}
-                onChange={(e) => { setNoteSearch(e.target.value); setNotePage(0); }}
-              />
-              {noteSearch && (
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => { setNoteSearch(''); setNotePage(0); }}>×</button>
-              )}
-            </div>
-
-            {/* Grid — square thumbnails, many per row */}
-            {pagedNotes.length > 0 ? (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  {pagedNotes.map(post => (
-                    <div
-                      key={post.id}
-                      className="group relative w-20 flex-shrink-0 border rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-xhs-light transition-colors"
-                      onClick={() => setSelectedNoteId(post.id)}
-                    >
-                      <div className="relative w-20 h-20 bg-muted">
-                        {post.coverUrl ? (
-                          <img src={post.coverUrl} alt={post.title} className="w-full h-full object-cover" loading="lazy" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                            <FileText className="w-5 h-5 text-muted-foreground/40" />
-                          </div>
-                        )}
-                        {post.aiScore > 0 && (
-                          <div className="absolute top-0.5 right-0.5 bg-black/60 text-white text-[8px] font-medium px-1 py-0 rounded">
-                            {Math.round(post.aiScore)}
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-[10px] font-medium truncate px-1 py-0.5 leading-tight">{post.title || "无标题"}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 pt-2">
-                    <Button size="sm" variant="outline" disabled={notePage === 0} onClick={() => setNotePage(p => p - 1)}>
-                      上一页
-                    </Button>
-                    <span className="text-xs text-muted-foreground">{notePage + 1} / {totalPages}</span>
-                    <Button size="sm" variant="outline" disabled={notePage >= totalPages - 1} onClick={() => setNotePage(p => p + 1)}>
-                      下一页
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground py-8">没有找到匹配的笔记</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Note Detail Modal */}
-      {selectedNoteId && accountId && (
-        <NoteDetailModal accountId={accountId} noteId={selectedNoteId} open onClose={() => setSelectedNoteId(null)} />
-      )}
-
-      {/* Note Creation Dialog */}
-      {accountId && (
-        <NoteCreationDialog
-          accountId={accountId}
-          open={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
-          onSuccess={() => {
-            // Refresh posts
-            if (accountId) {
-              fetch(`/api/accounts/${accountId}/calendar`)
-                .then(r => r.json())
-                .then(data => { if (data.success && data.data) setPosts(data.data); });
-            }
-          }}
-        />
-      )}
-    </div>
-  );
-}
+// ─── Calendar Tab (moved to calendar-tab.tsx) ──────────────────────────────
+// Re-exported from @/components/account/calendar-tab
 
 // ─── Persona Tab ────────────────────────────────────────────────────────
 
@@ -797,6 +479,8 @@ const hubTabs = [
 export function AccountHubView() {
   const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen } = useAppStore();
   const { activeHubTab, setActiveHubTab } = useAccountHubStore();
+  const [calendarSelectedNoteId, setCalendarSelectedNoteId] = useState<string | null>(null);
+  const [calendarCreateDialogOpen, setCalendarCreateDialogOpen] = useState(false);
   const [accounts, setAccounts] = useState<XhsAccountInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -894,8 +578,18 @@ export function AccountHubView() {
       </div>
 
       {activeHubTab === "overview" && <OverviewTab accountId={selectedAccountId} />}
-      {activeHubTab === "calendar" && <CalendarTab accountId={selectedAccountId} />}
+      {activeHubTab === "calendar" && <CalendarTab accountId={selectedAccountId} onNoteClick={(id) => setCalendarSelectedNoteId(id)} onCreateClick={() => setCalendarCreateDialogOpen(true)} />}
       {activeHubTab === "persona" && <PersonaTab accountId={selectedAccountId} />}
+
+      {/* Calendar note detail modal */}
+      {calendarSelectedNoteId && selectedAccountId && (
+        <NoteDetailModal accountId={selectedAccountId} noteId={calendarSelectedNoteId} open onClose={() => setCalendarSelectedNoteId(null)} />
+      )}
+
+      {/* Calendar note creation dialog */}
+      {selectedAccountId && (
+        <NoteCreationDialog accountId={selectedAccountId} open={calendarCreateDialogOpen} onClose={() => setCalendarCreateDialogOpen(false)} onSuccess={() => {}} />
+      )}
     </div>
   );
 }
