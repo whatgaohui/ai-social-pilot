@@ -6,88 +6,16 @@
  */
 
 import { getBrowserManager, type XhsBrowserManager } from '../browser';
-
-// ─── Types ────────────────────────────────────────────────────────────────
-
-interface AccountData {
-  nickname: string;
-  xhsId: string;
-  avatarUrl: string;
-  bio: string;
-  location: string;
-  followers: number;
-  following: number;
-  likedCollected: number;
-  notesCount: number;
-}
-
-interface PostData {
-  xhsPostId: string;
-  title: string;
-  content: string;
-  coverUrl: string;
-  imageUrls: string[];
-  videoUrl: string;
-  likes: number;
-  comments: number;
-  collects: number;
-  shares: number;
-  tags: string[];
-  postType: string;
-  publishDate: string;
-}
-
-export interface ProfileScrapeResult {
-  success: boolean;
-  data?: {
-    account: AccountData;
-    posts: PostData[];
-    totalFound: number;
-    scrapeMethod: 'browser' | 'browser_dom' | 'fallback';
-    warnings: string[];
-    partialData: boolean;
-  };
-  error?: string;
-}
-
-export interface PostsScrapeResult {
-  success: boolean;
-  data?: {
-    posts: PostData[];
-    cursor: string;
-    hasMore: boolean;
-    scrapeMethod: 'browser';
-    warnings: string[];
-  };
-  error?: string;
-}
-
-export interface NoteScrapeResult {
-  success: boolean;
-  data?: {
-    note: {
-      noteId: string;
-      title: string;
-      content: string;
-      coverUrl: string;
-      imageUrls: string[];
-      videoUrl: string;
-      likes: number;
-      comments: number;
-      collects: number;
-      shares: number;
-      tags: string[];
-      postType: string;
-      publishDate: string;
-      authorNickname: string;
-      authorAvatar: string;
-      commentCount: number;
-    };
-    scrapeMethod: 'browser' | 'browser_dom';
-    warnings: string[];
-  };
-  error?: string;
-}
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import type {
+  AccountData,
+  PostData,
+  ProfileScrapeResult,
+  PostsScrapeResult,
+  NoteScrapeResult,
+  MediaDownloadResult
+} from './types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -101,6 +29,198 @@ function extractUserIdFromUrl(url: string): string {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ─── Media Download Utilities ─────────────────────────────────────────────
+
+/**
+ * Ensure directory exists
+ */
+async function ensureDir(dirPath: string): Promise<void> {
+  try {
+    await fs.mkdir(dirPath, { recursive: true });
+  } catch (err) {
+    // Ignore if already exists
+  }
+}
+
+/**
+ * Download a single file with retry logic
+ */
+async function downloadFile(
+  url: string,
+  outputPath: string,
+  cookie: string,
+  options: {
+    timeout?: number;
+    maxSize?: number;
+    retries?: number;
+  } = {}
+): Promise<boolean> {
+  const { timeout = 30000, maxSize = 50 * 1024 * 1024, retries = 2 } = options;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://www.xiaohongshu.com/',
+          'Cookie': cookie,
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const contentLength = parseInt(response.headers.get('content-length') || '0');
+      if (contentLength > maxSize) {
+        throw new Error(`File too large: ${contentLength} bytes (max: ${maxSize})`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      if (arrayBuffer.byteLength > maxSize) {
+        throw new Error(`Downloaded file too large: ${arrayBuffer.byteLength} bytes`);
+      }
+
+      await fs.writeFile(outputPath, Buffer.from(arrayBuffer));
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.warn(`[Download] Attempt ${attempt + 1}/${retries + 1} failed for ${url}: ${msg}`);
+
+      if (attempt < retries) {
+        await delay(1000); // Wait 1s before retry
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Download images with concurrency limit
+ */
+async function downloadImages(
+  noteId: string,
+  imageUrls: string[],
+  cookie: string,
+  maxConcurrency: number = 3
+): Promise<string[]> {
+  const imagePaths: string[] = [];
+  // Use project root's public directory (two levels up from this file)
+  const projectRoot = path.resolve(__dirname, '..', '..', '..');
+  const baseDir = path.join(projectRoot, 'public', 'upload', 'images', noteId);
+
+  await ensureDir(baseDir);
+
+  // Process images in batches
+  for (let i = 0; i < imageUrls.length; i += maxConcurrency) {
+    const batch = imageUrls.slice(i, i + maxConcurrency);
+    const batchPromises = batch.map(async (url, batchIndex) => {
+      const globalIndex = i + batchIndex;
+      const ext = url.includes('.png') ? 'png' : 'jpg';
+      const filename = `${globalIndex}.${ext}`;
+      const outputPath = path.join(baseDir, filename);
+
+      const success = await downloadFile(url, outputPath, cookie, {
+        timeout: 30000,
+        retries: 2,
+      });
+
+      if (success) {
+        return `/upload/images/${noteId}/${filename}`;
+      } else {
+        console.warn(`[Download] Failed to download image ${globalIndex} for note ${noteId}`);
+        return '';
+      }
+    });
+
+    const batchResults = await Promise.all(batchPromises);
+    imagePaths.push(...batchResults.filter(Boolean));
+  }
+
+  return imagePaths;
+}
+
+/**
+ * Download video file
+ */
+async function downloadVideo(
+  noteId: string,
+  videoUrl: string,
+  cookie: string
+): Promise<string> {
+  // Use project root's public directory (two levels up from this file)
+  const projectRoot = path.resolve(__dirname, '..', '..', '..');
+  const baseDir = path.join(projectRoot, 'public', 'upload', 'videos');
+  await ensureDir(baseDir);
+
+  const filename = `${noteId}.mp4`;
+  const outputPath = path.join(baseDir, filename);
+
+  const success = await downloadFile(videoUrl, outputPath, cookie, {
+    timeout: 30000,
+    maxSize: 50 * 1024 * 1024, // 50MB
+    retries: 2,
+  });
+
+  if (success) {
+    return `/upload/videos/${filename}`;
+  } else {
+    console.warn(`[Download] Failed to download video for note ${noteId}`);
+    return '';
+  }
+}
+
+/**
+ * Download media (images and/or video) for a note
+ */
+export async function downloadMedia(
+  noteId: string,
+  imageUrls: string[],
+  videoUrl: string,
+  cookie: string
+): Promise<MediaDownloadResult> {
+  const result: MediaDownloadResult = {
+    imagePaths: [],
+    videoPath: '',
+    videoThumbnail: '',
+  };
+
+  try {
+    // Download images if available
+    if (imageUrls.length > 0) {
+      result.imagePaths = await downloadImages(noteId, imageUrls, cookie);
+      // Use first image as thumbnail
+      if (result.imagePaths.length > 0) {
+        result.videoThumbnail = result.imagePaths[0];
+      }
+    }
+
+    // Download video if available
+    if (videoUrl) {
+      result.videoPath = await downloadVideo(noteId, videoUrl, cookie);
+
+      // If no images, we would need to extract video frame as thumbnail
+      // For now, leave empty (can be enhanced with ffmpeg later)
+      if (!result.videoThumbnail && result.videoPath) {
+        console.log(`[Download] Video thumbnail extraction not implemented for note ${noteId}`);
+      }
+    }
+
+    return result;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    console.error(`[Download] Media download failed for note ${noteId}: ${msg}`);
+    return result;
+  }
 }
 
 // ─── Strategy 1: XHR Intercept (Primary) ─────────────────────────────────
@@ -437,28 +557,60 @@ export async function scrapeNoteWithBrowser(
     await page.goto(noteUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await delay(3000);
 
+    let noteData;
     if (interceptedJson) {
-      const noteData = parseNoteFromApi(interceptedJson, noteId);
-      return {
-        success: true,
-        data: {
-          note: noteData,
-          scrapeMethod: 'browser',
-          warnings,
-        },
-      };
+      noteData = parseNoteFromApi(interceptedJson, noteId);
     } else {
       warnings.push('未捕获到笔记API响应，使用页面解析');
-      const noteData = await parseNoteFromDom(page, noteId);
-      return {
-        success: true,
-        data: {
-          note: noteData,
-          scrapeMethod: 'browser_dom',
-          warnings,
-        },
-      };
+      noteData = await parseNoteFromDom(page, noteId);
     }
+
+    // Download media files (images and/or video)
+    try {
+      // Get cookies from browser context for authentication
+      const cookies = await page.context().cookies();
+      const cookieString = cookies
+        .filter(c => c.domain.includes('xiaohongshu.com') || c.domain.includes('rednote.com'))
+        .map(c => `${c.name}=${c.value}`)
+        .join('; ');
+
+      // Download media if URLs are available
+      if (noteData.imageUrls.length > 0 || noteData.videoUrl) {
+        console.log(`[Browser] Downloading media for note ${noteId}...`);
+        const mediaResult = await downloadMedia(
+          noteId,
+          noteData.imageUrls,
+          noteData.videoUrl,
+          cookieString
+        );
+
+        // Merge downloaded paths into noteData
+        noteData.imagePaths = mediaResult.imagePaths;
+        noteData.videoPath = mediaResult.videoPath;
+        noteData.videoThumbnail = mediaResult.videoThumbnail;
+
+        if (mediaResult.imagePaths.length > 0) {
+          console.log(`[Browser] Downloaded ${mediaResult.imagePaths.length} images`);
+        }
+        if (mediaResult.videoPath) {
+          console.log(`[Browser] Downloaded video: ${mediaResult.videoPath}`);
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.warn(`[Browser] Media download failed for note ${noteId}: ${msg}`);
+      warnings.push(`媒体下载失败: ${msg}`);
+      // Continue without downloaded media
+    }
+
+    return {
+      success: true,
+      data: {
+        note: noteData,
+        scrapeMethod: interceptedJson ? 'browser' : 'browser_dom',
+        warnings,
+      },
+    };
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Note scraping error';
     console.error('[Browser] Note scraping error:', msg);
@@ -624,6 +776,10 @@ function parseNoteFromApi(json: any, fallbackNoteId: string) {
       authorNickname: noteData.user?.nickname || noteCard.user?.nickname || '',
       authorAvatar: noteData.user?.avatar || noteCard.user?.avatar || '',
       commentCount: Number(noteData.interact_info?.comment_count || noteCard.interact_info?.comment_count || 0),
+      // Media download fields (initialized empty, populated by scrapeNoteWithBrowser)
+      imagePaths: [],
+      videoPath: '',
+      videoThumbnail: '',
     };
   } catch {
     return {
@@ -643,6 +799,10 @@ function parseNoteFromApi(json: any, fallbackNoteId: string) {
       authorNickname: '',
       authorAvatar: '',
       commentCount: 0,
+      // Media download fields
+      imagePaths: [],
+      videoPath: '',
+      videoThumbnail: '',
     };
   }
 }
@@ -918,6 +1078,10 @@ async function parseNoteFromDom(page: any, noteId: string) {
       authorNickname: info.authorNickname || '',
       authorAvatar: '',
       commentCount: 0,
+      // Media download fields
+      imagePaths: [],
+      videoPath: '',
+      videoThumbnail: '',
     };
   } catch {
     return {
@@ -937,6 +1101,10 @@ async function parseNoteFromDom(page: any, noteId: string) {
       authorNickname: '',
       authorAvatar: '',
       commentCount: 0,
+      // Media download fields
+      imagePaths: [],
+      videoPath: '',
+      videoThumbnail: '',
     };
   }
 }

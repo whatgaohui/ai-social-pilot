@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { useMaterialStore } from '@/store/material-store';
 import { MaterialGridCard, MaterialListRow } from './material-card';
 import { UploadModal } from './upload-modal';
+import { TagFilter } from '@/components/content/tag-filter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Upload, Grid, List, Search, Trash2, Tag, Loader2, Plus, X, Sparkles } from 'lucide-react';
+import { Upload, Grid, List, Search, Trash2, Tag, Loader2, Plus, X, Sparkles, Filter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
@@ -135,10 +136,10 @@ function NewTextDialog({ open, onClose, onSuccess }: { open: boolean; onClose: (
 
 export function MaterialListView() {
   const {
-    materials, total, page, totalPages, loading, filterType, searchQuery, viewMode, sort,
+    materials, total, page, totalPages, loading, filterType, searchQuery, selectedTags, tagMode, availableTags, viewMode, sort,
     selectedIds, clearSelection,
-    setMaterials, setLoading, setFilterType, setSearchQuery, setViewMode, setSort,
-    setUploadOpen, setSelectedMaterial,
+    setMaterials, setLoading, setFilterType, setSearchQuery, setSelectedTags, setTagMode, setViewMode, setSort,
+    setUploadOpen, setSelectedMaterial, clearFilters,
   } = useMaterialStore();
 
   const [bulkAction, setBulkAction] = useState<string | null>(null);
@@ -147,7 +148,19 @@ export function MaterialListView() {
   const fetchMaterials = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: '20', type: filterType === 'all' ? '' : filterType, sort, search: searchQuery });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: '20',
+        type: filterType === 'all' ? '' : filterType,
+        sort,
+        search: searchQuery,
+      });
+
+      if (selectedTags.length > 0) {
+        params.append('tags', selectedTags.join(','));
+        params.append('tagMode', tagMode);
+      }
+
       const res = await fetch(`/api/materials?${params}`);
       const json = await res.json();
       if (json.success) setMaterials(json.data);
@@ -156,7 +169,7 @@ export function MaterialListView() {
     } finally {
       setLoading(false);
     }
-  }, [page, filterType, sort, searchQuery, setLoading, setMaterials]);
+  }, [page, filterType, sort, searchQuery, selectedTags, tagMode, setLoading, setMaterials]);
 
   useEffect(() => { fetchMaterials(); }, [fetchMaterials]);
 
@@ -225,6 +238,17 @@ export function MaterialListView() {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input className="pl-8 w-48" placeholder="搜索素材..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
+        <TagFilter
+          availableTags={availableTags}
+          selectedTags={selectedTags}
+          onTagsChange={setSelectedTags}
+          onClear={() => setSelectedTags([])}
+        />
+        {(searchQuery || selectedTags.length > 0) && (
+          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600" onClick={clearFilters}>
+            <Filter className="w-3.5 h-3.5 mr-1" />清除筛选
+          </Button>
+        )}
         <Select value={sort} onValueChange={setSort}>
           <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent>{SORT_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>

@@ -59,6 +59,12 @@ model XhsPost {
   imageUrls     String   @default("[]") // 图片URL列表 JSON
   postType      String   @default("normal") // normal, video
   videoUrl      String   @default("")  // 视频笔记播放地址
+
+  // 本地下载资源路径
+  imagePaths    String   @default("[]") // 本地图片路径 JSON
+  videoPath     String   @default("")  // 本地视频路径
+  videoThumbnail String @default("")  // 视频封面图路径
+
   detailScrapedAt DateTime?  // 详情页已采集时间
 
   // 互动数据
@@ -283,7 +289,9 @@ model ScheduledNote {
   account       XhsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
   title         String   @default("")
   content       String   @default("")
+  mediaType     String   @default("image")  // image, video
   mediaUrls     String   @default("[]")
+  videoUrl      String   @default("")        // 视频笔记URL（本地上传或外部链接）
   tags          String   @default("[]")
   coverPrompt   String   @default("")
   scheduledAt   DateTime

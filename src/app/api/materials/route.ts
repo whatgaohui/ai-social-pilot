@@ -60,12 +60,32 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'createdAt_desc';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const tag = searchParams.get('tag');
+    const tagsParam = searchParams.get('tags');
+    const tagMode = searchParams.get('tagMode') || 'or'; // 'or' or 'and'
+    const tag = searchParams.get('tag'); // Legacy single tag support
 
     const where: Record<string, unknown> = { status };
     if (type && type !== 'all') where.type = type;
     if (search) where.name = { contains: search };
-    if (tag) {
+
+    // Tag filtering: support both single tag (legacy) and multiple tags
+    if (tagsParam) {
+      const tags = tagsParam.split(',').map((t) => t.trim()).filter(Boolean);
+      if (tags.length > 0) {
+        if (tagMode === 'and') {
+          // All tags must be present (AND logic)
+          where.AND = tags.map((tag) => ({
+            tags: { contains: `"${tag}"` },
+          }));
+        } else {
+          // Any tag can be present (OR logic - default)
+          where.OR = tags.map((tag) => ({
+            tags: { contains: `"${tag}"` },
+          }));
+        }
+      }
+    } else if (tag) {
+      // Legacy single tag support
       where.tags = { contains: `"${tag}"` };
     }
 
@@ -78,9 +98,31 @@ export async function GET(request: NextRequest) {
       db.material.count({ where }),
     ]);
 
+    // Aggregate all available tags with counts
+    const allMaterials = await db.material.findMany({
+      where: { status: 'active' },
+      select: { tags: true },
+    });
+
+    const tagCounts: Record<string, number> = {};
+    allMaterials.forEach((m) => {
+      try {
+        const tags = JSON.parse(m.tags || '[]');
+        tags.forEach((tag: string) => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      } catch {
+        // Ignore parse errors
+      }
+    });
+
+    const availableTags = Object.entries(tagCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
     return NextResponse.json({
       success: true,
-      data: { materials, total, page, limit, totalPages: Math.ceil(total / limit) },
+      data: { materials, total, page, limit, totalPages: Math.ceil(total / limit), availableTags },
     });
   } catch (error) {
     console.error('Failed to get materials:', error);

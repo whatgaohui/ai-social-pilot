@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { db } from '@/lib/db';
+
+// Validation schema
+const CreateNoteSchema = z.object({
+  title: z.string().min(1, '标题不能为空').max(30, '标题最多30字'),
+  content: z.string().min(1, '内容不能为空').max(1000, '内容最多1000字'),
+  mediaType: z.enum(['image', 'video']),
+  mediaUrls: z.array(z.string().url()).max(9, '最多上传9张图片').default([]),
+  videoUrl: z.string().url().optional().or(z.literal('')),
+  tags: z.array(z.string()).max(10, '最多10个标签').default([]),
+  publishMode: z.enum(['now', 'scheduled']),
+  scheduledAt: z.string().optional(),
+  coverPrompt: z.string().optional(),
+});
 
 // POST /api/accounts/[id]/notes - Create a scheduled note
 export async function POST(
@@ -9,13 +23,52 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { title, content, mediaUrls, tags, scheduledAt, coverPrompt } = body;
 
-    if (!title || !content) {
+    // Validate input
+    const validation = CreateNoteSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: '标题和内容为必填项' },
+        { success: false, error: validation.error.issues[0].message },
         { status: 400 }
       );
+    }
+
+    const { title, content, mediaType, mediaUrls, videoUrl, tags, publishMode, scheduledAt, coverPrompt } = validation.data;
+
+    // Validate media requirements
+    if (mediaType === 'image' && mediaUrls.length === 0) {
+      return NextResponse.json(
+        { success: false, error: '图文笔记至少需要上传一张图片' },
+        { status: 400 }
+      );
+    }
+
+    if (mediaType === 'video' && !videoUrl) {
+      return NextResponse.json(
+        { success: false, error: '视频笔记需要提供视频链接' },
+        { status: 400 }
+      );
+    }
+
+    // Validate scheduled time for scheduled publish
+    let scheduledDate: Date;
+    if (publishMode === 'scheduled') {
+      if (!scheduledAt) {
+        return NextResponse.json(
+          { success: false, error: '定时发布需要指定发布时间' },
+          { status: 400 }
+        );
+      }
+      scheduledDate = new Date(scheduledAt);
+      if (scheduledDate <= new Date()) {
+        return NextResponse.json(
+          { success: false, error: '发布时间必须晚于当前时间' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // For immediate publish, default to 1 hour from now
+      scheduledDate = new Date(Date.now() + 60 * 60 * 1000);
     }
 
     const account = await db.xhsAccount.findUnique({ where: { id } });
@@ -31,11 +84,13 @@ export async function POST(
         accountId: id,
         title,
         content,
-        mediaUrls: JSON.stringify(mediaUrls || []),
-        tags: JSON.stringify(tags || []),
+        mediaType,
+        mediaUrls: JSON.stringify(mediaUrls),
+        videoUrl: videoUrl || '',
+        tags: JSON.stringify(tags),
         coverPrompt: coverPrompt || '',
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
-        status: scheduledAt ? 'scheduled' : 'draft',
+        scheduledAt: scheduledDate,
+        status: publishMode === 'scheduled' ? 'scheduled' : 'draft',
       },
     });
 
@@ -45,6 +100,9 @@ export async function POST(
         id: note.id,
         title: note.title,
         content: note.content,
+        mediaType: note.mediaType,
+        mediaUrls: JSON.parse(note.mediaUrls || '[]'),
+        videoUrl: note.videoUrl,
         tags: JSON.parse(note.tags || '[]'),
         scheduledAt: note.scheduledAt.toISOString(),
         status: note.status,
