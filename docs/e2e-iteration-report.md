@@ -98,3 +98,23 @@
 - `test-results/e2e-full/05-settings.png` — 设置页
 - `test-results/e2e-full/06-note-creation.png` — 新建笔记弹窗
 - `test-results/e2e-full/07-new-text-dialog.png` — 新建文案弹窗
+
+---
+
+## 第二轮测试（2026-05-07 13:34:26）
+
+| 测试项 | 状态 | 耗时 |
+|--------|------|------|
+| 1. Dashboard loads with data | ✅ 通过 | 2.9s |
+| 2. Account Hub - 3 tabs interactive | ✅ 通过 | 4.4s |
+| 3. Calendar - clickable days | ✅ 通过 | 4.3s |
+| 4. Content Library - filters, grid | ✅ 通过 | 5.8s |
+| 5. Settings - AI config + Help manual | ✅ 通过 | 3.5s |
+| 6. Note creation dialog opens | ✅ 通过 | 5.3s |
+| 7. New text material dialog | ✅ 通过 | 6.1s |
+
+**总计**: 7/7 通过 ✅ — 无新增问题
+
+### 分析
+第二轮所有测试稳定通过，首轮修复有效。页面功能无回归，各模块加载时间正常（2.9s-6.1s）。
+
