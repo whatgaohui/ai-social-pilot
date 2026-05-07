@@ -586,17 +586,20 @@ export function DashboardView() {
                 onClick={() => setActiveTab("content")}
               >
                 <div className="relative w-20 h-20 bg-muted">
-                  {post.coverUrl ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                    <FileText className="w-5 h-5 text-muted-foreground/40" />
+                  </div>
+                  {post.coverUrl && (
                     <img
                       src={post.coverUrl}
                       alt={post.title}
-                      className="w-full h-full object-cover"
+                      className="absolute inset-0 w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        img.remove();
+                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                      <FileText className="w-5 h-5 text-muted-foreground/40" />
-                    </div>
                   )}
                   {post.aiScore > 0 && (
                     <div className="absolute top-0.5 right-0.5 bg-black/60 text-white text-[8px] font-medium px-1 py-0 rounded">
