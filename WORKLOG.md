@@ -466,3 +466,41 @@
 
 ---
 
+### Iteration 011 — 内容库素材详情弹窗升级：图片大图预览 + 视频播放器
+
+**日期:** 2026-05-07
+**触发:** 用户反馈 — 内容库需要支持点击查看内容详情，图片可以加载，视频可以播放
+
+#### 完成内容
+
+**1. 素材详情弹窗重写 (material-detail.tsx)**
+- 从侧边栏面板改为 shadcn Dialog 居中模态框
+- `DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0"`
+- 图片预览：`max-h-96 w-auto object-contain` 大图居中展示
+- 视频播放器：HTML5 `<video>` 元素，`controls` 属性，`max-h-96 w-full max-w-2xl`
+- 文本内容：`max-h-96 overflow-auto` 完整展示
+- 底部操作栏："在新窗口打开" + 删除按钮
+
+**2. 内容库视图简化 (content-view.tsx)**
+- 移除侧边栏布局（`w-96` 面板 + `selectedMaterial` 条件宽度）
+- 改为纯列表 + Dialog 弹窗结构
+
+**3. 笔记详情弹窗修复 (account-hub-view.tsx)**
+- 修复 `NoteDetailDrawer` → `NoteDetailModal` 导出名不匹配
+- 移除自定义 fixed 模态框 wrapper，直接使用 Dialog 组件
+- 添加 `open` prop
+
+#### 修改文件清单
+
+| 文件 | 变更 |
+|------|------|
+| `src/components/material/material-detail.tsx` | 重写 — Dialog 模态框 + 大图/视频播放 |
+| `src/components/views/content-view.tsx` | 简化 — 移除侧边栏 |
+| `src/components/material/material-list-view.tsx` | 移除 MaterialDetailView 引用 |
+| `src/components/views/account-hub-view.tsx` | 修复 NoteDetailModal 导入 + open prop |
+
+#### 验证
+- TypeScript: 0 errors in src/
+
+---
+

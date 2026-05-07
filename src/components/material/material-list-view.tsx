@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useMaterialStore } from '@/store/material-store';
 import { MaterialGridCard, MaterialListRow } from './material-card';
 import { UploadModal } from './upload-modal';
-import { MaterialDetailView } from './material-detail';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { HealthScoreCard } from "@/components/account/health-score-card";
 import { AISuggestionsPanel } from "@/components/account/ai-suggestions-panel";
 import { ActivityTimeline } from "@/components/account/activity-timeline";
-import { NoteDetailDrawer } from "@/components/account/note-detail-drawer";
+import { NoteDetailModal } from "@/components/account/note-detail-drawer";
 import { NoteCreationDialog } from "@/components/account/note-creation-dialog";
 import {
   UserCircle,
@@ -493,11 +493,7 @@ function CalendarTab({ accountId }: { accountId: string | null }) {
 
       {/* Note Detail Modal */}
       {selectedNoteId && accountId && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setSelectedNoteId(null)}>
-          <div className="bg-background rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-auto mx-4" onClick={(e) => e.stopPropagation()}>
-            <NoteDetailDrawer accountId={accountId} noteId={selectedNoteId} onClose={() => setSelectedNoteId(null)} />
-          </div>
-        </div>
+        <NoteDetailModal accountId={accountId} noteId={selectedNoteId} open onClose={() => setSelectedNoteId(null)} />
       )}
 
       {/* Note Creation Dialog */}
