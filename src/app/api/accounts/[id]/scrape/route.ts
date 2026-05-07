@@ -136,6 +136,7 @@ interface ScrapePostData {
   content?: string;
   coverUrl?: string;
   imageUrls?: string[];
+  videoUrl?: string;
   postType?: string;
   likes?: number;
   comments?: number;
@@ -144,6 +145,7 @@ interface ScrapePostData {
   tags?: string[];
   category?: string;
   publishDate?: string;
+  detailScrapedAt?: string;
 }
 
 interface ScrapeResultData {
@@ -409,6 +411,66 @@ export async function POST(
         );
       }
 
+      // Batch fetch note details via scraper micro-service
+      // Only for posts that have xhsPostId and lack content/images
+      const postsNeedingDetails = scrapeResult.posts.filter(
+        (p) => p.xhsPostId && (!p.content || p.content.length < 10) && p.postType !== 'video'
+      );
+
+      if (postsNeedingDetails.length > 0 && scraperOnline) {
+        console.log(`[ScrapeRoute] Batch fetching details for ${postsNeedingDetails.length} notes`);
+        const CONCURRENCY = 3;
+        let detailsFetched = 0;
+
+        for (let i = 0; i < postsNeedingDetails.length; i += CONCURRENCY) {
+          const batch = postsNeedingDetails.slice(i, i + CONCURRENCY);
+          const results = await Promise.allSettled(
+            batch.map(async (post) => {
+              try {
+                const res = await fetch(`${SCRAPER_SERVICE_URL}/api/scrape/note`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ noteId: post.xhsPostId, cookies: cookies || '' }),
+                  signal: AbortSignal.timeout(30000),
+                });
+                const json = await res.json();
+                if (json.success && json.data?.note) {
+                  return { postId: post.xhsPostId, detail: json.data.note };
+                }
+                return null;
+              } catch {
+                return null;
+              }
+            })
+          );
+
+          for (const result of results) {
+            if (result.status === 'fulfilled' && result.value) {
+              const { postId, detail } = result.value;
+              const target = scrapeResult.posts.find((p) => p.xhsPostId === postId);
+              if (target && detail) {
+                if (detail.content) target.content = detail.content;
+                if (detail.imageUrls?.length) target.imageUrls = detail.imageUrls;
+                if (detail.videoUrl) target.videoUrl = detail.videoUrl;
+                if (detail.tags?.length) target.tags = detail.tags;
+                if (detail.publishDate) target.publishDate = detail.publishDate;
+                target.detailScrapedAt = new Date().toISOString();
+                detailsFetched++;
+              }
+            }
+          }
+
+          // Batch delay to avoid rate limiting
+          if (i + CONCURRENCY < postsNeedingDetails.length) {
+            await new Promise((r) => setTimeout(r, 2000 + Math.random() * 1000));
+          }
+        }
+
+        if (detailsFetched > 0) {
+          scrapeResult.warnings.push(`已补充 ${detailsFetched} 条笔记详情（正文/图片/标签）`);
+        }
+      }
+
       // Determine status based on whether data is partial
       const accountStatus = scrapeResult.partialData ? 'partial' : 'success';
 
@@ -457,6 +519,7 @@ export async function POST(
           content: (postData.content as string) || '',
           coverUrl: (postData.coverUrl as string) || '',
           imageUrls: JSON.stringify(postData.imageUrls || []),
+          videoUrl: (postData.videoUrl as string) || '',
           postType: (postData.postType as string) || 'normal',
           likes: (postData.likes as number) || 0,
           comments: (postData.comments as number) || 0,
@@ -465,6 +528,7 @@ export async function POST(
           tags: JSON.stringify(postData.tags || []),
           category: (postData.category as string) || '',
           publishDate: (postData.publishDate as string) || '',
+          detailScrapedAt: postData.detailScrapedAt ? new Date(postData.detailScrapedAt) : null,
         };
 
         if (existingPost) {

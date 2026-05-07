@@ -58,7 +58,9 @@ model XhsPost {
   coverUrl      String   @default("")  // 封面图
   imageUrls     String   @default("[]") // 图片URL列表 JSON
   postType      String   @default("normal") // normal, video
-  
+  videoUrl      String   @default("")  // 视频笔记播放地址
+  detailScrapedAt DateTime?  // 详情页已采集时间
+
   // 互动数据
   likes         Int      @default(0)
   comments      Int      @default(0)

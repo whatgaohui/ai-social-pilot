@@ -26,6 +26,8 @@ interface PostData {
   title: string;
   content: string;
   coverUrl: string;
+  imageUrls: string[];
+  videoUrl: string;
   likes: number;
   comments: number;
   collects: number;
@@ -69,6 +71,7 @@ export interface NoteScrapeResult {
       content: string;
       coverUrl: string;
       imageUrls: string[];
+      videoUrl: string;
       likes: number;
       comments: number;
       collects: number;
@@ -520,6 +523,17 @@ function parsePostsFromApi(json: any): { posts: PostData[]; nextCursor: string; 
       const user = note.user || {};
       const coverUrl = cover.url_default || cover.url_pre ||
         cover.info_list?.[0]?.url || cover.image_list?.[0]?.url || '';
+
+      // Extract image list if available
+      const imageList = note.image_list || cover.image_list || [];
+      const imageUrls = imageList
+        .map((img: any) => img.url_default || img.url_info?.url || img.url || '')
+        .filter(Boolean);
+
+      // Video URL from list API (sometimes available)
+      const videoUrl = note.video?.media?.stream?.url
+        || note.video?.url || '';
+
       const likes = Number(String(interact.liked_count || '0').replace(/\D/g, '')) || 0;
 
       // Extract publish date from multiple possible fields
@@ -532,6 +546,8 @@ function parsePostsFromApi(json: any): { posts: PostData[]; nextCursor: string; 
         title: note.display_title || note.title || '',
         content: note.desc || '',
         coverUrl,
+        imageUrls,
+        videoUrl,
         likes,
         comments: Number(String(interact.comment_count || '0').replace(/\D/g, '')) || 0,
         collects: Number(String(interact.collect_count || '0').replace(/\D/g, '')) || 0,
@@ -557,26 +573,57 @@ function parseNoteFromApi(json: any, fallbackNoteId: string) {
     const noteItem = items[0] || data;
     const noteData = noteItem.note_card || noteItem.note || noteItem;
 
-    const imageUrls = (noteData.image_list || [])
-      .map((img: any) => img.url_default || img.url || '')
+    const noteCard = noteItem.note_card || noteItem;
+
+    // Video URL extraction (multiple fallback paths based on MediaCrawler research)
+    const video = noteCard.video || {};
+    const videoUrl = video.media?.stream?.url
+      || video.media?.stream?.h264?.[0]?.master_url
+      || video.media?.stream?.h265?.[0]?.master_url
+      || video.url || '';
+
+    // Publish time: note_card.time is Unix timestamp in seconds
+    const publishDate = noteCard.time
+      ? new Date(Number(noteCard.time) * 1000).toISOString()
+      : '';
+
+    // Image list extraction (higher quality URLs)
+    const imageUrls = (noteCard.image_list || [])
+      .map((img: any) => {
+        // Try url_default first (highest quality), then fallback chain
+        return img.url_default
+          || img.url_info?.url
+          || img.info_list?.[0]?.url
+          || img.url
+          || '';
+      })
+      .filter(Boolean);
+
+    // Tags extraction
+    const tags = (noteCard.tag_list || [])
+      .map((t: any) => {
+        if (typeof t === 'string') return t;
+        return t.name || t.tag_type || t.title || '';
+      })
       .filter(Boolean);
 
     return {
-      noteId: noteData.note_id || fallbackNoteId,
-      title: noteData.title || '',
-      content: noteData.desc || '',
+      noteId: noteData.note_id || noteCard.note_id || fallbackNoteId,
+      title: noteData.title || noteCard.title || '',
+      content: noteData.desc || noteCard.desc || '',
       coverUrl: noteData.cover?.url || imageUrls[0] || '',
       imageUrls,
-      likes: Number(noteData.interact_info?.liked_count || 0),
-      comments: Number(noteData.interact_info?.comment_count || 0),
-      collects: Number(noteData.interact_info?.collect_count || 0),
-      shares: Number(noteData.interact_info?.share_count || 0),
-      tags: [],
-      postType: noteData.type === 'video' ? 'video' : 'normal',
-      publishDate: '',
-      authorNickname: noteData.user?.nickname || '',
-      authorAvatar: noteData.user?.avatar || '',
-      commentCount: Number(noteData.interact_info?.comment_count || 0),
+      videoUrl,
+      likes: Number(noteData.interact_info?.liked_count || noteCard.interact_info?.liked_count || 0),
+      comments: Number(noteData.interact_info?.comment_count || noteCard.interact_info?.comment_count || 0),
+      collects: Number(noteData.interact_info?.collect_count || noteCard.interact_info?.collect_count || 0),
+      shares: Number(noteData.interact_info?.share_count || noteCard.interact_info?.share_count || 0),
+      tags,
+      postType: noteData.type === 'video' || noteCard.type === 'video' ? 'video' : 'normal',
+      publishDate,
+      authorNickname: noteData.user?.nickname || noteCard.user?.nickname || '',
+      authorAvatar: noteData.user?.avatar || noteCard.user?.avatar || '',
+      commentCount: Number(noteData.interact_info?.comment_count || noteCard.interact_info?.comment_count || 0),
     };
   } catch {
     return {
@@ -585,6 +632,7 @@ function parseNoteFromApi(json: any, fallbackNoteId: string) {
       content: '',
       coverUrl: '',
       imageUrls: [],
+      videoUrl: '',
       likes: 0,
       comments: 0,
       collects: 0,
@@ -859,6 +907,7 @@ async function parseNoteFromDom(page: any, noteId: string) {
       content: info.content || '',
       coverUrl: '',
       imageUrls: [],
+      videoUrl: '',
       likes: 0,
       comments: 0,
       collects: 0,
@@ -877,6 +926,7 @@ async function parseNoteFromDom(page: any, noteId: string) {
       content: '',
       coverUrl: '',
       imageUrls: [],
+      videoUrl: '',
       likes: 0,
       comments: 0,
       collects: 0,
