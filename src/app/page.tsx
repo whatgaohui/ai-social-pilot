@@ -70,16 +70,14 @@ export default function Home() {
         return <DashboardView />;
       case "account":
         return <AccountHubView />;
-      case "analytics":
-        return <AnalyticsView />;
       case "content":
         return <ContentView />;
       case "persona":
         return <PersonaView />;
-      case "creator":
-        return <CreatorView />;
       case "settings":
         return <SettingsView />;
+      default:
+        return <DashboardView />;
     }
   };
 

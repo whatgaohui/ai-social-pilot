@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 interface AppState {
   // Navigation
-  activeTab: 'dashboard' | 'account' | 'analytics' | 'content' | 'persona' | 'creator' | 'settings';
+  activeTab: 'dashboard' | 'account' | 'content' | 'persona' | 'settings';
   setActiveTab: (tab: AppState['activeTab']) => void;
 
   // Selected account
@@ -38,5 +38,5 @@ export const useAppStore = create<AppState>((set) => ({
   setAddAccountDialogOpen: (v) => set({ addAccountDialogOpen: v }),
   prefilledTopic: null,
   setPrefilledTopic: (topic) => set({ prefilledTopic: topic }),
-  navigateToCreator: (topic) => set({ activeTab: 'creator', prefilledTopic: topic }),
+  navigateToCreator: (topic) => set({ activeTab: 'content', prefilledTopic: topic }),
 }));

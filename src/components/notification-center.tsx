@@ -247,7 +247,7 @@ export function NotificationCenter() {
     (id: string, navigateTo?: string, accountId?: string) => {
       markAsRead(id);
       if (navigateTo) {
-        setActiveTab(navigateTo as "dashboard" | "account" | "content" | "persona" | "creator");
+        setActiveTab(navigateTo as "dashboard" | "account" | "content" | "persona");
       }
       if (accountId) {
         setSelectedAccountId(accountId);

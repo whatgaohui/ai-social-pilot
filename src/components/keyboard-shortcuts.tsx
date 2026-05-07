@@ -35,7 +35,7 @@ export function KeyboardShortcuts() {
           "2": "account",
           "3": "content",
           "4": "persona",
-          "5": "creator",
+          "5": "content",
           "6": "settings",
         };
 
@@ -46,10 +46,10 @@ export function KeyboardShortcuts() {
           return;
         }
 
-        // Cmd/Ctrl + N: New content (navigate to creator)
+        // Cmd/Ctrl + N: New content (navigate to content)
         if (e.key === "n" || e.key === "N") {
           e.preventDefault();
-          setActiveTab("creator");
+          setActiveTab("content");
           return;
         }
 

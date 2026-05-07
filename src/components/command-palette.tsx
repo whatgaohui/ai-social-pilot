@@ -62,10 +62,10 @@ export function CommandPalette() {
       { id: "nav-account", label: "前往账号分析", description: "查看账号数据详情", icon: UserCircle, shortcut: "⌘2", category: "navigation", action: () => setActiveTab("account") },
       { id: "nav-content", label: "前往内容库", description: "管理笔记内容", icon: FileText, shortcut: "⌘3", category: "navigation", action: () => setActiveTab("content") },
       { id: "nav-persona", label: "前往人设管理", description: "管理AI人设模板", icon: Theater, shortcut: "⌘4", category: "navigation", action: () => setActiveTab("persona") },
-      { id: "nav-creator", label: "前往AI创作", description: "AI生成笔记内容", icon: Sparkles, shortcut: "⌘5", category: "navigation", action: () => setActiveTab("creator") },
+      { id: "nav-creator", label: "前往内容库", description: "AI生成笔记内容", icon: Sparkles, shortcut: "⌘5", category: "navigation", action: () => setActiveTab("content") },
       { id: "nav-settings", label: "前往设置", description: "应用偏好设置", icon: Settings, shortcut: "⌘6", category: "navigation", action: () => setActiveTab("settings") },
       // Actions
-      { id: "action-create", label: "创作新内容", description: "使用AI生成小红书笔记", icon: PenLine, shortcut: "⌘N", category: "action", action: () => setActiveTab("creator") },
+      { id: "action-create", label: "创作新内容", description: "使用AI生成小红书笔记", icon: PenLine, shortcut: "⌘N", category: "action", action: () => setActiveTab("content") },
       { id: "action-add-account", label: "添加账号", description: "添加新的小红书账号", icon: Plus, category: "action", action: () => setAddAccountDialogOpen(true) },
       { id: "action-export", label: "导出数据", description: "导出所有运营数据为JSON", icon: Download, shortcut: "⌘E", category: "action", action: () => {
         // Trigger export via custom event

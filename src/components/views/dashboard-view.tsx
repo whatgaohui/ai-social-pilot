@@ -322,7 +322,7 @@ export function DashboardView() {
           <Button
             size="sm"
             className="bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20"
-            onClick={() => setActiveTab("account-hub")}
+            onClick={() => setActiveTab("account")}
           >
             <PenLine className="w-4 h-4 mr-1" />
             创作
@@ -541,7 +541,7 @@ export function DashboardView() {
                 account={account}
                 onClick={() => {
                   useAppStore.getState().setSelectedAccountId(account.id);
-                  setActiveTab("account-hub");
+                  setActiveTab("account");
                 }}
               />
             </div>
@@ -618,7 +618,7 @@ export function DashboardView() {
       <TrendingTopics
         compact
         onNavigateToCreator={() => {
-          setActiveTab("account-hub");
+          setActiveTab("account");
         }}
       />
     </div>

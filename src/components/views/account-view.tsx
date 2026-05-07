@@ -1204,7 +1204,7 @@ export function AccountView() {
 
                 {/* Quick Action Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-                  <Card className="cursor-pointer card-hover" onClick={() => setActiveTab("creator")}>
+                  <Card className="cursor-pointer card-hover" onClick={() => setActiveTab("content")}>
                     <CardContent className="p-4 text-center">
                       <div className="w-10 h-10 rounded-xl bg-xhs-light flex items-center justify-center mx-auto mb-2">
                         <PenLine className="w-5 h-5 text-xhs" />
