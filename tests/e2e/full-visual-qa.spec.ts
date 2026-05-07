@@ -3,7 +3,18 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = 'http://localhost:3000';
 
 test.describe('Xiaohongshu AI Operations Assistant - Full E2E', () => {
+  let consoleErrors: string[];
+
   test.beforeEach(async ({ page }) => {
+    consoleErrors = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        const text = msg.text();
+        if (!text.includes('favicon') && !text.includes('source map') && !text.includes('next-dev')) {
+          consoleErrors.push(text);
+        }
+      }
+    });
     await page.goto(BASE_URL);
     await page.waitForLoadState('networkidle');
   });
@@ -45,24 +56,19 @@ test.describe('Xiaohongshu AI Operations Assistant - Full E2E', () => {
     await page.getByRole('button', { name: '内容库' }).click();
     await page.waitForTimeout(500);
 
-    // Check filter buttons by text content
     await expect(page.locator('button', { hasText: '全部' }).first()).toBeVisible({ timeout: 5000 });
     await expect(page.locator('button', { hasText: '图片' }).first()).toBeVisible({ timeout: 3000 });
     await expect(page.locator('button', { hasText: '视频' }).first()).toBeVisible({ timeout: 3000 });
     await expect(page.locator('button', { hasText: '文案' }).first()).toBeVisible({ timeout: 3000 });
 
-    // Check search input
     const searchInput = page.getByPlaceholder('搜索素材');
     await expect(searchInput).toBeVisible();
 
-    // Check upload button
     await expect(page.locator('button', { hasText: '上传' }).first()).toBeVisible();
-    // Check new text button
     await expect(page.locator('button', { hasText: '新建文案' }).first()).toBeVisible();
 
     await page.screenshot({ path: 'test-results/e2e-full/04-content-library.png', fullPage: true });
 
-    // Click text filter to check empty state
     await page.locator('button', { hasText: '文案' }).first().click();
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/e2e-full/04-text-filter.png', fullPage: true });
@@ -104,5 +110,42 @@ test.describe('Xiaohongshu AI Operations Assistant - Full E2E', () => {
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     await page.screenshot({ path: 'test-results/e2e-full/07-new-text-dialog.png', fullPage: true });
+  });
+
+  // ─── Merged from inspection-runner.ts ──────────────────────────────────
+
+  test('8. Console errors check', async ({ page }) => {
+    // Navigate through all pages to trigger potential errors
+    await page.getByRole('button', { name: '账号中心' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: '内容库' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: '设置' }).click();
+    await page.waitForTimeout(500);
+
+    expect(consoleErrors.length).toBe(0);
+  });
+
+  test('9. Broken images check', async ({ page }) => {
+    // Check all pages for broken images
+    const pages = [
+      { name: '仪表盘', selector: 'text=仪表盘' },
+      { name: '账号中心', selector: 'text=账号中心' },
+      { name: '内容库', selector: 'text=内容库' },
+    ];
+
+    for (const pg of pages) {
+      await page.locator(pg.selector).first().click();
+      await page.waitForTimeout(500);
+    }
+
+    const brokenCount = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('img[src]')).filter((img) => {
+        const el = img as HTMLImageElement;
+        return el.complete && el.naturalHeight === 0 && el.src.length > 0;
+      }).length;
+    });
+
+    expect(brokenCount).toBe(0);
   });
 });

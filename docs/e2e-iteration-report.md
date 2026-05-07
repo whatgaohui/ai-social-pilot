@@ -138,3 +138,40 @@
 ### 分析
 第三轮所有测试稳定通过，各模块加载时间正常。应用状态稳定，无回归问题。
 
+
+---
+
+## 合并迭代 — 统一 E2E 测试（2026-05-07 13:59:29）
+
+### 合并方案
+将"自动巡检"（inspection-runner.ts，14项）和"E2E测试"（full-visual-qa.spec.ts，7项）合并为单一 Playwright 测试套件。
+
+### 新增检查项（从巡检迁移）
+| 新测试 | 来源 | 说明 |
+|--------|------|------|
+| 8. Console errors check | inspection-runner | 遍历所有页面，检查 console.error |
+| 9. Broken images check | inspection-runner | 扫描 3 个页面中的破损图片 |
+
+### 合并后测试套件（9项）
+1. Dashboard loads with data
+2. Account Hub - 3 tabs interactive
+3. Calendar - clickable days
+4. Content Library - filters, grid, upload, new text
+5. Settings - AI config + Help manual
+6. Note creation dialog opens
+7. New text material dialog
+8. **Console errors check** （新增）
+9. **Broken images check** （新增）
+
+### 合并验证
+- 9/9 通过 ✅
+- 执行时间：15.2s（9 worker 并行）
+- 取消旧任务：`61328501`（自动巡检）、`662a0199`（E2E测试）
+- 新任务：`7184bce0` — 每 30 分钟执行
+
+### 优势
+- **单一真相来源** — 不再维护两套检查体系
+- **9 项全面检查** — 覆盖用户交互 + 控制台错误 + 破损图片
+- **30 分钟频率** — 平衡及时性和资源消耗
+- **Playwright 特性** — 视频录制、并行执行、截图存档
+
