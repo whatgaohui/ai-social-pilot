@@ -626,9 +626,9 @@ export function SettingsView() {
           {/* Feature badges */}
           <div className="grid grid-cols-2 gap-2">
             <div className="p-3 rounded-xl bg-muted/30 text-center">
-              <Sparkles className="w-5 h-5 mx-auto text-xhs mb-1" />
-              <p className="text-xs font-medium">AI创作</p>
-              <p className="text-[10px] text-muted-foreground">智能内容生成</p>
+              <FileText className="w-5 h-5 mx-auto text-xhs mb-1" />
+              <p className="text-xs font-medium">内容库</p>
+              <p className="text-[10px] text-muted-foreground">笔记管理与草稿</p>
             </div>
             <div className="p-3 rounded-xl bg-muted/30 text-center">
               <Users className="w-5 h-5 mx-auto text-rose-500 mb-1" />
@@ -636,9 +636,9 @@ export function SettingsView() {
               <p className="text-[10px] text-muted-foreground">统一管理运营</p>
             </div>
             <div className="p-3 rounded-xl bg-muted/30 text-center">
-              <FileText className="w-5 h-5 mx-auto text-amber-500 mb-1" />
-              <p className="text-xs font-medium">数据分析</p>
-              <p className="text-[10px] text-muted-foreground">深度数据洞察</p>
+              <Sparkles className="w-5 h-5 mx-auto text-amber-500 mb-1" />
+              <p className="text-xs font-medium">AI 方案</p>
+              <p className="text-[10px] text-muted-foreground">5 场景智能建议</p>
             </div>
             <div className="p-3 rounded-xl bg-muted/30 text-center">
               <Heart className="w-5 h-5 mx-auto text-emerald-500 mb-1" />
