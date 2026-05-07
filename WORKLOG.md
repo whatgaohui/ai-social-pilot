@@ -1027,3 +1027,46 @@ Stage Summary:
 - `src/lib/xhs-scraper.ts` — regex flag es2018 (构建目标问题)
 
 ---
+
+---
+
+## Session: PRD-001/002/004/005 开发 + E2E测试 (2026-05-07 Night)
+
+**目标**: 执行 PRD-001/002/004/005 的开发任务
+
+### PRD-001: 采集器增强
+- Schema 新增: imagePaths, videoPath, videoThumbnail ✅
+- 媒体下载本地化: browser-strategy.ts 新增 downloadMedia() ✅
+- 图片: 并发下载, 超时30s, 重试2次, 保存到 /public/upload/images/{noteId}/
+- 视频: 下载保存到 /public/upload/videos/{noteId}.mp4, 最大50MB
+
+### PRD-002: 内容库增强
+- 共享 ImageCarousel 组件提取到 src/components/ui/ ✅
+- 标签过滤器组件: src/components/content/tag-filter.tsx ✅
+- Materials API 支持 tags/tagMode 搜索 ✅
+- Material store 支持 selectedTags/tagMode/availableTags ✅
+
+### PRD-004: 弹层尺寸调整
+- 笔记详情: 左右分栏 60/40, max-w-5xl ✅
+- 新建笔记: max-w-3xl ✅
+
+### PRD-005: 笔记创建重构 + 视频支持
+- 笔记创建对话框重写: 图文/视频类型, 拖拽上传, 进度条 ✅
+- 媒体上传 API: /api/accounts/[id]/notes/upload-media ✅
+- 草稿箱: CRUD API + draft-box.tsx 组件 ✅
+- Schema: ScheduledNote 新增 mediaType, videoUrl ✅
+
+### E2E 测试结果
+- 总测试数: 15
+- 通过: 15 (100%)
+- 失败: 0
+- 无回归问题
+
+### Git 提交
+- f0dc639: feat(prd-001-002-004-005): 采集器增强 + 内容库 + 弹层 + 笔记创建重构
+- 20 files changed, 2793 insertions, 360 deletions
+
+### 剩余未完成任务
+- PRD-001 Task 18: 发布时间兜底 (用户手动指定日期)
+- PRD-001 Task 19: 批量详情采集适配新字段
+- PRD-003: AI建议→实施方案 (未开始开发)
