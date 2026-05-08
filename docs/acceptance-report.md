@@ -169,7 +169,6 @@
 
 | 模块 | 待完成内容 | 优先级 |
 |------|-----------|--------|
-| PRD-003 | Engagement/Persona/Strategy handler | P2 |
 | 采集器 | 视频实际下载效果需真实Cookie验证 | P0 |
 | 采集器 | 图片实际下载效果需真实Cookie验证 | P0 |
 

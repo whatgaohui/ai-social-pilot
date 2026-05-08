@@ -77,7 +77,7 @@ export function MaterialDetailView() {
 
   return (
     <Dialog open={!!selectedMaterial} onOpenChange={(o) => { if (!o) setSelectedMaterial(null); }}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0" showCloseButton={false}>
         <DialogHeader className="px-8 pt-6 pb-4">
           <DialogTitle className="flex items-center justify-between">
             <span className="text-lg font-bold">素材详情</span>

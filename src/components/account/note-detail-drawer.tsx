@@ -58,7 +58,7 @@ export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountI
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0" showCloseButton={false}>
         {/* Header */}
         <DialogHeader className="px-8 pt-6 pb-4">
           <DialogTitle className="flex items-center justify-between">
@@ -111,7 +111,7 @@ export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountI
                 </div>
 
                 {/* Metrics grid */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   {[
                     { icon: Eye, label: '浏览', value: fmt(detail.views), color: 'text-muted-foreground' },
                     { icon: Heart, label: '点赞', value: fmt(detail.likes), color: 'text-pink-500' },
@@ -122,10 +122,10 @@ export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountI
                   ].map((m) => {
                     const Icon = m.icon;
                     return (
-                      <div key={m.label} className="p-2.5 bg-muted/50 rounded-lg text-center">
-                        <Icon className={`w-4 h-4 mx-auto mb-1 ${m.color}`} />
-                        <p className="text-sm font-bold">{m.value}</p>
-                        <p className="text-[10px] text-muted-foreground">{m.label}</p>
+                      <div key={m.label} className="p-3 bg-muted/50 rounded-lg flex flex-col items-center justify-center min-h-[80px]">
+                        <Icon className={`w-4 h-4 mb-1 ${m.color}`} />
+                        <p className="text-sm font-bold leading-tight">{m.value}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 whitespace-nowrap">{m.label}</p>
                       </div>
                     );
                   })}
