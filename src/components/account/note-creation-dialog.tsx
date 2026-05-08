@@ -123,13 +123,23 @@ export function NoteCreationDialog({
     setUploadProgress(0);
 
     const uploadPromises = Array.from(files).map(async (file, index) => {
-      const formDataToSend = new FormData();
-      formDataToSend.append('file', file);
-
       try {
-        const res = await fetch(`/api/accounts/${accountId}/notes/upload-media`, {
+        // Convert to base64
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const res = await fetch(`/api/upload-media`, {
           method: 'POST',
-          body: formDataToSend,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data: base64,
+            filename: file.name,
+            mediaType: 'image',
+          }),
         });
 
         const json = await res.json();
@@ -168,13 +178,22 @@ export function NoteCreationDialog({
     setIsUploading(true);
     setUploadProgress(0);
 
-    const formDataToSend = new FormData();
-    formDataToSend.append('file', file);
-
     try {
-      const res = await fetch(`/api/accounts/${accountId}/notes/upload-media`, {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch(`/api/upload-media`, {
         method: 'POST',
-        body: formDataToSend,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: base64,
+          filename: file.name,
+          mediaType: 'video',
+        }),
       });
 
       const json = await res.json();
