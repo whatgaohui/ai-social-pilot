@@ -7,7 +7,7 @@
 - Dev server running on port 3000, Next.js 16 + Turbopack
 - **XHS Scraper micro-service** running on port 3002 with Cookie-based API support
 - All core features working, API endpoints verified, lint clean, zero console errors
-- **7 major views**: Dashboard, Account Analysis, Data Insights, Content Library, Persona Management, AI Creator, Settings
+- **4 major views**: Dashboard, Account Hub, Content Library, Settings
 - **VLM Quality Scores**: Dashboard 7/10, Content 8/10, Analytics 7/10, Account 7/10
 - **Cookie-Based Scraping** - Users can provide browser cookies for complete data collection
 - **3-Strategy Scraping**: Cookie API (PRIMARY) → Web Search + LLM (FALLBACK) → LLM Only (LAST RESORT)
@@ -34,6 +34,20 @@
 ---
 
 ## 当前目标 / 已完成的修改 / 验证结果
+
+### Session 22 - 侧边栏去重 + 死代码清理
+
+---
+Task ID: 22
+Agent: Main Agent
+Task: 删除侧边栏重复的"人设管理"导航项，清理未使用的视图文件
+
+修改摘要:
+- 侧边栏 navItems 移除 persona 入口，仅保留账号中心内的人设管理 Tab
+- 移除 page.tsx 中对 PersonaView/CreatorView/AnalyticsView 的引用
+- 移除 app-store.ts 中 activeTab 类型的 'persona' 联合项
+- 删除 4 个未使用的视图文件: account-view, analytics-view, creator-view, persona-view
+- 更新 worklog.md 视图数量 (7→4)
 
 ### Session 21 - 定时任务端到端验证增强
 
