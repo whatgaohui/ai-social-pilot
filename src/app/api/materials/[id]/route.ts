@@ -6,9 +6,10 @@ import path from 'path';
 
 const THUMB_DIR = path.join(process.cwd(), 'public', 'upload', 'materials', 'video', 'thumbs');
 
-async function saveVideoThumbnail(base64: string, filename: string): Promise<string> {
+async function saveVideoThumbnail(base64: string, fileUrl: string): Promise<string> {
   if (!existsSync(THUMB_DIR)) await mkdir(THUMB_DIR, { recursive: true });
-  const thumbName = `regenerate_${filename.replace(/\.[^.]+$/, '')}_${Date.now()}.jpg`;
+  const baseName = path.basename(fileUrl, path.extname(fileUrl));
+  const thumbName = `regenerate_${baseName}_${Date.now()}.jpg`;
   const thumbPath = path.join(THUMB_DIR, thumbName);
   const base64Data = base64.replace(/^data:image\/[a-z]+;base64,/, '');
   await writeFile(thumbPath, Buffer.from(base64Data, 'base64'));

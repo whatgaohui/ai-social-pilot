@@ -62,8 +62,10 @@ function ThumbnailImage({ src, alt, type, className }: { src: string; alt: strin
 export function MaterialGridCard({ material }: { material: Material }) {
   const { setSelectedMaterial, selectedIds, toggleSelect } = useMaterialStore();
   const isSelected = selectedIds.includes(material.id);
-  const previewUrl = material.thumbnailUrl || material.fileUrl;
   const [generating, setGenerating] = useState(false);
+
+  // For videos, only use thumbnailUrl (not fileUrl which is the video itself)
+  const previewUrl = material.type === 'video' ? material.thumbnailUrl : material.thumbnailUrl || material.fileUrl;
 
   const handleRegenerateThumb = async (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -116,23 +118,25 @@ export function MaterialGridCard({ material }: { material: Material }) {
         ) : previewUrl ? (
           <ThumbnailImage src={previewUrl} alt={material.name} type={material.type} className="relative h-full w-full" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground">
             {getTypeIcon(material.type)}
+            <span className="text-[9px]">{material.type === 'video' ? '点击生成封面' : ''}</span>
           </div>
         )}
         {material.type === 'video' && !material.thumbnailUrl && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
             <button
-              className="rounded-full bg-white/90 p-2 text-xs font-medium text-foreground shadow hover:bg-white"
+              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-foreground shadow hover:bg-white"
               onClick={handleRegenerateThumb}
               disabled={generating}
               type="button"
             >
-              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Video className="h-3.5 w-3.5" />}
+              {generating ? '生成中' : '生成封面'}
             </button>
           </div>
         )}
-        <div className="absolute left-1 top-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute left-1 top-1 z-10 opacity-0 transition-opacity group-hover:opacity-100">
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => toggleSelect(material.id)}
@@ -150,7 +154,7 @@ export function MaterialListRow({ material }: { material: Material }) {
   const { setSelectedMaterial, selectedIds, toggleSelect } = useMaterialStore();
   const isSelected = selectedIds.includes(material.id);
   const tags = parseTags(material.tags).slice(0, 2);
-  const previewUrl = material.thumbnailUrl || material.fileUrl;
+  const previewUrl = material.type === 'video' ? material.thumbnailUrl : material.thumbnailUrl || material.fileUrl;
   const [generating, setGenerating] = useState(false);
 
   const handleRegenerateThumb = async (event: React.MouseEvent) => {
