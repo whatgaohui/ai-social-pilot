@@ -51,6 +51,14 @@ async function generateThumbnail(fileBuffer: Buffer, type: string, thumbDir: str
   return '';
 }
 
+async function saveVideoThumbnail(base64: string, thumbDir: string, filename: string): Promise<string> {
+  const thumbName = `thumb_${filename.replace(/\.[^.]+$/, '')}.jpg`;
+  const thumbPath = path.join(thumbDir, thumbName);
+  const base64Data = base64.replace(/^data:image\/[a-z]+;base64,/, '');
+  await writeFile(thumbPath, Buffer.from(base64Data, 'base64'));
+  return `/upload/materials/video/thumbs/${thumbName}`;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -136,6 +144,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
     const name = (formData.get('name') as string) || file?.name || '未命名素材';
     const tagsStr = (formData.get('tags') as string) || '[]';
+    const thumbnailBase64 = formData.get('thumbnail') as string | null;
 
     if (!file) {
       return NextResponse.json({ success: false, error: '未上传文件' }, { status: 400 });
@@ -160,7 +169,14 @@ export async function POST(request: NextRequest) {
     const filePath = path.join(dir, filename);
     await writeFile(filePath, buffer);
 
-    const thumbnailUrl = await generateThumbnail(buffer, type, thumbDir, filename);
+    // Use client-provided thumbnail for videos, or generate for images
+    let thumbnailUrl = '';
+    if (thumbnailBase64 && type === 'video') {
+      thumbnailUrl = await saveVideoThumbnail(thumbnailBase64, thumbDir, filename);
+    } else if (type === 'image') {
+      thumbnailUrl = await generateThumbnail(buffer, type, thumbDir, filename);
+    }
+
     const tags = JSON.parse(tagsStr);
 
     const material = await db.material.create({
