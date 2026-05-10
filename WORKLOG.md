@@ -1154,3 +1154,20 @@ Stage Summary:
 - 用浏览器 Canvas 提取而非服务端 ffmpeg：WSL 环境无 ffmpeg，零服务端依赖
 - 缩略图宽 300px，JPEG 80% 质量，提取时间点为 1 秒（或视频总长 10%）
 - 视频 previewUrl 不回退到 fileUrl（<img> 加载不了视频），仅在有 thumbnailUrl 时显示图片
+
+---
+
+## Session: 清理侧边栏重复的"人设管理"入口 (2026-05-10)
+
+### 问题
+侧边栏有"人设管理"导航项，账号中心内部也有"人设管理"Tab，功能重复。
+
+### 修复
+- 移除侧边栏的"人设管理"导航项
+- 清理 page.tsx 中未使用的 PersonaView / CreatorView / AnalyticsView import
+- app-store.ts 的 activeTab 类型移除 'persona'
+- 侧边栏最终保留 4 个导航项：仪表盘 / 账号中心 / 内容库 / 设置
+
+### Git 提交
+- 2555fcd: feat: 删除侧边栏独立的"人设管理"导航项
+- 3 files changed, 1 insertion(+), 8 deletions(-)
