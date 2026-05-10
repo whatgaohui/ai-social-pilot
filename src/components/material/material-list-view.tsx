@@ -280,7 +280,7 @@ export function MaterialListView() {
       )}
 
       {/* Content area */}
-      <div className="flex-1 overflow-auto p-4" onClick={() => setSelectedMaterial(null)}>
+      <div className="flex-1 overflow-auto p-4">
         {loading ? (
           <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4' : 'space-y-2'}>
             {Array.from({ length: 8 }).map((_, i) => (

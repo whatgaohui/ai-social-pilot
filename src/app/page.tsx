@@ -69,8 +69,6 @@ export default function Home() {
         return <AccountHubView />;
       case "content":
         return <ContentView />;
-      case "persona":
-        return <PersonaView />;
       case "settings":
         return <SettingsView />;
       default:

@@ -1,21 +1,47 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { X, Heart, MessageCircle, Bookmark, Share2, Eye, Star, FileText, BarChart3 } from 'lucide-react';
 import { ImageCarousel } from '@/components/ui/image-carousel';
+import {
+  BarChart3,
+  Bookmark,
+  ExternalLink,
+  Eye,
+  FileText,
+  Heart,
+  ImageOff,
+  MessageCircle,
+  Share2,
+  Star,
+  Video,
+  X,
+} from 'lucide-react';
 
 function fmt(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '0';
   if (n >= 10000) return `${(n / 10000).toFixed(1)}万`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return n.toLocaleString();
+  return n.toLocaleString('zh-CN');
 }
 
 function getTypeLabel(type: string) {
   return type === 'video' ? '视频笔记' : '图文笔记';
+}
+
+function safeJsonText(value: string) {
+  if (!value) return '';
+  try {
+    const parsed = JSON.parse(value);
+    if (typeof parsed === 'string') return parsed;
+    if (Array.isArray(parsed)) return parsed.join('\n');
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return value;
+  }
 }
 
 interface NoteDetail {
@@ -24,7 +50,10 @@ interface NoteDetail {
   content: string;
   coverUrl: string;
   imageUrls: string[];
+  imagePaths?: string[];
   videoUrl: string;
+  videoPath?: string;
+  videoThumbnail?: string;
   postType: string;
   likes: number;
   comments: number;
@@ -41,76 +70,125 @@ interface NoteDetail {
   detailScrapedAt: string | null;
 }
 
-export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountId: string; noteId: string; open: boolean; onClose: () => void }) {
+export function NoteDetailModal({
+  accountId,
+  noteId,
+  open,
+  onClose,
+}: {
+  accountId: string;
+  noteId: string;
+  open: boolean;
+  onClose: () => void;
+}) {
   const [detail, setDetail] = useState<NoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!open || !noteId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setDetail(null);
     fetch(`/api/accounts/${accountId}/notes?noteId=${noteId}`)
       .then((r) => r.json())
-      .then((json) => { if (json.success) setDetail(json.data); })
+      .then((json) => {
+        if (json.success) setDetail(json.data);
+      })
       .catch(() => setDetail(null))
       .finally(() => setLoading(false));
   }, [accountId, noteId, open]);
 
+  const mediaImages = useMemo(() => {
+    if (!detail) return [];
+    const merged = [...(detail.imagePaths || []), ...(detail.imageUrls || [])].filter(Boolean);
+    return Array.from(new Set(merged));
+  }, [detail]);
+
+  const videoSource = detail?.videoPath || detail?.videoUrl || '';
+  const coverSource = detail?.videoThumbnail || detail?.coverUrl || mediaImages[0] || '';
+  const aiAnalysis = safeJsonText(detail?.aiAnalysis || '');
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0" showCloseButton={false}>
-        {/* Header */}
-        <DialogHeader className="px-8 pt-6 pb-4">
-          <DialogTitle className="flex items-center justify-between">
-            <span className="text-lg font-bold">笔记详情</span>
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7"><X className="w-4 h-4" /></Button>
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DialogContent
+        className="w-[min(96vw,1280px)] sm:max-w-[1280px] max-h-[92vh] overflow-hidden p-0"
+        showCloseButton={false}
+      >
+        <DialogHeader className="border-b px-6 py-4">
+          <DialogTitle className="flex items-center justify-between gap-4">
+            <span className="text-lg font-semibold">笔记详情</span>
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 shrink-0" aria-label="关闭">
+              <X className="h-4 w-4" />
+            </Button>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-8 pb-8">
+        <div className="max-h-[calc(92vh-73px)] overflow-y-auto p-6">
           {loading ? (
-            <div className="flex items-center justify-center h-40 text-muted-foreground">加载中...</div>
+            <div className="flex h-64 items-center justify-center text-muted-foreground">正在加载笔记详情...</div>
           ) : detail ? (
-            <div className="grid grid-cols-5 gap-6">
-              {/* Left: Media Section (60%) */}
-              <div className="col-span-3">
-                <div className="rounded-xl border bg-muted/30 overflow-hidden sticky top-0">
-                  {detail.videoUrl ? (
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_420px]">
+              <section className="min-w-0">
+                <div className="overflow-hidden rounded-lg border bg-muted/30">
+                  {videoSource ? (
                     <video
-                      key={detail.videoUrl}
-                      src={detail.videoUrl}
+                      key={videoSource}
+                      src={videoSource}
+                      poster={coverSource}
                       controls
-                      className="w-full max-h-[80vh] bg-black"
+                      className="h-[min(70vh,720px)] w-full bg-black object-contain"
                       preload="metadata"
                     />
-                  ) : detail.imageUrls.length > 0 ? (
-                    <ImageCarousel images={detail.imageUrls} />
-                  ) : detail.coverUrl ? (
-                    <div className="flex justify-center">
-                      <img src={detail.coverUrl} alt={detail.title} className="max-h-[80vh] w-auto object-contain" />
+                  ) : mediaImages.length > 0 ? (
+                    <div className="[&_img]:max-h-[min(70vh,720px)] [&_img]:w-auto">
+                      <ImageCarousel images={mediaImages} />
                     </div>
-                  ) : null}
+                  ) : coverSource ? (
+                    <div className="flex h-[min(70vh,720px)] items-center justify-center bg-black">
+                      <img src={coverSource} alt={detail.title} className="max-h-full w-auto object-contain" />
+                    </div>
+                  ) : (
+                    <div className="flex h-[420px] flex-col items-center justify-center gap-2 text-muted-foreground">
+                      <ImageOff className="h-10 w-10 opacity-50" />
+                      <p className="text-sm">这条笔记还没有采集到图片或视频</p>
+                    </div>
+                  )}
                 </div>
-              </div>
 
-              {/* Right: Details Section (40%) */}
-              <div className="col-span-2 space-y-4 overflow-y-auto max-h-[85vh]">
-                {/* Title + metadata */}
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="secondary" className="text-xs">{getTypeLabel(detail.postType)}</Badge>
-                    {detail.category && <Badge variant="secondary" className="text-xs">{detail.category}</Badge>}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {videoSource && (
+                    <Button variant="outline" size="sm" onClick={() => window.open(videoSource, '_blank')}>
+                      <ExternalLink className="mr-1.5 h-4 w-4" />
+                      打开视频源文件
+                    </Button>
+                  )}
+                  {mediaImages.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={() => window.open(mediaImages[0], '_blank')}>
+                      <ExternalLink className="mr-1.5 h-4 w-4" />
+                      打开图片源文件
+                    </Button>
+                  )}
+                </div>
+              </section>
+
+              <aside className="min-w-0 space-y-5">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">{getTypeLabel(detail.postType)}</Badge>
+                    {detail.category && <Badge variant="secondary">{detail.category}</Badge>}
                     {detail.aiScore > 0 && (
-                      <Badge className="text-xs bg-xhs-light/80 text-xhs border-0">
-                        <Star className="w-3 h-3 mr-1" /> AI {Math.round(detail.aiScore)}
+                      <Badge className="border-0 bg-xhs-light/80 text-xhs">
+                        <Star className="mr-1 h-3 w-3" />
+                        AI {Math.round(detail.aiScore)}
                       </Badge>
                     )}
                   </div>
-                  <h4 className="text-lg font-bold mt-2">{detail.title}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">{detail.publishDate}{detail.publishTime && ` ${detail.publishTime}`}</p>
+                  <h2 className="break-words text-2xl font-semibold leading-snug">{detail.title || '未命名笔记'}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {detail.publishDate || '未知日期'}{detail.publishTime ? ` ${detail.publishTime}` : ''}
+                  </p>
                 </div>
 
-                {/* Metrics grid */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { icon: Eye, label: '浏览', value: fmt(detail.views), color: 'text-muted-foreground' },
@@ -118,23 +196,22 @@ export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountI
                     { icon: MessageCircle, label: '评论', value: fmt(detail.comments), color: 'text-blue-500' },
                     { icon: Bookmark, label: '收藏', value: fmt(detail.collects), color: 'text-amber-500' },
                     { icon: Share2, label: '分享', value: fmt(detail.shares), color: 'text-emerald-500' },
-                    { icon: BarChart3, label: '互动率', value: detail.engagementRate > 0 ? `${detail.engagementRate.toFixed(1)}%` : '—', color: 'text-xhs' },
-                  ].map((m) => {
-                    const Icon = m.icon;
+                    { icon: BarChart3, label: '互动率', value: detail.engagementRate > 0 ? `${detail.engagementRate.toFixed(1)}%` : '-', color: 'text-xhs' },
+                  ].map((metric) => {
+                    const Icon = metric.icon;
                     return (
-                      <div key={m.label} className="p-3 bg-muted/50 rounded-lg flex flex-col items-center justify-center min-h-[80px]">
-                        <Icon className={`w-4 h-4 mb-1 ${m.color}`} />
-                        <p className="text-sm font-bold leading-tight">{m.value}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 whitespace-nowrap">{m.label}</p>
+                      <div key={metric.label} className="flex min-h-[86px] flex-col items-center justify-center rounded-lg bg-muted/50 p-3 text-center">
+                        <Icon className={`mb-1 h-4 w-4 ${metric.color}`} />
+                        <p className="max-w-full truncate text-base font-semibold leading-tight">{metric.value}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{metric.label}</p>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Engagement bar */}
                 <div>
-                  <p className="text-xs text-muted-foreground mb-2">互动分布</p>
-                  <div className="flex items-center gap-2">
+                  <p className="mb-2 text-xs text-muted-foreground">互动分布</p>
+                  <div className="grid grid-cols-4 gap-2">
                     {[
                       { label: '赞', value: detail.likes, color: 'bg-pink-500' },
                       { label: '评', value: detail.comments, color: 'bg-blue-500' },
@@ -142,83 +219,81 @@ export function NoteDetailModal({ accountId, noteId, open, onClose }: { accountI
                       { label: '享', value: detail.shares, color: 'bg-emerald-500' },
                     ].map((item) => {
                       const max = Math.max(detail.likes, detail.comments, detail.collects, detail.shares, 1);
-                      const pct = Math.round((item.value / max) * 100);
+                      const pct = Math.max(4, Math.round((item.value / max) * 100));
                       return (
-                        <div key={item.label} className="flex-1">
-                          <div className="h-2.5 rounded-full bg-muted/50 overflow-hidden">
-                            <div className={`h-full rounded-full transition-all ${item.color}`} style={{ width: `${pct}%` }} />
+                        <div key={item.label}>
+                          <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                            <div className={`h-full rounded-full ${item.color}`} style={{ width: `${pct}%` }} />
                           </div>
-                          <p className="text-[10px] text-center text-muted-foreground mt-1">{item.label}</p>
+                          <p className="mt-1 text-center text-[11px] text-muted-foreground">{item.label}</p>
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Tags */}
                 {detail.tags.length > 0 && (
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">标签</p>
+                    <p className="mb-2 text-xs text-muted-foreground">标签</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {detail.tags.map((tag, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">{tag}</Badge>
+                      {detail.tags.map((tag, index) => (
+                        <Badge key={`${tag}-${index}`} variant="secondary">{tag}</Badge>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Content */}
                 {detail.content && (
                   <>
                     <Separator />
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                        <FileText className="w-3.5 h-3.5" />内容
+                      <p className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+                        <FileText className="h-3.5 w-3.5" />
+                        正文
                       </p>
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap bg-muted/30 p-3 rounded-xl max-h-[200px] overflow-y-auto">
+                      <div className="max-h-52 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-muted/30 p-3 text-sm leading-6">
                         {detail.content}
                       </div>
                     </div>
                   </>
                 )}
 
-                {/* AI analysis */}
-                {detail.aiAnalysis && (
+                {aiAnalysis && (
                   <>
                     <Separator />
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 text-amber-500" />AI 分析
+                      <p className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+                        <Star className="h-3.5 w-3.5 text-amber-500" />
+                        AI 分析
                       </p>
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap bg-xhs-light/5 p-3 rounded-xl max-h-[200px] overflow-y-auto">
-                        {detail.aiAnalysis}
+                      <div className="max-h-52 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-xhs-light/5 p-3 text-sm leading-6">
+                        {aiAnalysis}
                       </div>
                     </div>
                   </>
                 )}
 
-                {/* Detail scrape status */}
-                {detail.detailScrapedAt ? (
-                  <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800">
-                    <p className="text-xs text-green-700 dark:text-green-400">
-                      ✅ 笔记详情已采集 · {new Date(detail.detailScrapedAt).toLocaleString('zh-CN')}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800">
-                    <p className="text-xs text-amber-700 dark:text-amber-400">
-                      ⏳ 笔记详情待采集 — 仅列表页数据，正文/图片/视频需重新采集获取
-                    </p>
+                <div className={`rounded-lg border p-3 ${detail.detailScrapedAt ? 'border-green-200 bg-green-50 text-green-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                  <p className="text-xs">
+                    {detail.detailScrapedAt
+                      ? `详情已采集：${new Date(detail.detailScrapedAt).toLocaleString('zh-CN')}`
+                      : '详情未完整采集。如果视频或正文缺失，请重新抓取该账号。'}
+                  </p>
+                </div>
+
+                {detail.postType === 'video' && !videoSource && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-700">
+                    <Video className="mt-0.5 h-4 w-4 shrink-0" />
+                    <p className="text-xs leading-5">这条笔记被识别为视频笔记，但当前没有拿到可播放的视频源文件。请重新采集后再检查。</p>
                   </div>
                 )}
-              </div>
+              </aside>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-40 text-muted-foreground">加载失败</div>
+            <div className="flex h-64 items-center justify-center text-muted-foreground">笔记详情加载失败</div>
           )}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
