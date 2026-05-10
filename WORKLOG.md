@@ -1125,3 +1125,32 @@ Stage Summary:
 ### 最终结果
 - E2E: 15/15 通过 (100%)
 - Git: ab899c1
+
+---
+
+## Session: PRD-006 视频封面缩略图 (2026-05-10)
+
+### 问题
+内容库中上传的视频素材没有封面缩略图，显示灰色占位符。
+
+### 修复
+- 新增 `src/lib/video-thumbnail.ts` — 浏览器端用 `<video>` + `<canvas>` 提取第一帧
+- `upload-modal.tsx` — 视频上传前提取缩略图，通过 FormData 发送
+- `api/materials/route.ts` — 新增 `saveVideoThumbnail` 保存缩略图到 thumbs/
+- `api/upload-media/route.ts` — 笔记创建视频上传也支持缩略图
+- `note-creation-dialog.tsx` — 视频上传集成缩略图提取
+
+### Git 提交
+- 419e557: feat(video-thumbnail): 视频上传自动提取第一帧作为封面缩略图
+- c2f7a8e: feat(video-thumbnail): 存量视频支持回补封面 + 网格/列表视图生成按钮
+- 83bf00f: fix(video-thumbnail): 修复存量视频生成封面路径错误 + 清理 debug 日志
+
+### 修复过程
+- 首轮提交后发现存量视频没有封面 → 新增 PATCH /api/materials/[id] 端点 + 网格/列表视图的"生成封面"按钮
+- 点击按钮报错 `ENOENT`：fileUrl 是完整路径 `/upload/materials/video/xxx.mp4`，直接用 replace 去扩展名导致文件名包含斜杠 → 改用 `path.basename` + `path.extname` 正确提取文件名
+- 清理重复的 debug console.log
+
+### 技术决策
+- 用浏览器 Canvas 提取而非服务端 ffmpeg：WSL 环境无 ffmpeg，零服务端依赖
+- 缩略图宽 300px，JPEG 80% 质量，提取时间点为 1 秒（或视频总长 10%）
+- 视频 previewUrl 不回退到 fileUrl（<img> 加载不了视频），仅在有 thumbnailUrl 时显示图片
