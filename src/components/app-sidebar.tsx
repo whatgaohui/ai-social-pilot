@@ -5,10 +5,7 @@ import { useAppStore } from "@/store/app-store";
 import {
   LayoutDashboard,
   UserCircle,
-  BarChart3,
   FileText,
-  Theater,
-  Sparkles,
   Settings,
 } from "lucide-react";
 import {
@@ -23,7 +20,6 @@ const navItems = [
   { id: "dashboard" as const, label: "仪表盘", icon: LayoutDashboard },
   { id: "account" as const, label: "账号中心", icon: UserCircle },
   { id: "content" as const, label: "内容库", icon: FileText },
-  { id: "persona" as const, label: "人设管理", icon: Theater },
 ];
 
 export function AppSidebar() {
