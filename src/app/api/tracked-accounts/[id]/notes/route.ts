@@ -31,6 +31,7 @@ export async function GET(
     const where: Record<string, unknown> = {
       platform: account.platform,
       generationType: 'scraped',
+      sourceAccountId: account.id,
     };
 
     if (search) {

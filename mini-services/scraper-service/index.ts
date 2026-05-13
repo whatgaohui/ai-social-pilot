@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 // ─── Prisma Client Setup ──────────────────────────────────────────────────
 const prisma = new PrismaClient({
   datasources: {
-    db: { url: 'file:/home/z/my-project/db/custom.db' },
+    db: { url: process.env.DATABASE_URL || 'file:../../db/custom.db' },
   },
 });
 

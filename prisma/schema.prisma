@@ -60,6 +60,7 @@ model ContentPost {
   shares        Int      @default(0)
   views         Int      @default(0)
   favorites     Int      @default(0) // Xiaohongshu favorites/收藏
+  sourceAccountId String @default("") // 来源账号ID（TrackedAccount.id）
   aiScore       Float    @default(0) // AI quality score 0-100
   feedback      String   @default("") // user feedback notes
   sortOrder     Int      @default(0) // list-view drag sort order

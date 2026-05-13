@@ -143,6 +143,7 @@ async function executeSync(
           where: {
             platform: 'xiaohongshu',
             generationType: 'scraped',
+            sourceAccountId: account.id,
           },
         }))
       : 0;
@@ -258,7 +259,7 @@ async function scrapeXHS(account: {
  * Import scraped notes to DB via the scraper service's import endpoint
  */
 async function importToDb(
-  account: { platform: string; nickname: string },
+  account: { id: string; platform: string; nickname: string },
   scrapeResult: ScrapeResult,
 ): Promise<{ imported: number; failed: number; error: string }> {
   if (!scrapeResult.notes || scrapeResult.notes.length === 0) {
@@ -294,6 +295,7 @@ async function importToDb(
           scheduledDate: note.scheduledDate || new Date().toISOString().slice(0, 10),
           topic: note.title || note.content?.slice(0, 50) || '',
           generationType: 'scraped',
+          sourceAccountId: account.id,
         },
       });
 
@@ -317,6 +319,7 @@ async function importToDb(
           shares: note.shares || 0,
           views: note.views || 0,
           favorites: note.favorites || 0,
+          sourceAccountId: account.id,
         },
       });
       imported++;
