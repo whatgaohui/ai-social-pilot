@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  // Allow all cross-origin requests in dev for preview
+  // Allow cross-origin requests in dev for preview panel (space-z.ai, localhost, etc.)
   allowedDevOrigins: [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
     "http://localhost:81",
     "http://127.0.0.1:81",
     "http://0.0.0.0:81",
+    // space-z.ai preview origins (common patterns)
+    "https://space-z.ai",
+    "https://preview.space-z.ai",
   ],
   // Allow all cross-origin in dev for preview iframe
   async headers() {
