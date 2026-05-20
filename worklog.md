@@ -305,3 +305,39 @@ Stage Summary:
 - CreatorView Sheet pre-fills account context with "正在为 [账号名] 创建笔记"
 - All child views work both inside hub (shared data) and standalone (own fetch)
 - No duplicate API calls for account list across components
+
+---
+
+### Session 28 — Fix Material Upload Display Issues (Image + Video)
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Fix uploaded images/videos not displaying in material management
+
+Work Log:
+- Diagnosed root cause: Next.js standalone mode does NOT serve files added to `public/` at runtime — all `/uploads/xxx.png` URLs return 404
+- Created `src/app/api/uploads/[...path]/route.ts` — API route to serve uploaded files from disk
+- Discovered that using fs/path modules inside Next.js standalone API routes crashes the server process
+- Changed all asset URLs from `/uploads/` to `/api/uploads/` (standalone rewrite rules don't work)
+- Migrated existing 6 database records to use new URL prefix
+- Fixed `saveMetadata` bug: API returns `{success, data}` but frontend was spreading entire response
+- Added `sharp` to `serverExternalPackages` in next.config.ts to fix image processing crashes
+- Created `mini-services/file-server/` — Bun HTTP server on port 3001 for reliable file serving
+  - Uses Bun.file() for efficient zero-copy streaming
+  - Serves both images and videos with correct MIME types
+  - Health check endpoint at /health
+- Updated Next.js uploads route to proxy requests to file-server
+- Changed UPLOAD_DIR to use absolute path `/home/z/my-project/public/uploads` for consistency between dev/prod
+- Removed ffmpeg/ffprobe from upload route — child_process.execFile crashes Next.js standalone server
+  - Videos upload without thumbnail initially
+- Updated `library-view.tsx`: fixed AssetRow video thumbnail display, improved download button
+- Full E2E test passed: image upload/serve/delete ✅, video upload/serve/delete ✅
+
+Stage Summary:
+- Root cause: Next.js standalone doesn't serve runtime files; fs module crashes the server
+- Solution: Independent file-server mini service (Bun, port 3001) + Next.js proxy route
+- 7 files modified, 2 new files created
+- Image upload + display fully working
+- Video upload + display working (without auto thumbnail generation)
+- Known limitation: Video thumbnails not auto-generated (ffmpeg removed to avoid crashes)

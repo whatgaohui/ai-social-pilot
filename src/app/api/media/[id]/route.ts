@@ -40,7 +40,7 @@ async function deleteFileFromDisk(urlPath: string) {
     // urlPath is like /api/uploads/xxx.jpg or /api/uploads/thumbs/thumb_xxx.jpg
     // Strip /api prefix to get the filesystem path: /uploads/xxx.jpg
     const fsPath = urlPath.replace(/^\/api/, '');
-    const filePath = path.join(process.cwd(), 'public', fsPath);
+    const filePath = path.join('/home/z/my-project', 'public', fsPath);
     if (existsSync(filePath)) {
       await unlink(filePath);
     }

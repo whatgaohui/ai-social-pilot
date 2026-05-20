@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
     ];
   },
   // Force server restart to pick up Prisma schema changes
-  serverExternalPackages: ["@prisma/client", "@prisma/engines"],
+  serverExternalPackages: ["@prisma/client", "@prisma/engines", "sharp"],
 };
 
 export default nextConfig;

@@ -9,7 +9,8 @@ import ZAI from 'z-ai-web-dev-sdk';
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+// Use source project's public/uploads for consistent file access across dev/prod
+const UPLOAD_DIR = path.join('/home/z/my-project', 'public', 'uploads');
 const THUMB_DIR = path.join(UPLOAD_DIR, 'thumbs');
 
 // ─── Helper: DB row → MediaAssetInfo ────────────────────────────────────
