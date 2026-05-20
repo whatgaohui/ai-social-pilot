@@ -37,8 +37,10 @@ function toMediaAssetInfo(row: Record<string, unknown>) {
 async function deleteFileFromDisk(urlPath: string) {
   if (!urlPath) return;
   try {
-    // urlPath is like /uploads/xxx.jpg or /uploads/thumbs/thumb_xxx.jpg
-    const filePath = path.join(process.cwd(), 'public', urlPath);
+    // urlPath is like /api/uploads/xxx.jpg or /api/uploads/thumbs/thumb_xxx.jpg
+    // Strip /api prefix to get the filesystem path: /uploads/xxx.jpg
+    const fsPath = urlPath.replace(/^\/api/, '');
+    const filePath = path.join(process.cwd(), 'public', fsPath);
     if (existsSync(filePath)) {
       await unlink(filePath);
     }

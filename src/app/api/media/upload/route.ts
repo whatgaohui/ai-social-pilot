@@ -5,6 +5,10 @@ import { existsSync } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import sharp from 'sharp';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+const execFileAsync = promisify(execFile);
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
@@ -98,7 +102,7 @@ async function processFile(
 
   // Build record data
   const assetType = isImage ? 'image' : 'video';
-  const url = `/uploads/${uniqueName}`;
+  const url = `/api/uploads/${uniqueName}`;
   let thumbnail = '';
   let width = 0;
   let height = 0;
@@ -116,10 +120,49 @@ async function processFile(
       await sharp(filePath)
         .resize(300, 300, { fit: 'cover', withoutEnlargement: true })
         .toFile(thumbPath);
-      thumbnail = `/uploads/thumbs/${thumbName}`;
+      thumbnail = `/api/uploads/thumbs/${thumbName}`;
     } catch (err) {
-      console.warn('[media/upload] Thumbnail generation failed:', err);
+      console.warn('[media/upload] Image thumbnail generation failed:', err);
       // Non-fatal: continue without thumbnail
+    }
+  }
+
+  // For videos: extract metadata and create thumbnail via ffmpeg
+  if (isVideo) {
+    try {
+      // Get video metadata with ffprobe
+      const { stdout: probeOutput } = await execFileAsync('ffprobe', [
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_streams',
+        '-show_format',
+        filePath,
+      ]);
+      const probeData = JSON.parse(probeOutput);
+      const videoStream = (probeData.streams || []).find(
+        (s: Record<string, unknown>) => s.codec_type === 'video'
+      );
+      if (videoStream) {
+        width = Number(videoStream.width) || 0;
+        height = Number(videoStream.height) || 0;
+      }
+
+      // Create thumbnail from first frame
+      const thumbName = `thumb_${crypto.randomUUID()}.jpg`;
+      const thumbPath = path.join(THUMB_DIR, thumbName);
+      await execFileAsync('ffmpeg', [
+        '-i', filePath,
+        '-ss', '0',
+        '-frames:v', '1',
+        '-vf', 'scale=300:-1',
+        '-q:v', '2',
+        '-y',
+        thumbPath,
+      ]);
+      thumbnail = `/api/uploads/thumbs/${thumbName}`;
+    } catch (err) {
+      console.warn('[media/upload] Video thumbnail/metadata extraction failed:', err);
+      // Non-fatal: continue without thumbnail/metadata
     }
   }
 

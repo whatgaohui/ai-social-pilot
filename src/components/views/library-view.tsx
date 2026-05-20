@@ -436,9 +436,11 @@ export function LibraryView() {
       if (!res.ok) throw new Error();
       toast.success("保存成功");
       fetchAssets();
-      // Refresh selected asset
+      // Refresh selected asset — API returns { success: true, data: MediaAssetInfo }
       const updated = await res.json();
-      setSelectedAsset((prev) => (prev ? { ...prev, ...updated } : prev));
+      if (updated.data) {
+        setSelectedAsset((prev) => (prev ? { ...prev, ...updated.data } : prev));
+      }
     } catch {
       toast.error("保存失败");
     } finally {
@@ -1038,9 +1040,12 @@ export function LibraryView() {
                     className="gap-1.5"
                     onClick={() => {
                       const a = document.createElement("a");
+                      // Use the API route URL for downloading (works in standalone mode)
                       a.href = selectedAsset.url;
                       a.download = selectedAsset.originalName || selectedAsset.fileName;
+                      document.body.appendChild(a);
                       a.click();
+                      document.body.removeChild(a);
                     }}
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -1386,8 +1391,19 @@ function AssetRow({
           />
         )}
         {asset.type === "video" && (
-          <div className="w-full h-full flex items-center justify-center bg-muted">
-            <Video className="w-3.5 h-3.5 text-muted-foreground" />
+          <div className="w-full h-full relative">
+            {asset.thumbnail ? (
+              <img
+                src={asset.thumbnail}
+                alt=""
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <Video className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+            )}
           </div>
         )}
         {asset.type === "text" && (

@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     await writeFile(filePath, imageBuffer);
 
     // Build URL
-    const url = `/uploads/${uniqueName}`;
+    const url = `/api/uploads/${uniqueName}`;
 
     // Get image dimensions and create thumbnail
     let width = 0;
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       await sharp(filePath)
         .resize(300, 300, { fit: 'cover', withoutEnlargement: true })
         .toFile(thumbPath);
-      thumbnail = `/uploads/thumbs/${thumbName}`;
+      thumbnail = `/api/uploads/thumbs/${thumbName}`;
     } catch (err) {
       console.warn('[media/generate] Thumbnail generation failed:', err);
     }
