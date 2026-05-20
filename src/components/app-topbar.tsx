@@ -11,7 +11,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
 const tabLabels: Record<string, { title: string; subtitle: string; emoji?: string }> = {
@@ -30,13 +30,12 @@ const tabLabels: Record<string, { title: string; subtitle: string; emoji?: strin
 export function AppTopbar() {
   const { activeTab, setCommandPaletteOpen: setPaletteOpen } = useAppStore();
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [isMac, setIsMac] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setIsMac(typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform));
-  }, []);
+  const [mounted] = useState(true);
+  const isMac = useSyncExternalStore(
+    () => () => {},
+    () => typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform),
+    () => false
+  );
 
   const meta = tabLabels[activeTab] ?? tabLabels.dashboard;
 

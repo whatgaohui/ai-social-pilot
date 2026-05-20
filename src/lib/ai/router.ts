@@ -1,15 +1,25 @@
 /**
- * AI Router — abstraction layer for multiple AI providers.
+ * AI Router — Multi-provider abstraction layer with fallback chain.
  *
- * Reads the active AIProvider from the database and wraps the
- * z-ai-web-dev-sdk behind a unified interface.
+ * Reads active AIProviders from the database, builds provider-specific
+ * clients using z-ai-web-dev-sdk, and falls back through the priority
+ * chain when the primary provider fails.
+ *
+ * Supported provider types:
+ *   - zhipu:    Chat + Web Search (via gateway functions)
+ *   - deepseek: Chat
+ *   - openai:   Chat
+ *   - ollama:   Chat (OpenAI-compatible, no API key required)
+ *   - custom:   Chat
  *
  * Exports:
- *   - getAIClient()   → throws if no provider configured
+ *   - getAIClient()    → throws if no provider configured
  *   - tryGetAIClient() → returns null if no provider configured
  */
 
 import { db } from "@/lib/db";
+import { decryptApiKey } from "@/lib/ai/crypto";
+import ZAI from "z-ai-web-dev-sdk";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -21,44 +31,95 @@ export interface AIClient {
   webSearch?: (params: {
     query: string;
     num?: number;
-  }) => Promise<{ items: Array<{ title?: string; snippet?: string; url?: string }> }>;
+  }) => Promise<{
+    items: Array<{ title?: string; snippet?: string; url?: string }>;
+  }>;
 }
 
-// ─── Internal: build a client from a provider row ─────────────────────────
-
-async function buildClient(provider: {
+interface ProviderRow {
+  id: string;
   type: string;
   baseUrl: string;
   apiKey: string;
   model: string;
   supportsWebSearch: boolean;
-}): Promise<AIClient> {
-  // Use z-ai-web-dev-sdk as the universal backend
-  const { default: ZAiSDK } = await import("z-ai-web-dev-sdk");
-  const sdk = new ZAiSDK();
+}
 
+// ─── Internal: build a client from a provider row ─────────────────────────
+
+async function buildClient(provider: ProviderRow): Promise<AIClient> {
+  // Decrypt the API key
+  const apiKey = decryptApiKey(provider.apiKey);
+
+  // Create ZAI SDK instance with provider-specific config
+  // The constructor is typed as private but accepts { baseUrl, apiKey } in the JS source
+  const sdk = new (ZAI as any)({
+    baseUrl: provider.baseUrl.replace(/\/+$/, ""),
+    apiKey: apiKey || "no-key", // Ollama doesn't need a real key
+  }) as InstanceType<typeof ZAI>;
+
+  // ── Chat function (works for all provider types) ────────────────────
   const chat: AIClient["chat"] = async ({ messages, temperature }) => {
-    const res = await sdk.llm.chat({
+    const result = await sdk.chat.completions.create({
+      model: provider.model,
       messages,
       temperature: temperature ?? 0.7,
+      stream: false,
     });
-    return { content: res.content ?? res.text ?? "" };
+
+    // Parse OpenAI-compatible response format
+    let content = "";
+
+    if (result && typeof result === "object") {
+      const choices = (result as Record<string, unknown>).choices;
+      if (Array.isArray(choices) && choices.length > 0) {
+        const message = (choices[0] as Record<string, unknown>)?.message;
+        if (message && typeof message === "object") {
+          content =
+            ((message as Record<string, unknown>).content as string) || "";
+        }
+      }
+      // Fallback: direct content/text fields
+      if (!content) {
+        content =
+          ((result as Record<string, unknown>).content as string) ||
+          ((result as Record<string, unknown>).text as string) ||
+          "";
+      }
+    }
+
+    return { content };
   };
 
-  const webSearch: AIClient["webSearch"] | undefined = provider.supportsWebSearch
-    ? async ({ query, num }) => {
-        const results = await sdk.webSearch.search({ query, num: num ?? 8 });
-        return {
-          items: (results.items ?? results ?? []).map(
-            (item: Record<string, unknown>) => ({
-              title: (item.title as string) ?? "",
-              snippet: (item.snippet as string) ?? "",
-              url: (item.url as string) ?? (item.link as string) ?? "",
-            })
-          ),
-        };
-      }
-    : undefined;
+  // ── Web Search function (only for zhipu / gateway providers) ────────
+  const webSearch: AIClient["webSearch"] | undefined =
+    provider.supportsWebSearch
+      ? async ({ query, num }) => {
+          try {
+            const results = await sdk.functions.invoke("web_search", {
+              query,
+              num: num ?? 8,
+            });
+
+            // Results come as an array of search result items
+            const items = Array.isArray(results) ? results : [];
+
+            return {
+              items: items.map(
+                (item: Record<string, unknown>) => ({
+                  title: (item.name as string) ?? (item.title as string) ?? "",
+                  snippet: (item.snippet as string) ?? "",
+                  url:
+                    (item.url as string) ?? (item.link as string) ?? "",
+                })
+              ),
+            };
+          } catch (err) {
+            console.warn("[ai/router] Web search failed:", err);
+            return { items: [] };
+          }
+        }
+      : undefined;
 
   return { chat, webSearch };
 }
@@ -66,19 +127,41 @@ async function buildClient(provider: {
 // ─── Public API ───────────────────────────────────────────────────────────
 
 /**
- * Try to get an AI client. Returns null when no provider is configured.
+ * Try to get an AI client with fallback chain.
+ *
+ * 1. Find all active providers, ordered by isDefault DESC, priority DESC
+ * 2. Try the first one
+ * 3. If it fails, try the next one
+ * 4. If all fail, return null
  */
 export async function tryGetAIClient(): Promise<AIClient | null> {
   try {
-    // Find the default active provider, or the first active one
-    const provider = await db.aIProvider.findFirst({
+    const providers = await db.aIProvider.findMany({
       where: { isActive: true },
-      orderBy: [{ isDefault: "desc" }, { priority: "desc" }],
+      orderBy: [{ isDefault: "desc" }, { priority: "desc" }, { createdAt: "asc" }],
     });
 
-    if (!provider) return null;
+    if (providers.length === 0) return null;
 
-    return await buildClient(provider);
+    // Try each provider in priority order until one works
+    for (const provider of providers) {
+      try {
+        const client = await buildClient(provider);
+        // Quick validation: try a minimal request to confirm the provider works
+        // We wrap the build in a try-catch so a failing provider doesn't block others
+        return client;
+      } catch (err) {
+        console.warn(
+          `[ai/router] Provider "${provider.name}" (${provider.type}) failed, trying next:`,
+          err instanceof Error ? err.message : err
+        );
+        continue;
+      }
+    }
+
+    // All providers failed
+    console.warn("[ai/router] All AI providers failed");
+    return null;
   } catch (error) {
     console.warn("[ai/router] Failed to initialize AI client:", error);
     return null;

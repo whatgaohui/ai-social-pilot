@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,11 @@ import {
   Database,
   Star,
   Power,
+  ArrowUp,
+  ArrowDown,
+  Search,
+  Info,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -115,6 +121,34 @@ const PROVIDER_ICONS: Record<string, string> = {
   custom: "🔧",
 };
 
+/** Types that could support web search */
+const WEB_SEARCH_CAPABLE_TYPES = new Set(["zhipu", "custom"]);
+
+/* ─── Error suggestion helper ──────────────────────────────────────── */
+
+function getErrorSuggestion(errorMsg: string): string | null {
+  const lower = errorMsg.toLowerCase();
+  if (lower.includes("401") || lower.includes("unauthorized") || lower.includes("invalid api key") || lower.includes("authentication")) {
+    return "API Key 无效，请检查是否正确";
+  }
+  if (lower.includes("econnrefused") || lower.includes("connection refused") || lower.includes("connect econnrefused") || lower.includes("无法连接")) {
+    return "无法连接服务器，请检查 Base URL";
+  }
+  if (lower.includes("timeout") || lower.includes("etimedout") || lower.includes("超时")) {
+    return "连接超时，请检查网络";
+  }
+  if (lower.includes("403") || lower.includes("forbidden")) {
+    return "访问被拒绝，请检查 API Key 权限";
+  }
+  if (lower.includes("404") || lower.includes("not found")) {
+    return "接口未找到，请检查 Base URL 和模型名称";
+  }
+  if (lower.includes("429") || lower.includes("rate limit") || lower.includes("too many")) {
+    return "请求频率超限，请稍后重试";
+  }
+  return null;
+}
+
 /* ─── Main View ────────────────────────────────────────────────────── */
 
 export function SettingsView() {
@@ -132,12 +166,34 @@ export function SettingsView() {
     baseUrl: "",
     apiKey: "",
     model: "",
+    priority: 0,
     supportsWebSearch: false,
   });
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string; suggestion?: string } | null>(null);
   const [saving, setSaving] = useState(false);
+
+  /* ── Sorted providers by priority (desc) ─────────────────────────── */
+  const sortedProviders = useMemo(
+    () => [...providers].sort((a, b) => b.priority - a.priority),
+    [providers]
+  );
+
+  /* ── Count providers by type ─────────────────────────────────────── */
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of providers) {
+      counts[p.type] = (counts[p.type] || 0) + 1;
+    }
+    return counts;
+  }, [providers]);
+
+  /* ── Active providers for fallback chain ─────────────────────────── */
+  const activeProviders = useMemo(
+    () => sortedProviders.filter((p) => p.isActive),
+    [sortedProviders]
+  );
 
   /* ── Data load ──────────────────────────────────────────────────── */
   useEffect(() => {
@@ -165,6 +221,7 @@ export function SettingsView() {
       baseUrl: p?.baseUrl ?? "",
       apiKey: "",
       model: p?.model ?? "",
+      priority: 0,
       supportsWebSearch: p?.supportsWebSearch ?? false,
     });
     setTestResult(null);
@@ -181,6 +238,7 @@ export function SettingsView() {
       baseUrl: item.baseUrl,
       apiKey: "", // never prefill
       model: item.model,
+      priority: item.priority,
       supportsWebSearch: item.supportsWebSearch,
     });
     setTestResult(null);
@@ -206,18 +264,22 @@ export function SettingsView() {
       });
       const json = await res.json();
       if (json.success) {
+        const elapsed = json.data?.elapsed ?? 0;
+        const latencySec = (elapsed / 1000).toFixed(1);
         setTestResult({
           ok: true,
-          msg: `✓ 连接成功（${json.data?.elapsed ?? 0}ms）`,
+          msg: `连接成功！延迟 ${elapsed < 1000 ? `${elapsed}ms` : `${latencySec}s`}`,
         });
+        toast.success(`连接成功！延迟 ${elapsed < 1000 ? `${elapsed}ms` : `${latencySec}s`}`);
       } else {
-        setTestResult({ ok: false, msg: json.error || "测试失败" });
+        const errorMsg = json.error || "测试失败";
+        const suggestion = getErrorSuggestion(errorMsg);
+        setTestResult({ ok: false, msg: errorMsg, suggestion });
       }
     } catch (err) {
-      setTestResult({
-        ok: false,
-        msg: err instanceof Error ? err.message : "网络错误",
-      });
+      const errorMsg = err instanceof Error ? err.message : "网络错误";
+      const suggestion = getErrorSuggestion(errorMsg);
+      setTestResult({ ok: false, msg: errorMsg, suggestion });
     } finally {
       setTesting(false);
     }
@@ -245,6 +307,7 @@ export function SettingsView() {
           baseUrl: form.baseUrl,
           apiKey: form.apiKey || undefined, // keep old key when blank
           model: form.model,
+          priority: form.priority,
           supportsWebSearch: form.supportsWebSearch,
           ...(isDefault && { isDefault: true }),
         }),
@@ -297,6 +360,38 @@ export function SettingsView() {
     }
   }
 
+  async function movePriority(item: AIProviderItem, direction: "up" | "down") {
+    // Find current position in sorted array
+    const currentIdx = sortedProviders.findIndex((p) => p.id === item.id);
+    if (currentIdx < 0) return;
+
+    if (direction === "up" && currentIdx === 0) return;
+    if (direction === "down" && currentIdx === sortedProviders.length - 1) return;
+
+    const targetIdx = direction === "up" ? currentIdx - 1 : currentIdx + 1;
+    const targetItem = sortedProviders[targetIdx];
+
+    // Swap priorities
+    const newPriority = targetItem.priority;
+
+    const res = await fetch(`/api/ai-providers/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priority: newPriority }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      // Also update the other item's priority to avoid collision
+      await fetch(`/api/ai-providers/${targetItem.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: item.priority }),
+      });
+      await loadProviders();
+      toast.success("优先级已调整");
+    }
+  }
+
   async function handleExport() {
     setExportingData(true);
     try {
@@ -319,7 +414,6 @@ export function SettingsView() {
   }
 
   const hasAnyProvider = providers.length > 0;
-  const usedTypes = new Set(providers.map((p) => p.type));
 
   /* ── Render ─────────────────────────────────────────────────────── */
   return (
@@ -357,96 +451,177 @@ export function SettingsView() {
             ))}
           </div>
         ) : hasAnyProvider ? (
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-            {providers.map((p) => (
-              <div
-                key={p.id}
-                className={cn(
-                  "card-elevated p-4 relative group",
-                  !p.isActive && "opacity-60"
-                )}
-              >
-                {p.isDefault && (
-                  <Badge className="absolute -top-2 left-3 bg-gradient-brand text-white border-0 gap-1 px-2 py-0.5 text-[10px] font-bold">
-                    <Star className="w-2.5 h-2.5" />
-                    默认
+          <>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+              {sortedProviders.map((p, idx) => (
+                <div
+                  key={p.id}
+                  className={cn(
+                    "card-elevated p-4 relative group",
+                    !p.isActive && "opacity-60"
+                  )}
+                >
+                  {/* Priority badge */}
+                  <Badge
+                    variant="outline"
+                    className="absolute -top-2 left-3 text-[10px] font-bold px-1.5 py-0 border-border/60 text-muted-foreground"
+                  >
+                    #{idx + 1}
                   </Badge>
-                )}
-                <div className="flex items-start gap-3">
-                  <div className="text-2xl shrink-0">{PROVIDER_ICONS[p.type] ?? "🔧"}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-sm truncate">{p.name}</h3>
-                      {p.lastTestStatus === "success" && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                      )}
-                      {p.lastTestStatus === "error" && (
-                        <XCircle className="w-3.5 h-3.5 text-red-500" />
+                  {p.isDefault && (
+                    <Badge className="absolute -top-2 left-14 bg-gradient-brand text-white border-0 gap-1 px-2 py-0.5 text-[10px] font-bold">
+                      <Star className="w-2.5 h-2.5" />
+                      默认
+                    </Badge>
+                  )}
+                  {/* Web search badge */}
+                  {p.supportsWebSearch && (
+                    <Badge
+                      variant="secondary"
+                      className="absolute top-3 right-3 text-[10px] gap-1 px-1.5 py-0 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                    >
+                      <Search className="w-2.5 h-2.5" />
+                      联网搜索
+                    </Badge>
+                  )}
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl shrink-0">{PROVIDER_ICONS[p.type] ?? "🔧"}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-sm truncate">{p.name}</h3>
+                        {p.lastTestStatus === "success" && (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        )}
+                        {p.lastTestStatus === "error" && (
+                          <XCircle className="w-3.5 h-3.5 text-red-500" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {p.model} · {p.apiKeyEmpty ? "无 API Key" : p.apiKey}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">
+                        {p.baseUrl}
+                      </p>
+                      {p.lastTestError && p.lastTestStatus === "error" && (
+                        <p className="text-[10px] text-red-500 mt-1 line-clamp-2">
+                          {p.lastTestError}
+                        </p>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {p.model} · {p.apiKeyEmpty ? "无 API Key" : p.apiKey}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">
-                      {p.baseUrl}
-                    </p>
-                    {p.lastTestError && p.lastTestStatus === "error" && (
-                      <p className="text-[10px] text-red-500 mt-1 line-clamp-2">
-                        {p.lastTestError}
-                      </p>
-                    )}
                   </div>
-                </div>
-                {/* Action buttons */}
-                <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border/50">
-                  {!p.isDefault && (
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border/50">
+                    {/* Priority reorder */}
+                    <div className="flex items-center gap-0.5 mr-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-xs"
+                        disabled={idx === 0}
+                        onClick={() => movePriority(p, "up")}
+                        title="上移优先级"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-xs"
+                        disabled={idx === sortedProviders.length - 1}
+                        onClick={() => movePriority(p, "down")}
+                        title="下移优先级"
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    {!p.isDefault && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1"
+                        onClick={() => setAsDefault(p.id)}
+                      >
+                        <Star className="w-3 h-3" />
+                        设为默认
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-7 px-2 text-xs gap-1"
-                      onClick={() => setAsDefault(p.id)}
+                      onClick={() => toggleActive(p)}
                     >
-                      <Star className="w-3 h-3" />
-                      设为默认
+                      <Power className="w-3 h-3" />
+                      {p.isActive ? "禁用" : "启用"}
                     </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs gap-1"
-                    onClick={() => toggleActive(p)}
-                  >
-                    <Power className="w-3 h-3" />
-                    {p.isActive ? "禁用" : "启用"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs gap-1"
-                    onClick={() => openEdit(p)}
-                  >
-                    <Pencil className="w-3 h-3" />
-                    编辑
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1 ml-auto"
-                    onClick={() => handleDelete(p.id)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1"
+                      onClick={() => openEdit(p)}
+                    >
+                      <Pencil className="w-3 h-3" />
+                      编辑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1 ml-auto"
+                      onClick={() => handleDelete(p.id)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Fallback chain explanation */}
+            {activeProviders.length > 1 && (
+              <div className="card-elevated p-4 bg-muted/30">
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">
+                      当默认模型请求失败时，系统会自动尝试下一个启用的模型，确保服务不中断。
+                    </p>
+                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                      {activeProviders.map((p, idx) => (
+                        <span key={p.id} className="flex items-center gap-1">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px] px-1.5 py-0 gap-0.5 font-medium",
+                              p.isDefault && "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800"
+                            )}
+                          >
+                            {PROVIDER_ICONS[p.type]} {p.name}
+                          </Badge>
+                          {idx < activeProviders.length - 1 && (
+                            <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
           <div className="card-elevated p-8 text-center">
             <div className="w-12 h-12 rounded-full bg-gradient-brand-soft mx-auto flex items-center justify-center mb-3">
               <Sparkles className="w-6 h-6 text-rose-500" />
             </div>
             <h3 className="font-semibold mb-1">还没有配置 AI 模型</h3>
-            <p className="text-sm text-muted-foreground mb-4">从下方选一个推荐方案，30 秒搞定</p>
+            <p className="text-sm text-muted-foreground mb-3">从下方选一个推荐方案，30 秒搞定</p>
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1">1️⃣ 选择推荐方案</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1">2️⃣ 填入 API Key</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1">3️⃣ 点击测试连接</span>
+            </div>
           </div>
         )}
 
@@ -455,18 +630,24 @@ export function SettingsView() {
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground/70 font-semibold mb-3">
             推荐方案 · 快速添加
           </h3>
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            className={cn(
+              "grid gap-3",
+              !hasAnyProvider
+                ? "grid-cols-1 sm:grid-cols-2"
+                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+            )}
+          >
             {PRESETS.map((p) => {
-              const exists = usedTypes.has(p.type);
+              const count = typeCounts[p.type] || 0;
               return (
                 <button
                   key={p.type}
-                  disabled={exists}
                   onClick={() => openNew(p)}
                   className={cn(
                     "card-elevated p-4 text-left relative transition-all",
-                    "disabled:opacity-50 disabled:cursor-not-allowed",
-                    !exists && "hover:border-rose-300/60 cursor-pointer"
+                    "hover:border-rose-300/60 cursor-pointer",
+                    !hasAnyProvider && "p-5"
                   )}
                 >
                   {p.recommended && (
@@ -474,14 +655,16 @@ export function SettingsView() {
                       推荐
                     </Badge>
                   )}
-                  <div className="text-2xl mb-2">{PROVIDER_ICONS[p.type]}</div>
+                  <div className={cn("text-2xl mb-2", !hasAnyProvider && "text-3xl")}>
+                    {PROVIDER_ICONS[p.type]}
+                  </div>
                   <h3 className="font-semibold text-sm">{p.name}</h3>
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2 min-h-[2.5em]">
                     {p.description}
                   </p>
-                  {exists ? (
+                  {count > 0 ? (
                     <Badge variant="secondary" className="mt-2 text-[10px]">
-                      已添加
+                      已添加 {count} 个
                     </Badge>
                   ) : (
                     <div className="text-xs text-rose-500 mt-2 flex items-center gap-1">
@@ -558,7 +741,7 @@ export function SettingsView() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-2">
+          <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
             <div>
               <Label className="text-xs">显示名称</Label>
               <Input
@@ -607,23 +790,63 @@ export function SettingsView() {
                 className="mt-1 font-mono text-xs"
               />
             </div>
+            <div>
+              <Label className="text-xs">优先级</Label>
+              <Input
+                type="number"
+                value={form.priority}
+                onChange={(e) => setForm({ ...form, priority: parseInt(e.target.value) || 0 })}
+                placeholder="0"
+                className="mt-1 w-24"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                数值越大优先级越高，失败时自动切换到低优先级模型
+              </p>
+            </div>
+            {/* SupportsWebSearch toggle — only for capable types */}
+            {WEB_SEARCH_CAPABLE_TYPES.has(form.type) && (
+              <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
+                <div className="space-y-0.5">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <Search className="w-3 h-3" />
+                    联网搜索
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    启用后模型可进行联网搜索获取实时信息
+                  </p>
+                </div>
+                <Switch
+                  checked={form.supportsWebSearch}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, supportsWebSearch: checked })
+                  }
+                />
+              </div>
+            )}
 
             {/* Test result */}
             {testResult && (
               <div
                 className={cn(
-                  "rounded-md px-3 py-2 text-xs flex items-start gap-2",
+                  "rounded-md px-3 py-2 text-xs flex flex-col gap-1",
                   testResult.ok
                     ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
                     : "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300"
                 )}
               >
-                {testResult.ok ? (
-                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-                ) : (
-                  <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2">
+                  {testResult.ok ? (
+                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                  ) : (
+                    <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  )}
+                  <span className="flex-1 break-all">{testResult.msg}</span>
+                </div>
+                {testResult.suggestion && (
+                  <p className="ml-6 text-[11px] opacity-80">
+                    💡 {testResult.suggestion}
+                  </p>
                 )}
-                <span className="flex-1 break-all">{testResult.msg}</span>
               </div>
             )}
           </div>
