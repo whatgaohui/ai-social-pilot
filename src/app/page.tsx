@@ -1,23 +1,82 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { useAppStore } from "@/store/app-store";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppTopbar } from "@/components/app-topbar";
-import { DashboardView } from "@/components/views/dashboard-view";
-import { AccountView } from "@/components/views/account-view";
-import { ContentView } from "@/components/views/content-view";
-import { PersonaView } from "@/components/views/persona-view";
-import { CreatorView } from "@/components/views/creator-view";
-import { AnalyticsView } from "@/components/views/analytics-view";
-import { SettingsView } from "@/components/views/settings-view";
-import { AccountHubView } from "@/components/views/account-hub-view";
-import { LibraryView } from "@/components/views/library-view";
 import { AddAccountDialog } from "@/components/add-account-dialog";
 import { CommandPalette } from "@/components/command-palette";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useNotificationStore } from "@/store/notification-store";
+
+// Dynamic imports for large view components — reduces peak compilation memory
+const DashboardView = lazy(() =>
+  import("@/components/views/dashboard-view").then((m) => ({
+    default: m.DashboardView,
+  }))
+);
+const AccountHubView = lazy(() =>
+  import("@/components/views/account-hub-view").then((m) => ({
+    default: m.AccountHubView,
+  }))
+);
+const AnalyticsView = lazy(() =>
+  import("@/components/views/analytics-view").then((m) => ({
+    default: m.AnalyticsView,
+  }))
+);
+const LibraryView = lazy(() =>
+  import("@/components/views/library-view").then((m) => ({
+    default: m.LibraryView,
+  }))
+);
+const SettingsView = lazy(() =>
+  import("@/components/views/settings-view").then((m) => ({
+    default: m.SettingsView,
+  }))
+);
+
+// Legacy fallbacks
+const AccountView = lazy(() =>
+  import("@/components/views/account-view").then((m) => ({
+    default: m.AccountView,
+  }))
+);
+const ContentView = lazy(() =>
+  import("@/components/views/content-view").then((m) => ({
+    default: m.ContentView,
+  }))
+);
+const PersonaView = lazy(() =>
+  import("@/components/views/persona-view").then((m) => ({
+    default: m.PersonaView,
+  }))
+);
+const CreatorView = lazy(() =>
+  import("@/components/views/creator-view").then((m) => ({
+    default: m.CreatorView,
+  }))
+);
+
+/** Full-page loading skeleton shown while a view chunk loads */
+function ViewSkeleton() {
+  return (
+    <div className="p-6 md:p-8 space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-64 rounded-xl" />
+    </div>
+  );
+}
 
 function ExportHandler() {
   const addNotification = useNotificationStore((s) => s.addNotification);
@@ -101,7 +160,9 @@ export default function Home() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
         <AppTopbar />
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
-          {renderView()}
+          <Suspense fallback={<ViewSkeleton />}>
+            {renderView()}
+          </Suspense>
         </main>
       </div>
 
