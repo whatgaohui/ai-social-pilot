@@ -77,6 +77,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/ui/page-header";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -571,57 +572,52 @@ export function LibraryView() {
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-      {/* ── 1. Header ─────────────────────────────────────────────────── */}
-      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <FolderOpen className="w-6 h-6 text-rose-500" />
-            素材管理
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {loading ? "加载中..." : `共 ${total} 个素材`}
-            {!loading && total > 0 && " · 上传图片、视频、文字片段，创作笔记时一键调用"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Upload button with dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="btn-gradient-brand text-white border-0 gap-1.5">
-                <Upload className="w-4 h-4" />
-                上传素材
-                <ChevronDown className="w-3 h-3 opacity-70" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => fileInputRef.current?.click()}
-                className="gap-2 cursor-pointer"
-              >
-                <FileUp className="w-4 h-4" />
-                上传文件
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setTextDialogOpen(true)}
-                className="gap-2 cursor-pointer"
-              >
-                <Type className="w-4 h-4" />
-                文字片段
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 view-animate">
+      {/* ── 1. Unified Page Header ────────────────────────────────────── */}
+      <PageHeader
+        icon={<FolderOpen className="w-6 h-6" />}
+        title="素材管理"
+        subtitle={loading ? "加载中..." : `共 ${total} 个素材${!loading && total > 0 ? " · 上传图片、视频、文字片段，创作笔记时一键调用" : ""}`}
+        actions={
+          <div className="flex items-center gap-2">
+            {/* Upload button with dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="btn-gradient-brand text-white border-0 gap-1.5">
+                  <Upload className="w-4 h-4" />
+                  上传素材
+                  <ChevronDown className="w-3 h-3 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => fileInputRef.current?.click()}
+                  className="gap-2 cursor-pointer"
+                >
+                  <FileUp className="w-4 h-4" />
+                  上传文件
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setTextDialogOpen(true)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <Type className="w-4 h-4" />
+                  文字片段
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <Button
-            variant="outline"
-            className="gap-1.5 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/30"
-            onClick={() => setAiGenDialogOpen(true)}
-          >
-            <Sparkles className="w-4 h-4" />
-            AI 生成图片
-          </Button>
-        </div>
-      </header>
+            <Button
+              variant="outline"
+              className="gap-1.5 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/30"
+              onClick={() => setAiGenDialogOpen(true)}
+            >
+              <Sparkles className="w-4 h-4" />
+              AI 生成图片
+            </Button>
+          </div>
+        }
+      />
 
       {/* Hidden file input */}
       <input
@@ -781,12 +777,12 @@ export function LibraryView() {
       ) : isEmpty ? (
         /* ── 10. Empty State ──────────────────────────────────────────── */
         <div className="rounded-xl border border-border/60 bg-card p-12 text-center">
-          <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4 animate-float">
-            <FolderOpen className="w-8 h-8 text-muted-foreground" />
+          <div className="w-16 h-16 mx-auto rounded-full bg-gradient-brand-soft flex items-center justify-center mb-4 animate-float">
+            <FolderOpen className="w-8 h-8 text-rose-500" />
           </div>
-          <h3 className="font-semibold">素材库还空着</h3>
+          <h3 className="font-semibold gradient-text-brand">素材库还空着</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-            上传你的第一份素材开始构建创作弹药库。所有素材都会在 AI 创作笔记时供你选择插入。
+            上传你的第一份素材，开始构建创作弹药库。所有素材都会在 AI 创作笔记时供你选择插入。
           </p>
           <div className="flex items-center justify-center gap-2 mt-4">
             <Button
@@ -959,9 +955,9 @@ export function LibraryView() {
                     variant="outline"
                     className={cn(
                       "text-xs border-0",
-                      selectedAsset.source === "upload" && "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
-                      selectedAsset.source === "ai-generated" && "bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400",
-                      selectedAsset.source === "scraped" && "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+                      selectedAsset.source === "upload" && "badge-source-upload",
+                      selectedAsset.source === "ai-generated" && "badge-source-ai",
+                      selectedAsset.source === "scraped" && "badge-source-scraped"
                     )}
                   >
                     {sourceLabel(selectedAsset.source)}

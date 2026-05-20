@@ -2,9 +2,9 @@
 
 ## 项目当前状态
 
-**状态: STABLE v4.0 (素材管理闭环 Complete)**
+**状态: STABLE v5.0 (AccountHubView Deep Integration + UI/UX Visual System Refactor Complete)**
 
-- Dev server running on port 3000, Next.js 16 + Turbopack
+- Dev server running on port 3000, Next.js 16 + webpack (production mode)
 - XHS Scraper micro-service running on port 3002
 - AI Provider abstraction layer with 5 provider types + fallback chain
 - API Key AES-256-GCM encryption
@@ -13,6 +13,7 @@
 - **素材管理** — Full CRUD + upload + AI analysis + AI image generation
 - MediaAsset model in Prisma with AI tagging support
 - LibraryView v4.0 with grid/list view, drag & drop upload, dialogs
+- **AccountHubView Deep Integration** — Shared header, unified account data, cross-tab navigation
 - All API endpoints verified, lint clean
 
 ---
@@ -175,3 +176,132 @@ Stage Summary:
 - MediaAsset schema with indexes, directories created
 - Frontend-backend API contract aligned
 - All integration issues resolved
+
+---
+
+### Session 26 — UI/UX Visual System Refactor (Task 2-b)
+
+---
+Task ID: 2-b
+Agent: Main Agent
+Task: Unify visual system across all views — consistent headers, cards, badges, animations
+
+Work Log:
+- Added ~200 lines of new utility classes to `globals.css`:
+  - `.page-container`, `.page-header` family — consistent page layout
+  - `.stat-value`, `.section-title` — consistent text styles
+  - `.badge-type-*`, `.badge-source-*`, `.badge-status-*` — standardized badge colors (dark mode included)
+  - `.stat-icon-gradient-blue/purple` — additional icon variants
+  - `.page-animate` — page transition animation
+- Created 3 shared UI components in `src/components/ui/`:
+  - `page-header.tsx` — Unified page header with icon + title + subtitle + actions
+  - `stat-card.tsx` — Consistent stat card with icon variant, label, value, change indicator, children slot
+  - `empty-state-v2.tsx` — Enhanced empty state with floating animation, gradient text, secondary action
+- Refactored DashboardView:
+  - Replaced inline header with `<PageHeader>` component
+  - Replaced custom stat cards with `<StatCard>` component + `.stagger-item` delays
+  - Standardized spacing to p-6 md:p-8 max-w-7xl mx-auto space-y-6
+  - Used `btn-gradient-brand` for primary CTA button
+- Refactored AnalyticsView:
+  - Replaced inline header with `<PageHeader>` component
+  - Standardized spacing, applied `.view-animate`
+- Refactored LibraryView:
+  - Replaced inline header with `<PageHeader>` component
+  - Used `.badge-source-*` classes for asset source badges
+  - Enhanced empty state with gradient text + brand-soft background
+  - Applied `.view-animate`
+- Refactored SettingsView:
+  - Replaced inline header with `<PageHeader>` component
+  - Expanded max-width from max-w-6xl to max-w-7xl
+  - Applied `.view-animate`, used `btn-gradient-brand` for add button
+- Refactored Sidebar + AccountHubView:
+  - Added `.nav-item-hover` class to all sidebar buttons
+  - Added `.view-animate` to AccountHubView container
+  - Updated tab bar padding to px-6 md:px-8
+- Lint clean (0 errors), app renders correctly
+
+Stage Summary:
+- Unified page header pattern applied to all 5 views
+- Consistent stat card system via `<StatCard>` component
+- Standardized badge system (type/source/status) with dark mode support
+- View transitions and stagger animations across all views
+- Consistent spacing (p-6 md:p-8 max-w-7xl mx-auto space-y-6)
+- 3 new shared UI components for reuse
+
+---
+
+### Session 27 — AccountHubView Deep Integration (Task 2-a)
+
+---
+Task ID: 2-a
+Agent: Main Agent
+Task: Deep integration of AccountHubView — shared header, unified account data, cross-tab navigation
+
+Work Log:
+
+- Created `src/hooks/use-account-data.ts` — Shared account data hook
+  - Fetches accounts once with 30s in-memory cache to avoid duplicate API calls
+  - Syncs selectedAccountId with Zustand store (single source of truth)
+  - Provides computed stats (followers, likedCollected, notesCount, following)
+  - Provides formatted stats for display, engagement rate calculation
+  - Fetches analysis data for the selected account
+  - Returns refreshAccounts() and refreshAnalysis() methods
+
+- Created `src/components/account-hub-header.tsx` — Shared account header component
+  - Account avatar + nickname + bio + status badge (always visible)
+  - Account selector dropdown (using shadcn Select with avatar thumbnails)
+  - 4 stat cards row (粉丝/获赞与收藏/笔记/关注) using StatCard sub-component
+  - Quick action buttons: 刷新数据, 编辑账号, + 新建笔记
+  - Mobile-friendly: DropdownMenu for extra actions on small screens
+  - Sticky positioning below topbar
+
+- Updated `src/store/app-store.ts` — Cross-tab navigation state
+  - Added `navigateToNotes()` — switch to notes tab from any context
+  - Added `navigateToPersona()` — switch to persona tab
+  - Added `navigateToOverview()` — switch to overview tab
+  - Added `navigateToCreatorForAccount(accountId, topic?)` — switch to notes + open creator + set account
+
+- Rewrote `src/components/views/account-hub-view.tsx` (v4.1)
+  - Uses useAccountData hook for shared state (single fetch)
+  - Shared AccountHubHeader always visible across tab switches
+  - Passes sharedAccountData to child views via props
+  - AccountHubContext for optional context-based data access
+  - CreatorView Sheet with account context bar ("正在为 [账号名] 创建笔记")
+  - Shared dialogs (EditAccountDialog, CookieInputDialog, ManualDataDialog)
+  - Empty state with demo data loader
+
+- Updated `src/components/views/account-view.tsx` — Accept shared props
+  - New props: sharedAccountData, onNavigateToNotes, onOpenCreator
+  - When in hub (sharedAccountData provided): hides own header/profile/stats (provided by AccountHubHeader)
+  - When standalone: falls back to original behavior with full header
+  - Cross-tab navigation: "查看全部" button uses onNavigateToNotes
+  - Top posts cards are clickable to navigate to notes tab
+
+- Updated `src/components/views/content-view.tsx` — Accept shared props
+  - New props: sharedAccountData, onOpenCreator
+  - When in hub: uses shared accounts data, compact header without title
+  - When standalone: falls back to fetching own accounts
+  - Accounts resolved from shared data when available
+
+- Updated `src/components/views/persona-view.tsx` — Accept shared props
+  - New props: sharedAccountData, onOpenCreator
+  - When in hub: hides account selector dropdown (in shared header)
+  - Added "用此人设创作" button linking to creator sheet
+  - When standalone: falls back to original behavior
+
+- Updated `src/components/views/creator-view.tsx` — Accept shared props
+  - New props: sharedAccountData
+  - When in hub: hides account selector (shown in Sheet header context bar)
+  - Uses shared accounts data instead of independent fetch
+  - Auto-fills prefilledTopic from store
+
+- All type errors in modified files resolved
+- Lint clean (0 errors)
+
+Stage Summary:
+- Shared AccountHubHeader visible across all 3 tabs (avatar, stats, selector)
+- Single account data fetch via useAccountData hook with 30s cache
+- Cross-tab navigation: overview → notes → persona → creator
+- CreatorView Sheet pre-fills account context with "正在为 [账号名] 创建笔记"
+- All child views work both inside hub (shared data) and standalone (own fetch)
+- No duplicate API calls for account list across components

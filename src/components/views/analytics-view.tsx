@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/components/account-card";
+import { PageHeader } from "@/components/ui/page-header";
 import type { XhsPostInfo, XhsAccountInfo } from "@/types";
 import {
   BarChart3,
@@ -329,7 +330,7 @@ export function AnalyticsView() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 space-y-5 view-animate">
+      <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 view-animate">
         <Skeleton className="h-10 w-64" />
         <div className="flex gap-2">
           {[1, 2, 3, 4].map((i) => (
@@ -349,28 +350,24 @@ export function AnalyticsView() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="p-4 md:p-6 space-y-5 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-xhs" />
-              数据洞察
-            </h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              深度分析运营数据，发现增长机会
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-border"
-            onClick={loadData}
-          >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            刷新
-          </Button>
-        </div>
+      <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
+        {/* Unified Page Header */}
+        <PageHeader
+          icon={<BarChart3 className="w-5 h-5" />}
+          title="数据洞察"
+          subtitle="深度分析运营数据，发现增长机会"
+          actions={
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-border"
+              onClick={loadData}
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              刷新
+            </Button>
+          }
+        />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange}>

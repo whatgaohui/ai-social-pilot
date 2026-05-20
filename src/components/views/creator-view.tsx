@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/empty-state";
 import { useAppStore } from "@/store/app-store";
 import type { XhsAccountInfo, ContentDraftInfo } from "@/types";
+import type { AccountDataState } from "@/hooks/use-account-data";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -276,11 +277,17 @@ function calculateQualityScore(
   };
 }
 
-export function CreatorView() {
-  const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen } =
+interface CreatorViewProps {
+  /** Shared account data from AccountHubView (when inside hub) */
+  sharedAccountData?: AccountDataState;
+}
+
+export function CreatorView({ sharedAccountData }: CreatorViewProps) {
+  const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen, prefilledTopic } =
     useAppStore();
 
-  const [accounts, setAccounts] = useState<(XhsAccountInfo & { postsCount?: number })[]>([]);
+  const isInHub = !!sharedAccountData;
+  const [standaloneAccounts, setStandaloneAccounts] = useState<(XhsAccountInfo & { postsCount?: number })[]>([]);
   const [drafts, setDrafts] = useState<ContentDraftInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -349,7 +356,7 @@ export function CreatorView() {
       const res = await fetch("/api/accounts");
       const data = await res.json();
       if (data.success) {
-        setAccounts(data.data || []);
+        setStandaloneAccounts(data.data || []);
         if (!selectedAccountId && data.data?.length > 0) {
           setSelectedAccountId(data.data[0].id);
         }
@@ -774,6 +781,9 @@ export function CreatorView() {
     );
   }
 
+  // Resolve accounts: use shared data when in hub, otherwise standalone
+  const accounts = isInHub ? sharedAccountData!.accounts : standaloneAccounts;
+
   if (accounts.length === 0) {
     return (
       <div className="p-4 md:p-6 view-animate">
@@ -790,23 +800,25 @@ export function CreatorView() {
 
   return (
     <div className="p-4 md:p-6 space-y-5 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
-      {/* Header */}
+      {/* Header — hide account selector when in hub (it's in the Sheet header) */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">AI 创作助手</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">智能内容生成与润色</p>
+          {!isInHub && <h2 className="text-xl font-bold tracking-tight">AI 创作助手</h2>}
+          <p className={cn("text-muted-foreground", isInHub ? "text-xs" : "text-sm mt-0.5")}>智能内容生成与润色</p>
         </div>
-        <select
-          value={selectedAccountId || ""}
-          onChange={(e) => setSelectedAccountId(e.target.value)}
-          className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white dark:bg-neutral-950"
-        >
-          {accounts.map((acc) => (
-            <option key={acc.id} value={acc.id}>
-              {acc.nickname || "未命名用户"}
-            </option>
-          ))}
-        </select>
+        {!isInHub && (
+          <select
+            value={selectedAccountId || ""}
+            onChange={(e) => setSelectedAccountId(e.target.value)}
+            className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white dark:bg-neutral-950"
+          >
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.nickname || "未命名用户"}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* ─── Writing Templates Section ──────────────────────────────────── */}

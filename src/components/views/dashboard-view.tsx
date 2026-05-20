@@ -48,6 +48,8 @@ import {
   Rocket,
   Calendar,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { ExportDialog } from "@/components/export-dialog";
 
 /** Activity feed item type */
@@ -664,8 +666,8 @@ export function DashboardView() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 space-y-6 view-animate">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 view-animate">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className={`h-[120px] rounded-xl skeleton-delay-${i}`} />
           ))}
@@ -678,7 +680,7 @@ export function DashboardView() {
 
   if (accounts.length === 0) {
     return (
-      <div className="p-4 md:p-6 view-animate">
+      <div className="p-6 md:p-8 max-w-7xl mx-auto view-animate">
         <EmptyState
           icon={Users}
           title="还没有添加账号"
@@ -712,112 +714,90 @@ export function DashboardView() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-5 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
-      {/* Header with glass effect */}
-      <div className="flex items-center justify-between backdrop-blur-sm rounded-xl px-3 py-2 -mx-3 -mt-2 sticky top-0 z-10 bg-background/80">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight">仪表盘</h2>
-          <p className="text-sm font-medium text-muted-foreground mt-0.5">
-            运营数据概览 · {dateRangeLabels[dateRange]}
-            {lastUpdated && (
-              <span className="text-[11px] ml-2 opacity-50">
-                更新于 {lastUpdated.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="flex gap-2 items-center">
-          {/* Date Range Selector */}
-          <div className="hidden sm:flex items-center bg-muted/60 rounded-lg p-0.5 border border-border/50">
-            {([7, 30, 90] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => handleDateRangeChange(range)}
-                className={cn(
-                  "h-7 px-3 rounded-md text-xs font-medium transition-all duration-200",
-                  dateRange === range
-                    ? "bg-xhs text-white shadow-sm shadow-xhs/20"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                )}
-              >
-                {range}天
-              </button>
-            ))}
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
+      {/* Unified Page Header */}
+      <PageHeader
+        icon={<BarChart3 className="w-5 h-5" />}
+        title="仪表盘"
+        subtitle={`运营数据概览 · ${dateRangeLabels[dateRange]}${lastUpdated ? ` · 更新于 ${lastUpdated.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}` : ""}`}
+        actions={
+          <div className="flex gap-2 items-center">
+            {/* Date Range Selector */}
+            <div className="hidden sm:flex items-center bg-muted/60 rounded-lg p-0.5 border border-border/50">
+              {([7, 30, 90] as DateRange[]).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => handleDateRangeChange(range)}
+                  className={cn(
+                    "h-7 px-3 rounded-md text-xs font-medium transition-all duration-200",
+                    dateRange === range
+                      ? "bg-xhs text-white shadow-sm shadow-xhs/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {range}天
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-border hidden sm:inline-flex"
+              onClick={() => loadData(true)}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-1", refreshing && "animate-spin")} />
+              刷新
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-border hidden sm:inline-flex"
+              onClick={handleExport}
+            >
+              <Download className="w-4 h-4 mr-1" />
+              导出
+            </Button>
+            <Button
+              size="sm"
+              className="btn-gradient-brand text-white border-0"
+              onClick={() => setActiveTab("creator")}
+            >
+              <PenLine className="w-4 h-4 mr-1" />
+              创作
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-border hidden sm:inline-flex"
-            onClick={() => loadData(true)}
-            disabled={refreshing}
-          >
-            <RefreshCw className={cn("w-4 h-4 mr-1", refreshing && "animate-spin")} />
-            刷新
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-border hidden sm:inline-flex"
-            onClick={handleExport}
-          >
-            <Download className="w-4 h-4 mr-1" />
-            导出
-          </Button>
-          <Button
-            size="sm"
-            className="bg-xhs hover:bg-xhs-dark text-white shadow-sm shadow-xhs/20"
-            onClick={() => setActiveTab("creator")}
-          >
-            <PenLine className="w-4 h-4 mr-1" />
-            创作
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* ─── Quick Stats with enhanced gradients, trend pills, pulse dots ─── */}
+      {/* ─── Quick Stats using StatCard component ─── */}
       <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-4 transition-opacity duration-300", rangeTransitioning && "opacity-60")}>
-        {statCards.map((stat) => {
+        {statCards.map((stat, idx) => {
           const Icon = stat.icon;
           const sparkData = statSparklines[stat.key];
           const trend = statTrends[stat.key];
           return (
-            <Card key={stat.key} className={cn("card-hover overflow-hidden relative group border-0 shadow-sm", statCardGradients[stat.key])}>
-              {/* Gradient border accent on top */}
-              <div className={cn("absolute top-0 left-0 right-0 h-[2px] opacity-60 group-hover:opacity-100 transition-opacity duration-300",
-                stat.key === "accounts" ? "bg-gradient-to-r from-rose-400 to-rose-500" :
-                stat.key === "posts" ? "bg-gradient-to-r from-amber-400 to-amber-500" :
-                stat.key === "engagement" ? "bg-gradient-to-r from-emerald-400 to-emerald-500" :
-                "bg-gradient-to-r from-xhs to-xhs-dark"
-              )} />
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-110", stat.bg)}>
-                    <Icon className={cn("w-5 h-5", stat.textColor)} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-2xl font-extrabold tracking-tight stat-count-animate">{stat.value}</p>
-                      {/* Trend indicator pill */}
-                      <span className={cn(
-                        "text-[11px] font-semibold flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-appear",
-                        trend.isPositive
-                          ? "bg-emerald-100/60 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
-                          : "bg-red-100/60 dark:bg-red-950/30 text-red-600 dark:text-red-400"
-                      )}>
-                        {trend.isPositive
-                          ? <TrendingUp className="w-3 h-3" />
-                          : <TrendingDown className="w-3 h-3" />
-                        }
-                        {trend.isPositive ? "+" : "-"}{trend.value}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
+            <div key={stat.key} className={cn("stagger-item stagger-delay-" + (idx + 1))}>
+              <StatCard
+                icon={<Icon className="w-5 h-5" />}
+                iconVariant={stat.key === "accounts" ? "rose" : stat.key === "posts" ? "amber" : stat.key === "engagement" ? "emerald" : "xhs"}
+                label={stat.label}
+                value={stat.value}
+                change={{ value: trend.isPositive ? trend.value : -trend.value }}
+                className={cn("overflow-hidden relative border-0 shadow-sm", statCardGradients[stat.key])}
+              >
+                {/* Gradient accent on top */}
+                <div className={cn(
+                  "absolute top-0 left-0 right-0 h-[2px] opacity-60 group-hover:opacity-100 transition-opacity duration-300",
+                  stat.key === "accounts" ? "bg-gradient-to-r from-rose-400 to-rose-500" :
+                  stat.key === "posts" ? "bg-gradient-to-r from-amber-400 to-amber-500" :
+                  stat.key === "engagement" ? "bg-gradient-to-r from-emerald-400 to-emerald-500" :
+                  "bg-gradient-to-r from-xhs to-xhs-dark"
+                )} />
                 {/* 7-day sparkline with pulse end dot */}
                 <StatSparkline data={sparkData} color={stat.sparkColor} />
-              </CardContent>
-            </Card>
+              </StatCard>
+            </div>
           );
         })}
       </div>

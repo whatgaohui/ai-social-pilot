@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/empty-state";
 import { AccountCard } from "@/components/account-card";
 import { useAppStore } from "@/store/app-store";
 import type { XhsAccountInfo, XhsPersonaInfo } from "@/types";
+import type { AccountDataState } from "@/hooks/use-account-data";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -123,9 +124,17 @@ function TagInput({
   );
 }
 
-export function PersonaView() {
-  const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen } = useAppStore();
-  const [accounts, setAccounts] = useState<(XhsAccountInfo & { postsCount?: number })[]>([]);
+interface PersonaViewProps {
+  /** Shared account data from AccountHubView (when inside hub) */
+  sharedAccountData?: AccountDataState;
+  /** Open creator sheet */
+  onOpenCreator?: () => void;
+}
+
+export function PersonaView({ sharedAccountData, onOpenCreator }: PersonaViewProps) {
+  const { selectedAccountId, setSelectedAccountId, setAddAccountDialogOpen, setCreatorSheetOpen } = useAppStore();
+  const isInHub = !!sharedAccountData;
+  const [standaloneAccounts, setStandaloneAccounts] = useState<(XhsAccountInfo & { postsCount?: number })[]>([]);
   const [persona, setPersona] = useState<XhsPersonaInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -181,7 +190,7 @@ export function PersonaView() {
       const data = await res.json();
       if (data.success) {
         const accountList = data.data || [];
-        setAccounts(accountList);
+        setStandaloneAccounts(accountList);
         if (!selectedAccountId && accountList.length > 0) {
           setSelectedAccountId(accountList[0].id);
         }
@@ -334,6 +343,9 @@ export function PersonaView() {
     );
   }
 
+  // Resolve accounts: use shared data when in hub, otherwise standalone
+  const accounts = isInHub ? sharedAccountData!.accounts : standaloneAccounts;
+
   if (accounts.length === 0) {
     return (
       <div className="p-4 md:p-6 view-animate">
@@ -367,20 +379,24 @@ export function PersonaView() {
 
   return (
     <div className="p-4 md:p-6 space-y-5 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
-      {/* Header */}
+      {/* Header — compact when in hub */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="md:hidden -ml-2"
-            onClick={() => setSelectedAccountId(null)}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          {!isInHub && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden -ml-2"
+              onClick={() => setSelectedAccountId(null)}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          )}
           <div>
-            <h2 className="text-xl font-bold tracking-tight">人设管理</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">定制AI创作风格</p>
+            {!isInHub && <h2 className="text-xl font-bold tracking-tight">人设管理</h2>}
+            <p className={cn("text-muted-foreground", isInHub ? "text-xs" : "text-sm mt-0.5")}>
+              {isInHub ? "定制AI创作风格" : "定制AI创作风格"}
+            </p>
           </div>
           {saveSuccess && (
             <Badge className="bg-emerald-50 text-emerald-600 border-0 text-xs animate-in fade-in slide-in-from-top-2">
@@ -390,17 +406,31 @@ export function PersonaView() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={selectedAccountId}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white dark:bg-neutral-950"
-          >
-            {accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.nickname || "未命名用户"}
-              </option>
-            ))}
-          </select>
+          {!isInHub && (
+            <select
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+              className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white dark:bg-neutral-950"
+            >
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.nickname || "未命名用户"}
+                </option>
+              ))}
+            </select>
+          )}
+          {/* Quick link to create content */}
+          {isInHub && onOpenCreator && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs border-xhs/20 text-xhs hover:bg-xhs-light/30"
+              onClick={onOpenCreator}
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1" />
+              用此人设创作
+            </Button>
+          )}
         </div>
       </div>
 

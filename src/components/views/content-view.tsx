@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/empty-state";
 import { useAppStore } from "@/store/app-store";
 import type { XhsAccountInfo, XhsPostInfo } from "@/types";
+import type { AccountDataState } from "@/hooks/use-account-data";
 import { PostCard } from "@/components/post-card";
 import { formatNumber } from "@/components/account-card";
 import { cn } from "@/lib/utils";
@@ -678,12 +679,22 @@ function SchedulePostDialog({
   );
 }
 
+// ─── Props Interface ───────────────────────────────────────────────────
+
+interface ContentViewProps {
+  /** Shared account data from AccountHubView (when inside hub) */
+  sharedAccountData?: AccountDataState;
+  /** Open creator sheet */
+  onOpenCreator?: () => void;
+}
+
 // ─── Main ContentView Component ─────────────────────────────────────────
 
-export function ContentView() {
-  const { setAddAccountDialogOpen, setActiveTab } = useAppStore();
+export function ContentView({ sharedAccountData, onOpenCreator }: ContentViewProps) {
+  const { setAddAccountDialogOpen, setActiveTab, setCreatorSheetOpen } = useAppStore();
+  const isInHub = !!sharedAccountData;
   const [posts, setPosts] = useState<XhsPostInfo[]>([]);
-  const [accounts, setAccounts] = useState<(XhsAccountInfo & { postsCount?: number })[]>([]);
+  const [standaloneAccounts, setStandaloneAccounts] = useState<(XhsAccountInfo & { postsCount?: number })[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>("date");
   const [filterAccountId, setFilterAccountId] = useState<string>("all");
@@ -765,7 +776,7 @@ export function ContentView() {
     try {
       const res = await fetch("/api/accounts");
       const data = await res.json();
-      if (data.success) setAccounts(data.data || []);
+      if (data.success) setStandaloneAccounts(data.data || []);
     } catch (err) {
       console.error("Failed to load accounts:", err);
     }
@@ -788,6 +799,9 @@ export function ContentView() {
       setLoading(false);
     }
   };
+
+  // Resolve accounts: use shared data when in hub, otherwise standalone
+  const accounts = isInHub ? sharedAccountData!.accounts : standaloneAccounts;
 
   // Generate sample schedule data once posts and accounts are loaded
   useEffect(() => {
@@ -1062,14 +1076,14 @@ export function ContentView() {
 
   return (
     <div className="p-4 md:p-6 space-y-4 custom-scrollbar overflow-y-auto h-full pb-20 md:pb-6 view-animate">
-      {/* Header */}
+      {/* Header — compact when in hub */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">内容库</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          {!isInHub && <h2 className="text-xl font-bold tracking-tight">内容库</h2>}
+          <p className={cn("text-muted-foreground", isInHub ? "text-xs" : "text-sm mt-0.5")}>
             {viewMode === "schedule"
               ? `排期管理 · ${scheduleStats.today}篇今天发布`
-              : `浏览和管理笔记 · 共 ${filteredPosts.length} 篇`}
+              : `${isInHub ? '' : '浏览和管理笔记 · '}共 ${filteredPosts.length} 篇`}
           </p>
         </div>
         <div className="flex items-center gap-2">

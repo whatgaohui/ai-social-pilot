@@ -34,6 +34,16 @@ interface AppState {
   // Note creator sheet (opens inside account-hub > notes tab)
   creatorSheetOpen: boolean;
   setCreatorSheetOpen: (open: boolean) => void;
+
+  // ─── Cross-Tab Navigation (v4.1) ──────────────────────────────────────
+  // Navigate to notes tab from within account hub
+  navigateToNotes: () => void;
+  // Navigate to persona tab from within account hub
+  navigateToPersona: () => void;
+  // Navigate to overview tab from within account hub
+  navigateToOverview: () => void;
+  // Navigate to creator with account context
+  navigateToCreatorForAccount: (accountId: string, topic?: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -76,4 +86,17 @@ export const useAppStore = create<AppState>((set) => ({
     }),
   creatorSheetOpen: false,
   setCreatorSheetOpen: (open) => set({ creatorSheetOpen: open }),
+
+  // ─── Cross-Tab Navigation (v4.1) ──────────────────────────────────────
+  navigateToNotes: () => set({ activeTab: 'account-hub', accountHubTab: 'notes' }),
+  navigateToPersona: () => set({ activeTab: 'account-hub', accountHubTab: 'persona' }),
+  navigateToOverview: () => set({ activeTab: 'account-hub', accountHubTab: 'overview' }),
+  navigateToCreatorForAccount: (accountId, topic) =>
+    set({
+      activeTab: 'account-hub',
+      accountHubTab: 'notes',
+      selectedAccountId: accountId,
+      creatorSheetOpen: true,
+      prefilledTopic: topic || null,
+    }),
 }));

@@ -85,7 +85,7 @@ export function AppSidebar() {
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
                   "w-full flex items-center gap-3 rounded-lg text-sm font-medium",
-                  "nav-item-v3 active:scale-[0.98]",
+                  "nav-item-v3 nav-item-hover active:scale-[0.98]",
                   collapsed ? "h-10 justify-center" : "px-3 h-10",
                   isActive
                     ? "nav-item-v3-active"
@@ -129,7 +129,7 @@ export function AppSidebar() {
                 onClick={() => setActiveTab("settings")}
                 className={cn(
                   "w-full flex items-center gap-3 rounded-lg text-sm font-medium",
-                  "nav-item-v3 active:scale-[0.98]",
+                  "nav-item-v3 nav-item-hover active:scale-[0.98]",
                   collapsed ? "h-10 justify-center" : "px-3 h-10",
                   isActive
                     ? "nav-item-v3-active"

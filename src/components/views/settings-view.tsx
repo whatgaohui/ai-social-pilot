@@ -39,6 +39,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /* ─── Types ────────────────────────────────────────────────────────── */
 
@@ -417,12 +418,13 @@ export function SettingsView() {
 
   /* ── Render ─────────────────────────────────────────────────────── */
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
-      {/* Page header */}
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">设置</h1>
-        <p className="text-sm text-muted-foreground mt-1">配置 AI 模型与应用偏好</p>
-      </header>
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 view-animate">
+      {/* Unified Page Header */}
+      <PageHeader
+        icon={<SettingsIcon className="w-6 h-6" />}
+        title="设置"
+        subtitle="配置 AI 模型与应用偏好"
+      />
 
       {/* AI Models section */}
       <section className="space-y-4">
@@ -438,7 +440,7 @@ export function SettingsView() {
                 : "添加你的第一个 AI 模型来解锁所有智能功能"}
             </p>
           </div>
-          <Button size="sm" onClick={() => openNew()} className="gap-1">
+          <Button size="sm" onClick={() => openNew()} className="gap-1 btn-gradient-brand text-white border-0">
             <Plus className="w-4 h-4" /> 自定义添加
           </Button>
         </div>
