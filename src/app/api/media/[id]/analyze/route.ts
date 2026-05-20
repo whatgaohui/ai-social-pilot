@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
@@ -43,7 +43,7 @@ export async function POST(
     const { id } = await params;
 
     // Find the asset
-    const asset = await db.mediaAsset.findUnique({ where: { id } });
+    const asset = await withDb(() => db.mediaAsset.findUnique({ where: { id } }));
     if (!asset) {
       return NextResponse.json(
         { success: false, error: '素材不存在' },
@@ -138,14 +138,14 @@ export async function POST(
     }
 
     // Update the database record
-    const updated = await db.mediaAsset.update({
+    const updated = await withDb(() => db.mediaAsset.update({
       where: { id },
       data: {
         aiDescription,
         aiTags: JSON.stringify(aiTags),
         aiAnalyzed: true,
       },
-    });
+    }));
 
     return NextResponse.json({
       success: true,

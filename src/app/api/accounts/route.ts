@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 
 // GET /api/accounts - List all accounts
 export async function GET() {
   try {
-    const accounts = await db.xhsAccount.findMany({
+    const accounts = await withDb(() => db.xhsAccount.findMany({
       orderBy: { updatedAt: 'desc' },
       include: {
         _count: { select: { posts: true, drafts: true } },
       },
-    });
+    }));
 
     return NextResponse.json({
       success: true,
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate
-    const existing = await db.xhsAccount.findUnique({ where: { xhsUrl } });
+    const existing = await withDb(() => db.xhsAccount.findUnique({ where: { xhsUrl } }));
     if (existing) {
       return NextResponse.json(
         { success: false, error: '该账号已存在' },
@@ -63,12 +63,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create account with idle status (scraping will be triggered separately)
-    const account = await db.xhsAccount.create({
+    const account = await withDb(() => db.xhsAccount.create({
       data: {
         xhsUrl,
         status: 'idle',
       },
-    });
+    }));
 
     return NextResponse.json({ success: true, data: account }, { status: 201 });
   } catch (error) {

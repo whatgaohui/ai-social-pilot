@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 
 type ExportFormat = 'json' | 'csv';
 type DataScope = 'accounts' | 'posts' | 'personas' | 'engagement';
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const cutoffDate = new Date(now.getTime() - dateRange * 24 * 60 * 60 * 1000);
 
     // Fetch all accounts with their related data
-    const accounts = await db.xhsAccount.findMany({
+    const accounts = await withDb(() => db.xhsAccount.findMany({
       orderBy: { updatedAt: 'desc' },
       include: {
         posts: {
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         persona: true,
         drafts: { orderBy: { updatedAt: 'desc' } },
       },
-    });
+    }));
 
     // Filter data based on scopes
     const exportAccounts = accounts.map((account) => {
@@ -146,14 +146,14 @@ export async function GET(request: NextRequest) {
 // POST /api/export - Legacy endpoint, exports all data as JSON
 export async function POST() {
   try {
-    const accounts = await db.xhsAccount.findMany({
+    const accounts = await withDb(() => db.xhsAccount.findMany({
       orderBy: { updatedAt: 'desc' },
       include: {
         posts: { orderBy: { publishDate: 'desc' } },
         persona: true,
         drafts: { orderBy: { updatedAt: 'desc' } },
       },
-    });
+    }));
 
     const exportData = {
       exportDate: new Date().toISOString(),

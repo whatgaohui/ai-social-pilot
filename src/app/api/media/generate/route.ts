@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     await writeFile(filePath, imageBuffer);
 
     // Build URL
-    const url = `/api/uploads/${uniqueName}`;
+    const url = `/uploads/${uniqueName}`;
 
     // Get image dimensions and create thumbnail
     let width = 0;
@@ -112,13 +112,13 @@ export async function POST(request: Request) {
       await sharp(filePath)
         .resize(300, 300, { fit: 'cover', withoutEnlargement: true })
         .toFile(thumbPath);
-      thumbnail = `/api/uploads/thumbs/${thumbName}`;
+      thumbnail = `/uploads/thumbs/${thumbName}`;
     } catch (err) {
       console.warn('[media/generate] Thumbnail generation failed:', err);
     }
 
     // Create DB record
-    const asset = await db.mediaAsset.create({
+    const asset = await withDb(() => db.mediaAsset.create({
       data: {
         type: 'image',
         fileName: uniqueName,
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
         description: prompt.trim(),
         source: 'ai-generated',
       },
-    });
+    }));
 
     return NextResponse.json({
       success: true,

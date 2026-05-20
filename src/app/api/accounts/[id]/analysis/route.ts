@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 import { generateAccountInsights } from '@/lib/ai-service';
 import type { XhsAccountInfo, XhsPostInfo, AccountAnalysis } from '@/types';
 
@@ -11,10 +11,10 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const account = await db.xhsAccount.findUnique({
+    const account = await withDb(() => db.xhsAccount.findUnique({
       where: { id },
       include: { posts: { orderBy: { publishDate: 'desc' } } },
-    });
+    }));
 
     if (!account) {
       return NextResponse.json(

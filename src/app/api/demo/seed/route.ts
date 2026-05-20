@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 
 // POST /api/demo/seed - Create demo data
 export async function POST() {
   try {
     // Check if demo account already exists
-    const existing = await db.xhsAccount.findFirst({
+    const existing = await withDb(() => db.xhsAccount.findFirst({
       where: { xhsId: 'demo_user_001' },
-    });
+    }));
 
     if (existing) {
       return NextResponse.json(
@@ -17,7 +17,7 @@ export async function POST() {
     }
 
     // Create demo account
-    const account = await db.xhsAccount.create({
+    const account = await withDb(() => db.xhsAccount.create({
       data: {
         xhsUrl: 'https://www.xiaohongshu.com/user/profile/demo_user_001',
         xhsId: 'demo_user_001',
@@ -32,7 +32,7 @@ export async function POST() {
         status: 'success',
         lastScrapedAt: new Date(),
       },
-    });
+    }));
 
     // Create demo posts
     const demoPosts = [
@@ -189,12 +189,12 @@ export async function POST() {
     ];
 
     for (const post of demoPosts) {
-      await db.xhsPost.create({
+      await withDb(() => db.xhsPost.create({
         data: {
           accountId: account.id,
           ...post,
         },
-      });
+      }));
     }
 
     return NextResponse.json({

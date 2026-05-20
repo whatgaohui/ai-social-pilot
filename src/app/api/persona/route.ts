@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 
 // GET /api/persona - Get persona for an account
 export async function GET(request: NextRequest) {
@@ -14,9 +14,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const persona = await db.xhsPersona.findUnique({
+    const persona = await withDb(() => db.xhsPersona.findUnique({
       where: { accountId },
-    });
+    }));
 
     if (!persona) {
       return NextResponse.json({ success: true, data: null });
@@ -75,9 +75,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check account exists
-    const account = await db.xhsAccount.findUnique({
+    const account = await withDb(() => db.xhsAccount.findUnique({
       where: { id: accountId },
-    });
+    }));
     if (!account) {
       return NextResponse.json(
         { success: false, error: '账号不存在' },
@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if persona already exists
-    const existing = await db.xhsPersona.findUnique({
+    const existing = await withDb(() => db.xhsPersona.findUnique({
       where: { accountId },
-    });
+    }));
     if (existing) {
       return NextResponse.json(
         { success: false, error: '该账号已有人设，请使用PUT更新' },
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const persona = await db.xhsPersona.create({
+    const persona = await withDb(() => db.xhsPersona.create({
       data: {
         accountId,
         name: name || '',
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         referenceDesc: referenceDesc || '',
         signaturePhrase: signaturePhrase || '',
       },
-    });
+    }));
 
     const data = {
       ...persona,
@@ -141,9 +141,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const existing = await db.xhsPersona.findUnique({
+    const existing = await withDb(() => db.xhsPersona.findUnique({
       where: { accountId },
-    });
+    }));
     if (!existing) {
       return NextResponse.json(
         { success: false, error: '人设不存在，请先创建' },
@@ -151,7 +151,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const persona = await db.xhsPersona.update({
+    const persona = await withDb(() => db.xhsPersona.update({
       where: { accountId },
       data: {
         ...(name !== undefined && { name }),
@@ -168,7 +168,7 @@ export async function PUT(request: NextRequest) {
         ...(referenceDesc !== undefined && { referenceDesc }),
         ...(signaturePhrase !== undefined && { signaturePhrase }),
       },
-    });
+    }));
 
     const data = {
       ...persona,

@@ -1,15 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readFile, stat } from 'fs/promises';
+import { join } from 'path';
 
 /**
- * /api/uploads/[...path] — Serves uploaded files via file-server proxy
+ * /api/uploads/[...path] — Serves uploaded files directly from disk
  *
- * Files are served by a separate Bun file server on port 3001.
- * This route proxies requests to avoid loading files into Next.js memory.
+ * Reads files from the uploads directory and serves them with proper
+ * Content-Type headers. Avoids proxying to file-server to prevent
+ * stream-based crashes in Next.js standalone mode.
  */
 
 export const dynamic = 'force-dynamic';
 
-const FILE_SERVER_PORT = 3001;
+const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads');
+
+const MIME_MAP: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.pdf': 'application/pdf',
+};
+
+function getExt(filename: string): string {
+  const i = filename.lastIndexOf('.');
+  return i >= 0 ? filename.slice(i).toLowerCase() : '';
+}
 
 export async function GET(
   request: NextRequest,
@@ -22,35 +44,38 @@ export async function GET(
       return new NextResponse('Not Found', { status: 404 });
     }
 
+    // Prevent path traversal
     const filePath = segments.join('/');
-    const fileServerUrl = `http://localhost:${FILE_SERVER_PORT}/${filePath}`;
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-    const response = await fetch(fileServerUrl, { signal: controller.signal });
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      return new NextResponse(
-        response.status === 404 ? 'Not Found' : 'Error',
-        { status: response.status }
-      );
+    if (filePath.includes('..')) {
+      return new NextResponse('Forbidden', { status: 403 });
     }
 
-    const headers = new Headers();
-    const ct = response.headers.get('content-type');
-    const cc = response.headers.get('cache-control');
-    const ar = response.headers.get('accept-ranges');
-    if (ct) headers.set('Content-Type', ct);
-    if (cc) headers.set('Cache-Control', cc);
-    if (ar) headers.set('Accept-Ranges', ar);
+    const fullPath = join(UPLOAD_DIR, filePath);
+    const ext = getExt(fullPath);
+    const contentType = MIME_MAP[ext] || 'application/octet-stream';
 
-    return new NextResponse(response.body, {
-      status: response.status,
-      headers,
+    // Check file exists and get size
+    let fileStat;
+    try {
+      fileStat = await stat(fullPath);
+    } catch {
+      return new NextResponse('Not Found', { status: 404 });
+    }
+
+    // Read file into buffer (safe for small files, avoids stream crashes)
+    const buffer = await readFile(fullPath);
+
+    return new NextResponse(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type': contentType,
+        'Content-Length': String(fileStat.size),
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Accept-Ranges': 'bytes',
+      },
     });
   } catch (error) {
-    console.error('[uploads] Proxy error:', error);
+    console.error('[uploads] Error serving file:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

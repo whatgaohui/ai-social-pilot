@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 
 // PUT /api/drafts/[id] - Update draft
 export async function PUT(
@@ -11,7 +11,7 @@ export async function PUT(
     const body = await request.json();
     const { title, content, coverPrompt, tags, status, aiModel, aiSuggestions } = body;
 
-    const existing = await db.contentDraft.findUnique({ where: { id } });
+    const existing = await withDb(() => db.contentDraft.findUnique({ where: { id } }));
     if (!existing) {
       return NextResponse.json(
         { success: false, error: '草稿不存在' },
@@ -19,7 +19,7 @@ export async function PUT(
       );
     }
 
-    const draft = await db.contentDraft.update({
+    const draft = await withDb(() => db.contentDraft.update({
       where: { id },
       data: {
         ...(title !== undefined && { title }),
@@ -30,7 +30,7 @@ export async function PUT(
         ...(aiModel !== undefined && { aiModel }),
         ...(aiSuggestions !== undefined && { aiSuggestions }),
       },
-    });
+    }));
 
     return NextResponse.json({
       success: true,
@@ -56,7 +56,7 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const existing = await db.contentDraft.findUnique({ where: { id } });
+    const existing = await withDb(() => db.contentDraft.findUnique({ where: { id } }));
     if (!existing) {
       return NextResponse.json(
         { success: false, error: '草稿不存在' },
@@ -64,7 +64,7 @@ export async function DELETE(
       );
     }
 
-    await db.contentDraft.delete({ where: { id } });
+    await withDb(() => db.contentDraft.delete({ where: { id } }));
 
     return NextResponse.json({ success: true, data: { id } });
   } catch (error) {

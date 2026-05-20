@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, withDb } from "@/lib/db";
 import { encryptApiKey, maskApiKey, decryptApiKey } from "@/lib/ai/crypto";
 
 /** PATCH /api/ai-providers/[id] — update */
@@ -32,7 +32,7 @@ export async function PATCH(
       priority: number;
     }>;
 
-    const exists = await db.aIProvider.findUnique({ where: { id } });
+    const exists = await withDb(() => db.aIProvider.findUnique({ where: { id } }));
     if (!exists) {
       return NextResponse.json(
         { success: false, error: "Provider 不存在" },
@@ -42,10 +42,10 @@ export async function PATCH(
 
     // If setting as default, clear other defaults
     if (isDefault === true && !exists.isDefault) {
-      await db.aIProvider.updateMany({
+      await withDb(() => db.aIProvider.updateMany({
         where: { isDefault: true, NOT: { id } },
         data: { isDefault: false },
-      });
+      }));
     }
 
     const data: Record<string, unknown> = {};
@@ -62,7 +62,7 @@ export async function PATCH(
       data.apiKey = encryptApiKey(apiKey);
     }
 
-    const updated = await db.aIProvider.update({ where: { id }, data });
+    const updated = await withDb(() => db.aIProvider.update({ where: { id }, data }));
 
     return NextResponse.json({
       success: true,
@@ -83,7 +83,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await db.aIProvider.delete({ where: { id } });
+    await withDb(() => db.aIProvider.delete({ where: { id } }));
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(

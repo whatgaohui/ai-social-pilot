@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
@@ -37,10 +37,10 @@ function toMediaAssetInfo(row: Record<string, unknown>) {
 async function deleteFileFromDisk(urlPath: string) {
   if (!urlPath) return;
   try {
-    // urlPath is like /api/uploads/xxx.jpg or /api/uploads/thumbs/thumb_xxx.jpg
-    // Strip /api prefix to get the filesystem path: /uploads/xxx.jpg
+    // urlPath is like /uploads/xxx.jpg or /uploads/thumbs/thumb_xxx.jpg
+    // (legacy: /api/uploads/xxx.jpg — strip /api prefix)
     const fsPath = urlPath.replace(/^\/api/, '');
-    const filePath = path.join('/home/z/my-project', 'public', fsPath);
+    const filePath = path.join(process.cwd(), 'public', fsPath);
     if (existsSync(filePath)) {
       await unlink(filePath);
     }
@@ -66,7 +66,7 @@ export async function PATCH(
     };
 
     // Check if asset exists
-    const existing = await db.mediaAsset.findUnique({ where: { id } });
+    const existing = await withDb(() => db.mediaAsset.findUnique({ where: { id } }));
     if (!existing) {
       return NextResponse.json(
         { success: false, error: '素材不存在' },
@@ -81,10 +81,10 @@ export async function PATCH(
     if (description !== undefined) updateData.description = description;
     if (textContent !== undefined) updateData.textContent = textContent;
 
-    const asset = await db.mediaAsset.update({
+    const asset = await withDb(() => db.mediaAsset.update({
       where: { id },
       data: updateData,
-    });
+    }));
 
     return NextResponse.json({
       success: true,
@@ -109,7 +109,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Check if asset exists
-    const existing = await db.mediaAsset.findUnique({ where: { id } });
+    const existing = await withDb(() => db.mediaAsset.findUnique({ where: { id } }));
     if (!existing) {
       return NextResponse.json(
         { success: false, error: '素材不存在' },
@@ -130,7 +130,7 @@ export async function DELETE(
     }
 
     // Delete from database
-    await db.mediaAsset.delete({ where: { id } });
+    await withDb(() => db.mediaAsset.delete({ where: { id } }));
 
     return NextResponse.json({
       success: true,

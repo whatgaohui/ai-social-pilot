@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, withDb } from "@/lib/db";
 import { encryptApiKey, maskApiKey, decryptApiKey } from "@/lib/ai/crypto";
 
 /** GET /api/ai-providers — list all (api keys masked) */
 export async function GET() {
   try {
-    const items = await db.aIProvider.findMany({
+    const items = await withDb(() => db.aIProvider.findMany({
       orderBy: [{ isDefault: "desc" }, { priority: "desc" }, { createdAt: "asc" }],
-    });
+    }));
     const safe = items.map((p) => ({
       ...p,
       apiKey: maskApiKey(decryptApiKey(p.apiKey)),
@@ -57,13 +57,13 @@ export async function POST(req: NextRequest) {
 
     // If setting as default, clear other defaults
     if (isDefault) {
-      await db.aIProvider.updateMany({
+      await withDb(() => db.aIProvider.updateMany({
         where: { isDefault: true },
         data: { isDefault: false },
-      });
+      }));
     }
 
-    const created = await db.aIProvider.create({
+    const created = await withDb(() => db.aIProvider.create({
       data: {
         name,
         type,
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         isActive,
         priority,
       },
-    });
+    }));
 
     return NextResponse.json({
       success: true,

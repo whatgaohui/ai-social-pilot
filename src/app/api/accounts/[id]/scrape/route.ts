@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, withDb } from "@/lib/db";
 
 const SCRAPER_SERVICE_URL = "http://localhost:3002";
 
@@ -90,7 +90,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const account = await db.xhsAccount.findUnique({ where: { id } });
+    const account = await withDb(() => db.xhsAccount.findUnique({ where: { id } }));
     if (!account) {
       return NextResponse.json(
         { success: false, error: "账号不存在" },
@@ -111,22 +111,22 @@ export async function POST(
       );
     }
 
-    await db.xhsAccount.update({
+    await withDb(() => db.xhsAccount.update({
       where: { id },
       data: { status: "scraping", errorMessage: "" },
-    });
+    }));
 
     const result = await callScraperService(account.xhsUrl, cookies);
 
     if (!result) {
-      await db.xhsAccount.update({
+      await withDb(() => db.xhsAccount.update({
         where: { id },
         data: {
           status: "error",
           errorMessage:
             "采集服务无响应，请确认 xhs-scraper 微服务已启动（port 3002）",
         },
-      });
+      }));
       return NextResponse.json(
         { success: false, error: "采集服务未启动" },
         { status: 503 }
@@ -139,7 +139,7 @@ export async function POST(
         ? `[${result.scrapeMethod}] ${result.warnings.join("; ")}`
         : "";
 
-    const updatedAccount = await db.xhsAccount.update({
+    const updatedAccount = await withDb(() => db.xhsAccount.update({
       where: { id },
       data: {
         nickname: mergeField(result.account.nickname, account.nickname, ""),
@@ -164,16 +164,16 @@ export async function POST(
         lastScrapedAt: new Date(),
         errorMessage,
       },
-    });
+    }));
 
     // Upsert posts
     const postsCreated: string[] = [];
     for (const p of result.posts) {
       if (!p.xhsPostId && !p.title) continue;
       const existing = p.xhsPostId
-        ? await db.xhsPost.findFirst({
+        ? await withDb(() => db.xhsPost.findFirst({
             where: { accountId: id, xhsPostId: p.xhsPostId },
-          })
+          }))
         : null;
       const data = {
         xhsPostId: p.xhsPostId || "",
@@ -191,10 +191,10 @@ export async function POST(
         publishDate: p.publishDate || "",
       };
       if (existing) {
-        await db.xhsPost.update({ where: { id: existing.id }, data });
+        await withDb(() => db.xhsPost.update({ where: { id: existing.id }, data }));
         postsCreated.push(existing.id);
       } else {
-        const np = await db.xhsPost.create({ data: { accountId: id, ...data } });
+        const np = await withDb(() => db.xhsPost.create({ data: { accountId: id, ...data } }));
         postsCreated.push(np.id);
       }
     }

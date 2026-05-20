@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { polishContent } from '@/lib/ai-service';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 
 // POST /api/content/polish - Polish existing content
 export async function POST(request: NextRequest) {
@@ -23,9 +23,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Get persona if exists
-    const personaRecord = await db.xhsPersona.findUnique({
+    const personaRecord = await withDb(() => db.xhsPersona.findUnique({
       where: { accountId },
-    });
+    }));
 
     const persona = personaRecord
       ? {

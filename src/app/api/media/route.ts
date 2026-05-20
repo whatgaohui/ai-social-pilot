@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 import type { MediaAssetInfo } from '@/types';
 
 // ─── Helper: DB row → MediaAssetInfo ────────────────────────────────────
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
       ];
     }
 
-    const [assets, total] = await Promise.all([
+    const [assets, total] = await withDb(() => Promise.all([
       db.mediaAsset.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
         take: limit,
       }),
       db.mediaAsset.count({ where }),
-    ]);
+    ]));
 
     return NextResponse.json({
       success: true,
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const asset = await db.mediaAsset.create({
+    const asset = await withDb(() => db.mediaAsset.create({
       data: {
         type: 'text',
         fileName: `text_${Date.now()}`,
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
         fileSize: new TextEncoder().encode(content.trim()).length,
         source: 'upload',
       },
-    });
+    }));
 
     return NextResponse.json({
       success: true,

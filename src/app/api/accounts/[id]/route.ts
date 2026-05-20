@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 
 // GET /api/accounts/[id] - Get account details
 export async function GET(
@@ -8,13 +8,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const account = await db.xhsAccount.findUnique({
+    const account = await withDb(() => db.xhsAccount.findUnique({
       where: { id },
       include: {
         persona: true,
         _count: { select: { posts: true, drafts: true } },
       },
-    });
+    }));
 
     if (!account) {
       return NextResponse.json(
@@ -80,19 +80,19 @@ export async function PATCH(
     // If user manually edits, upgrade status from partial/error to success
     if (
       updateData.status !== 'scraping' &&
-      (await db.xhsAccount.findUnique({ where: { id } }))
+      (await withDb(() => db.xhsAccount.findUnique({ where: { id } })))
     ) {
-      const current = await db.xhsAccount.findUnique({ where: { id } });
+      const current = await withDb(() => db.xhsAccount.findUnique({ where: { id } }));
       if (current && (current.status === 'partial' || current.status === 'error')) {
         updateData.status = 'success';
         updateData.errorMessage = '';
       }
     }
 
-    const account = await db.xhsAccount.update({
+    const account = await withDb(() => db.xhsAccount.update({
       where: { id },
       data: updateData,
-    });
+    }));
 
     return NextResponse.json({ success: true, data: account });
   } catch (error) {
@@ -112,7 +112,7 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const account = await db.xhsAccount.findUnique({ where: { id } });
+    const account = await withDb(() => db.xhsAccount.findUnique({ where: { id } }));
     if (!account) {
       return NextResponse.json(
         { success: false, error: '账号不存在' },
@@ -121,7 +121,7 @@ export async function DELETE(
     }
 
     // Cascade delete will handle posts, persona, drafts
-    await db.xhsAccount.delete({ where: { id } });
+    await withDb(() => db.xhsAccount.delete({ where: { id } }));
 
     return NextResponse.json({ success: true, data: { id } });
   } catch (error) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
 // POST /api/posts - Create a new post manually
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const account = await db.xhsAccount.findUnique({ where: { id: accountId } });
+    const account = await withDb(() => db.xhsAccount.findUnique({ where: { id: accountId } }));
     if (!account) {
       return NextResponse.json(
         { success: false, error: '账号不存在' },
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const post = await db.xhsPost.create({
+    const post = await withDb(() => db.xhsPost.create({
       data: {
         id: uuidv4(),
         accountId,
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         category: category || '',
         publishDate: new Date().toISOString().split('T')[0],
       },
-    });
+    }));
 
     return NextResponse.json({ success: true, data: post });
   } catch (error) {
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
         break;
     }
 
-    const posts = await db.xhsPost.findMany({
+    const posts = await withDb(() => db.xhsPost.findMany({
       where,
       orderBy,
       take: Math.min(limit, 200),
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
           select: { nickname: true, avatarUrl: true },
         },
       },
-    });
+    }));
 
     const data = posts.map((p) => ({
       id: p.id,

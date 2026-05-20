@@ -78,6 +78,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
+import { getMediaUrl } from "@/lib/media-url";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -891,17 +892,17 @@ export function LibraryView() {
               <div className="rounded-lg overflow-hidden bg-muted/30 border border-border/60">
                 {selectedAsset.type === "image" && (
                   <img
-                    src={selectedAsset.url || selectedAsset.thumbnail}
+                    src={getMediaUrl(selectedAsset.url || selectedAsset.thumbnail)}
                     alt={selectedAsset.originalName}
                     className="w-full max-h-[400px] object-contain"
                   />
                 )}
                 {selectedAsset.type === "video" && (
                   <video
-                    src={selectedAsset.url}
+                    src={getMediaUrl(selectedAsset.url)}
                     controls
                     className="w-full max-h-[400px]"
-                    poster={selectedAsset.thumbnail || undefined}
+                    poster={selectedAsset.thumbnail ? getMediaUrl(selectedAsset.thumbnail) : undefined}
                   />
                 )}
                 {selectedAsset.type === "text" && (
@@ -1041,7 +1042,7 @@ export function LibraryView() {
                     onClick={() => {
                       const a = document.createElement("a");
                       // Use the API route URL for downloading (works in standalone mode)
-                      a.href = selectedAsset.url;
+                      a.href = getMediaUrl(selectedAsset.url);
                       a.download = selectedAsset.originalName || selectedAsset.fileName;
                       document.body.appendChild(a);
                       a.click();
@@ -1260,7 +1261,7 @@ function AssetCard({
       <div className="aspect-square rounded-t-xl bg-muted overflow-hidden relative">
         {asset.type === "image" && (asset.thumbnail || asset.url) && (
           <img
-            src={asset.thumbnail || asset.url}
+            src={getMediaUrl(asset.thumbnail || asset.url)}
             alt={asset.originalName || asset.fileName}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
@@ -1269,7 +1270,7 @@ function AssetCard({
         {asset.type === "video" && (asset.thumbnail || asset.url) && (
           <div className="relative w-full h-full">
             <img
-              src={asset.thumbnail || asset.url}
+              src={getMediaUrl(asset.thumbnail || asset.url)}
               alt={asset.originalName || asset.fileName}
               className="w-full h-full object-cover"
               loading="lazy"
@@ -1384,7 +1385,7 @@ function AssetRow({
       <div className="w-8 h-8 rounded-md bg-muted overflow-hidden shrink-0">
         {asset.type === "image" && (asset.thumbnail || asset.url) && (
           <img
-            src={asset.thumbnail || asset.url}
+            src={getMediaUrl(asset.thumbnail || asset.url)}
             alt=""
             className="w-full h-full object-cover"
             loading="lazy"
@@ -1394,7 +1395,7 @@ function AssetRow({
           <div className="w-full h-full relative">
             {asset.thumbnail ? (
               <img
-                src={asset.thumbnail}
+                src={getMediaUrl(asset.thumbnail)}
                 alt=""
                 className="w-full h-full object-cover"
                 loading="lazy"

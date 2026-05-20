@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 
 // GET /api/drafts - List drafts with filters
 export async function GET(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     if (accountId) where.accountId = accountId;
     if (status) where.status = status;
 
-    const drafts = await db.contentDraft.findMany({
+    const drafts = await withDb(() => db.contentDraft.findMany({
       where,
       orderBy: { updatedAt: 'desc' },
       include: {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
           select: { nickname: true, avatarUrl: true },
         },
       },
-    });
+    }));
 
     const data = drafts.map((d) => ({
       ...d,
@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check account exists
-    const account = await db.xhsAccount.findUnique({
+    const account = await withDb(() => db.xhsAccount.findUnique({
       where: { id: accountId },
-    });
+    }));
     if (!account) {
       return NextResponse.json(
         { success: false, error: '账号不存在' },
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const draft = await db.contentDraft.create({
+    const draft = await withDb(() => db.contentDraft.create({
       data: {
         accountId,
         title: title || '',
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         aiModel: '',
         aiSuggestions: '',
       },
-    });
+    }));
 
     return NextResponse.json(
       {

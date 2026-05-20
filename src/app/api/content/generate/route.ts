@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateContent } from '@/lib/ai-service';
-import { db } from '@/lib/db';
+import { db, withDb } from '@/lib/db';
 
 // POST /api/content/generate - Generate new content using AI
 export async function POST(request: NextRequest) {
@@ -23,10 +23,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check account exists
-    const account = await db.xhsAccount.findUnique({
+    const account = await withDb(() => db.xhsAccount.findUnique({
       where: { id: accountId },
       include: { persona: true, posts: { orderBy: { likes: 'desc' }, take: 5 } },
-    });
+    }));
 
     if (!account) {
       return NextResponse.json(
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Auto-save as draft
-    const draft = await db.contentDraft.create({
+    const draft = await withDb(() => db.contentDraft.create({
       data: {
         accountId,
         title: generated.title,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
           generatedAt: new Date().toISOString(),
         }),
       },
-    });
+    }));
 
     return NextResponse.json({
       success: true,
