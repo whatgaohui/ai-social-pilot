@@ -157,3 +157,45 @@ model ContentDraft {
   @@index([accountId])
   @@index([status])
 }
+
+// ─── 素材管理 ──────────────────────────────────────────────────────────
+
+model MediaAsset {
+  id            String   @id @default(cuid())
+
+  // 文件信息
+  type          String   @default("image")  // "image" | "video" | "text"
+  fileName      String                       // 存储文件名 (UUID-based)
+  originalName  String   @default("")        // 用户上传时的原始文件名
+  url           String                       // 访问路径 /uploads/xxx.jpg
+  thumbnail     String   @default("")        // 缩略图路径
+  fileSize      Int      @default(0)         // 文件大小 (bytes)
+  mimeType      String   @default("")        // MIME type
+  width         Int      @default(0)         // 图片宽度
+  height        Int      @default(0)         // 图片高度
+
+  // 内容元数据
+  category      String   @default("")        // 用户分类
+  tags          String   @default("[]")      // 用户标签 JSON
+  description   String   @default("")        // 用户描述
+
+  // AI 分析
+  aiDescription String   @default("")        // AI 生成的描述
+  aiTags        String   @default("[]")      // AI 生成的标签 JSON
+  aiAnalyzed    Boolean  @default(false)      // 是否已分析
+
+  // 来源追踪
+  source        String   @default("upload")  // upload | ai-generated | scraped
+  accountId     String   @default("")        // 关联账号 (scraped 时)
+
+  // 文本素材专用
+  textContent   String   @default("")        // 文本片段内容
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([type])
+  @@index([category])
+  @@index([source])
+  @@index([createdAt])
+}

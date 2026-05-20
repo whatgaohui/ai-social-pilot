@@ -135,6 +135,32 @@ export interface AccountAnalysis {
   aiInsights: string;
 }
 
+// ─── Media Asset Types ────────────────────────────────────────────────
+
+export interface MediaAssetInfo {
+  id: string;
+  type: 'image' | 'video' | 'text';
+  fileName: string;
+  originalName: string;
+  url: string;
+  thumbnail: string;
+  fileSize: number;
+  mimeType: string;
+  width: number;
+  height: number;
+  category: string;
+  tags: string[];
+  description: string;
+  aiDescription: string;
+  aiTags: string[];
+  aiAnalyzed: boolean;
+  source: 'upload' | 'ai-generated' | 'scraped';
+  accountId: string;
+  textContent: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Trending Topic Types ───────────────────────────────────────────────
 
 export interface TrendingTopic {
